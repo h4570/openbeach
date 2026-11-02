@@ -31,7 +31,7 @@ scripts, terrain), L2 media (pixels, sound, music, video), so the headless simul
 | [save-switch-objects.md](save-switch-objects.md) | The readers of the `objects` entries: construction and ids, per-object bodies from the document, links by id, pre-queue checks. |
 | [converter/](converter/index.md) | `importer/`: the portable `obl_convert` library and `obl-convert` CLI, one command per format, the reader of the data tables in the supported game executables and of the CDs' InstallShield cabinets, and lossless sprite, image and Unicode font conversion with synthetic and installation tests. |
 | [converter-images.md](converter-images.md) | The installation image command: exact RGB palette modifiers with tone metadata, RGBA screens and cursor atlas, grayscale haze displacement tables. Strict TGA/TIFF decoding and PNG round-trip tests, plus installation comparisons with the engine decoders. |
-| [sources.md](sources.md) | Supported digital, European CD and UK/US CD copies: executable identities, data revision stamps, differing files and InstallShield input handling. |
+| [sources.md](sources.md) | Supported digital and CD copies: executable identities, data revision stamps, differing files and InstallShield input handling. |
 
 ## Design choices
 The converter may contain source identifiers (file names and keywords needed to read the user's copy), never values.
@@ -40,7 +40,7 @@ syntax. Mods replace whole files. Own audio is WAV and MP3. Maps are pre-rendere
 Own character art is indexed. Saves are JSON. Own packs live in `data/packs/`, schemas in `data/schemas/`, the converted
 pack in `run/packs/base/`.
 
-The converter supports the digital release and both CDs. CD executables contain the August build; the digital release
-contains the October build, with four changed footprints and an extra script state. Recorded test references use the
-digital executable with European data. The digital release supplies no data itself; the UK/US CD supplies an older
-data revision with English texts. See [sources.md](sources.md) for supported combinations.
+The converter supports the digital release and the CDs. Most CD executables contain the August build; the digital release
+and the late English CD contain the October build, with four changed footprints and an extra script state. Recorded test
+references use the digital executable with European data. The digital release supplies no data itself; the UK/US CD
+supplies an older data revision with English texts. See [sources.md](sources.md) for supported combinations.

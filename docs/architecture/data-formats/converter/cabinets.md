@@ -17,7 +17,7 @@ rest:
   in more than one group is ambiguous and refused (the language variants of `BeachLife.ini` live in each `Ess_*`
   group).
 
-The game files are the groups `EURO Comp` (European CD) and `UK Comp` (UK/US CD). Verified:
+The game files are the groups `EURO Comp` (European and French/German CD) and `UK Comp` (UK/US and late English CD). Verified:
 `obl-convert cabinet verify` passes on both CDs (337 and 305 stored files, about 12 s each in Debug), and the 201
 files extracted from `EURO Comp` match the reference installation's European data byte for byte.
 

@@ -609,7 +609,8 @@ private:
                 slots.ids[static_cast<size_t>(at)] = event;
             else if (at == kEventSlots)
                 slots.count = event;
-            // With more world events (the copies that have the aerobics show) the id lands past the count, where nothing reads it.
+            // With more world events (the copies that have the aerobics show) the id lands past the count and the building's
+            // CONSTRUCT line overwrites it: only the count remains.
             ++slots.count;
         } else if (f == "CONSTRUCT") {
             b.construct = value;

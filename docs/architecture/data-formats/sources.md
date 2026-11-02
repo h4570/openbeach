@@ -30,8 +30,9 @@ These hashes identify supported inputs; the importer keeps the matching table in
 | `cd-2002-08` | `2f56a5a52128909e211609cbdaadfb2fd67883869660663e909dbd430ff6a401` | 2008-07-09 (re-stamped) | UK/US CD |
 | `cd-2002-08` | `2b2aa38d36fe34a799df7a6207f03c21b21afd028ef9e5f3a98137fbe26d52c0` | 2002-08-17 | French/German CD |
 
-The CDs supply the same August game build for the tables the importer reads: the French/German executable differs from
-the European one only in its copy-protection sections, so its GUI tables and resources convert to the same files. The
+The CDs supply the same August game build for the tables the importer reads: the code and data sections of the
+French/German executable equal the European one's (only `.cms_d` and the bytes after the last section differ), and both
+convert to the same catalog, GUI tables and resources. The
 digital release, whose executable the late English CD also carries, supplies a later
 October build with four different footprint grids and one additional script state. Tables occupy different locations
 between builds; the converter locates them by content patterns ([converter/tables.md](converter/tables.md#executable-tables)).

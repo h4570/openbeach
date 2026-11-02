@@ -727,7 +727,8 @@ inline void AddBuildingData(WorldParams& p, const Env& env, int index, const cha
             d.m_Event[eventCount] = id;
         else if (eventCount == tables::kBuildingEventSlots)
             d.m_NumEvents = id;
-        // With more world events (the copies that have the aerobics show) the id lands past the count, where nothing reads it.
+        // With more world events (the copies that have the aerobics show) the id lands past the count and the building's
+        // CONSTRUCT line overwrites it: only the count remains.
         ++d.m_NumEvents;
     } else if (Is(keyword, "CONSTRUCT")) {
         Copy(d.m_Construct, value);
