@@ -851,9 +851,13 @@ OBL_TEST_CASE("convert.catalog_reader_refuses")
     OBL_CHECK(Contains(
             ParseError("\"TABLE_T\" \"T_CAPACITY\" \"2\" \"T_NUM_CHAIRPOS_PTS\" \"1\" \"T_CHAIRPOS_X\" \"1\" \"T_CHAIRPOS_Y\" \"1\""),
             "chair counts disagree"));
-    // Six events: the EVENT index would land past the building's count field.
-    OBL_CHECK(Contains(ParseError(base + "\"EVENT_A\" \"EVENT_B\" \"EVENT_C\" \"EVENT_D\" \"EVENT_E\" \"EVENT_F\" \"HUT_EVENT\" \"A\""),
-            "EVENT index past"));
+    // Six events: the EVENT index lands past the building's count field, so the line only counts.
+    BuildingList sixEvents;
+    std::string sixError;
+    const std::string six = base + "\"EVENT_A\" \"EVENT_B\" \"EVENT_C\" \"EVENT_D\" \"EVENT_E\" \"EVENT_F\" \"HUT_EVENT\" \"F\"";
+    OBL_REQUIRE(ParseBuildingList(six, sixEvents, sixError));
+    OBL_CHECK_EQ(sixEvents.events.size(), static_cast<size_t>(6));
+    OBL_CHECK(sixEvents.buildings[0].events == std::vector<int>({0}));
 
     // Keys that cannot become content keys.
     BuildingList list;

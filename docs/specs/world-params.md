@@ -95,7 +95,7 @@ modules look records up by key and read their fields. The file reader and the fi
   (`world_params_add.building_scalars_and_strings_land_in_the_fields`,
   `world_params_add.building_resets_the_default_beer_on_every_line`, `world_params_add.building_buildon_masks_and_errors`,
   `world_params_add.building_lists_with_running_counts`, `world_params_add.building_event_id_lands_at_the_global_event_count`,
-  `world_params_add.building_event_past_the_slots_is_fatal`,
+  `world_params_add.building_event_past_the_slots_only_counts`,
   `world_params_add.building_commodity_splits_the_value_string_in_place`,
   `world_params_add.building_animsprite_interleaves_the_coordinates`,
   `world_params_add.building_walkpoints_and_baseplates_allocate_by_count`).

@@ -17,6 +17,7 @@ constexpr KnownExe kKnownExes[] = {
         {"983c098f69314c142ac8fd0d74fa34d098a49bd59f1aed88fb67a525c4b7f9e9", ExeBuild::DigitalOct2002},
         {"bdbc06034f298aff45acb49c1c085c1e10ff676fb7d5ad08b99ea33e01e2dd94", ExeBuild::CdAug2002}, // European CD
         {"2f56a5a52128909e211609cbdaadfb2fd67883869660663e909dbd430ff6a401", ExeBuild::CdAug2002}, // UK/US CD
+        {"2b2aa38d36fe34a799df7a6207f03c21b21afd028ef9e5f3a98137fbe26d52c0", ExeBuild::CdAug2002}, // French/German CD
 };
 
 struct KnownData {

@@ -62,10 +62,11 @@ OBL_TEST_CASE("convert.sha256_fips_vectors")
 OBL_TEST_CASE("convert.identify_exe_and_data")
 {
     const auto supported = SupportedExes();
-    OBL_REQUIRE(supported.size() == 3);
+    OBL_REQUIRE(supported.size() == 4);
     OBL_CHECK(IdentifyExe(supported[0].sha256) == ExeBuild::DigitalOct2002);
     OBL_CHECK(IdentifyExe(supported[1].sha256) == ExeBuild::CdAug2002);
     OBL_CHECK(IdentifyExe(supported[2].sha256) == ExeBuild::CdAug2002);
+    OBL_CHECK(IdentifyExe(supported[3].sha256) == ExeBuild::CdAug2002);
     OBL_CHECK(!IdentifyExe(std::string(64, '0')).has_value());
     std::string uppercaseHash(supported[0].sha256);
     for (char& c : uppercaseHash)
