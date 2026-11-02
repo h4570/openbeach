@@ -58,10 +58,24 @@ function clearLine(id) {
     element(id).textContent = "";
 }
 
+// Texts mark emphasis as **bold**. Nodes are built, never parsed as HTML, so a translation cannot inject markup.
+function setRichText(node, value) {
+    if (!value.includes("**")) {
+        node.textContent = value;
+        return;
+    }
+    node.replaceChildren(...value.split("**").map((part, i) => {
+        if (i % 2 === 0) return part;
+        const strong = document.createElement("strong");
+        strong.textContent = part;
+        return strong;
+    }));
+}
+
 function applyPageLanguage(code) {
     pageLanguage = code;
     document.documentElement.lang = code;
-    for (const node of document.querySelectorAll("[data-t]")) node.textContent = text(node.dataset.t);
+    for (const node of document.querySelectorAll("[data-t]")) setRichText(node, text(node.dataset.t));
     for (const [id, {key, slots}] of shownLines) element(id).textContent = text(key, slots);
     if (lastProgress) showProgress(lastProgress);
 }
