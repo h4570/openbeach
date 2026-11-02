@@ -18,7 +18,7 @@ namespace {
 
 struct FakeEnv {
     std::vector<std::string> calls;
-    layout::World* world = nullptr;
+    world_data::World* world = nullptr;
     int arriveAtRoll = -1;
 
     void PostToBuildings(obl::messages::Message& message) { calls.push_back("buildings " + Describe(message)); }
@@ -39,16 +39,16 @@ struct FakeEnv {
     }
 };
 
-std::unique_ptr<layout::World> NewWorld(float previous, float current, int day = 5)
+std::unique_ptr<world_data::World> NewWorld(float previous, float current, int day = 5)
 {
-    auto world = std::make_unique<layout::World>();
+    auto world = std::make_unique<world_data::World>();
     world->m_lastGameDayTime = previous;
     world->m_gameDayTime = current;
     world->m_gameDay = day;
     return world;
 }
 
-std::vector<std::string> Run(layout::World& world)
+std::vector<std::string> Run(world_data::World& world)
 {
     FakeEnv env;
     env.world = &world;

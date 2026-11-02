@@ -6,9 +6,9 @@
 #include <cstdint>
 #include <cstring>
 
-namespace obl::layout {
+namespace obl::world_data {
 struct SerialStream;
-} // namespace obl::layout
+} // namespace obl::world_data
 namespace obl::script {
 struct ScriptValue;
 }

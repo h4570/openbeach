@@ -63,10 +63,10 @@
 namespace obl::world {
 namespace {
 
-using layout::World;
 using object::Building;
 using object::Guest;
 using script::ScriptValue;
+using world_data::World;
 
 // Types of a script value (Entity::getValue uses the same numbers).
 constexpr int32_t kByte = 0, kString = 1, kInt = 2, kFloat = 3;

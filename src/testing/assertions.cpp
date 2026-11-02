@@ -98,7 +98,7 @@ template<class Object, class Read> Probe ObjectProbe(Object* (*get)(), Read read
 // `Group` is the World state group that declares the field (world_state.h).
 template<class Group, class T> Probe WorldField(T Group::* field)
 {
-    return ObjectProbe(&game::GetWorld, [field](const layout::World& world) { return world.*field; });
+    return ObjectProbe(&game::GetWorld, [field](const world_data::World& world) { return world.*field; });
 }
 
 // The mapped background blocks of MapView (step 12 of the `MapView_*` plan): the block table flags and the contents of every mapped view,
@@ -132,7 +132,7 @@ bool MapBlocksProbe(double& out, MapBlocksValue value)
 
 const std::map<std::string, Probe>& Probes()
 {
-    using layout::World;
+    using world_data::World;
     static const std::map<std::string, Probe> probes = {
             {"hour", WorldField(&World::m_gameDayTime)},
             {"day", WorldField(&World::m_gameDay)},

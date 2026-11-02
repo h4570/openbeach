@@ -83,7 +83,7 @@ public:
     }
     const char* IslandKey(gui_variable::IslandText text) const override
     {
-        layout::World* world = game::GetWorld();
+        world_data::World* world = game::GetWorld();
         switch (text) {
         case gui_variable::IslandText::Title: return world->m_islandTitle.c_str();
         case gui_variable::IslandText::Area: return world->m_islandArea.c_str();
@@ -142,7 +142,7 @@ public:
     }
     int GuestFlow(gui_variable::GuestFlowField field, int type) const override
     {
-        const layout::World* world = game::GetWorld();
+        const world_data::World* world = game::GetWorld();
         using Field = gui_variable::GuestFlowField;
         switch (field) {
         case Field::TotalArrive: return world->m_totalGuestArrive[type];
@@ -233,7 +233,7 @@ public:
     static const tables::BuildingDef* BuildingAt(int id) { return game::GetWorldParams()->m_buildings.data() + id; }
     static const tables::SceneryDef* SceneryAt(int id) { return game::GetWorldParams()->m_scenery.data() + id; }
 
-    static float* MoneySlot(layout::World* world, gui_variable::MoneyField field)
+    static float* MoneySlot(world_data::World* world, gui_variable::MoneyField field)
     {
         using Field = gui_variable::MoneyField;
         switch (field) {
@@ -256,7 +256,7 @@ public:
         return &world->m_incomeToday;
     }
 
-    static int* CounterSlot(layout::World* world, gui_variable::WorldCounter counter)
+    static int* CounterSlot(world_data::World* world, gui_variable::WorldCounter counter)
     {
         using Counter = gui_variable::WorldCounter;
         switch (counter) {

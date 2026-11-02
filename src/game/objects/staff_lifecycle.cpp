@@ -22,7 +22,7 @@
 namespace obl::object {
 
 namespace {
-using namespace layout;
+using namespace world_data;
 using map::Grid;
 using object::Builder; // object_staff.h
 using object::Cleaner;

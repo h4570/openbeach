@@ -15,19 +15,19 @@ tables::SceneryDef* ImgSceneryDef(void* params, int id)
 }
 uint8_t ImgLocked(void* world, int id)
 {
-    return static_cast<layout::World*>(world)->BuildingLockedByTree(id);
+    return static_cast<world_data::World*>(world)->BuildingLockedByTree(id);
 }
 uint8_t ImgAllowed(void* world, int id)
 {
-    return static_cast<layout::World*>(world)->BuildingAllowed(id);
+    return static_cast<world_data::World*>(world)->BuildingAllowed(id);
 }
 int ImgFinished(void* world, int id)
 {
-    return static_cast<layout::World*>(world)->CountFinishedBuildings(id);
+    return static_cast<world_data::World*>(world)->CountFinishedBuildings(id);
 }
 int ImgTotal(void* world, int id)
 {
-    return static_cast<layout::World*>(world)->CountBuildings(id);
+    return static_cast<world_data::World*>(world)->CountBuildings(id);
 }
 void ImgSetMode(void* manager, int mode)
 {
@@ -86,7 +86,7 @@ struct ImageEnv : GameEnv {
     void DeallocateWords(void* block, uint32_t bytes) { ImgDeallocWords(block, bytes); }
     Widget* ConstructImage(void* memory, int x0, int y0, int x1, int y1, const char* graphic)
     {
-        return CallConstructImage(memory, x0, y0, x1, y1, graphic);
+        return ConstructImageWidget(memory, x0, y0, x1, y1, graphic);
     }
     void SetTooltip(Widget& w, const char* text) { w.SetTooltip(text); }
     void SetSprite(Widget& w, const char* name) { ImgSetSprite(&w, name); }

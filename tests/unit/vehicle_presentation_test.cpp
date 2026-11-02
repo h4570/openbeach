@@ -16,7 +16,7 @@
 
 namespace {
 namespace present = obl::vehicle::presentation;
-using namespace obl::layout;
+using namespace obl::world_data;
 using obl::object::Vehicle;
 using obl::ui::Sprite;
 using obl::ui::SpriteAnim;

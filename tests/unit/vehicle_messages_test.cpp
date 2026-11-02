@@ -18,7 +18,7 @@ using obl::messages::Message;
 using obl::object::Vehicle;
 namespace life = obl::vehicle::lifecycle;
 namespace msg = obl::vehicle::messages;
-using namespace obl::layout;
+using namespace obl::world_data;
 using enum obl::messages::MessageType;
 
 struct Sent {

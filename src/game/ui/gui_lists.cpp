@@ -140,7 +140,7 @@ void* __cdecl CallAllocateWords(size_t bytes)
     return ::operator new(bytes);
 }
 
-Widget* CallConstructImage(void* memory, int x0, int y0, int x1, int y1, const char* graphic)
+Widget* ConstructImageWidget(void* memory, int x0, int y0, int x1, int y1, const char* graphic)
 {
     return static_cast<Widget*>(ImageConstruct(static_cast<ui::GuiImage*>(memory), x0, y0, x1, y1, graphic));
 }
@@ -250,7 +250,7 @@ struct GameEnv {
     void* Alloc(size_t size) { return CallNew(size); }
     template<class T> T* NewRecord() { return NewGuiRecord<T>(); }
     void* AllocWords(size_t bytes, size_t objectBytes) { return objectBytes > 0x80 ? CallNew(bytes) : CallAllocateWords(bytes); }
-    Widget* ConstructImage(void* m, int x, int y, const char* graphic) { return CallConstructImage(m, x, y, x, y, graphic); }
+    Widget* ConstructImage(void* m, int x, int y, const char* graphic) { return ConstructImageWidget(m, x, y, x, y, graphic); }
     Widget* ConstructButton(void* m, int x, int y, const char* graphic)
     {
         return CallConstructButton(m, x, y, x, y, graphic, "None", "NONE", "NONE");
@@ -388,7 +388,7 @@ void GuiListOnItemSelected(List* list, ListItem* item)
 
 namespace listbox {
 
-// Group 3: lifecycle and the row API. Each facade counts once, then runs the pure logic with the game side (GameEnv).
+// Lifecycle and the row API. Each facade counts once, then runs the pure logic with the game side (GameEnv).
 ui::GuiListBox* Construct(ui::GuiListBox* list, int32_t x0, int32_t y0, int32_t x1, int32_t y1, int32_t barX0, int32_t barY0, int32_t barX1,
         int32_t barY1, const char* name, int32_t rowHeight, int32_t visibleRows)
 {
@@ -444,7 +444,7 @@ uint8_t PollRowButton(ui::GuiListBoxData* list, int32_t row, int32_t* value)
     return gui_lists::PollRowButton(*list, row, value, env);
 }
 
-// Group 4: selection and scrolling. SelectRow is also what the logic calls on the game side (GameEnv::SelectRow).
+// Selection and scrolling. SelectRow is also what the logic calls on the game side (GameEnv::SelectRow).
 void SelectRow(ui::GuiListBoxData* list, uint32_t row, int32_t replace)
 {
     g_counter.Count();
@@ -470,7 +470,7 @@ void UpdateScrollBar(ui::GuiListBoxData* list)
     gui_lists::UpdateScrollBar(*list, env);
 }
 
-// Group 5: the list box's overrides of the common widget virtuals (its virtual table calls these, and so do the callers that use the
+// The list box's overrides of the common widget virtuals (its virtual table calls these, and so do the callers that use the
 // facade).
 void Update(ui::GuiListBoxData* list, uint32_t dtBits)
 {

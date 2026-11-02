@@ -25,7 +25,7 @@
 
 using namespace obl;
 using namespace obl::world_construct_subsystems;
-using layout::World;
+using world_data::World;
 
 namespace {
 

@@ -14,7 +14,7 @@
 namespace obl::game_parameters_construct {
 
 struct Env {
-    // The game's FatalErrorF2(format, key, path); it ends the process, so Construct stops at the first call.
+    // The fatal error with its format, key and path; it ends the process, so Construct stops at the first call.
     void (*fatal)(const char* format, const char* key, const char* path);
     // The game's operator new (the node and the 0x100-byte copy of a string value).
     void* (*allocate)(size_t bytes);

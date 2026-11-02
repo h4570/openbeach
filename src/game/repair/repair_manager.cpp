@@ -19,10 +19,10 @@
 namespace obl::repair {
 namespace {
 
-using layout::World;
 using object::Prop;
 using object::Scenery;
 using repair::PlantInfo;
+using world_data::World;
 using RepairManager = repair::Manager;
 
 constexpr char kMechanicClass = 8; // ObjectType::Mechanic

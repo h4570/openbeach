@@ -26,7 +26,7 @@
 namespace obl::world {
 namespace {
 
-using layout::World;
+using world_data::World;
 using world_view::Panel;
 
 // Call counters (`call-report <name>`).

@@ -82,7 +82,7 @@ void CheckEngine(const std::string& text, const Json& doc, const std::vector<obl
     Env env(text);
     env.buildings = buildings;
     const auto header = obl::world_construct_pis::ReadHeader(env);
-    auto world = std::make_unique<obl::layout::World>();
+    auto world = std::make_unique<obl::world_data::World>();
     obl::world_construct_pis::ReadTexts(*world, env);
     obl::world_construct_pis::ReadBuildings(*world, env);
     obl::world_construct_pis::ReadMessages(env);
@@ -299,7 +299,7 @@ OBL_TEST_CASE("data.scenario_load_matches_engine")
             Env engine(text);
             engine.buildings = catalog.buildings;
             const auto header = obl::world_construct_pis::ReadHeader(engine);
-            auto reference = std::make_unique<obl::layout::World>();
+            auto reference = std::make_unique<obl::world_data::World>();
             obl::world_construct_pis::ReadTexts(*reference, engine);
             obl::world_construct_pis::ReadMessages(engine);
             obl::world_construct_pis::ReadBuildings(*reference, engine);
@@ -307,7 +307,7 @@ OBL_TEST_CASE("data.scenario_load_matches_engine")
             // The loader: the same steps from the converted scenario.
             Env loaded(text);
             loaded.buildings = catalog.buildings;
-            auto world = std::make_unique<obl::layout::World>();
+            auto world = std::make_unique<obl::world_data::World>();
             obl::world_construct_scenario::ApplyTexts(*world, setup, loaded);
             obl::world_construct_scenario::ApplyMessages(setup, loaded);
             obl::world_construct_scenario::ApplyBuildings(*world, setup, loaded);

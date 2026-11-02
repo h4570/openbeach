@@ -31,7 +31,7 @@ using game::GuestPopulation;
 using game::Rand;
 
 namespace {
-using namespace layout;
+using namespace world_data;
 using obl::object::Guest;
 using ui::SpriteInstance;
 using namespace tables;

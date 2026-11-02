@@ -65,9 +65,9 @@ using Cursor = SoftwareCursor;
 struct Input;
 } // namespace obl::ui
 
-namespace obl::layout {
+namespace obl::world_data {
 using MapView = ui::MapView; // the map view
-} // namespace obl::layout
+} // namespace obl::world_data
 
 namespace obl::world {
 
@@ -282,10 +282,10 @@ struct World : Subsystems, Clock, Scenario, Texts, Boats, Power, Counters, Finan
 } // namespace obl::world
 
 // Compatibility names for readers whose module has not migrated its World-facing signatures yet.
-namespace obl::layout {
+namespace obl::world_data {
 using player::Player;
 using world::CircuitPoint;
 using world::World;
 using world_script::WorldScript;
 using world_script_host::WorldScriptHost;
-} // namespace obl::layout
+} // namespace obl::world_data

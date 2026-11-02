@@ -19,7 +19,7 @@ namespace obl::test {
 bool ExecuteFeedbackCommand(const std::string& name, const std::vector<std::string>& args)
 {
     if (name != "feedback-report" && name != "feedback-fixture") return false;
-    layout::World* world = game::GetWorld();
+    world_data::World* world = game::GetWorld();
     if (!world || !world->m_feedbackManager) {
         OBL_LOG("autotest: FAILED %s: no world", name.c_str());
         return true;

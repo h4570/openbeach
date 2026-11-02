@@ -45,10 +45,10 @@ namespace {
 
 using object::Guest;
 using MessageHandler = messages::Handler;
-using layout::World;
 using weather::RainDropBuffer;
 using weather::Weather;
 using weather::WeatherEntry;
+using world_data::World;
 
 const auto kApplyModifiers = &object::GuestApplyWeatherModifiers;
 const auto kTilePosition = [](object::Base* object, int* out) { return object->GetTilePosition(out); };

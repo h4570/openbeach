@@ -17,7 +17,7 @@
 #include <cwchar>
 #include <string>
 
-// Building::GetVariableText, every key (group L1). The Env is the game's side:
+// Building::GetVariableText, every key. The Env is the game's side:
 //   const wchar_t* Lookup(const char* key)               text lookup of the text table
 //   const char* HoursName(int hours)                     WorldParams name of an opening-hours set
 //   void PrintInt(wchar_t*, const wchar_t* fmt, int)     the game's own (msvcrt) swprintf

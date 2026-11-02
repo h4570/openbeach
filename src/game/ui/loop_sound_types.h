@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <list>
 
-// g_LoopSounds: world sounds that follow objects (loops) and one-shot positional sounds from Sounds.dat sprites.
+// LoopSounds: world sounds that follow objects (loops) and one-shot positional sounds from Sounds.dat sprites.
 // Both lists hold heap records in arrival order.
 namespace obl::audio {
 

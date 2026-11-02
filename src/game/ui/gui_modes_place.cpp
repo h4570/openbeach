@@ -48,7 +48,7 @@
 
 namespace obl::gui {
 namespace {
-using namespace layout;
+using namespace world_data;
 using messages::Message;
 using ui::Sprite;
 using ui::SpriteBank;

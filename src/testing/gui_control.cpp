@@ -24,7 +24,7 @@
 namespace obl::test {
 namespace {
 
-using namespace layout;
+using namespace world_data;
 using namespace ui;
 using namespace gui;
 

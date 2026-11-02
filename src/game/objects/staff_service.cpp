@@ -39,7 +39,7 @@ using game::GetWorld;
 using game::Rand;
 
 namespace {
-using namespace layout;
+using namespace world_data;
 using messages::Message;
 using object::ServiceStaff;
 using ui::SpriteInstance;
@@ -94,7 +94,7 @@ char RunUpdate(ServiceStaff* employee)
     return svc::Update(*employee, env);
 }
 
-// ---- ReceiveMessage (group G1b) ----------------------------------------------------------------------------------------------------
+// ---- ReceiveMessage ----------------------------------------------------------------------------------------------------
 
 test::CallCounter g_receive("objects.service-staff-receive-message");
 
@@ -120,7 +120,7 @@ uint8_t RunReceive(ServiceStaff* employee, Message* message)
     return svc::ReceiveMessage(*employee, *message, env);
 }
 
-// ---- SetHome (group G1c) -----------------------------------------------------------------------------------------------------------
+// ---- SetHome -----------------------------------------------------------------------------------------------------------
 
 test::CallCounter g_setHome("objects.service-staff-set-home");
 

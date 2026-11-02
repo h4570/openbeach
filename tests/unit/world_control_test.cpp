@@ -15,9 +15,9 @@ using namespace obl::world_control;
 
 namespace {
 
-std::unique_ptr<layout::World> NewWorld()
+std::unique_ptr<world_data::World> NewWorld()
 {
-    auto world = std::make_unique<layout::World>();
+    auto world = std::make_unique<world_data::World>();
     return world;
 }
 

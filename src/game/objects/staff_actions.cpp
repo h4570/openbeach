@@ -25,7 +25,7 @@ using game::GetObjectManager;
 using game::GetWorld;
 
 namespace {
-using namespace layout;
+using namespace world_data;
 using messages::Message;
 using object::Builder; // object_staff.h
 using object::Cleaner;

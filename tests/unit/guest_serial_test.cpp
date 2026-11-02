@@ -8,7 +8,7 @@
 
 namespace {
 using namespace obl::unit;
-namespace L = obl::layout;
+namespace L = obl::world_data;
 // Every entry of Guest's field table against the converter's bridge table (type 3): each key is one the converter maps an
 // old label onto. The attached sprite's presence flag is dropped and its group carries the sprite's name.
 struct GuestBridgeKeys {

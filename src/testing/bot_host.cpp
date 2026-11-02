@@ -196,7 +196,7 @@ void TrackVarietyDrops()
 {
     static const bool enabled = std::getenv("OBL_BOT_OPINIONS") != nullptr;
     if (!enabled) return;
-    const layout::World* world = game::GetWorld();
+    const world_data::World* world = game::GetWorld();
     if (!world || !world->m_objectManager) return;
     static std::map<uint32_t, std::pair<float, float>> last;
     const object::Manager* objects = world->m_objectManager;
@@ -227,7 +227,7 @@ void TrackVarietyDrops()
 
 void SampleIfNewHour(uint32_t tick, SampleClock& last)
 {
-    const layout::World* world = game::GetWorld();
+    const world_data::World* world = game::GetWorld();
     if (!world || !world->m_player) return;
     const int hour = world_queries::GetHour(*world);
     if (world->m_gameDay == last.day && hour == last.hour) return;
@@ -362,7 +362,7 @@ bot::WorldView CaptureWorldView(uint32_t tick)
 {
     bot::WorldView view;
     view.tick = tick;
-    const layout::World* world = game::GetWorld();
+    const world_data::World* world = game::GetWorld();
     if (!world) return view;
     view.day = world->m_gameDay;
     view.hour = world->m_gameDayTime;
@@ -391,7 +391,7 @@ bot::WorldView CaptureWorldView(uint32_t tick)
     for (int32_t i = 0; i < view.objectiveCount; ++i) view.objectives[i] = static_cast<int32_t>(world->m_objectiveStatus[i]);
     view.outcome = game::GetScenarioOutcome();
 
-    auto* mutableWorld = const_cast<layout::World*>(world); // the queries take `this` non-const; they only read
+    auto* mutableWorld = const_cast<world_data::World*>(world); // the queries take `this` non-const; they only read
     object::Manager* objects = world->m_objectManager;
     for (uint32_t i = 0; i < objects->m_buildings.size(); ++i) {
         const auto* building = static_cast<const object::Building*>(objects->m_buildings[i]);
@@ -566,7 +566,7 @@ int RunBot(game::Game& game)
            "ticks-per-s=%.0f",
             tick, std::string(bot::OutcomeName(outcome)).c_str(), end.day, end.hour, end.cash, end.guests, end.rating, submitted,
             after.applied - before.applied, after.rejected - before.rejected, EndHash().c_str(), ms, ms > 0 ? tick * 1000.0 / ms : 0.0);
-    if (const layout::World* world = game::GetWorld())
+    if (const world_data::World* world = game::GetWorld())
         Report("leavers unhappy=%d departed=%d", world->m_totalGuestUnhappyDepart[0] + world->m_totalGuestUnhappyDepart[1],
                 world->m_totalGuestDepart[0] + world->m_totalGuestDepart[1]);
     const bool pass = outcome == run->expect;

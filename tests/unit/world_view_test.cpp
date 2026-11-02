@@ -20,7 +20,7 @@ struct Fixture;
 Fixture* g_fixture = nullptr; // the Env reads the camera and the cursor of the current fixture
 
 struct Fixture {
-    std::unique_ptr<layout::World> world = std::make_unique<layout::World>();
+    std::unique_ptr<world_data::World> world = std::make_unique<world_data::World>();
     ui::MapView* view = new ui::MapView(); // value-initialized: zeroed fields, an empty burn queue
     ui::Cursor cursor{};
     ui::ViewState state; // the map view's input and drawing state

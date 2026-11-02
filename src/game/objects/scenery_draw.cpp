@@ -22,7 +22,7 @@ using game::GetWorld;
 using ui::GetMapView;
 
 namespace {
-using namespace layout;
+using namespace world_data;
 using object::Scenery;
 using ui::SpriteInstance;
 test::CallCounter g_counter("objects.scenery-draw");

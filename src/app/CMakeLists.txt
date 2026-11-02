@@ -371,8 +371,8 @@ add_library(openbeach OBJECT
     ../testing/mp3_scan.h
     ../testing/image_load.cpp
     ../testing/image_load.h
-    ../testing/layout_world.cpp
-    ../testing/layout_world.h
+    ../testing/world_dump.cpp
+    ../testing/world_dump.h
     ../testing/gui_capture.cpp
     ../testing/gui_capture.h
     ../testing/gui_control.cpp

@@ -20,7 +20,7 @@ using obl::messages::Message;
 namespace {
 
 struct Slab {
-    std::unique_ptr<layout::World> world = std::make_unique<layout::World>();
+    std::unique_ptr<world_data::World> world = std::make_unique<world_data::World>();
     std::unique_ptr<world_script::WorldScript> script = std::make_unique<world_script::WorldScript>();
     object::Base object{};
 

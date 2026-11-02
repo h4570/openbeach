@@ -36,7 +36,7 @@ std::vector<object::Base*> CleaningObjects(const object::Manager& objects, int k
 bool ExecuteCleaningCommand(const std::string& name, const std::vector<std::string>& args)
 {
     if (name != "cleaning-report" && name != "cleaning-fixture") return false;
-    layout::World* world = game::GetWorld();
+    world_data::World* world = game::GetWorld();
     object::Manager* objects = game::GetObjectManager();
     if (!world || !objects || !world->m_cleaningManager) {
         OBL_LOG("autotest: FAILED %s: no world", name.c_str());

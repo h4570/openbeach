@@ -297,7 +297,7 @@ void PostMessage(Guest& guest, int type, int flags, int data)
 
 bool RunCheckBedTime(Guest& guest)
 {
-    const layout::World* world = GetWorld();
+    const world_data::World* world = GetWorld();
     if (!guest_lifecycle::BedTimeProceeds(guest.m_WakeTime, guest.m_BedTime, world->m_gameDayTime, world->m_gameDay)) return false;
     if (guest.m_NightsToStay == 0) return false;
     if (--guest.m_NightsToStay == 0) guest.m_TimeToLeave = guest_lifecycle::TimeToLeave(Rand(), guest.m_WakeTime);
@@ -325,7 +325,7 @@ bool RunCheckBedTime(Guest& guest)
 
 bool RunCheckLeaveResort(Guest& guest)
 {
-    const layout::World* world = GetWorld();
+    const world_data::World* world = GetWorld();
     switch (guest_lifecycle::LeaveDecision(
             guest.m_happiness, guest.m_NightsToStay, guest.m_TimeToLeave, world->m_gameDayTime, guest.m_souvenirsDecided != 0)) {
     case guest_lifecycle::LeaveAction::Unhappy:

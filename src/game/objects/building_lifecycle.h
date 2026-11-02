@@ -523,7 +523,7 @@ template<class Env> bool WaitForBoat(Env& env, object::Building& building, const
     return moveGuest;
 }
 
-// ---- ReceiveMessage group 3: guests and goods --------------------------------------------------------------------------------------
+// ---- ReceiveMessage: guests and goods --------------------------------------------------------------------------------------
 //
 // MT_LOOK_AROUND (0x54), MT_COMMOD_QUALITY (0x32) and MT_GUEST_SERVED (0x53). The building tells a guest that it can be served with MT_IM_READY (0x1e:
 // sender = the building, data = the id of whoever does the serving, floatData = the price of the good the guest asked for; the guest reads them in its
@@ -697,7 +697,7 @@ template<class Env> GuestServedReport GuestServed(Env& env, object::Building& bu
     return report;
 }
 
-// ---- ReceiveMessage group 4a: MT_IM_READY ---------------------------------------------------------------------------------------
+// ---- ReceiveMessage: MT_IM_READY ---------------------------------------------------------------------------------------
 //
 // MT_IM_READY (0x1e) as the building gets it: a guest has reached the place where it is served (sender = the guest, flags = the slot of the good it
 // wants, data = the id of whoever serves it: the building itself or a member of its staff / a vehicle). The building books the sale and sends the guest
@@ -744,7 +744,7 @@ inline messages::Message ReadyMessage(
     return message;
 }
 
-// ---- ReceiveMessage group 4b: MT_REQUEST_COMMOD -------------------------------------------------------------------------------
+// ---- ReceiveMessage: MT_REQUEST_COMMOD -------------------------------------------------------------------------------
 
 struct RequestCommodReport {
     RentalGood rental = RentalGood::None;
@@ -969,7 +969,7 @@ template<class Env> ImReadyReport ImReady(Env& env, object::Building& building, 
     return report;
 }
 
-// ---- ReceiveMessage group 5: the guest's answer to the price (PRICE_OK, PRICE_NOT_OK) and the end of a job on the base plate -----------------------------
+// ---- ReceiveMessage: the guest's answer to the price (PRICE_OK, PRICE_NOT_OK) and the end of a job on the base plate -----------------------------
 //
 // REQUEST_COMMOD quoted the price (and, for the rental goods, took one piece of the stock); the guest answers with MT_PRICE_OK or MT_PRICE_NOT_OK.
 

@@ -42,7 +42,7 @@ constexpr float kOpinionPeriod = 2.0f; // the guest asks itself for the next upd
 
 GuestOpinionWorld OpinionWorld()
 {
-    const layout::World* world = GetWorld();
+    const world_data::World* world = GetWorld();
     return {world->m_scenicVal, static_cast<uint32_t>(world->m_numLitter),
             reinterpret_cast<const uint32_t*>(GuestAttractionCounts().data()), GuestPopulation()};
 }

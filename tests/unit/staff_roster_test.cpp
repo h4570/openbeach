@@ -14,7 +14,7 @@
 #include <memory>
 
 using namespace obl;
-using namespace obl::layout;
+using namespace obl::world_data;
 using namespace obl::tables;
 
 namespace {

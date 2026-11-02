@@ -122,7 +122,7 @@ void SetNight(int night)
 {
     static_cast<audio::MusicPlayer*>(MusicPlayerOf())->SetNight(night);
 }
-void WorldUpdate(layout::World* world)
+void WorldUpdate(world_data::World* world)
 {
     world::Update(*world);
 }
@@ -383,7 +383,7 @@ void* CreateSprite(const char* name)
 void ArrivalOfGuests(WorldTestState* state, Arrival& arrival)
 {
     g_arrivals.Count();
-    layout::World* world = GetWorld();
+    world_data::World* world = GetWorld();
     map::Grid* grid = GetGrid();
     tables::WorldParams* params = GetWorldParams();
     object::Manager* objects = GetObjectManager();
@@ -468,7 +468,7 @@ void ArrivalOfGuests(WorldTestState* state, Arrival& arrival)
 
 int UpdateWorld(WorldTestState* state)
 {
-    layout::World* world = GetWorld();
+    world_data::World* world = GetWorld();
     (static_cast<ui::SpriteBank*>(SpriteBank()))->UnloadStale(world->m_gameTime);
     if (state->m_updateSuspended) return 0;
     WorldUpdate(state->m_world.get());

@@ -16,9 +16,9 @@
 namespace obl::messages {
 namespace {
 
-using layout::World;
 using messages::Handler;
 using messages::Message;
+using world_data::World;
 namespace om = obl::object_manager;
 
 // Call counters (`call-report <name>`).

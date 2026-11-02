@@ -38,8 +38,8 @@
 namespace obl::world {
 namespace {
 
-using layout::World;
 using object::Building;
+using world_data::World;
 
 // ---- world::RollDailyStats --------------------------------------------------------------------------------------------
 

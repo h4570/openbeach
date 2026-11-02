@@ -183,7 +183,7 @@ void Litter(Guest& guest)
 {
     const char* type = guest_lookup::LitterType(guest.m_CurrAnimation, [] { return Rand(); });
     if (!type) return;
-    layout::World* world = GetWorld();
+    world_data::World* world = GetWorld();
     if (!world->m_allowLitter) return;
     world_script::ScriptPlacement placement{};
     std::strcpy(placement.m_name, type);

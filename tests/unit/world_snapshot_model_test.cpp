@@ -20,7 +20,7 @@
 
 using obl::WorldSnapshot;
 namespace ws = obl::world_snapshot;
-namespace layout = obl::layout;
+namespace world_data = obl::world_data;
 namespace object = obl::object;
 
 OBL_TEST_CASE("world_snapshot_model.typed_records_keep_the_save_tags")
@@ -65,7 +65,7 @@ OBL_TEST_CASE("world_snapshot_model.typed_records_keep_the_save_tags")
 
 OBL_TEST_CASE("world_snapshot_model.player_and_path")
 {
-    layout::Player player{};
+    world_data::Player player{};
     player.m_name = {'A', 'B'};
     player.m_cash = 100.0f;
     WorldSnapshot s;
@@ -111,7 +111,7 @@ OBL_TEST_CASE("world_snapshot_model.grid_areas_then_cells")
 
 OBL_TEST_CASE("world_snapshot_model.world_fields")
 {
-    auto world = std::make_unique<layout::World>();
+    auto world = std::make_unique<world_data::World>();
     world->m_mapId[0] = 'm';
     world->m_gameDay = 3;
     world->m_boatList[0] = 0x12345678; // a raw pointer in the save file, never in the snapshot

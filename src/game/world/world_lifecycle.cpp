@@ -43,7 +43,7 @@
 namespace obl::world {
 namespace {
 
-using layout::World;
+using world_data::World;
 namespace save = world_save;
 
 // Call counters (`call-report <name>`).

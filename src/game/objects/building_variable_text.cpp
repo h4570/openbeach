@@ -65,7 +65,7 @@ struct GameEnv {
     int Hour() { return GetWorld()->Hour(); }
     float OpeningStart(int set) { return GetWorldParams()->m_openingHours[set].m_open; }
     float OpeningEnd(int set) { return GetWorldParams()->m_openingHours[set].m_close; }
-    const layout::World& GameWorld() { return *GetWorld(); }
+    const world_data::World& GameWorld() { return *GetWorld(); }
     float BuildProgress(int id) { return construction::runtime::BuildProgress(GetWorld()->m_constructionManager, id); }
     float DemolishProgress(int id) { return construction::runtime::DemolishProgress(GetWorld()->m_constructionManager, id); }
     bool AreaOpen(int kind, int area) { return GetGrid()->IsAreaOpen(kind, area); }

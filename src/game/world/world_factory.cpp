@@ -49,7 +49,7 @@
 namespace obl::world {
 namespace {
 
-using layout::World;
+using world_data::World;
 namespace fields = world_construct;
 namespace pis = world_construct_pis;
 namespace subsystems = world_construct_subsystems;

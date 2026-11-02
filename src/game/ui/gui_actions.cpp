@@ -56,7 +56,7 @@ namespace {
 using namespace gui_actions;
 
 test::CallCounter g_counter("ui.gui-actions"); // call counter
-const layout::World* g_refreshWorld = nullptr;
+const world_data::World* g_refreshWorld = nullptr;
 uint32_t g_refreshTick = 0;
 
 ui::GuiManager* Gui()

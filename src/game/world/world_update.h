@@ -13,7 +13,7 @@ void UpdateBuildingTotalsDirect(void* world);
 
 // The entry points our callers use; each counts
 // `<name>` like the other entry points.
-void UpdateBuildingTotals(layout::World& world);
-void UpdateDayCycle(layout::World& world);
+void UpdateBuildingTotals(world_data::World& world);
+void UpdateDayCycle(world_data::World& world);
 
 } // namespace obl::world

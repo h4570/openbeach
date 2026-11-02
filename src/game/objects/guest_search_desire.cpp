@@ -93,7 +93,7 @@ struct GameEnv {
     void BadVisitSound() { GuestBadVisitSound(guest); }
     const float* FindSunbathePoint() { return g_guestSeams.findSunbathePoint(&guest); }
     const float* FindSwimPoint(float x, float y, float z) { return g_guestSeams.findSwimPoint(x, y, z); }
-    const float* RandomWalkPoint() { return layout::World::RandomWalkPoint(walkPoint); }
+    const float* RandomWalkPoint() { return world_data::World::RandomWalkPoint(walkPoint); }
     bool SouvenirShopAllowed()
     {
         const int id = world::world_params::GetBuildingId(GetWorldParams(), "SOUVSHOP");

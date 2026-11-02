@@ -22,7 +22,7 @@ using game::GetWorld;
 using game::GetWorldParams;
 
 namespace {
-using namespace layout;
+using namespace world_data;
 using messages::Message;
 using ui::SpriteInstance;
 using enum messages::MessageType;

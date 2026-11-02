@@ -43,9 +43,9 @@
 namespace obl::world {
 namespace {
 
-using layout::World;
 using messages::Message;
 using object::StaffCreateParams;
+using world_data::World;
 
 constexpr size_t kStaffFactories = 6;
 

@@ -15,9 +15,9 @@
 namespace obl::world {
 namespace {
 
-using layout::World;
 using object::Building;
 using object::ObjectType;
+using world_data::World;
 
 // Call counters (`call-report <name>`); `.deleted` counts the objects world::ProcessDeletedObjects removed.
 test::CallCounter g_updateCalls("world.update-objects");

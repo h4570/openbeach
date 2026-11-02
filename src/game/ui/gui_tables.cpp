@@ -436,7 +436,7 @@ OBL_COLLECT_FACADE(UpdateBuildingCommodities, CollectCommodities)
 OBL_COLLECT_FACADE(UpdateStaff, CollectStaff)
 #undef OBL_COLLECT_FACADE
 
-// Group 5: the table frame. GuiTable's virtual functions forward to these, so each virtual call counts once.
+// The table frame. GuiTable's virtual functions forward to these, so each virtual call counts once.
 ui::GuiTable* Construct(ui::GuiTable* table, int32_t x0, int32_t y0, int32_t x1, int32_t y1, int32_t barX0, int32_t barY0, int32_t barX1,
         int32_t barY1, const char* name, int32_t rowHeight, uint32_t limit, uint8_t autoSelect)
 {

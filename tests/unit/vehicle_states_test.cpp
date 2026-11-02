@@ -23,7 +23,7 @@ using obl::object::Vehicle;
 using obl::tables::VehicleDef;
 namespace life = obl::vehicle::lifecycle;
 namespace msg = obl::vehicle::messages;
-using namespace obl::layout;
+using namespace obl::world_data;
 using obl::messages::Message;
 using enum obl::messages::MessageType;
 using namespace obl::tables;

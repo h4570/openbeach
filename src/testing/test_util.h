@@ -8,7 +8,7 @@
 // Access to game objects shared by the scripted-test modules.
 namespace obl::test {
 
-inline layout::World* World()
+inline world_data::World* World()
 {
     return game::GetWorld();
 }

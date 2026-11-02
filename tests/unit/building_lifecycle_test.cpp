@@ -304,8 +304,8 @@ struct Site {
     }
 
     // MT_IM_READY: the world's books, the key tables, the water cleaners, the beer table and the game's random numbers
-    std::unique_ptr<layout::World> gameWorld = std::make_unique<layout::World>();
-    layout::Player player{};
+    std::unique_ptr<world_data::World> gameWorld = std::make_unique<world_data::World>();
+    world_data::Player player{};
     float eventCost = 0.75f;
     std::vector<int32_t> familyOfCommodity; // indexed by the commodity id
     std::vector<object::Base*> cleaners;
@@ -316,7 +316,7 @@ struct Site {
     uint32_t rating = 50;
     std::vector<int> rands; // what rand() gives, in order
     size_t randsUsed = 0;
-    layout::World& GameWorld()
+    world_data::World& GameWorld()
     {
         Note("world");
         gameWorld->m_player.reset(&player);
@@ -1222,7 +1222,7 @@ OBL_TEST_CASE("building_lifecycle.wait_for_boat_queues_the_guest_and_walks_it_ex
     }
 }
 
-// ---- group 3: guests and goods -----------------------------------------------------------------------------------------------------------
+// ---- guests and goods -----------------------------------------------------------------------------------------------------------
 
 OBL_TEST_CASE("building_lifecycle.look_around_below_the_limit_does_nothing")
 {
@@ -1560,7 +1560,7 @@ OBL_TEST_CASE("building_lifecycle.ready_books_the_sale_in_the_building_the_world
     s.def->m_Category = 1;
     s.building->m_incomeToday = 10.0f;
     s.building->m_costToday = 4.0f;
-    layout::World& w = s.GameWorld();
+    world_data::World& w = s.GameWorld();
     w.m_incomeToday = 100.0f;
     w.m_retailIncomeToday = 20.0f;
     w.m_costsToday = 50.0f;
@@ -1590,7 +1590,7 @@ OBL_TEST_CASE("building_lifecycle.ready_sorts_the_income_by_the_category_of_the_
         s.def->m_Category = c.category;
         s.SetKey(c.name);
         ImReady(s, *s.building, Ready(kGuest, 0, kStaffMember)); // price 1
-        const layout::World& w = *s.gameWorld;
+        const world_data::World& w = *s.gameWorld;
         OBL_CHECK_EQ(w.m_incomeToday, 1.0f);
         OBL_CHECK_EQ(w.m_accomIncomeToday, c.where == 1 ? 1.0f : 0.0f);
         OBL_CHECK_EQ(w.m_attractIncomeToday, c.where == 2 ? 1.0f : 0.0f);
@@ -2005,7 +2005,7 @@ OBL_TEST_CASE("building_lifecycle.request_plain_goods_quote_the_requested_slot_w
     }
 }
 
-// ---- group 5: PRICE_OK, PRICE_NOT_OK, BUILDERS_LEFT_BASEPLATE -----------------------------------------------------------------------------
+// ---- PRICE_OK, PRICE_NOT_OK, BUILDERS_LEFT_BASEPLATE -----------------------------------------------------------------------------
 
 namespace {
 messages::Message PriceAnswer(int type, int32_t flags, int32_t data)

@@ -18,7 +18,7 @@
 #include <array>
 #include <memory>
 
-using namespace obl::layout;
+using namespace obl::world_data;
 using enum obl::messages::MessageType;
 using obl::messages::kMessageTypeCount;
 
@@ -32,7 +32,7 @@ struct ProbeState : obl::game::GameState {
 };
 } // namespace
 
-OBL_TEST_CASE("layout.current_state_index")
+OBL_TEST_CASE("state_helpers.current_state_index")
 {
     obl::game::Game game{};
     for (auto& state : game.m_states) state = std::make_unique<ProbeState>();
@@ -41,12 +41,12 @@ OBL_TEST_CASE("layout.current_state_index")
     OBL_CHECK_EQ(obl::game::CurrentStateIndex(game), 5);
 }
 
-OBL_TEST_CASE("layout.message_type_count")
+OBL_TEST_CASE("state_helpers.message_type_count")
 {
     OBL_CHECK_EQ(kMessageTypeCount, MT_LEAVE_BUILDING + 1);
 }
 
-OBL_TEST_CASE("layout.grid_cells_and_areas")
+OBL_TEST_CASE("state_helpers.grid_cells_and_areas")
 {
     // Cell lookup wraps both coordinates modulo the dimensions, like the grid's tile-index and tile-object-list lookups.
     Grid grid{};

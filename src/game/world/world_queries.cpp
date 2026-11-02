@@ -21,8 +21,8 @@
 
 namespace obl::world {
 namespace {
-using layout::World;
 using object::Building;
+using world_data::World;
 // Call counters (`call-report world.hour`, ...).
 test::CallCounter g_queries[] = {
         test::CallCounter("world.hour"),

@@ -64,7 +64,7 @@ pure audio logic tests still run. Plain CI jobs check both configurations; a lat
 with `-DOBL_UNIT_SDL=ON` in the same build directory.
 
 To measure the same arithmetic as MSVC the Linux build uses scalar AVX2 math (`-march=haswell -mfpmath=sse`), no
-contraction (`-ffp-contract=off`) and handles the 4-byte `wchar_t` (text in game layouts uses `layout::Char16`; never assume
+contraction (`-ffp-contract=off`) and handles the 4-byte `wchar_t` (text in game layouts uses `world_data::Char16`; never assume
 `sizeof(wchar_t) == 2` in logic code).
 
 Sanitizer triage: a bug in a test is fixed in `tests/unit/`; a bug in game logic becomes an issue; a documented

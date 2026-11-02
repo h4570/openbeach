@@ -20,10 +20,10 @@ struct Guest;
 namespace obl::object {
 struct Base;
 } // namespace obl::object
-namespace obl::layout {
+namespace obl::world_data {
 using tables::BuildingDef;
 using Message = messages::Message;
-} // namespace obl::layout
+} // namespace obl::world_data
 
 namespace obl::object {
 

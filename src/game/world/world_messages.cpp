@@ -18,7 +18,7 @@ namespace {
 
 using messages::Message;
 using MessageHandler = messages::Handler;
-using layout::World;
+using world_data::World;
 
 // The game side of the Env contract in src/game/world/world_post_message.h.
 class GameEnv {

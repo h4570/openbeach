@@ -8,7 +8,7 @@
 #include <cstdint>
 #include <cstring>
 
-// Mover accessors and setters (group A of docs/architecture/objects.md): Get/SetMovePosition, Get/SetVelocity, SetMoveTarget,
+// Mover accessors and setters (docs/architecture/objects.md): Get/SetMovePosition, Get/SetVelocity, SetMoveTarget,
 // SetMoving and the route cursor tile lookup preserve the raw 32-bit float representations
 // (a signalling NaN must not be quieted by a float copy).
 namespace obl::moving {

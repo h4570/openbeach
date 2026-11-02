@@ -67,7 +67,7 @@ using ui::SecurityChooseAction;
 using ui::SecurityLookForOffender;
 
 namespace {
-using namespace layout;
+using namespace world_data;
 using map::Grid;
 using messages::Message;
 using object::Builder; // object_staff.h

@@ -8,7 +8,7 @@
 // Staff Update runs the common half of every profession's update, and its
 // helper (the two announcements below). The base class update (the human update, movement and animation) stays a call into the
 // game; what is spelled out here is what the staff member adds: the thoughts of the one-off flags, and the walk of the happiness to its target.
-// Group C3 (the profession update dispatchers themselves) is at the end of the file.
+// The profession update dispatchers themselves are at the end of the file.
 //
 // The logic is a template over an environment, so it runs on the game and in the unit tests:
 //   env.HumanUpdate()           - the human update of the member; false makes the game end with a FatalError
@@ -36,7 +36,7 @@ constexpr float kRateFactor = 0.01f; // the float nearest to 0.01 (0.00999999977
 
 template<class Env> void Announce(object::Staff& staff, Env& env, uint32_t flags)
 {
-    // No null check on the text: whatever the profession answers goes to `Add` (the same as the unhappy thought of group C1).
+    // No null check on the text: whatever the profession answers goes to `Add` (the same as the unhappy thought).
     env.Add(env.Key(flags), static_cast<int32_t>(staff.m_id), kMessageType);
     env.Mark(flags, kStaffMessageType);
     env.Push(flags);

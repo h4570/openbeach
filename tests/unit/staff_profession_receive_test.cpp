@@ -16,7 +16,7 @@
 #include <vector>
 
 using namespace obl;
-using namespace obl::layout;
+using namespace obl::world_data;
 using obl::messages::Message;
 using enum obl::messages::MessageType;
 using obl::object::Builder;

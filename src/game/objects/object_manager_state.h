@@ -9,7 +9,7 @@
 namespace obl::object {
 struct Base;
 } // namespace obl::object
-namespace obl::layout {}
+namespace obl::world_data {}
 
 // The state of the ObjectManager (owned by the World) as a C++ class
 // (docs/architecture/objects.md): the three object lists with their parallel id lists, the next free id and the

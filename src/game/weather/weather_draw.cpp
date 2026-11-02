@@ -34,7 +34,7 @@ weather::RainView CurrentRainView(const Weather* weather)
 {
     const Renderer* renderer = game::GetRenderer();
     const ui::MapView* map = ui::GetMapView();
-    const layout::World* world = game::GetWorld();
+    const world_data::World* world = game::GetWorld();
     return {static_cast<int32_t>(weather->m_currentState), map->m_viewWidth, map->m_viewHeight, renderer->m_width, renderer->m_rgb555 == 1,
             world->m_paused != 0};
 }

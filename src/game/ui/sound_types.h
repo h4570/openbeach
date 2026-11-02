@@ -47,7 +47,7 @@ struct SoundBankRecord {
     void Update(float dt);
 };
 
-// g_Sound: the sample channels, the music stream and the listener.
+// Sound: the sample channels, the music stream and the listener.
 struct Sound {
     uint8_t enabled, spatial;
     void* driver;

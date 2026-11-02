@@ -35,7 +35,7 @@ std::vector<object::Scenery*> SceneryObjects(const object::Manager& objects)
 bool ExecuteRepairCommand(const std::string& name, const std::vector<std::string>& args)
 {
     if (name != "repair-report" && name != "repair-fixture") return false;
-    layout::World* world = game::GetWorld();
+    world_data::World* world = game::GetWorld();
     object::Manager* objects = game::GetObjectManager();
     if (!world || !objects || !world->m_repairManager) {
         OBL_LOG("autotest: FAILED %s: no world", name.c_str());

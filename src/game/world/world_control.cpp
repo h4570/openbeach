@@ -21,7 +21,7 @@
 namespace obl::world {
 namespace {
 
-using layout::World;
+using world_data::World;
 
 // `call-drive` runs these two on the live world (the counters of the entry points below move).
 test::CallCounter g_driveScript("world.call-script-function.drive");

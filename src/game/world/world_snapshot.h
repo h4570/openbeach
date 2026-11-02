@@ -57,7 +57,7 @@ public:
     void Dword(const char* name, uint32_t value) { Add(name, uint8_t(RecordType::Dword), &value, sizeof(value)); }
     void String(const char* name, const char* text);
     // UTF-16 code units up to the terminator, two bytes each on every host: the game's texts are UTF-16 in wchar_t, char16_t or
-    // layout::Char16, and wchar_t is 4 bytes in the Linux unit tests.
+    // world_data::Char16, and wchar_t is 4 bytes in the Linux unit tests.
     template<class Unit> void WString(const char* name, const Unit* text)
     {
         static_assert(sizeof(Unit) >= 2, "WString records hold UTF-16 units");

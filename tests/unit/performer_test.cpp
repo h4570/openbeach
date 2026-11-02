@@ -22,7 +22,7 @@
 #include <vector>
 
 namespace {
-using namespace obl::layout;
+using namespace obl::world_data;
 using obl::messages::Message;
 using obl::ui::Sprite;
 using obl::ui::SpriteAnim;

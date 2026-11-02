@@ -65,7 +65,7 @@ construction::JobDefinition Definition(int buildingId)
     return {def.m_BuildTime, def.m_DemolishTime, def.m_footprint != nullptr};
 }
 
-// ---- Group C2: the builder table --------------------------------------------------------------------------------------------------------
+// ---- the builder table --------------------------------------------------------------------------------------------------------
 
 // The game side of the builder-table Env (src/game/construction/construction_jobs.h).
 struct BuilderEnv {
@@ -131,7 +131,7 @@ const LoadedFences& LastLoadedFences()
     return g_lastFences;
 }
 
-// ---- Group A: the read-only queries -----------------------------------------------------------------------------------------------------------
+// ---- the read-only queries -----------------------------------------------------------------------------------------------------------
 
 Job* FindJob(Manager* manager, int buildingId)
 {
@@ -188,7 +188,7 @@ int GetWorkDirection(Manager* manager, int buildingId, int builderId)
     return construction::GetWorkDirection(*manager, env, buildingId, builderId);
 }
 
-// ---- Group B: the setters ---------------------------------------------------------------------------------------------------------------------
+// ---- the setters ---------------------------------------------------------------------------------------------------------------------
 
 void SetStarted(Manager* manager, int buildingId, uint8_t started)
 {
@@ -209,7 +209,7 @@ void TickHoarding(Manager* manager, int buildingId)
     SpawnHoarding(manager, buildingId);
 }
 
-// ---- Group C1 and C2: the jobs and the builder table ------------------------------------------------------------------------------------
+// ---- the jobs and the builder table ------------------------------------------------------------------------------------
 
 // construction::DeleteJob: FinishBuild/FinishDemolish drop the finished job.
 void DeleteJob(Manager* manager, int buildingId)

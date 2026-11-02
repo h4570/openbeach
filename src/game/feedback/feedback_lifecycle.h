@@ -10,7 +10,7 @@
 namespace obl::feedback {
 
 // The field table: every record of the block after the class name, in save order. The obl.save reader, the world snapshot
-// (EmitFeedback) and the managers dump (layout_world.cpp) are visitors over it, so the record list exists once. `M` is
+// (EmitFeedback) and the managers dump (world_dump.cpp) are visitors over it, so the record list exists once. `M` is
 // `Manager` or `const Manager`. A visitor provides:
 //   List(name, deque, fn)         a "uint" count record, then fn(visitor, element) per element
 //   Int(name, field)              an "int" record of a 4-byte field (the staff masks are uint32_t, written as int)

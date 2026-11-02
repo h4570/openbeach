@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 using namespace obl::gui_manager_buttons;
-namespace layout = obl::layout;
+namespace world_data = obl::world_data;
 namespace ui = obl::ui;
 namespace {
 struct Env {

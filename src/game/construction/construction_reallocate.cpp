@@ -24,7 +24,7 @@ using object::Builder;
 using object::Building;
 const auto kIsOpen = &object::building_api::IsOpen;
 
-// The game side of the Env in src/game/construction/construction_jobs.h (group F1).
+// The game side of the Env in src/game/construction/construction_jobs.h.
 struct ReallocateEnv {
     construction::Manager* manager;
     static object::Base* Object(int id) { return object::object_manager::ObjectById(game::GetObjectManager(), id); }

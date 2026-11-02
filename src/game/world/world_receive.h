@@ -13,6 +13,6 @@ namespace obl::world {
 // the current message handler (messages::message_facade::Current); the handler that was passed as `this` was always that one.
 void PostPlaceCommand(messages::Message& command, const void* name);
 // world::ReceiveMessage (counts world.receive-message).
-bool ReceiveMessage(layout::World& world, messages::Message& message, const void* name);
+bool ReceiveMessage(world_data::World& world, messages::Message& message, const void* name);
 
 } // namespace obl::world

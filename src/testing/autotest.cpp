@@ -212,7 +212,7 @@
 #include "world_create_building.h"
 #include "world_hash.h"
 #include "replay.h"
-#include "layout_world.h"
+#include "world_dump.h"
 #include "world_params.h"
 #include "gui_capture.h"
 #include "gui_control.h"
@@ -367,7 +367,7 @@ void RunSteps(const Command& c)
     SetFixedDt(previous);
     double ms = std::chrono::duration<double, std::milli>(Clock::now() - t0).count();
     // World update: game dt = frame dt * World::m_gameSpeed, clamped to 4 s.
-    layout::World* world = World();
+    world_data::World* world = World();
     double gameDt = world ? std::min(dt * world->m_gameSpeed, 4.0) : dt;
     OBL_LOG("autotest: step steps=%d dt=%g game-dt=%g game-seconds=%g renders=%d ms=%.1f steps-per-s=%.0f", count, dt, gameDt,
             count * gameDt, renders, ms, ms > 0 ? count * 1000.0 / ms : 0.0);
@@ -438,7 +438,7 @@ bool Execute(const Command& raw, uint32_t now)
     } else if (ExecuteGuiDumpCommand(c.name, c.args)) {
     } else if (ExecuteGuiControlCommand(c.name, c.args)) {
     } else if (ExecuteGuiCaptureCommand(c.name, c.args)) {
-    } else if (ExecuteLayoutWorldCommand(c.name, c.args)) {
+    } else if (ExecuteWorldDumpCommand(c.name, c.args)) {
     } else if (ExecuteBinarySerialCommand(c.name, c.args)) {
     } else if (ExecuteSavegameManagersCommand(c.name, c.args)) {
     } else if (ExecuteBuildingEventCommand(c.name, c.args)) {
@@ -711,7 +711,7 @@ bool InitAutotest(const Text16& gameDirectory)
     ResetReplay(g_scripts[0]); // a list's first script, not the list
     InitWorldParamsDump(gameDirectory);
     InitGuiDump(gameDirectory);
-    InitLayoutWorldDump(gameDirectory);
+    InitWorldDump(gameDirectory);
 
     RegisterAssertions();
     if (!OBL_WINDOWS_ONLY(InitCrashDiagnostics())) return false;

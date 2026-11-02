@@ -22,7 +22,7 @@ namespace obl::object {
 using game::GetObjectManager;
 
 namespace {
-using namespace layout;
+using namespace world_data;
 using ui::SpriteInstance;
 using namespace object;
 // ---- fixture -----------------------------------------------------------------------------------------------------------------------

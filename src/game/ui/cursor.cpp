@@ -8,7 +8,7 @@
 #include "game/ui/cursor_logic.h"
 #include "game/ui/cursor_types.h"
 
-// The game's software cursor object (g_Cursor). The OS-cursor side lives in cursor.cpp; this file is the object contract
+// The game's software cursor object. The OS-cursor side lives in cursor.cpp; this file is the object contract
 // over the Input functions of input.h.
 namespace obl::ui {
 namespace {

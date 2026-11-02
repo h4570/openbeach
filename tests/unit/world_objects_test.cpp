@@ -20,7 +20,7 @@ namespace {
 
 // Objects are zeroed memory of the real layout; the tests only set the fields the functions read.
 struct Slab {
-    std::unique_ptr<layout::World> world = std::make_unique<layout::World>();
+    std::unique_ptr<world_data::World> world = std::make_unique<world_data::World>();
     std::unique_ptr<object::Manager> manager = std::make_unique<object::Manager>();
     std::vector<std::unique_ptr<object::Guest>> guestObjects;
     std::vector<std::unique_ptr<object::Building>> buildingObjects;
@@ -109,7 +109,7 @@ struct UpdateEnv {
 
 struct DeleteEnv {
     object::Manager* manager = nullptr;
-    layout::World* world = nullptr;
+    world_data::World* world = nullptr;
     std::vector<std::string> calls;
     uint32_t idAfterExit = 0; // the id the object gets while its OnExitState runs (0 = unchanged)
 

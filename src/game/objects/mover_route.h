@@ -7,7 +7,7 @@
 
 #include <cstdint>
 
-// The moving object's BuildRoute (group E of docs/architecture/objects.md): picks the pavement or land route between two tiles for the
+// The moving object's BuildRoute (docs/architecture/objects.md): picks the pavement or land route between two tiles for the
 // object and stores the new cursor in m_pathCursor. The caller's start/stop arrays (x, y) may be rewritten by the endpoint helper.
 // Everything the route reaches outside the object goes through an `Env` (the game binds it in src/game/objects/mover_receive.cpp, the unit
 // tests fake it):

@@ -15,8 +15,8 @@ namespace obl::object {
 struct BuildingEvents;
 }
 
-// Compatibility name for facade readers that only need the forward declaration.
-namespace obl::layout {
+// The name for facade readers that only need the forward declaration.
+namespace obl::world_data {
 using BuildingEvents = object::BuildingEvents;
 }
 

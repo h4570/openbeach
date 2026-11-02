@@ -25,7 +25,7 @@ const auto kGetTilePosition = [](object::Base* object, int* out) { return object
 test::CallCounter g_callsFree("construction.builder-free-builder-of-job.calls");
 test::CallCounter g_answered("construction.assign");
 
-// The game side of the Env in src/game/construction/construction_jobs.h (group E).
+// The game side of the Env in src/game/construction/construction_jobs.h.
 struct AssignEnv {
     object::Building* Building(int id) const
     {

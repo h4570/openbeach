@@ -428,7 +428,7 @@ CommandResult Apply(const SetShow& c)
 // The exit-dialog resume action: the pause box of a script's PauseGame; both flags drop at this tick.
 CommandResult Apply(const ResumeGame&)
 {
-    layout::World* world = GetWorld();
+    world_data::World* world = GetWorld();
     world->m_forcedPaused = 0;
     world->m_paused = 0;
     return kApplied;

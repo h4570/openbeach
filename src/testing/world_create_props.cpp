@@ -42,7 +42,7 @@ bool ExecuteWorldCreatePropsCommand(const std::string& name, const std::vector<s
     scenery.m_tile[0] = 75;
     scenery.m_tile[1] = 45;
     scenery.m_ownerBuildId = -2;
-    const auto createScenery = [](layout::World* w, const object::SceneryCreateParams* r) {
+    const auto createScenery = [](world_data::World* w, const object::SceneryCreateParams* r) {
         return static_cast<object::Scenery*>(world::CreateObject(*w, object::ObjectType::Scenery, r));
     };
     const float ratingBefore = world->m_scenicVal;

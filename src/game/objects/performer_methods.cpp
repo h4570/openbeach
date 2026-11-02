@@ -36,7 +36,7 @@ using game::GetObjectManager;
 using game::Rand;
 
 namespace {
-using namespace layout;
+using namespace world_data;
 using ui::SpriteInstance;
 using namespace ui;
 using object::Building;

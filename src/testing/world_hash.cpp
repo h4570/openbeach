@@ -68,7 +68,7 @@ bool Snapshot(std::string& text, std::string& hash, size_t& fields, const char*&
         snapshot.Class("RNG");
         snapshot.Add("rand-calls", uint8_t(RecordType::Counter), &calls, sizeof(calls));
     };
-    const layout::World& world = *World();
+    const world_data::World& world = *World();
     WorldSnapshot snapshot;
     snapshot.Reserve(g_lastFields);
     world_snapshot::EmitWorld(snapshot, world, world.m_worldScript->m_currentState);

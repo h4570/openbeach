@@ -5,7 +5,7 @@
 #include <limits>
 
 using namespace obl;
-using namespace obl::layout;
+using namespace obl::world_data;
 using obl::object::Guest;
 using namespace obl::tables;
 

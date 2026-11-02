@@ -16,7 +16,7 @@
 #include <cstdint>
 #include <cstring>
 
-// Mover target and step logic (group C of docs/architecture/objects.md): StepMotion, UpdateMoveTarget,
+// Mover target and step logic (docs/architecture/objects.md): StepMotion, UpdateMoveTarget,
 // SetDestinationFromMessage and CompleteIfAtDestination. Everything they reach outside the object goes through an
 // `Env` (the game binds it in src/game/objects/mover.cpp, the unit tests fake it), so the branches can be driven without a game:
 //   void Post(const Message&)                                      global message handler Post (synchronous delivery is the handler's decision)

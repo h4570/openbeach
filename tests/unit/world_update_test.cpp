@@ -15,8 +15,8 @@ using namespace obl::world_update;
 namespace {
 
 struct Fixture {
-    std::unique_ptr<layout::World> world = std::make_unique<layout::World>();
-    layout::Player player{};
+    std::unique_ptr<world_data::World> world = std::make_unique<world_data::World>();
+    world_data::Player player{};
     ui::ViewState view;
     Fixture()
     {

@@ -38,7 +38,7 @@ using game::GetWorldScriptHost;
 using game::Rand;
 
 namespace {
-using namespace layout;
+using namespace world_data;
 using object::Builder; // object_staff.h
 using object::Cleaner;
 using object::Lifeguard;

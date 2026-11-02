@@ -196,7 +196,7 @@ struct ReceiveEnv {
     object::Base* Object(int32_t id) { return object_manager::ObjectById(GetObjectManager(), id); }
     bool IsOpen(object::Base* building) { return kIsOpen(static_cast<const object::Building*>(building)); }
     float GameDayTime() { return GetWorld()->m_gameDayTime; }
-    layout::World& World() { return *GetWorld(); }
+    world_data::World& World() { return *GetWorld(); }
     void Push(uint32_t flags) { StaffPushThought(object, flags); }
     void Recalculate() { StaffRecalculateHappinessTarget(object); }
     bool RunOnReceipt(const messages::Message& message)

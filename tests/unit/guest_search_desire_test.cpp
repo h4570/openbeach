@@ -21,7 +21,7 @@
 #include <vector>
 
 using namespace obl;
-using namespace obl::layout;
+using namespace obl::world_data;
 using obl::messages::Message;
 using obl::object::Guest;
 using namespace obl::tables;

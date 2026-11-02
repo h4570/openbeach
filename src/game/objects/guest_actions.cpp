@@ -79,7 +79,7 @@ void RunSendOutDeathMessage(Guest& guest)
     const auto list = object_manager::GetObjectsNearTile(GetObjectManager(), tile[0], tile[1], guest_actions::kDeathRadius);
     const auto count = static_cast<uint32_t>(list.size());
     const guest_actions::DeathNotice notice = guest_actions::DeathNoticeFor(guest.m_state);
-    layout::World* world = GetWorld();
+    world_data::World* world = GetWorld();
     ++(notice.eaten ? world->m_guestsEaten : world->m_guestsDrowned);
     feedback::Feedback(world->m_feedbackManager)
             .AddText(ui::text_table::Lookup(notice.key), static_cast<int32_t>(guest.m_id), guest_actions::kDeathTickerType);
@@ -119,7 +119,7 @@ bool RunStartBadGuts(Guest& guest)
 {
     if (!guest.m_imIll) return false;
     float point[3];
-    layout::World::RandomWalkPoint(point);
+    world_data::World::RandomWalkPoint(point);
     guest.m_walkpoints[0][0] = point[0];
     guest.m_walkpoints[0][1] = point[1];
     Post(guest.m_id, static_cast<int32_t>(guest.m_id), messages::MT_STATECHANGE, 0, guest_actions::kStateBadGuts);

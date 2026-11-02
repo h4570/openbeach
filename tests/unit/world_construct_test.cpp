@@ -10,7 +10,7 @@
 #include <vector>
 
 using namespace obl;
-using layout::World;
+using world_data::World;
 
 namespace {
 

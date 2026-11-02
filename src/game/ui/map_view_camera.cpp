@@ -31,7 +31,7 @@ int ZoomOf(const MapView* view)
 }
 float GameTime()
 {
-    const layout::World* world = game::GetWorld();
+    const world_data::World* world = game::GetWorld();
     return world ? world->m_gameTime : 0.0f;
 }
 

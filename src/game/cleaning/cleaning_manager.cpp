@@ -21,10 +21,10 @@
 namespace obl::cleaning {
 namespace {
 
-using layout::World;
 using object::Building;
 using object::Prop;
 using object::Scenery;
+using world_data::World;
 
 using BuildingJobPredicate = bool (*)(const Building*);
 const BuildingJobPredicate kHasBuildJob{&object::building_api::HasBuildJob};

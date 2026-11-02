@@ -71,8 +71,8 @@ namespace {
 using messages::Message;
 using object::Building;
 using MessageHandler = messages::Handler;
-using layout::World;
 using tables::OpeningHoursDef;
+using world_data::World;
 
 const auto kHideStaff = &BuildingHideStaffAndEvents;
 const auto kShowStaff = &BuildingShowStaffAndEvents;
@@ -80,20 +80,20 @@ const auto kClearQueueForClosing = &BuildingQueueClearForClosing;
 const auto kClearQueueForBreakdown = &BuildingQueueClearForBreakdown;
 // The managers behind the breakdown notices stay with their own modules; the building calls them.
 const auto kRepairAddJob = &repair::repair_facade::AddJob;
-// What the building's Update asks of the rest of the game (groups E/F, building_update.h).
+// What the building's Update asks of the rest of the game (building_update.h).
 const auto kUpdateOpenState = &BuildingUpdateOpenState;
 const auto kCleaningAddJob = &cleaning::cleaning_facade::AddJob;
 const auto kSetMoving = &object::SetMovingFlag;
-// The vehicles' and the queue's side of ReceiveMessage group 2; all of them are other modules' functions (a vehicle's route, a table's seats, the queue).
+// The vehicles' and the queue's side of ReceiveMessage; all of them are other modules' functions (a vehicle's route, a table's seats, the queue).
 const auto kSeatGuest = &TableSeatGuest;
 const auto kQueueEnqueue = &BuildingQueueEnqueue;
-// ReceiveMessage group 3 (guests and goods): the queue's size and hand-over, the lookup of a good's key, the objects around the building, the delayed send.
+// ReceiveMessage for guests and goods: the queue's size and hand-over, the lookup of a good's key, the objects around the building, the delayed send.
 const auto kQueueDequeue = &BuildingQueueDequeue;
 const auto kQueueBoardGuests = &BuildingQueueBoardQueuedGuests;
-// ReceiveMessage group 4 (a guest is ready to be served): the key lookups of the world's tables, the beer table, the resort rating, the show's audience and
+// ReceiveMessage when a guest is ready to be served: the key lookups of the world's tables, the beer table, the resort rating, the show's audience and
 // the one guest method the pollution of the water calls.
 
-// What the start and the end of a building's life ask of the game (group H, building_lifecycle.h).
+// What the start and the end of a building's life ask of the game (building_lifecycle.h).
 const auto kSpawnInitialStaff = &BuildingSpawnInitialStaff;
 const auto kSpawnVehicles = &BuildingSpawnVehicles;
 const auto kSpawnTables = &BuildingSpawnTables;
@@ -176,7 +176,7 @@ void ShedPowerOf(Building& building)
     PostBuildingClosing(building);
 }
 
-// ---- breakdown: lightning and SetBroken (group D) ----------------------------------------------------------------------
+// ---- breakdown: lightning and SetBroken ----------------------------------------------------------------------
 
 // The wear moves one step per strike (ApplyLightningDamage, called by weather.update-lighting-driver when a bolt hits a building) or
 // jumps to 3 (SetBroken, from world CreateBuilding for a scripted `Broken` building). The fault is stamped with the clock; the queue is told
@@ -239,7 +239,7 @@ LightningStep ApplyLightningStep(Building& building)
     return decision.step;
 }
 
-// ---- staff visibility (group B) ----------------------------------------------------------------------------------------
+// ---- staff visibility ----------------------------------------------------------------------------------------
 
 StaffLists ListsOf(Building& building)
 {
@@ -352,7 +352,7 @@ void ApplyLightningStepOf(Building& building)
     ApplyLightningStep(building);
 }
 
-// ---- SetVariable (group L2) ---------------------------------------------------------------------------------------------
+// ---- SetVariable ---------------------------------------------------------------------------------------------
 
 // The game's side of the Env of building_set_variable.h. The tower's beach mode moves the grid and posts to the world (the keyword is covered by
 // the unit test).
@@ -388,7 +388,7 @@ void RunSetVariable(Building* building, const char* key, const void* value)
 test::CallCounter g_hideStaff("objects.building-hide-staff-and-events");
 test::CallCounter g_showStaff("objects.building-show-staff-and-events");
 
-// ---- Building::Update (group F) -----------------------------------------------------------------------------------
+// ---- Building::Update -----------------------------------------------------------------------------------
 
 // The game's side of the Env of building_update.h: every call, in the order the pure code asks for it.
 class UpdateEnv {
@@ -507,7 +507,7 @@ char RunUpdate(Building* building)
     return 1;
 }
 
-// ---- OnEnterState, OnExitState, ReceiveMessage (group H) ---------------------------------------------------------------
+// ---- OnEnterState, OnExitState, ReceiveMessage ---------------------------------------------------------------
 
 LifecycleWorld LifecycleWorldOf(const World& world)
 {
@@ -1056,7 +1056,7 @@ char RunReceiveMessage(Building* building, Message* message)
     }
 }
 
-// ---- group J: vehicles, tables and the staff list ---------------------------------------------------------------------------------
+// ---- vehicles, tables and the staff list ---------------------------------------------------------------------------------
 // SpawnVehicles/SpawnTables (src/game/objects/building_spawn.h) only read the building and post one place command per vehicle/table.
 // DismissStaff writes the serving list and its two counters and tells the staff object to leave.
 

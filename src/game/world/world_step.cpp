@@ -26,7 +26,7 @@
 namespace obl::world {
 namespace {
 
-using layout::World;
+using world_data::World;
 
 // Frames run (`call-report world.update`).
 test::CallCounter g_updateCalls("world.update");

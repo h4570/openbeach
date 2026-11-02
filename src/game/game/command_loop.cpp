@@ -13,7 +13,7 @@ namespace obl::game {
 namespace {
 command::CommandQueue g_queue;
 CommandLoopStats g_stats;
-const layout::World* g_world = nullptr; // the world the tick counter belongs to
+const world_data::World* g_world = nullptr; // the world the tick counter belongs to
 TickListener* g_listener = nullptr;
 
 void Drop()
@@ -51,7 +51,7 @@ void SetTickListener(TickListener* listener)
 
 void RunCommandTick(game::Game* game, bool stateSwitched)
 {
-    const layout::World* world = GetWorld();
+    const world_data::World* world = GetWorld();
     const bool gameplay = game->m_currentState == game->m_states[static_cast<int>(game::GameStateId::WorldTest)].get();
     if (!gameplay || !world || stateSwitched || ui::LoadPendingFor(*game)) {
         Drop();

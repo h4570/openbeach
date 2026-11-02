@@ -9,7 +9,7 @@
 #include <cstdint>
 #include <cstring>
 
-// Mover steering and integration (group B of docs/architecture/objects.md): SteerSeek, SteerArrive,
+// Mover steering and integration (docs/architecture/objects.md): SteerSeek, SteerArrive,
 // SteerFollow and IntegrateMotion. They are evaluated in double precision: stores to memory round to float, values that
 // stay in registers stay unrounded. The comments mark which intermediates are kept ("ext") and which are stored as float; `double` stands
 // in for the extended format (a single operation on float operands rounds identically in either, the chains can differ only at ~2^-53).

@@ -6,7 +6,7 @@
 
 namespace obl::test::gui {
 
-using namespace layout;
+using namespace world_data;
 using namespace ui;
 
 bool Readable(const void* pointer, size_t size)

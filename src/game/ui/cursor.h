@@ -6,7 +6,7 @@
 
 namespace obl::ui {
 
-// The software cursor operations the Game and the World call (the registered entry points forward to them). Construct registers g_Cursor and
+// The software cursor operations the Game and the World call (the registered entry points forward to them). Construct registers the cursor object and
 // loads the cursor image; SetDragMode switches the Input's relative mode; IsInRect tests the screen position.
 ui::SoftwareCursor* CursorConstruct(ui::SoftwareCursor* cursor, const char* tgaPath, void* owner);
 void CursorDestruct(ui::SoftwareCursor* cursor);

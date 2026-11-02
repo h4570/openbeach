@@ -13,8 +13,8 @@
 #include <cstdint>
 #include <cstring>
 
-// Mover movement events (group D of docs/architecture/objects.md): OnMoveTargetReached and Update. They extend the
-// `Env` of mover_target.h (group C, which Update drives) with:
+// Mover movement events (docs/architecture/objects.md): OnMoveTargetReached and Update. They extend the
+// `Env` of mover_target.h (which Update drives) with:
 //   float WorldDelta                                               World::m_gameDeltaTime
 //   void Teleport(Mover&, float x, float y, float z)          the object's virtual Teleport
 //   void SetSpriteDirection(void* sprite, float x, float y)          sprite direction from the movement vector of Entity::m_sprite

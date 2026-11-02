@@ -348,7 +348,7 @@ void SetOrigin(ui::GuiTableData* table, int32_t dx, int32_t dy);
 // The filter_cell:: facades answer the GuiTableFilterCell methods that other code calls, with the cell first. The counter
 // is the one of the table family (ui.gui-tables), counted inside the facades.
 namespace filter_cell {
-// Group 3: the cell's selection and drawing (SetFilter, Draw, DrawOverlay). The draw takes no font.
+// The cell's selection and drawing (SetFilter, Draw, DrawOverlay). The draw takes no font.
 void SetFilter(ui::GuiTableFilterCell* cell, uint32_t filter);
 void Draw(ui::GuiTableFilterCell* cell, int32_t y, void* provider);
 void DrawOverlay(ui::GuiTableFilterCell* cell, int32_t y, void* provider, int32_t font);
@@ -357,14 +357,14 @@ void DrawOverlay(ui::GuiTableFilterCell* cell, int32_t y, void* provider, int32_
 // The table_column:: facades answer the GuiTableColumn row methods with the column first. The counter
 // is the one of the table family (ui.gui-tables), counted inside the facades.
 namespace table_column {
-// Group 4: the common widget slots (GuiTableColumn's virtual functions forward to them).
+// The common widget slots (GuiTableColumn's virtual functions forward to them).
 void SetVisible(ui::GuiTableColumnData* column, uint32_t visible);
 void SetOrigin(ui::GuiTableColumnData* column, int32_t dx, int32_t dy);
 void Translate(ui::GuiTableColumnData* column, int32_t dx, int32_t dy);
 void Invalidate(ui::GuiTableColumnData* column);
 uint8_t OnMouseLeft(ui::GuiTableColumnData* column, int32_t x, int32_t y, int32_t state);
 
-// Group 2: the per-row methods (src/game/ui/gui_table_rows.h). The indexed overlay takes no selection flag.
+// The per-row methods (src/game/ui/gui_table_rows.h). The indexed overlay takes no selection flag.
 void UpdateObjectRow(ui::GuiTableColumnData* column, float dt, void* object);
 void UpdateIndexedRow(ui::GuiTableColumnData* column, float dt, void* provider, int32_t row);
 void DrawRow(ui::GuiTableColumnData* column, void* provider, bool selected);

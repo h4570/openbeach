@@ -28,8 +28,8 @@ namespace obl::feedback {
 namespace {
 
 using commodity::Providers;
-using layout::World;
 using ui::GuiManager;
+using world_data::World;
 
 // Texts cross into the game as Char16 (UTF-16).
 static_assert(sizeof(Char16) == sizeof(char16_t));

@@ -16,13 +16,13 @@ bool RegisterWorldControlDrivers();
 // The entry points our callers use.
 // Each counts `<name>` like the other entry points.
 // Set a temporary power-grid snapshot; the next totals update recomputes it.
-void SetPowerTotals(layout::World& world, float demand, float installed, float output);
+void SetPowerTotals(world_data::World& world, float demand, float installed, float output);
 // Enable or disable the world building wear model.
-void SetBreakdownsAllowed(layout::World& world, bool allowed);
+void SetBreakdownsAllowed(world_data::World& world, bool allowed);
 // Set a free simulation multiplier without changing the selected speed level.
-void SetGameSpeedFactor(layout::World& world, float factor);
-void SetGameSpeedLevel(layout::World& world, int level);
-void CallScriptFunction(layout::World& world, int function);
-void CheckMissingStaffFeedback(layout::World& world);
+void SetGameSpeedFactor(world_data::World& world, float factor);
+void SetGameSpeedLevel(world_data::World& world, int level);
+void CallScriptFunction(world_data::World& world, int function);
+void CheckMissingStaffFeedback(world_data::World& world);
 
 } // namespace obl::world

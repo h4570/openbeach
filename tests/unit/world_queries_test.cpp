@@ -158,7 +158,7 @@ OBL_TEST_CASE("world_queries.adjacent_staff_filter_exact_class_and_stably_sort_n
 OBL_TEST_CASE("world_queries.circuit_append_preserves_other_bytes_and_returns_live_storage")
 {
     // The circuits live in the Boats group; the rest of the World owns memory and is not compared.
-    layout::World world{};
+    world_data::World world{};
     auto& boats = static_cast<obl::world::Boats&>(world);
     std::memset(static_cast<void*>(&boats), 0xa5, sizeof(boats));
     world.m_numCircuitPoints[0] = world.m_numCircuitPoints[1] = 0;
@@ -183,7 +183,7 @@ OBL_TEST_CASE("world_queries.circuit_append_preserves_other_bytes_and_returns_li
 
 OBL_TEST_CASE("world_queries.hour_floor_and_truncation")
 {
-    layout::World world{};
+    world_data::World world{};
     for (auto [hour, expected] : std::array<std::pair<float, int>, 7>{{{0, 0}, {23.999f, 23}, {-0.01f, -1}, {24, 24}, {4294967296.0f, 0},
                  {std::numeric_limits<float>::quiet_NaN(), 0}, {std::numeric_limits<float>::infinity(), 0}}}) {
         world.m_gameDayTime = hour;
@@ -194,7 +194,7 @@ OBL_TEST_CASE("world_queries.hour_floor_and_truncation")
 OBL_TEST_CASE("world_queries.rating_empty_mean_truncation_and_unsigned_cap")
 {
     auto objects = std::make_unique<object::Manager>();
-    layout::World world{};
+    world_data::World world{};
     world.m_objectManager.reset(objects.get());
     OBL_CHECK_EQ(world_queries::GetResortRating(world), 0);
     object::Guest a{}, b{};
@@ -215,7 +215,7 @@ OBL_TEST_CASE("world_queries.rating_empty_mean_truncation_and_unsigned_cap")
 
 OBL_TEST_CASE("world_queries.scenario_list_uses_count_and_accepts_arbitrary_ids")
 {
-    layout::World world{};
+    world_data::World world{};
     world.m_validBuildingIDs[0] = -7;
     OBL_CHECK(!world_queries::IsBuildingInScenario(world, -7));
     world.m_numValidBuildings = 128;
@@ -228,7 +228,7 @@ OBL_TEST_CASE("world_queries.scenario_list_uses_count_and_accepts_arbitrary_ids"
 OBL_TEST_CASE("world_queries.count_by_exact_name_and_short_circuit_jobs")
 {
     auto objects = std::make_unique<object::Manager>();
-    layout::World world{};
+    world_data::World world{};
     world.m_objectManager.reset(objects.get());
     struct Env {
         int definitions = 0, buildCalls = 0, demolishCalls = 0;
@@ -268,7 +268,7 @@ namespace {
 struct TreeFixture {
     std::unique_ptr<object::Manager> objects = std::make_unique<object::Manager>();
     std::unique_ptr<tables::BuildingDef> def = std::make_unique<tables::BuildingDef>();
-    layout::World world{};
+    world_data::World world{};
     std::array<object::Building, 4> buildings{};
     int definitions = 0, buildCalls = 0, demolishCalls = 0;
 

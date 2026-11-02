@@ -1,6 +1,6 @@
 # Input object
 
-The game reads keys, mouse buttons, the cursor position and the camera drag through its `Input` object (`layout::Input`,
+The game reads keys, mouse buttons, the cursor position and the camera drag through its `Input` object (`world_data::Input`,
 `g_Input`) and the `Input_*` entry points. One implementation serves both hosts; only the devices behind it differ.
 
 ## Layers

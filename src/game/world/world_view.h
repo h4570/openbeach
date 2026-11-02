@@ -10,10 +10,10 @@ namespace obl::world {
 
 // The entry points our callers use; each counts
 // `<name>` like the other entry points.
-void ApplyZoomRequest(layout::World& world);
-void UpdateCameraInput(layout::World& world);
-void UpdateHotkeys(layout::World& world);
-void Draw(layout::World& world);
-void DrawObjectOverlays(layout::World& world);
+void ApplyZoomRequest(world_data::World& world);
+void UpdateCameraInput(world_data::World& world);
+void UpdateHotkeys(world_data::World& world);
+void Draw(world_data::World& world);
+void DrawObjectOverlays(world_data::World& world);
 
 } // namespace obl::world

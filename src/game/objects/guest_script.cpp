@@ -207,7 +207,7 @@ public:
     void PlaySound3D(const char* name, float* position) const { audio::CurrentSound()->Play3D(name, position, 1, -1); }
     const float* FindSunbathePoint(Guest& guest) const { return g_guestSeams.findSunbathePoint(&guest); }
     const float* FindSeaPoint(Guest& guest, const float* position) const { return GuestFindNearestSeaPoint(position[0], position[1]); }
-    void FindRandomWalkPoint(float* out) const { layout::World::RandomWalkPoint(out); }
+    void FindRandomWalkPoint(float* out) const { world_data::World::RandomWalkPoint(out); }
     int32_t TextId(const char* key) const { return static_cast<int32_t>(ui::text_table::FindKey(key)); }
     void Post(const messages::Message& message) const
     {

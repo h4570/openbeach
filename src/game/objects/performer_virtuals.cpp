@@ -40,7 +40,7 @@ using game::GetWorld;
 using game::Rand;
 
 namespace {
-using namespace layout;
+using namespace world_data;
 using messages::Message;
 using object::Building;
 using ui::SpriteInstance;

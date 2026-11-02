@@ -22,7 +22,7 @@
 namespace obl::test {
 namespace {
 
-using namespace layout;
+using namespace world_data;
 using namespace tables;
 
 std::filesystem::path g_file;

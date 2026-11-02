@@ -514,7 +514,7 @@ ui::GuiImageList* GuiImageListConstruct(ui::GuiImageList* list, int32_t x0, int3
 
 namespace listbox {
 
-// Group 3: lifecycle and the row API (Construct, ClearRows, ClearSelection, NextSelectedRow, AddImage, AddText, AddTextA,
+// Lifecycle and the row API (Construct, ClearRows, ClearSelection, NextSelectedRow, AddImage, AddText, AddTextA,
 // SetRowButton, PollRowButton). The destructor has no facade: only the virtual DeletingDestruct reaches it.
 ui::GuiListBox* Construct(ui::GuiListBox* list, int32_t x0, int32_t y0, int32_t x1, int32_t y1, int32_t barX0, int32_t barY0, int32_t barX1,
         int32_t barY1, const char* name, int32_t rowHeight, int32_t visibleRows);
@@ -529,13 +529,13 @@ void AddTextA(ui::GuiListBoxData* list, int32_t row, int32_t offset, int32_t wid
 void SetRowButton(ui::GuiListBoxData* list, int32_t row, int32_t offset, const char* graphic, int32_t value);
 uint8_t PollRowButton(ui::GuiListBoxData* list, int32_t row, int32_t* value);
 
-// Group 4: selection and scrolling (SelectRow, SetScrollTop, EnsureRowVisible, UpdateScrollBar).
+// Selection and scrolling (SelectRow, SetScrollTop, EnsureRowVisible, UpdateScrollBar).
 void SelectRow(ui::GuiListBoxData* list, uint32_t row, int32_t replace);
 void SetScrollTop(ui::GuiListBoxData* list, int32_t top);
 void EnsureRowVisible(ui::GuiListBoxData* list, uint32_t row);
 void UpdateScrollBar(ui::GuiListBoxData* list);
 
-// Group 5: the list box's overrides of the common widget virtuals (Update, Draw, Invalidate, Translate, OnMouseLeft, OnMouseWheel,
+// The list box's overrides of the common widget virtuals (Update, Draw, Invalidate, Translate, OnMouseLeft, OnMouseWheel,
 // SetVisible, DrawOverlay): GuiListBox's virtual functions call these.
 void Update(ui::GuiListBoxData* list, uint32_t dtBits);
 void Draw(ui::GuiListBoxData* list);

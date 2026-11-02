@@ -19,7 +19,7 @@
 #include <vector>
 
 using namespace obl;
-using namespace obl::layout;
+using namespace obl::world_data;
 using obl::messages::Message;
 using enum obl::messages::MessageType;
 using namespace obl::tables;
@@ -29,8 +29,8 @@ namespace {
 // The game as a script of answers; every call is written to `log` in order.
 struct ReceiveEnv {
     std::string log;
-    layout::World world{};
-    layout::Player player{};
+    world_data::World world{};
+    world_data::Player player{};
     object::Base* home = reinterpret_cast<object::Base*>(0x1000); // the object the id leads to (null: none)
     bool open = true;
     float clock = 12.0f;
@@ -55,7 +55,7 @@ struct ReceiveEnv {
         return open;
     }
     float GameDayTime() { return clock; }
-    layout::World& World() { return world; }
+    world_data::World& World() { return world; }
     void Push(uint32_t flags) { add("Push(" + hex(flags) + ")"); }
     void Recalculate() { add("Recalculate"); }
     bool RunOnReceipt(const Message& message)

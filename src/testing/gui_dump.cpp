@@ -1,6 +1,6 @@
 // gui-dump: a check of the GUI object graph (docs/architecture/data-formats/converter/gui-runtime.md). Reads the widgets the script parser created
 // only through the ui:: records and writes them as JSON; tools/check_gui_dump.py compares the tree with the GUI script
-// text and the class vtables, so a wrong child list fails a test. Every pointer is checked with platform::MemoryReadable
+// text and the widget class names, so a wrong child list fails a test. Every pointer is checked with platform::MemoryReadable
 // before it is followed and every list is bounded, so a broken object graph fails the command instead of crashing the game.
 
 #include "core/char16.h"

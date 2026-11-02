@@ -50,7 +50,7 @@ struct EngineEntries {
     EngineEntries& operator=(const EngineEntries&) = delete;
 };
 
-// The game's FatalErrorF2 records instead of ending the process; the construct returns after it, so a test sees one fatal call.
+// The fatal error callback records instead of ending the process; the construct returns after it, so a test sees one fatal call.
 bool gEngineFatal = false;
 void RecordFatal(const char*, const char*, const char*)
 {

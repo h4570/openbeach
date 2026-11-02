@@ -79,7 +79,7 @@ bool Attached(Guest& guest)
 double Tone(const Guest& guest)
 {
     // The clock is read only on the fade-in branch: a sunburnt guest needs no world.
-    const layout::World* world = GetWorld();
+    const world_data::World* world = GetWorld();
     const int32_t today = world ? world->m_gameDay : 0;
     const float time = world ? world->m_gameDayTime : 0.0f;
     return guest_appearance::PaletteTone(guest.m_sunBurnLevel, today, time, guest.m_DayArrived, guest.m_timeArrived);

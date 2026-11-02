@@ -44,7 +44,7 @@ struct DemolishReport {
 // ticks the hoarding and looks whether all vehicles are back, all seats of the tables are free and every lounger is idle (state 0); with
 // no capacity left (`m_CurCapacity` < 1, signed), no guests inside (`m_NumGuests` == 0) and all of that true it removes its vehicles, tables,
 // loungers (told MT_STATECHANGE to state 3) and service staff (class 6 only: mechanics, builders and cleaners stay) and starts the demolition.
-// A missing object of the lists (a stale id) is skipped, as in group B.
+// A missing object of the lists (a stale id) is skipped.
 // The Env gives, in the order the code calls it (tests pin the order):
 //   bool IsStarted()                   whether the building construction job has started
 //   int ActiveEventId()                the current event id, queried only for a building with a schedule

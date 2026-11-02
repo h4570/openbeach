@@ -7,7 +7,7 @@ namespace obl::object {
 
 struct Base;
 } // namespace obl::object
-namespace obl::layout {} // namespace obl::layout
+namespace obl::world_data {} // namespace obl::world_data
 namespace obl::object {
 struct Manager;
 }

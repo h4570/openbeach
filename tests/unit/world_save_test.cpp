@@ -10,7 +10,7 @@
 #include <vector>
 
 using namespace obl;
-using layout::World;
+using world_data::World;
 namespace save = world_save;
 
 namespace {
@@ -62,7 +62,7 @@ OBL_TEST_CASE("world_save.destructor_takes_subsystems_down_in_order_and_skips_nu
         int dummy[4] = {};
         world->m_scriptedSound.reset(reinterpret_cast<audio::ScriptedSound*>(&dummy[2]));
         world->m_grid.reset(reinterpret_cast<obl::map::Grid*>(&dummy[1]));
-        world->m_player.reset(reinterpret_cast<layout::Player*>(&dummy[0]));
+        world->m_player.reset(reinterpret_cast<world_data::Player*>(&dummy[0]));
         world->m_objectiveText[1] = "a text the World owns";
     }
     obl::world::SetSubsystemTeardown(nullptr);

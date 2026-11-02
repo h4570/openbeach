@@ -1,4 +1,4 @@
-// Fixtures for the parts of Building::Update that a scenario rarely reaches (groups E and F):
+// Fixtures for the parts of Building::Update that a scenario rarely reaches:
 //   building-list [NAME]                 log id, name, state, open status, visits and wear of every building (or of the ones named NAME) and
 //                                        report `buildings=<n>`
 //   building-visits <n> [NAME]           m_VisitsSinceCleaned = n and m_calledCleaning = 0 for every building (or the ones named NAME): the

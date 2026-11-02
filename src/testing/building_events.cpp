@@ -283,7 +283,7 @@ bool ExecuteBuildingEventCommand(const std::string& name, const std::vector<std:
         LoadOblSave(args[0]);
         return true;
     }
-    layout::World* world = World();
+    world_data::World* world = World();
     if (!world) {
         OBL_LOG("autotest: FAILED %s requires a world", name.c_str());
         return true;

@@ -5,7 +5,7 @@
 #include <cstdint>
 
 // The WorldMap block of the old binary save (the grid save / the grid load), read and written from the native grid. The record list
-// exists once here: the world snapshot (EmitGrid) and the grid dump (layout_world.cpp) are visitors over VisitFields.
+// exists once here: the world snapshot (EmitGrid) and the grid dump (world_dump.cpp) are visitors over VisitFields.
 namespace obl::map {
 
 // The field table: every record of the block after the class name, in save order. `G` is `Grid` or `const Grid`. A visitor provides:

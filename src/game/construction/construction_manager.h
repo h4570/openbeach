@@ -27,7 +27,7 @@ struct LoadedFences {
 };
 const LoadedFences& LastLoadedFences();
 
-// Group A: read-only queries (src/game/construction/construction_queries.h).
+// Read-only queries (src/game/construction/construction_queries.h).
 construction::Job* FindJob(construction::Manager* manager, int buildingId);
 int CountJobs(construction::Manager* manager, int mode);
 int CountUsableBuilders(construction::Manager* manager);
@@ -48,26 +48,26 @@ void FinishBuild(construction::Manager* manager, int buildingId);
 void FinishDemolish(construction::Manager* manager, int buildingId);
 void SpawnHoarding(construction::Manager* manager, int buildingId);
 
-// Group H: the occupancy grid of a building (src/game/construction/construction_footprint.h).
+// The occupancy grid of a building (src/game/construction/construction_footprint.h).
 void ClearFootprint(construction::Manager* manager, int buildingId);
 void ApplyFootprint(construction::Manager* manager, uint32_t tileX, uint32_t tileY, int phase, int mode, int buildingId);
 void ApplyBuildingToGrid(construction::Manager* manager, int buildingId);
 
-// Group E: the builder assignment (src/game/construction/construction_jobs.h).
+// The builder assignment (src/game/construction/construction_jobs.h).
 int AssignBuilderToNearestJob(construction::Manager* manager, int builderId, const float* position, int mode, uint32_t* outIsBuild);
 int AssignBuilderToJob(construction::Manager* manager, int builderId, int jobId);
 
-// Group D: the work points of a site (src/game/construction/construction_points.h). BuildEntryPoint is the builder script's
+// The work points of a site (src/game/construction/construction_points.h). BuildEntryPoint is the builder script's
 // entry point with the builder's fallback position; the claim changes the world's manager.
 void CollectWorkPoints(construction::Manager* manager, int buildingId);
 void BuildEntryPoint(int buildingId, int builderToken, const float fallback[3], float out[3]);
 
-// Group B: the setters and the hoarding tick.
+// The setters and the hoarding tick.
 void SetStarted(construction::Manager* manager, int buildingId, uint8_t started);
 void SetBuilderLocation(construction::Manager* manager, int builderId, int location);
 void TickHoarding(construction::Manager* manager, int buildingId);
 
-// Groups E and F: giving a job back (FreeBuilderOfJob tells the job, ...NoBuildCallCheck only clears the builder's entries), spreading
+// Giving a job back (FreeBuilderOfJob tells the job, ...NoBuildCallCheck only clears the builder's entries), spreading
 // the builders over the jobs (ReallocateBuilders) and working off a job (RemoveCostPoint): the construction functions, called
 // by the builder script, the staff code and the other construction facades.
 void FreeBuilderOfJob(construction::Manager* manager, int builderId);
@@ -75,7 +75,7 @@ void ClearBuilderJobEntries(construction::Manager* manager, int builderId);
 void ReallocateBuilders(construction::Manager* manager);
 void RemoveCostPoint(construction::Manager* manager, int buildingId);
 
-// Groups C1 and C2: the jobs and the builder table.
+// The jobs and the builder table.
 void DeleteJob(construction::Manager* manager, int buildingId);
 void AddBuilder(construction::Manager* manager, int builderId);
 void RemoveBuilder(construction::Manager* manager, int builderId);

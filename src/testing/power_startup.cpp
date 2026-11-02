@@ -21,7 +21,7 @@ namespace obl::test {
 bool ExecutePowerStartupCommand(const std::string& name, const std::vector<std::string>& args)
 {
     if (name != "startup-power" || args.size() < 3) return false;
-    layout::World* world = World();
+    world_data::World* world = World();
     if (!world) {
         OBL_LOG("autotest: FAILED startup-power requires a world");
         return true;

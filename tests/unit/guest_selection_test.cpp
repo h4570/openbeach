@@ -15,7 +15,7 @@
 #include <string>
 
 using namespace obl;
-using namespace obl::layout;
+using namespace obl::world_data;
 using obl::object::Guest;
 using ui::SpriteInstance;
 using namespace obl::guest_select;

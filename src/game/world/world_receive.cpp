@@ -13,8 +13,8 @@
 namespace obl::world {
 namespace {
 
-using layout::World;
 using messages::Message;
+using world_data::World;
 
 // Call counters (`call-report <name>`).
 test::CallCounter g_receiveCalls("world.receive-message");

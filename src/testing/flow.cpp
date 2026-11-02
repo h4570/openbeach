@@ -44,7 +44,7 @@ double ArgNumber(const std::vector<std::string>& args, size_t i, double fallback
 // Hours since day 0, 00:00, so conditions survive midnight.
 bool AbsoluteHours(double& out)
 {
-    layout::World* world = World();
+    world_data::World* world = World();
     if (!world) return false;
     out = world->m_gameDay * 24.0 + world->m_gameDayTime;
     return true;
@@ -217,7 +217,7 @@ bool ExecuteFlowCommand(const std::string& name, const std::vector<std::string>&
         game::game_api::SetNextState(id);
         OBL_LOG("autotest: next-state %d", id);
     } else if (name == "world-script-change") {
-        layout::World* world = World();
+        world_data::World* world = World();
         if (!world || args.size() != 1) {
             OBL_LOG("autotest: FAILED world-script-change (needs a world and one state name)");
             return true;
@@ -225,7 +225,7 @@ bool ExecuteFlowCommand(const std::string& name, const std::vector<std::string>&
         const int32_t state = world::ChangeWorldScriptState(*world, args[0].c_str());
         OBL_LOG("autotest: %s world-script-change %s state=%d", state >= 0 ? "PASS" : "FAILED", args[0].c_str(), state);
     } else if (name == "speed" || name == "speed-level" || name == "speed-table") {
-        layout::World* world = World();
+        world_data::World* world = World();
         if (name == "speed-table") {
             // The source of these values (the game speed defaults) is not in the standalone host's image: its read-only data is zero there.
             auto table = game::GameSpeedTable();

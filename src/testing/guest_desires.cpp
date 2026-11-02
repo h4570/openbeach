@@ -127,7 +127,7 @@ bool Near(float a, float b, float& error)
 
 void UpdateDesires(object::Guest* guest)
 {
-    layout::World* world = World();
+    world_data::World* world = World();
     float dt = world->m_gameDeltaTime;
     auto def = Def(guest);
     std::array<float, kDesireCount> expected;
@@ -198,7 +198,7 @@ float LitterStep(float opinion, float litter, float lowLimit, float highLimit, f
 
 void UpdateOpinions(object::Guest* guest)
 {
-    layout::World* world = World();
+    world_data::World* world = World();
     auto def = Def(guest);
     int state = guest->m_state;
     bool active = state != 0x28 && state != 0x29 && state != 0x26 && state != 0x25;
@@ -676,7 +676,7 @@ bool Posted(int cls, int arg1, int param)
 bool CheckBedTime(object::Guest* guest)
 {
     if (!g_helperChecks) return g_checkBedTime(guest);
-    layout::World* world = World();
+    world_data::World* world = World();
     float wake = guest->m_WakeTime, bed = guest->m_BedTime, hour = world->m_gameDayTime;
     bool firstDay = world->m_gameDay == 0;
     int nights = guest->m_NightsToStay, hotel = guest->m_StayingAt;
@@ -714,7 +714,7 @@ bool CheckBedTime(object::Guest* guest)
 bool CheckLeaveResort(object::Guest* guest)
 {
     if (!g_helperChecks) return g_checkLeave(guest);
-    layout::World* world = World();
+    world_data::World* world = World();
     float hour = world->m_gameDayTime, happiness = guest->m_happiness;
     bool unhappy = happiness <= 0.25f, souvenirs = guest->m_souvenirsDecided != 0;
     bool due = guest->m_NightsToStay == 0 && guest->m_TimeToLeave < hour;
@@ -915,7 +915,7 @@ void ForcePurchaseAndSpot(object::Guest* guest, Building* queued)
 // The scratch guest is driven through the night/leave decisions with the world hour and day overridden (restored afterwards).
 void ForceLifecycle(object::Guest* guest, Building* hotel)
 {
-    layout::World* world = World();
+    world_data::World* world = World();
     float savedHour = world->m_gameDayTime;
     int savedDay = world->m_gameDay;
     struct Window {
@@ -991,7 +991,7 @@ std::vector<object::Base*> Lifeguards()
 void UpdateDrowning(object::Guest* guest)
 {
     if (!g_helperChecks) return g_updateDrowning(guest);
-    layout::World* world = World();
+    world_data::World* world = World();
     int oxygen = guest->m_oxygen;
     auto guards = Lifeguards();
     int nearest = -2;
@@ -1102,7 +1102,7 @@ void ForceSwimming(object::Guest* guest)
             });
     def->m_SwimDist = savedRadius;
     // drowning at several oxygen levels (1 = the death step), normal and "eaten" state; world counters restored afterwards
-    layout::World* world = World();
+    world_data::World* world = World();
     int drowned = world->m_guestsDrowned, eaten = world->m_guestsEaten;
     for (int oxygen : {100, 40, 2, 1})
         for (int state : {0, 0x36})
@@ -1438,7 +1438,7 @@ void ForceLookups(object::Guest* guest)
         for (int i = 0; i < 3; ++i) Forced(guest, [&] { call(&Guest::QueueAtWharf); });
     // A litter placed on the scratch guest's tile has no usable sprite and crashes the next draw (so does the game), so the world forbids litter for these
     // calls: the animation choice and its draws run, the placement itself happens in natural play.
-    layout::World* world = game::GetWorld();
+    world_data::World* world = game::GetWorld();
     const uint8_t savedAllow = world->m_allowLitter;
     world->m_allowLitter = 0;
     for (const char* animation :
@@ -1824,7 +1824,7 @@ void VandaliseBin(object::Guest* guest)
     if (!g_helperChecks) return g_vandaliseBin(guest);
     int id = guest->m_id;
     object::Manager* manager = game::GetObjectManager();
-    layout::World* world = World();
+    world_data::World* world = World();
     auto object = static_cast<Scenery*>(object::object_manager::ObjectById(manager, guest->m_ActivityPerson));
     int actionState = guest->m_ActionState;
     uint32_t offence = guest->m_OffenceState;
@@ -2401,7 +2401,7 @@ bool ExecuteGuestDesireCommand(const std::string& name, const std::vector<std::s
         g_helperChecks = checks;
     } else if (name == "desire-dump") {
         object::Guest* guest = GuestAt(args.empty() ? 0 : std::stoi(args[0]));
-        layout::World* world = World();
+        world_data::World* world = World();
         if (!guest || !world) {
             OBL_LOG("autotest: FAILED desire-dump needs a guest");
             return true;
@@ -2420,7 +2420,7 @@ bool ExecuteGuestDesireCommand(const std::string& name, const std::vector<std::s
         // script: the save keeps m_eventCount but not the entries, so a load rebuilds fewer entries than counted and the weather load, then
         // weather::runtime::UpdateSchedule, walk past the deque (the game crashes the same way; the game inserts only from STATE_WORLD_STARTUP).
         weather::Weather* weather = game::GetWeather();
-        layout::World* world = World();
+        world_data::World* world = World();
         if (!weather || !world) return true;
         struct Entry {
             int kind;
@@ -2447,7 +2447,7 @@ bool ExecuteGuestDesireCommand(const std::string& name, const std::vector<std::s
     } else if (name == "power-state") {
         // World power totals (demand of all consumers, installed generation, output of open
         // generators, demand of consumers not shed) recomputed from the building list, plus shed buildings.
-        layout::World* world = World();
+        world_data::World* world = World();
         object::Manager* manager = game::GetObjectManager();
         if (!world || !manager) return true;
         float demandAll = 0, capacity = 0, output = 0, demand = 0;
@@ -2488,7 +2488,7 @@ bool ExecuteGuestDesireCommand(const std::string& name, const std::vector<std::s
         OBL_LOG("autotest: power-generators %s (%d)", args[0].c_str(), changed);
     } else if (name == "weather-state") {
         const weather::Weather* weather = game::GetWeather();
-        layout::World* world = World();
+        world_data::World* world = World();
         if (!weather || !world) return true;
         std::ostringstream out;
         for (int i = 0; i < weather->m_eventCount; ++i) {

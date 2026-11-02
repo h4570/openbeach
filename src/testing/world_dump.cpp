@@ -4,7 +4,7 @@
 // the native script records (src/game/objects/script_types.h, src/game/world/world_script_types.h) and writes JSON that tools/check_script_dump.py compares with the decoded .ble sources,
 // so a wrong record fails a test.
 
-#include "layout_world.h"
+#include "world_dump.h"
 
 #include "game/objects/script_types.h"
 #include "game/world/world_script_types.h"
@@ -45,7 +45,7 @@ template<int N> void ScriptStateJson(std::ostringstream& json, const script::Scr
 // same .ble texts (tools/check_script_dump.py), so state tables, handler tables and list lengths are compared with the source.
 bool DumpScripts(std::string& out)
 {
-    const layout::World* world = World();
+    const world_data::World* world = World();
     const world_script_host::WorldScriptHost* host = world ? world->m_worldScriptHost.get() : nullptr;
     const world_script::WorldScript* script = world ? world->m_worldScript : nullptr;
     if (!host || !script || script != host->WorldScript() || script->m_numStates > world_script::kMaxWorldScriptStates) return false;
@@ -74,12 +74,12 @@ bool DumpScripts(std::string& out)
 
 } // namespace
 
-void InitLayoutWorldDump(const Text16& gameDirectory)
+void InitWorldDump(const Text16& gameDirectory)
 {
     g_scriptsFile = WidePath(gameDirectory) / "scripts-dump.json";
 }
 
-bool ExecuteLayoutWorldCommand(const std::string& name, const std::vector<std::string>& args)
+bool ExecuteWorldDumpCommand(const std::string& name, const std::vector<std::string>& args)
 {
     if (name == "scripts-dump") {
         std::string text;

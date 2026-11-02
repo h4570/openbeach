@@ -16,7 +16,7 @@
 #include <vector>
 
 using namespace obl;
-using namespace obl::layout;
+using namespace obl::world_data;
 using obl::object::Builder;
 using obl::object::Cleaner;
 using obl::object::Lifeguard;

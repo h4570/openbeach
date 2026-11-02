@@ -102,7 +102,7 @@ void RunList(ScriptProgram& script, object::Base* object, int32_t state, ScriptC
 // The world's pause flag turns the update off altogether.
 bool UpdateSkipped()
 {
-    layout::World* world = GetWorld();
+    world_data::World* world = GetWorld();
     return world && world->m_paused != 0;
 }
 

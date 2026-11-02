@@ -523,7 +523,7 @@ void Compose(Mode* mode, int photo)
 std::atomic<int> g_composed{0};
 
 using GuiManager = ui::GuiManager;
-using World = layout::World;
+using World = world_data::World;
 test::CallCounter g_clickEnter("GuiModeClickEnter"), g_clickAim("GuiModeClickAim"), g_clickCheck("GuiModeClickCheck");
 
 struct ClickPlan {
@@ -903,7 +903,7 @@ bool VisibleAgainst(Object* object, int buildingId)
 // ---- the bulldozer ----
 void CreditIncome(double amount, bool cash)
 {
-    layout::World* world = game::GetWorld();
+    world_data::World* world = game::GetWorld();
     // Selling assets is not operating income: otherwise repeated purchases satisfy scenario 8's income goal.
     world->m_demolishIncomeToday = static_cast<float>(amount + world->m_demolishIncomeToday);
     if (cash) world->m_player->m_cash = static_cast<float>(world->m_player->m_cash + gui_modes_tools::kDozerFlagIncome);

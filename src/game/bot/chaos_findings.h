@@ -22,7 +22,7 @@ namespace obl::chaos {
 // expose booked refunds separately; scenery deliberately books a different refund from cash.
 class CashLedger {
 public:
-    std::vector<std::string> Observe(const layout::World& world)
+    std::vector<std::string> Observe(const world_data::World& world)
     {
         if (!world.m_player) {
             m_previous.reset();
@@ -58,7 +58,7 @@ private:
 };
 
 // Read-only observations, deliberately separate from the hard chaos oracle and world hashes.
-inline std::vector<std::string> SoftFindings(const layout::World& world)
+inline std::vector<std::string> SoftFindings(const world_data::World& world)
 {
     std::vector<std::string> findings;
     auto counter = [&](const std::string& name, int64_t value) {

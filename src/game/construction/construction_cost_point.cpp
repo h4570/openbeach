@@ -16,7 +16,7 @@ namespace {
 using object::Building;
 using tables::BuildingDef;
 
-// The game side of the Env in src/game/construction/construction_jobs.h (group F2).
+// The game side of the Env in src/game/construction/construction_jobs.h.
 struct CostPointEnv {
     bool Building(int id, construction::CostFacts* facts) const
     {

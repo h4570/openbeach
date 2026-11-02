@@ -47,8 +47,8 @@ struct Env {
     float opening = 8.0f, closing = 20.0f;
     float OpeningStart(int) { return opening; }
     float OpeningEnd(int) { return closing; }
-    layout::World world = {};
-    const layout::World& GameWorld() { return world; }
+    world_data::World world = {};
+    const world_data::World& GameWorld() { return world; }
     float build = 0.0f, demolish = 0.0f;
     float BuildProgress(int) { return build; }
     float DemolishProgress(int) { return demolish; }

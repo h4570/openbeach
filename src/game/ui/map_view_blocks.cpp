@@ -160,7 +160,7 @@ std::atomic<float> g_startupFade{0.0f};
 
 void RecordStartupFade(float fade)
 {
-    const layout::World* world = game::GetWorld();
+    const world_data::World* world = game::GetWorld();
     if (!world || !world->m_startup) return;
     g_startupFade = fade;
     g_fadeLoadingSave = world->m_loadingSave != 0;

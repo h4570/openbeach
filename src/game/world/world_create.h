@@ -11,8 +11,8 @@ namespace obl::world {
 // (the object manager's create), the object's own methods and the delivery of the first message stay behind their Envs.
 // Each entry point counts `<name>`, and the dispatcher
 // calls the factories directly, so the per-factory counters still count.
-bool CreateObjectFromMessage(layout::World& world, const messages::Message& request, const void* record);
+bool CreateObjectFromMessage(world_data::World& world, const messages::Message& request, const void* record);
 // The factory of one class (the record type the class's world::Create* took); nullptr for a class without a factory.
-object::Base* CreateObject(layout::World& world, object::ObjectType type, const void* record);
+object::Base* CreateObject(world_data::World& world, object::ObjectType type, const void* record);
 
 } // namespace obl::world

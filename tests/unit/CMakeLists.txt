@@ -146,7 +146,7 @@ add_executable(obl_unit_tests
     image_scale_test.cpp
     input_mapping_test.cpp
     input_state_test.cpp
-    layout_test.cpp
+    state_helpers_test.cpp
     mp3info_test.cpp
     id3tag_test.cpp
     playlist_logic_test.cpp

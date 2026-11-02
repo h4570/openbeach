@@ -213,7 +213,7 @@ bool NoPath(Guest& guest)
     Env env;
     ThinkOf(guest, kNoPathToAccommodation, env);
     float& last = LastNoPathTickerTime();
-    layout::World* world = GetWorld();
+    world_data::World* world = GetWorld();
     if (NoPathTickerDue(world->m_gameTime, last))
         feedback::Feedback(world->m_feedbackManager)
                 .AddText(ui::text_table::Lookup(kNoPathTicker), static_cast<int32_t>(guest.m_id), kNoPathTickerType);
@@ -260,7 +260,7 @@ bool BlockedMessage(Guest& guest)
     const char* buildingKey = nullptr;
     if (guest.m_activity == 0) buildingKey = world::world_params::GetBuildingDef(GetWorldParams(), guest.m_CurTypeID)->m_key.c_str();
     const std::string key = BlockedKey(guest, buildingKey, roll);
-    layout::World* world = GetWorld();
+    world_data::World* world = GetWorld();
     feedback::Feedback(world->m_feedbackManager)
             .AddText(ui::text_table::Lookup(key.c_str()), static_cast<int32_t>(guest.m_id), kBlockedTickerType);
     return true;

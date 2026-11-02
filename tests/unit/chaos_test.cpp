@@ -23,8 +23,8 @@ using obl::command::Command;
 
 OBL_TEST_CASE("chaos.cash_ledger_separates_refunds_and_costs_and_rebases")
 {
-    obl::layout::World world{};
-    obl::layout::Player player{};
+    obl::world_data::World world{};
+    obl::world_data::Player player{};
     world.m_player.reset(&player);
     player.m_cash = 10000;
     CashLedger ledger;
@@ -65,8 +65,8 @@ OBL_TEST_CASE("chaos.cash_ledger_separates_refunds_and_costs_and_rebases")
 
 OBL_TEST_CASE("chaos.cash_ledger_reports_nonfinite_and_accepts_float_rounding")
 {
-    obl::layout::World world{};
-    obl::layout::Player player{};
+    obl::world_data::World world{};
+    obl::world_data::Player player{};
     world.m_player.reset(&player);
     player.m_cash = 10000000;
     CashLedger ledger;
@@ -82,7 +82,7 @@ OBL_TEST_CASE("chaos.cash_ledger_reports_nonfinite_and_accepts_float_rounding")
 OBL_TEST_CASE("chaos.soft_findings_observe_counters_and_grid_without_mutation")
 {
     auto objects = std::make_unique<obl::object::Manager>();
-    obl::layout::World world{};
+    obl::world_data::World world{};
     obl::map::Grid grid;
     grid.m_width = grid.m_height = 8;
     grid.m_tileSize = 64;
@@ -112,7 +112,7 @@ OBL_TEST_CASE("chaos.soft_findings_observe_counters_and_grid_without_mutation")
 OBL_TEST_CASE("chaos.soft_findings_report_grid_ids_the_manager_does_not_list")
 {
     auto objects = std::make_unique<obl::object::Manager>();
-    obl::layout::World world{};
+    obl::world_data::World world{};
     obl::map::Grid grid;
     grid.m_width = grid.m_height = 1;
     grid.m_cells.resize(1);
@@ -134,7 +134,7 @@ OBL_TEST_CASE("chaos.soft_findings_report_grid_ids_the_manager_does_not_list")
 OBL_TEST_CASE("chaos.soft_findings_detect_partial_footprints_and_rectangular_buildings")
 {
     auto objects = std::make_unique<obl::object::Manager>();
-    obl::layout::World world{};
+    obl::world_data::World world{};
     obl::map::Grid grid;
     grid.m_width = grid.m_height = 8;
     grid.m_tileSize = 64;

@@ -9,7 +9,7 @@
 // ReceiveMessage for the six staff professions,
 // each taking the message and answering a bool.
 // Every one is a `switch` over the type of the message with a few messages of the profession and, on every path, the same last call:
-// the staff ReceiveMessage (group D1, `staff_receive.h`), whose answer is the answer of the function. What the switch does first:
+// the staff ReceiveMessage (`staff_receive.h`), whose answer is the answer of the function. What the switch does first:
 //   MT_NEW_DAY               the counters of the day go to zero and the messages the player was told about the profession are forgotten
 //   MT_NEW_HOUR              every fourth hour a member who is not happy (below 0.6) forgets that it asked for feedback
 //   MT_BUILDING_BEING_REMOVED  the home building goes away: the member leaves its job (a message from any other building matters only to a rep and

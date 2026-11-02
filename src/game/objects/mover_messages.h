@@ -15,7 +15,7 @@
 #include <cstring>
 #include <optional>
 
-// The moving object's message handler (group E of docs/architecture/objects.md), one message family at a time. It dispatches the types
+// The moving object's message handler (docs/architecture/objects.md), one message family at a time. It dispatches the types
 // 5..29; every type outside that range ends in the base object's message handler. `Handles` says which types this file implements; the game
 // handler (src/game/objects/mover_receive.cpp) passes every other message to the base handler. As in the other groups,
 // everything outside the object goes through an `Env`:
