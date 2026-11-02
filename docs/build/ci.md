@@ -13,12 +13,23 @@ check runs on the project's own L0 pack. A newer push or pull-request update can
 | `wasm` | `tools/wasm_linux.sh`: unit tests and `obl-sim` built with Emscripten 6.0.13 (emsdk cached per version) and run under Node; the browser game and the importer, assembled into the static site and uploaded as the artifact `browser-site` (14 days; [browser-build.md](../architecture/browser-build.md#site)) | `bash tools/wasm_linux.sh` with `EMSDK` set |
 | `deploy` | only by hand with the input `deploy` on `main`, after every job above: publishes the site to GitHub Pages | `gh workflow run ci.yml --ref main -f deploy=true` |
 
-The release workflow starts that run after it makes a release, so a merged release pull request publishes the site. The run
-replaces the push run of the same commit; a newer push would cancel it too, and the site then needs the run by hand.
+## Release workflow
+`.github/workflows/release.yml` runs release-please on every push to `main`: the `release` job keeps the release pull
+request open, and merging it makes the tag and the GitHub release. Events of `github.token` start no other workflow, so
+whatever a release needs runs in this file, after `release` and on its outputs `release_created` and `tag_name`:
+- the site: `release` starts the CI run with `deploy` (below);
+- `linux`: builds the Linux tarball on Ubuntu 22.04, runs the L0 references on the optimized build, smoke-tests it under
+  Xvfb (also in `debian:12` and `ubuntu:24.04` containers) and attaches it to the release ([linux-release.md](linux-release.md)).
+
+By hand (`workflow_dispatch`) only `linux` runs and keeps the tarballs as the workflow artifact `linux-release`.
+
+The CI run started after a release replaces the push run of the same commit, so a merged release pull request publishes
+the site; a newer push would cancel it too, and the site then needs the run by hand.
 
 The unit, `sim` and `wasm` jobs compile through ccache, kept in the Actions cache per job and compiler. Package installs
-skip recommended packages. The windowed game and anything that needs the player's own copy of the game are not part of
-CI; they run locally ([running-the-game.md](running-the-game.md)).
+skip recommended packages. The Windows game and anything that needs the player's own copy of the game are not part of
+CI; they run locally ([running-the-game.md](running-the-game.md)). The windowed Linux game is built and smoke-tested by the
+release workflow.
 
 ## Related topics
 - [Local checks](ci-local.md): reproducing the jobs on your machine.

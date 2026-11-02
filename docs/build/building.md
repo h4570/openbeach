@@ -35,7 +35,10 @@ OBL_SIM_SKIP_CONVERSION=1 bash tools/obl_sim_linux.sh -DOBL_LINUX_WINDOWED=ON   
 bash tools/ci/l0_sim_tests.sh                                                   # the L0 tests on obl-sim
 bash tools/unit_linux.sh clang                                                  # the unit tests
 ```
-The windowed build needs SDL's X11 or Wayland development packages for a real window. It has only been run without a display.
+`OBL_SIM_BUILD_TYPE` sets the CMake build type (default `Debug`); the game targets are `-O2` in every type. The windowed
+build needs SDL's X11 or Wayland development packages for a real window (`tools/ci/linux_release_packages.sh` lists them).
+It starts, presents frames under Xvfb and quits cleanly; the release tarball is built with
+`bash tools/ci/linux_release.sh` ([linux-release.md](linux-release.md)).
 
 ## WebAssembly
 `bash tools/wasm_linux.sh` builds the unit tests, the simulation and the importer adapter with Emscripten (`EMSDK` names the SDK).
