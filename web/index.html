@@ -73,8 +73,8 @@
     body.playing .frame { width: fit-content; margin: 0 auto; }
     body.playing .screen { aspect-ratio: auto; }
     body.playing #canvas { position: static; visibility: visible;
-        width: min(calc(100vw - 56px), calc((100vh - 86px) * var(--aspect, 1.3333))) !important;
-        height: min(calc(100vh - 86px), calc((100vw - 56px) / var(--aspect, 1.3333))) !important; }
+        width: min(calc(100vw - 56px), calc((100vh - var(--chrome, 86px)) * var(--aspect, 1.3333))) !important;
+        height: min(calc(100vh - var(--chrome, 86px)), calc((100vw - 56px) / var(--aspect, 1.3333))) !important; }
     .layer { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
         gap: 12px; padding: 20px; text-align: center; }
     .layer[hidden], .gamebar[hidden] { display: none; }
@@ -125,6 +125,15 @@
     .secondary a, .secondary label, .secondary button { font: inherit; font-size: 14px; color: #fff; background: #ffffff1f; border: 1px solid #ffffff59; border-radius: 999px;
         padding: 7px 16px; cursor: pointer; text-decoration: none; }
     .secondary a:hover, .secondary label:hover, .secondary button:hover { background: #ffffff33; }
+    /* The keys the game reads, for a touch screen (site.js sends them to the canvas); the bar takes room below the game. */
+    .touch-keys { display: none; }
+    @media (pointer: coarse) {
+        body.playing { --chrome: 144px; }
+        body.playing .touch-keys { display: flex; justify-content: center; gap: 12px; margin-top: 8px; }
+    }
+    .touch-keys button { font: inherit; font-weight: 600; font-size: 15px; color: #fff; background: #0a1f3cd9; border: 0; border-radius: 999px;
+        min-width: 112px; min-height: 44px; padding: 8px 22px; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+    .touch-keys button:active { background: var(--coral); }
     .gamebar { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 8px; font-size: 14px; }
     .gamebar span { background: #ffffffa8; border-radius: 999px; padding: 2px 11px; }
     .gamebar button { font: inherit; font-weight: 600; color: var(--navy); background: none; border: 0; cursor: pointer; margin-left: 14px; }
@@ -244,6 +253,10 @@
                     <button onclick="Module.downloadLog()" data-t="downloadLog">Download log</button></div>
             </div>
         </div>
+        <div class="touch-keys">
+            <button id="key-space" data-code="Space" data-key=" ">&#8635; Space</button>
+            <button id="key-escape" data-code="Escape" data-key="Escape">&#10005; Esc</button>
+        </div>
         <div id="game-bar" class="gamebar" hidden>
             <span data-t="savedHere">Saves live only in this browser: download a copy</span>
             <div><button onclick="Module.downloadSaves()" data-t="downloadSaves">Download saves</button>
@@ -274,7 +287,7 @@
     <details><summary data-t="faq2q">Can I play Beach Life on a Mac or on Linux?</summary>
         <p data-t="faq2a">OpenBeach runs on the web page, not on your operating system, so a current desktop browser on a Mac or a Linux PC should run it as well. Chrome and Edge are the best tested; if something breaks in another browser, please report it on GitHub.</p></details>
     <details><summary data-t="faq3q">Does it work on a phone or tablet?</summary>
-        <p data-t="faq3a">Experimentally. Touch controls are new and still rough: tap to click, drag with one finger to move the map, press and hold to keep the left button down, tap with two fingers to right-click and drag with two fingers to scroll. There is no on-screen keyboard, and the game keeps about 1 GB of data in the browser, so a desktop or laptop is still the better choice.</p></details>
+        <p data-t="faq3a">Experimentally. Touch controls are new and still rough: tap to click, drag with one finger to move the map, press and hold to keep the left button down, tap with two fingers to right-click and drag with two fingers to scroll. While placing a building, drag a finger to aim and lift it to place; the Space and Esc buttons below the game turn the building and leave the mode. The game keeps about 1 GB of data in the browser, so a desktop or laptop is still the better choice.</p></details>
     <details><summary data-t="faq4q">Do I need the original game?</summary>
         <p data-t="faq4a">Yes. OpenBeach contains no graphics, music or other data of the game. Drop your own copy on the page: a disc image (.iso), the folder of an installation, or the disc itself if your browser can read the drive.</p></details>
     <details><summary data-t="faq5q">Which copies of the game work?</summary>

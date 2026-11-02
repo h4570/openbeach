@@ -8,6 +8,7 @@
 //   tap with two fingers   right click
 //   drag with two fingers  the wheel
 // A finger that has not moved yet only places the cursor; what it turns into is decided by its motion and by time.
+// While the GUI places things (TouchAim) one finger is the cursor instead and the map is not dragged.
 
 #include <cmath>
 #include <cstdint>
@@ -23,6 +24,13 @@ constexpr bool kTouchGestures =
 #else
         false;
 #endif
+
+// What the GUI wants from a finger, set by the backend from the GUI mode (a gesture keeps the aim it began with).
+enum class TouchAim {
+    None, // the map: a drag moves the camera
+    Confirm, // placing a building or scenery: the finger moves the preview, and lifting it is the press (the game places on a press)
+    Paint, // painting grass or paving: the left button is down while the finger drags
+};
 
 struct TouchAction {
     enum class Kind {
@@ -44,6 +52,8 @@ public:
     void FingerDown(int64_t id, float x, float y, uint32_t ms);
     void FingerMove(int64_t id, float x, float y, uint32_t ms);
     void FingerUp(int64_t id, float x, float y, uint32_t ms);
+    // What the GUI is doing now; it applies from the next gesture.
+    void SetAim(TouchAim aim) { m_nextAim = aim; }
     // Time passing with the fingers where they are: a finger held still long enough turns into a left button hold.
     void Tick(uint32_t ms);
     // The window lost focus or SDL cancelled the touch: whatever is held goes up.
@@ -74,6 +84,7 @@ private:
         Two, // a second finger joined, not decided yet
         Pan, // one finger drags the camera
         Hold, // the left button is held by one finger
+        Paint, // the left button is held by one finger for painting (TouchAim::Paint)
         Scroll, // two fingers scroll
         Done, // decided (or too many fingers): nothing more until every finger is up
     };
@@ -105,7 +116,7 @@ private:
     {
         // Whatever the gesture holds goes up where its finger was.
         if (m_mode == Mode::Pan) Emit(TouchAction::Kind::RightUp, m_lastX, m_lastY);
-        if (m_mode == Mode::Hold) Emit(TouchAction::Kind::LeftUp, m_lastX, m_lastY);
+        if (m_mode == Mode::Hold || m_mode == Mode::Paint) Emit(TouchAction::Kind::LeftUp, m_lastX, m_lastY);
     }
 
     Mode m_mode = Mode::Idle;
@@ -115,6 +126,8 @@ private:
     float m_startX = 0, m_startY = 0; // where the gesture began (the primary finger; the centroid of Two)
     float m_lastX = 0, m_lastY = 0; // the last position the gesture used
     uint32_t m_startMs = 0;
+    TouchAim m_nextAim = TouchAim::None;
+    TouchAim m_aim = TouchAim::None; // of the gesture under way
 };
 
 inline void TouchGestures::FingerDown(int64_t id, float x, float y, uint32_t ms)
@@ -123,11 +136,16 @@ inline void TouchGestures::FingerDown(int64_t id, float x, float y, uint32_t ms)
     m_fingers.push_back({id, x, y});
     if (m_fingers.size() == 1) {
         m_mode = Mode::One;
+        m_aim = m_nextAim;
         m_primary = id;
         m_startX = m_lastX = x;
         m_startY = m_lastY = y;
         m_startMs = ms;
         Emit(TouchAction::Kind::Move, x, y);
+        if (m_aim == TouchAim::Paint) {
+            m_mode = Mode::Paint;
+            Emit(TouchAction::Kind::LeftDown, x, y);
+        }
     } else if (m_fingers.size() == 2 && m_mode == Mode::One) {
         m_mode = Mode::Two;
         Centroid(m_startX, m_startY);
@@ -149,6 +167,13 @@ inline void TouchGestures::FingerMove(int64_t id, float x, float y, uint32_t ms)
     switch (m_mode) {
     case Mode::One:
         if (id != m_primary) break;
+        if (m_aim == TouchAim::Confirm) {
+            // The preview follows the finger; nothing is pressed until it lifts.
+            Emit(TouchAction::Kind::Move, x, y);
+            m_lastX = x;
+            m_lastY = y;
+            break;
+        }
         if (Distance(x, y, m_startX, m_startY) <= kSlop) break;
         // Moved: a camera drag from where the finger went down, carrying the motion made so far.
         m_mode = Mode::Pan;
@@ -165,6 +190,7 @@ inline void TouchGestures::FingerMove(int64_t id, float x, float y, uint32_t ms)
         m_lastY = y;
         break;
     case Mode::Hold:
+    case Mode::Paint:
         if (id != m_primary) break;
         Emit(TouchAction::Kind::Move, x, y);
         m_lastX = x;
@@ -203,6 +229,14 @@ inline void TouchGestures::FingerUp(int64_t id, float x, float y, uint32_t ms)
     switch (m_mode) {
     case Mode::One:
         if (id != m_primary) break;
+        if (m_aim == TouchAim::Confirm) {
+            // The press where the finger left the preview.
+            Emit(TouchAction::Kind::Move, x, y);
+            Emit(TouchAction::Kind::LeftDown, x, y);
+            Emit(TouchAction::Kind::LeftUp, x, y);
+            m_mode = Mode::Done;
+            break;
+        }
         // A finger lifted without having moved is a click, however long it stayed (a hold has its own mode).
         Emit(TouchAction::Kind::Move, m_startX, m_startY);
         Emit(TouchAction::Kind::LeftDown, m_startX, m_startY);
@@ -220,8 +254,9 @@ inline void TouchGestures::FingerUp(int64_t id, float x, float y, uint32_t ms)
         break;
     case Mode::Pan:
     case Mode::Hold:
+    case Mode::Paint:
         if (id != m_primary) break;
-        if (m_mode == Mode::Hold) {
+        if (m_mode == Mode::Hold || m_mode == Mode::Paint) {
             Emit(TouchAction::Kind::Move, x, y); // the button goes up where the finger left
             m_lastX = x;
             m_lastY = y;
@@ -243,7 +278,7 @@ inline void TouchGestures::FingerUp(int64_t id, float x, float y, uint32_t ms)
 
 inline void TouchGestures::Tick(uint32_t ms)
 {
-    if (m_mode != Mode::One || ms - m_startMs < kHoldMs) return;
+    if (m_mode != Mode::One || m_aim != TouchAim::None || ms - m_startMs < kHoldMs) return;
     Finger* finger = Find(m_primary);
     if (!finger) return;
     m_mode = Mode::Hold;

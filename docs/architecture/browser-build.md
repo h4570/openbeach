@@ -155,11 +155,18 @@ How each piece of the windowed host runs in a tab.
   (`SDL_HINT_TOUCH_MOUSE_EVENTS`) and `input.cpp` feeds SDL's finger events to `TouchGestures` (`touch_gestures.h`, no SDL,
   unit tests `touch.*`), which turns them into the mouse's records: a tap is a left click, a drag with one finger the camera
   drag (the right button and the motion, scaled from client to game pixels so the map follows the finger), a press and
-  hold keeps the left button down until the finger lifts (sliders, drags in the interface), a tap with two fingers is a
-  right click and a drag with two fingers the wheel. The cursor is where the finger is and leaves once it is up and the
-  game has read it, so a tap near the edge does not scroll the map. The canvas has `touch-action: none`. Rough by design:
-  the thresholds (`kSlop`, `kTapMs`, `kHoldMs`, `kPixelsPerNotch`) are guesses that need a real device, and there is no
-  on-screen keyboard, so the keys the game reads are not reachable. Native hosts keep SDL's touch-to-mouse events.
+  hold keeps the left button down until the finger lifts, a tap with two fingers is a right click and a drag with two
+  fingers the wheel. The cursor is where the finger is and leaves once it is up and the game has read it, so a tap near the
+  edge does not scroll the map. The canvas has `touch-action: none`.
+  While the GUI places things (`GuiManager::m_mode` 1 and 5, building and scenery; `CurrentTouchAim`) one finger is the
+  cursor instead, because the game places on the press and a tap would place blindly: the finger moves the preview and
+  lifting it is the press (`TouchAim::Confirm`); a second finger then turns the preview with the wheel and lifts without
+  placing. Painting grass and paving (modes 8 and 7) holds the left button while the finger drags (`TouchAim::Paint`). The
+  map moves with the edge scroll there. The keys the game reads cannot be typed, so the page has two buttons below the game
+  on touch screens (`pointer: coarse`, `wireTouchKeys` in `site.js`): Space (turns the preview) and Esc (leaves a mode,
+  opens the menu), sent to the canvas as keyboard events. Rough by design: the thresholds (`kSlop`, `kTapMs`, `kHoldMs`,
+  `kPixelsPerNotch`) are guesses that need a real device, and other keys are not reachable. Native hosts keep SDL's
+  touch-to-mouse events.
 - **First resolution and sampling.** The GUI has a fixed pixel size, so the page picks the size for the tab: on the first
   start `seedResolution` (`site.js`) writes `[Video]` into the INI, the listed size that fills the tab best at 1.15 screen
   pixels per game pixel or more (`resolutionForTab`); later starts keep the INI's. The canvas keeps the game's pixels and

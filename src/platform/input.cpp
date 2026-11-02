@@ -6,6 +6,7 @@
 #include "game/ui/input_backend.h"
 
 #include "game/game/game_accessors.h"
+#include "game/ui/gui_manager_types.h"
 #include "core/config.h"
 #include "platform/cursor.h"
 #include "platform/display_window.h"
@@ -241,6 +242,22 @@ double TouchDragScale()
     return width > 0 ? static_cast<double>(game.cx) / static_cast<double>(width) : 1.0;
 }
 
+// GuiManager::m_mode of the modes that place things (the factory in gui_modes_place.cpp): where a press has to be chosen first.
+constexpr int kGuiModePlaceScenery = 1, kGuiModePlaceBuilding = 5, kGuiModePlacePavement = 7, kGuiModePlaceGrass = 8;
+
+TouchAim CurrentTouchAim()
+{
+    const ui::GuiManager* manager = game::GetGuiManager();
+    if (!manager) return TouchAim::None;
+    switch (manager->m_mode) {
+    case kGuiModePlaceScenery:
+    case kGuiModePlaceBuilding: return TouchAim::Confirm;
+    case kGuiModePlacePavement:
+    case kGuiModePlaceGrass: return TouchAim::Paint;
+    default: return TouchAim::None;
+    }
+}
+
 void PlaceTouchCursor(float x, float y)
 {
     g_sdlMouseClient = {static_cast<LONG>(std::floor(x)), static_cast<LONG>(std::floor(y))};
@@ -293,6 +310,7 @@ void ReadSdlTouchEvents()
     SDL_Window* window = SDL_GetWindowFromID(SdlGameWindowId());
     int width = 0, height = 0;
     if (window) SDL_GetWindowSize(window, &width, &height);
+    g_touch.SetAim(CurrentTouchAim());
     // Drained even when unused (native hosts), so that the queue does not fill up.
     while (SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_EVENT_FINGER_DOWN, SDL_EVENT_FINGER_CANCELED) > 0) {
         if (!kTouchGestures || !g_queueFocused || width <= 0 || height <= 0) continue;

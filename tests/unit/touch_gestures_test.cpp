@@ -227,3 +227,98 @@ OBL_TEST_CASE("touch.cancel_lets_go_of_what_is_held")
     touch.FingerUp(2, 5, 5, 2100);
     OBL_CHECK_EQ(Kinds(touch.Take()), "");
 }
+
+OBL_TEST_CASE("touch.placing_aims_with_the_finger_and_presses_on_lift")
+{
+    TouchGestures touch;
+    touch.SetAim(TouchAim::Confirm);
+    touch.FingerDown(1, 100, 100, 0);
+    OBL_CHECK_EQ(Kinds(touch.Take()), "M");
+    // However far it moves, the finger only carries the preview: no camera drag, no hold, nothing pressed.
+    touch.FingerMove(1, 220, 180, 50);
+    auto actions = touch.Take();
+    OBL_CHECK_EQ(Kinds(actions), "M");
+    OBL_CHECK_EQ(actions[0].x, 220.0f);
+    touch.Tick(2000);
+    OBL_CHECK_EQ(Kinds(touch.Take()), "");
+    OBL_CHECK(!touch.Panning());
+    // The press is where it lifted.
+    touch.FingerUp(1, 230, 190, 2100);
+    actions = touch.Take();
+    OBL_CHECK_EQ(Kinds(actions), "M LD LU");
+    for (const TouchAction& action : actions) {
+        OBL_CHECK_EQ(action.x, 230.0f);
+        OBL_CHECK_EQ(action.y, 190.0f);
+    }
+    OBL_CHECK(!touch.AnyFingerDown());
+}
+
+OBL_TEST_CASE("touch.placing_a_second_finger_turns_instead_of_pressing")
+{
+    TouchGestures touch;
+    touch.SetAim(TouchAim::Confirm);
+    touch.FingerDown(1, 100, 300, 0);
+    touch.FingerDown(2, 180, 300, 10);
+    touch.Take();
+    // Two fingers are the wheel (the preview turns), and lifting them places nothing.
+    touch.FingerMove(1, 100, 300 - 2 * TouchGestures::kPixelsPerNotch, 50);
+    touch.FingerMove(2, 180, 300 - 2 * TouchGestures::kPixelsPerNotch, 60);
+    OBL_CHECK(WheelTotal(touch.Take()) < -1.9f);
+    touch.FingerUp(2, 180, 200, 100);
+    touch.FingerUp(1, 100, 200, 110);
+    OBL_CHECK_EQ(Kinds(touch.Take()), "");
+    // A two-finger tap is the right click as usual (the placing modes do not read it); nothing is pressed on the left.
+    touch.FingerDown(3, 10, 10, 1000);
+    touch.FingerDown(4, 60, 10, 1020);
+    touch.FingerUp(4, 60, 10, 1060);
+    touch.FingerUp(3, 10, 10, 1080);
+    OBL_CHECK_EQ(Kinds(touch.Take()), "M M RD RU");
+}
+
+OBL_TEST_CASE("touch.painting_holds_the_left_button_while_the_finger_drags")
+{
+    TouchGestures touch;
+    touch.SetAim(TouchAim::Paint);
+    touch.FingerDown(1, 40, 50, 0);
+    auto actions = touch.Take();
+    OBL_CHECK_EQ(Kinds(actions), "M LD");
+    OBL_CHECK_EQ(actions[1].x, 40.0f);
+    touch.FingerMove(1, 90, 50, 30);
+    OBL_CHECK_EQ(Kinds(touch.Take()), "M");
+    // A second finger does not take the paint away.
+    touch.FingerDown(2, 300, 300, 40);
+    touch.FingerMove(2, 320, 300, 50);
+    OBL_CHECK_EQ(Kinds(touch.Take()), "");
+    touch.FingerUp(2, 320, 300, 60);
+    touch.FingerUp(1, 120, 60, 70);
+    actions = touch.Take();
+    OBL_CHECK_EQ(Kinds(actions), "M LU");
+    OBL_CHECK_EQ(actions[1].x, 120.0f);
+    OBL_CHECK(!touch.AnyFingerDown());
+}
+
+OBL_TEST_CASE("touch.a_gesture_keeps_the_aim_it_began_with")
+{
+    TouchGestures touch;
+    touch.SetAim(TouchAim::Confirm);
+    touch.FingerDown(1, 10, 10, 0);
+    touch.Take();
+    // The mode may change under the finger (the GUI leaves the placing mode): this gesture is still an aim.
+    touch.SetAim(TouchAim::None);
+    touch.FingerMove(1, 200, 10, 20);
+    OBL_CHECK_EQ(Kinds(touch.Take()), "M");
+    touch.FingerUp(1, 200, 10, 40);
+    OBL_CHECK_EQ(Kinds(touch.Take()), "M LD LU");
+    // The next one is the map's again: a drag is the camera.
+    touch.FingerDown(2, 10, 10, 1000);
+    touch.FingerMove(2, 90, 10, 1020);
+    OBL_CHECK_EQ(Kinds(touch.Take()), "M M RD D");
+    touch.Cancel();
+    OBL_CHECK_EQ(Kinds(touch.Take()), "RU");
+    // And a cancel lets the painting button go.
+    touch.SetAim(TouchAim::Paint);
+    touch.FingerDown(3, 5, 5, 2000);
+    touch.Take();
+    touch.Cancel();
+    OBL_CHECK_EQ(Kinds(touch.Take()), "LU");
+}

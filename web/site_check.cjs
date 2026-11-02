@@ -63,6 +63,10 @@ function fakeElement(id) {
         addEventListener(type, listener) {
             listeners[type] = listener;
         },
+        dispatchEvent(event) {
+            this.dispatched = this.dispatched || [];
+            this.dispatched.push(event);
+        },
         focus() {
             this.focused = true;
         },
@@ -79,9 +83,11 @@ async function loadPage({opfs = {}, search = "", languages = ["pl-PL"], stored =
     const ids = ["canvas", "import", "import-folder", "import-iso", "import-status", "loading", "loading-text", "start", "start-button",
         "import-saves", "start-status", "ended", "import-progress", "import-main", "import-step", "import-percent", "import-sub",
         "import-count", "import-bars", "drop", "drop-status", "game-bar", "fullscreen", "site-language",
-        "start-language", "start-language-row"];
+        "start-language", "start-language-row", "key-space", "key-escape"];
     const elements = Object.fromEntries(ids.map((id) => [id, fakeElement(id)]));
     elements["loading-text"].textContent = "Loading...";
+    Object.assign(elements["key-space"].dataset, {code: "Space", key: " "});
+    Object.assign(elements["key-escape"].dataset, {code: "Escape", key: "Escape"});
     const translated = fakeElement("translated");
     translated.dataset.t = "play";
     const body = fakeElement("body");
@@ -116,6 +122,12 @@ async function loadPage({opfs = {}, search = "", languages = ["pl-PL"], stored =
         console,
         URLSearchParams,
         MutationObserver: FakeMutationObserver,
+        KeyboardEvent: class {
+            constructor(type, init) {
+                this.type = type;
+                Object.assign(this, init);
+            }
+        },
         Worker: FakeWorker,
         location: {search, pathname: "/", reload() {
             page.reloads++;
@@ -267,6 +279,21 @@ async function main() {
     pageDocument.pointerLockElement = canvas;
     await canvas.fire("pointermove", {buttons: 1});
     check(page.lockExits === 3, "drag lock: a release while the left button stays down ends it too");
+
+    // The touch buttons type Space and Esc into the canvas: down with the press, up with the release, once each.
+    const press = {preventDefault() {}};
+    await page.elements["key-space"].fire("pointerdown", press);
+    await page.elements["key-space"].fire("pointerdown", press);
+    check(canvas.dispatched.length === 1 && canvas.dispatched[0].type === "keydown" && canvas.dispatched[0].code === "Space" &&
+            canvas.dispatched[0].bubbles, "touch keys: the Space button's press is one keydown of Space on the canvas");
+    await page.elements["key-space"].fire("pointerup");
+    await page.elements["key-space"].fire("pointerleave");
+    check(canvas.dispatched.length === 2 && canvas.dispatched[1].type === "keyup" && canvas.dispatched[1].code === "Space",
+        "touch keys: the release is one keyup, and leaving the button after it adds none");
+    await page.elements["key-escape"].fire("pointerdown", press);
+    await page.elements["key-escape"].fire("pointercancel");
+    check(canvas.dispatched.length === 4 && canvas.dispatched[2].code === "Escape" && canvas.dispatched[3].type === "keyup",
+        "touch keys: Esc likewise, and a cancelled press does not leave the key down");
 
     worker.onmessage({data: {type: "done", files: 42}});
     check(worker.terminated, "folder: the worker ends after done");
