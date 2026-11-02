@@ -6,6 +6,7 @@
 # Build tree: build/linux-sim-x64/ (git-ignored), or $OBL_SIM_BUILD (a native Linux path builds faster from WSL than /mnt/c).
 # Game directory the converter writes packs/ into: run/, or $OBL_GAME_DIR (a copy on the Linux file system).
 # OBL_SIM_SKIP_CONVERSION=1 skips the pack conversion; OBL_SIM_ONLY=1 then also skips compiling obl-convert.
+# OBL_SIM_BUILD_TYPE sets CMAKE_BUILD_TYPE (default Debug; the release build uses RelWithDebInfo, tools/ci/linux_release.sh).
 set -euo pipefail
 
 root="${OBL_SOURCE_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
@@ -15,7 +16,7 @@ keep=()
 if [[ "${1:-}" == "-k" ]]; then keep=(-- -k 0); shift; fi
 
 started=$SECONDS
-cmake -S "$root/src/host_linux" -B "$dir" -G Ninja -DCMAKE_BUILD_TYPE=Debug \
+cmake -S "$root/src/host_linux" -B "$dir" -G Ninja -DCMAKE_BUILD_TYPE="${OBL_SIM_BUILD_TYPE:-Debug}" \
     -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ \
     "$@" >/dev/null
 echo "obl-sim configure: $((SECONDS - started)) s"
