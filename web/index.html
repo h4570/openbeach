@@ -10,7 +10,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>OpenBeach: play Beach Life in your browser</title>
-<meta name="description" content="Play the 2002 resort tycoon Beach Life in your browser with OpenBeach, an open-source engine that runs on your own copy. No install, nothing uploaded.">
+<meta name="description" content="Play Beach Life in your browser on Windows 11, Mac or Linux. OpenBeach is an open-source engine for your own copy of the 2002 resort tycoon. No install.">
 <link rel="canonical" href="https://openbeach.app/">
 <link rel="icon" href="favicon.ico" sizes="48x48">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
@@ -19,7 +19,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="OpenBeach">
 <meta property="og:title" content="OpenBeach: play Beach Life in your browser">
-<meta property="og:description" content="Play the 2002 resort tycoon Beach Life in your browser with OpenBeach, an open-source engine that runs on your own copy. No install, nothing uploaded.">
+<meta property="og:description" content="Play Beach Life in your browser on Windows 11, Mac or Linux. OpenBeach is an open-source engine for your own copy of the 2002 resort tycoon. No install.">
 <meta property="og:url" content="https://openbeach.app/">
 <meta property="og:image" content="https://openbeach.app/screenshots/browser.jpg">
 <meta property="og:image:width" content="986">
@@ -139,6 +139,10 @@
     .shots figure { margin: 0; }
     .shots img { display: block; width: 100%; height: auto; border-radius: 12px; box-shadow: 0 10px 28px #06152c66; }
     .shots figcaption { margin-top: 6px; color: #fff; font-size: 14px; text-align: center; }
+    .faq details { margin: 0 0 8px; padding: 0 18px; border-radius: 12px; background: #ffffffd9; }
+    .faq summary { padding: 12px 0; font-weight: 600; cursor: pointer; }
+    .faq details[open] summary { color: var(--red); }
+    .faq details p { margin: 0 0 14px; }
     footer { margin-top: 28px; background: #0a1f3cd9; color: #fff; border-radius: 10px; padding: 8px 14px; font-size: 14px; text-align: center; }
     @media (max-width: 860px) {
         .hero { grid-template-columns: minmax(0, 1fr); }
@@ -260,6 +264,29 @@
         <figure><a href="screenshots/beach.jpg"><img src="screenshots/beach.jpg" alt="Guests on the beach in OpenBeach" width="1102" height="819" loading="lazy"></a><figcaption data-t="shot2">Guests on the beach</figcaption></figure>
         <figure><a href="screenshots/browser.jpg"><img src="screenshots/browser.jpg" alt="OpenBeach running the game in a browser tab" width="986" height="843" loading="lazy"></a><figcaption data-t="shot3">The game in your browser</figcaption></figure>
     </div>
+</section>
+<section class="faq hide-playing" id="faq">
+    <h2 data-t="faqTitle">Questions and answers</h2>
+    <details><summary data-t="faq1q">Does Beach Life run on Windows 11 and Windows 10?</summary>
+        <p data-t="faq1a">Yes. OpenBeach plays the game inside your browser, so there is no installer and no compatibility mode to set up. It is built and tested with Chrome and Edge on Windows.</p></details>
+    <details><summary data-t="faq2q">Can I play Beach Life on a Mac or on Linux?</summary>
+        <p data-t="faq2a">OpenBeach runs on the web page, not on your operating system, so a current desktop browser on a Mac or a Linux PC should run it as well. Chrome and Edge are the best tested; if something breaks in another browser, please report it on GitHub.</p></details>
+    <details><summary data-t="faq3q">Does it work on a phone or tablet?</summary>
+        <p data-t="faq3a">Not at the moment. The game is controlled with a mouse (the right button drags the map), and it keeps about 1 GB of data in the browser, so use a desktop or laptop.</p></details>
+    <details><summary data-t="faq4q">Do I need the original game?</summary>
+        <p data-t="faq4a">Yes. OpenBeach contains no graphics, music or other data of the game. Drop your own copy on the page: a disc image (.iso), the folder of an installation, or the disc itself if your browser can read the drive.</p></details>
+    <details><summary data-t="faq5q">Which copies of the game work?</summary>
+        <p data-t="faq5a">The European and the French/German CD, the UK/US CD (Virtual Resort: Spring Break), the later English CD, and the installed folders of these. A copy the importer does not know is refused with a message and nothing is changed.</p></details>
+    <details><summary data-t="faq6q">Is my copy uploaded anywhere?</summary>
+        <p data-t="faq6a">No. Your browser converts the copy on your own computer, which takes a few minutes and happens once, and keeps the result in storage that only this page can reach. Nothing is sent to a server.</p></details>
+    <details><summary data-t="faq7q">Which languages can I play in?</summary>
+        <p data-t="faq7a">The ones your copy has: English for the UK/US and the later English CDs, and French, German, Italian, Polish and Spanish for the European and the French/German CDs. You pick the language on the screen before the game starts.</p></details>
+    <details><summary data-t="faq8q">Where are my saves, and can I move them?</summary>
+        <p data-t="faq8a">Saves are kept in this browser only, so clearing its site data deletes them. "Download saves" keeps a copy and "Import saves" loads it again, also on another computer.</p></details>
+    <details><summary data-t="faq9q">Is OpenBeach free, and is it the official game?</summary>
+        <p data-t="faq9a">It is free and open source (GPL-3.0-or-later) and an unofficial fan project, not affiliated with the makers of the original game. You need your own legal copy of the game.</p></details>
+    <details><summary data-t="faq10q">Is it finished? What if I find a bug?</summary>
+        <p data-t="faq10a">It is still under development. The campaign and sandbox scenarios can be played, but you may meet bugs. Please report them on GitHub or Discord, where you can also follow the progress.</p></details>
 </section>
 <footer class="hide-playing" data-t="footer">OpenBeach is an unofficial fan project, not affiliated with the makers of the original game. It contains no game data.</footer>
 </div>
