@@ -19,6 +19,9 @@ class SubjectTests(unittest.TestCase):
 
     def test_refuses_the_trailer(self):
         self.assertIn("trailer", message_problem("feat: add a thing\n\nWhy.\n\nCo-Authored-By: A <a@example.invalid>"))
+
+    def test_accepts_the_trailer_on_a_squashed_release(self):
+        self.assertIsNone(message_problem("chore(main): release 1.0.0 (#2)\n\nCo-authored-by: bot <bot@example.invalid>"))
         self.assertIsNone(message_problem("feat: add a thing\n\nWhy."))
 
 

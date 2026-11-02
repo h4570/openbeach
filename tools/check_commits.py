@@ -31,7 +31,10 @@ def subject_problem(subject: str) -> str | None:
 
 
 def message_problem(message: str) -> str | None:
-    problem = subject_problem(message.split("\n", 1)[0])
+    subject = message.split("\n", 1)[0]
+    if EXEMPT.match(subject): # GitHub adds the release tool as a co-author of a squashed release
+        return None
+    problem = subject_problem(subject)
     if problem:
         return problem
     return "has a Co-Authored-By trailer" if TRAILER.search(message) else None
