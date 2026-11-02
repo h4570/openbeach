@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.0](https://github.com/h4570/openbeach/compare/v1.1.0...v1.2.0) (2026-11-02)
+
+
+### Features
+
+* **site:** link the Discord server from the page and the readme ([#9](https://github.com/h4570/openbeach/issues/9)) ([f5ac715](https://github.com/h4570/openbeach/commit/f5ac7150fa993dbd1e0038060570fdbd670d5cc4))
+* **site:** say up front that it plays from your own disc ([#7](https://github.com/h4570/openbeach/issues/7)) ([9347583](https://github.com/h4570/openbeach/commit/93475835c412f13ad519d8eed64a61a35013af2e))
+
 ## [1.1.0](https://github.com/h4570/openbeach/compare/v1.0.0...v1.1.0) (2026-11-02)
 
 
