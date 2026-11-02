@@ -1,4 +1,4 @@
-<p align="center"><img src="assets/logo/openbeach-logo.svg" alt="OpenBeach" width="220"></p>
+<p align="center"><a href="https://openbeach.app"><img src="assets/logo/openbeach-logo.svg" alt="OpenBeach" width="220"></a></p>
 
 <p align="center"><b><a href="https://openbeach.app">Play in your browser: openbeach.app</a></b></p>
 
