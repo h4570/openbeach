@@ -64,7 +64,8 @@
         background: linear-gradient(180deg, #0e3050, #14506f); }
     /* SDL sets the canvas's pixel size (the game's 800x600 and up) and an inline CSS size; the page scales it to the largest
        box of the canvas's own aspect left beside the frame and its bar (site.js keeps --aspect at width / height). */
-    #canvas { position: absolute; inset: 0; visibility: hidden; display: block; outline: none; background: #000; }
+    #canvas { position: absolute; inset: 0; visibility: hidden; display: block; outline: none; background: #000;
+        touch-action: none; -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; }
     body.playing { height: 100vh; overflow: hidden; }
     body.playing .page { max-width: none; padding: 8px 16px; }
     body.playing .hide-playing, body.playing .hero > div:first-child, body.playing .waves { display: none; }
@@ -273,7 +274,7 @@
     <details><summary data-t="faq2q">Can I play Beach Life on a Mac or on Linux?</summary>
         <p data-t="faq2a">OpenBeach runs on the web page, not on your operating system, so a current desktop browser on a Mac or a Linux PC should run it as well. Chrome and Edge are the best tested; if something breaks in another browser, please report it on GitHub.</p></details>
     <details><summary data-t="faq3q">Does it work on a phone or tablet?</summary>
-        <p data-t="faq3a">Not at the moment. The game is controlled with a mouse (the right button drags the map), and it keeps about 1 GB of data in the browser, so use a desktop or laptop.</p></details>
+        <p data-t="faq3a">Experimentally. Touch controls are new and still rough: tap to click, drag with one finger to move the map, press and hold to keep the left button down, tap with two fingers to right-click and drag with two fingers to scroll. There is no on-screen keyboard, and the game keeps about 1 GB of data in the browser, so a desktop or laptop is still the better choice.</p></details>
     <details><summary data-t="faq4q">Do I need the original game?</summary>
         <p data-t="faq4a">Yes. OpenBeach contains no graphics, music or other data of the game. Drop your own copy on the page: a disc image (.iso), the folder of an installation, or the disc itself if your browser can read the drive.</p></details>
     <details><summary data-t="faq5q">Which copies of the game work?</summary>

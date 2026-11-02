@@ -22,7 +22,7 @@ Windows-only list (`src/host_linux/CMakeLists.txt`).
 | `intro_movie.*` | MPEG-1 intro playback (`pl_mpeg`) |
 | `sound_lifecycle.*` | sound device startup/shutdown |
 | `playlist_directory_scan.*`, `playlist_id3.*` | music folder scan and ID3 tags |
-| `cursor.*`, `input_mapping.*`, `frame_limiter.*`, `instance_lock.*` | local cursor, key mapping, FPS limiter on SDL time, one game per game directory (lock file) |
+| `cursor.*`, `input_mapping.*`, `touch_gestures.h`, `frame_limiter.*`, `instance_lock.*` | local cursor, key mapping, touch gestures (browser), FPS limiter on SDL time, one game per game directory (lock file) |
 | `platform_main.*` | process start-up and the windowed main loop |
 | `renderer_dirty.h`, `renderer_jpeg.*` | pure renderer helpers (`core/rect.h` `screen::Rect`) |
 | `renderer_display.*`, `renderer_surface.cpp`, `renderer_backbits.h` | display and surface renderer parts |

@@ -151,6 +151,15 @@ How each piece of the windowed host runs in a tab.
   another window opens. Without the lock (refused, or left with Esc) the drag follows the visible pointer
   (`AbsoluteDrag`, unit test `input.absolute_drag_deltas`) and stops at the canvas edge. A right click on a menu locks
   for its short press too: the page cannot know yet whether a drag follows.
+- **Touch.** The game only knows a mouse, so in the browser build (`kTouchGestures`) SDL's touch-to-mouse events are off
+  (`SDL_HINT_TOUCH_MOUSE_EVENTS`) and `input.cpp` feeds SDL's finger events to `TouchGestures` (`touch_gestures.h`, no SDL,
+  unit tests `touch.*`), which turns them into the mouse's records: a tap is a left click, a drag with one finger the camera
+  drag (the right button and the motion, scaled from client to game pixels so the map follows the finger), a press and
+  hold keeps the left button down until the finger lifts (sliders, drags in the interface), a tap with two fingers is a
+  right click and a drag with two fingers the wheel. The cursor is where the finger is and leaves once it is up and the
+  game has read it, so a tap near the edge does not scroll the map. The canvas has `touch-action: none`. Rough by design:
+  the thresholds (`kSlop`, `kTapMs`, `kHoldMs`, `kPixelsPerNotch`) are guesses that need a real device, and there is no
+  on-screen keyboard, so the keys the game reads are not reachable. Native hosts keep SDL's touch-to-mouse events.
 - **First resolution and sampling.** The GUI has a fixed pixel size, so the page picks the size for the tab: on the first
   start `seedResolution` (`site.js`) writes `[Video]` into the INI, the listed size that fills the tab best at 1.15 screen
   pixels per game pixel or more (`resolutionForTab`); later starts keep the INI's. The canvas keeps the game's pixels and
