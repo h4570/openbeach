@@ -2,6 +2,9 @@
 
 <p align="center"><b><a href="https://openbeach.app">Play in your browser: openbeach.app</a></b></p>
 
+<p align="center">Open the page and drop your own Beach Life disc image (.iso) or game folder on it.<br>
+It works on Windows, macOS and Linux, in any modern browser, with nothing to install. Your files stay on your computer.</p>
+
 <p align="center">
   <a href="https://github.com/h4570/openbeach/actions/workflows/ci.yml"><img src="https://github.com/h4570/openbeach/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"></a>
   <a href="https://github.com/h4570/openbeach/releases"><img src="https://img.shields.io/github/v/release/h4570/openbeach?label=release" alt="Release"></a>
