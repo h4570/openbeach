@@ -9,7 +9,8 @@ const kSiteTexts = {
     en: {
         heroTitle: "Your beach resort,", heroAccent: "back in the browser.",
         lead: "OpenBeach is an open-source engine that plays the 2002 resort tycoon Beach Life on the files of your own copy.",
-        fact1: "Runs here, with no install", fact2: "Your copy stays on your machine, nothing is uploaded",
+        fact1: "Runs here, with no install", factPlatforms: "Works on Windows, macOS and Linux, in any modern browser",
+fact2: "Your copy stays on your machine, nothing is uploaded",
         fact3: "Saves live in this browser, and you can export them", fact4: "Open source on GitHub", flagsTitle: "Game languages",
         dropTitle: "Drop your copy of the game here", kindIso: "Disc image", kindIsoNote: "a .iso file",
         kindFolder: "Game folder", kindFolderNote: "your installation", kindDrive: "Disc drive", kindDriveNote: "if your browser allows it",
@@ -38,7 +39,8 @@ const kSiteTexts = {
     fr: {
         heroTitle: "Votre station balnéaire,", heroAccent: "de retour dans le navigateur.",
         lead: "OpenBeach est un moteur open source qui fait tourner Beach Life, le jeu de gestion de 2002, à partir des fichiers de votre propre copie.",
-        fact1: "Fonctionne ici, sans installation", fact2: "Votre copie reste sur votre machine, rien n'est envoyé",
+        fact1: "Fonctionne ici, sans installation", factPlatforms: "Fonctionne sous Windows, macOS et Linux, dans tout navigateur récent",
+fact2: "Votre copie reste sur votre machine, rien n'est envoyé",
         fact3: "Les sauvegardes restent dans ce navigateur et peuvent être exportées", fact4: "Open source sur GitHub", flagsTitle: "Langues du jeu",
         dropTitle: "Déposez ici votre copie du jeu", kindIso: "Image disque", kindIsoNote: "un fichier .iso",
         kindFolder: "Dossier du jeu", kindFolderNote: "votre installation", kindDrive: "Lecteur de disque", kindDriveNote: "si votre navigateur le permet",
@@ -67,7 +69,8 @@ const kSiteTexts = {
     it: {
         heroTitle: "Il tuo resort sulla spiaggia,", heroAccent: "di nuovo nel browser.",
         lead: "OpenBeach è un motore open source che fa girare Beach Life, il gestionale del 2002, con i file della tua copia.",
-        fact1: "Funziona qui, senza installazione", fact2: "La tua copia resta sul tuo computer, non viene caricato nulla",
+        fact1: "Funziona qui, senza installazione", factPlatforms: "Funziona su Windows, macOS e Linux, in qualsiasi browser moderno",
+fact2: "La tua copia resta sul tuo computer, non viene caricato nulla",
         fact3: "I salvataggi restano in questo browser e puoi esportarli", fact4: "Open source su GitHub", flagsTitle: "Lingue del gioco",
         dropTitle: "Trascina qui la tua copia del gioco", kindIso: "Immagine disco", kindIsoNote: "un file .iso",
         kindFolder: "Cartella del gioco", kindFolderNote: "la tua installazione", kindDrive: "Unità disco", kindDriveNote: "se il browser lo consente",
@@ -96,7 +99,8 @@ const kSiteTexts = {
     de: {
         heroTitle: "Dein Strandresort,", heroAccent: "zurück im Browser.",
         lead: "OpenBeach ist eine Open-Source-Engine, die das Aufbauspiel Beach Life von 2002 mit den Dateien deiner eigenen Kopie spielt.",
-        fact1: "Läuft hier, ohne Installation", fact2: "Deine Kopie bleibt auf deinem Rechner, nichts wird hochgeladen",
+        fact1: "Läuft hier, ohne Installation", factPlatforms: "Läuft unter Windows, macOS und Linux, in jedem modernen Browser",
+fact2: "Deine Kopie bleibt auf deinem Rechner, nichts wird hochgeladen",
         fact3: "Spielstände bleiben in diesem Browser und lassen sich exportieren", fact4: "Open Source auf GitHub", flagsTitle: "Spielsprachen",
         dropTitle: "Zieh deine Kopie des Spiels hierher", kindIso: "Disc-Image", kindIsoNote: "eine .iso-Datei",
         kindFolder: "Spielordner", kindFolderNote: "deine Installation", kindDrive: "Laufwerk", kindDriveNote: "wenn dein Browser es zulässt",
@@ -125,7 +129,8 @@ const kSiteTexts = {
     es: {
         heroTitle: "Tu complejo de playa,", heroAccent: "de vuelta en el navegador.",
         lead: "OpenBeach es un motor de código abierto que ejecuta Beach Life, el juego de gestión de 2002, con los archivos de tu propia copia.",
-        fact1: "Funciona aquí, sin instalación", fact2: "Tu copia se queda en tu equipo, no se sube nada",
+        fact1: "Funciona aquí, sin instalación", factPlatforms: "Funciona en Windows, macOS y Linux, en cualquier navegador moderno",
+fact2: "Tu copia se queda en tu equipo, no se sube nada",
         fact3: "Las partidas se guardan en este navegador y puedes exportarlas", fact4: "Open source en GitHub", flagsTitle: "Idiomas del juego",
         dropTitle: "Arrastra aquí tu copia del juego", kindIso: "Imagen de disco", kindIsoNote: "un archivo .iso",
         kindFolder: "Carpeta del juego", kindFolderNote: "tu instalación", kindDrive: "Unidad de disco", kindDriveNote: "si tu navegador lo permite",
@@ -154,7 +159,8 @@ const kSiteTexts = {
     pl: {
         heroTitle: "Twój kurort na plaży,", heroAccent: "znów w przeglądarce.",
         lead: "OpenBeach to otwarty silnik, który uruchamia strategię Beach Life z 2002 roku na plikach Twojej własnej kopii.",
-        fact1: "Działa tutaj, bez instalacji", fact2: "Twoja kopia zostaje na Twoim komputerze, nic nie jest wysyłane",
+        fact1: "Działa tutaj, bez instalacji", factPlatforms: "Działa na Windows, macOS i Linuksie, w każdej nowoczesnej przeglądarce",
+fact2: "Twoja kopia zostaje na Twoim komputerze, nic nie jest wysyłane",
         fact3: "Zapisy zostają w tej przeglądarce i możesz je wyeksportować", fact4: "Open source na GitHubie", flagsTitle: "Języki gry",
         dropTitle: "Upuść tutaj swoją kopię gry", kindIso: "Obraz płyty", kindIsoNote: "plik .iso",
         kindFolder: "Folder gry", kindFolderNote: "Twoja instalacja", kindDrive: "Napęd z płytą", kindDriveNote: "jeśli przeglądarka na to pozwala",
