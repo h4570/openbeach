@@ -9,6 +9,7 @@ It works on Windows, macOS and Linux, in any modern browser.</p>
   <a href="https://github.com/h4570/openbeach/actions/workflows/ci.yml"><img src="https://github.com/h4570/openbeach/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"></a>
   <a href="https://github.com/h4570/openbeach/releases"><img src="https://img.shields.io/github/v/release/h4570/openbeach?label=release" alt="Release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0--or--later-blue" alt="License: GPL-3.0-or-later"></a>
+  <a href="https://discord.gg/PtJqgwGtZm"><img src="https://img.shields.io/badge/Discord-join-5865F2?logo=discord&logoColor=white" alt="Discord"></a>
 </p>
 
 <p align="center">
