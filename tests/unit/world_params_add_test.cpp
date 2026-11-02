@@ -828,9 +828,9 @@ OBL_TEST_CASE("world_params_add.building_event_id_lands_at_the_global_event_coun
     OBL_CHECK(g_fatals.messages.empty());
 }
 
-OBL_TEST_CASE("world_params_add.building_event_past_the_slots_is_fatal")
+OBL_TEST_CASE("world_params_add.building_event_past_the_slots_only_counts")
 {
-    // Six world events would index past m_NumEvents, into fields the native record does not alias; the data never has them.
+    // The copies with a sixth world event load: its index lies past m_NumEvents, so only the building's count grows.
     Fixture f;
     FillLookups(f);
     f->m_events.resize(6);
@@ -839,9 +839,9 @@ OBL_TEST_CASE("world_params_add.building_event_past_the_slots_is_fatal")
     f->m_events[5].m_key = "EVT_5";
     char show[] = "EVT_5";
     wpa::AddBuildingData(*f, kEnv, 4, "EVENT", show);
-    OBL_CHECK_EQ(g_fatals.messages.size(), static_cast<size_t>(1));
-    OBL_CHECK_EQ(g_fatals.messages[0], std::string("Building event number out of range: \"EVT_5\""));
-    OBL_CHECK_EQ(f->m_buildings[4].m_NumEvents, 0);
+    OBL_CHECK(g_fatals.messages.empty());
+    OBL_CHECK_EQ(f->m_buildings[4].m_NumEvents, 1);
+    for (int i = 0; i < 5; ++i) OBL_CHECK_EQ(f->m_buildings[4].m_Event[i], 0);
 }
 
 OBL_TEST_CASE("world_params_add.building_commodity_splits_the_value_string_in_place")

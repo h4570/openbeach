@@ -313,7 +313,8 @@ struct BuildingDef {
     int16_t m_EntranceOffset[2]{}; // X/YENTRANCEOFFSET
     // Bug: EVENT writes its id at index WorldParams::m_numEvents, i.e. into m_NumEvents with the
     // five events of the data, then increments it - STAGE ends with m_NumEvents = id + 1 and m_Event all zero. The parser
-    // writes that aliasing out (world_params_add.h); the list holds the five slots only.
+    // writes that aliasing out (world_params_add.h); the list holds the five slots only. With six events the id lands past
+    // m_NumEvents and only the count grows.
     std::vector<int> m_Event = std::vector<int>(kBuildingEventSlots); // EventDef ids
     int m_NumEvents{};
     uint8_t m_customConstruct{}; // CONSTRUCT given

@@ -1,7 +1,7 @@
 # Data formats: supported sources
 
-Which copies of Beach Life the converter reads, how it tells them apart and where their data differs. All three
-packagings below are supported sources.
+Which copies of Beach Life the converter reads, how it tells them apart and where their data differs. All the
+copies below are supported sources.
 
 ## Supported copies
 A source combines an **executable build** with a **data revision**. The converter identifies them separately.
@@ -10,7 +10,9 @@ A source combines an **executable build** with a **data revision**. The converte
 |---|---|---|---|
 | Digital release (the reference installation) | `digital-2002-10` | `eu-2002-08` | French, German, Italian, Polish, Spanish |
 | European CD (disc image or extracted disc) | `cd-2002-08` | `eu-2002-08` | as above |
-| UK/US CD *Virtual Resort Spring Break* (extracted disc) | `cd-2002-08` | `uk-2002-08` | English (`text_uk.ble`) |
+| French/German CD (disc image or extracted disc) | `cd-2002-08` | `uk-2002-08` stamp, European tables | French, German, Italian, Polish, Spanish |
+| UK/US CD *Virtual Resort Spring Break* (disc image or extracted disc) | `cd-2002-08` | `uk-2002-08` | English (`text_uk.ble`) |
+| Late English CD (disc image or extracted disc) | `digital-2002-10` | `eu-2002-08` stamp, late scripts | English (`text_uk.ble`) |
 
 The digital release supplies `BeachLife.exe` (2002-10-22) and four dgVoodoo wrapper DLLs;
 it needs the data from a CD installation. In the reference installation, all 202 files shared with the European CD
@@ -26,8 +28,11 @@ These hashes identify supported inputs; the importer keeps the matching table in
 | `digital-2002-10` | `983c098f69314c142ac8fd0d74fa34d098a49bd59f1aed88fb67a525c4b7f9e9` | 2002-10-22 | Digital release |
 | `cd-2002-08` | `bdbc06034f298aff45acb49c1c085c1e10ff676fb7d5ad08b99ea33e01e2dd94` | 2002-08-17 | European CD |
 | `cd-2002-08` | `2f56a5a52128909e211609cbdaadfb2fd67883869660663e909dbd430ff6a401` | 2008-07-09 (re-stamped) | UK/US CD |
+| `cd-2002-08` | `2b2aa38d36fe34a799df7a6207f03c21b21afd028ef9e5f3a98137fbe26d52c0` | 2002-08-17 | French/German CD |
 
-Both CDs supply the same August game build for the tables the importer reads. The digital release supplies a later
+The CDs supply the same August game build for the tables the importer reads: the French/German executable differs from
+the European one only in its copy-protection sections, so its GUI tables and resources convert to the same files. The
+digital release, whose executable the late English CD also carries, supplies a later
 October build with four different footprint grids and one additional script state. Tables occupy different locations
 between builds; the converter locates them by content patterns ([converter/tables.md](converter/tables.md#executable-tables)).
 
@@ -50,6 +55,13 @@ Files that differ between the two revisions (everything else on both CDs is byte
 | `Data/Scenario/Scenario9/Scenario9.pis`, `SandScenario9/SandScenario9.pis` | A different `WORLD_DEPTH_PLANE_OFFSET`. |
 | `Data/Sprites/BLSprite.hdr`, `.dat` | Same size and the same 838 sprites; the metadata of two sprites and the pixels and palettes of three front-end buttons differ. |
 | Text tables | European: `text_{french,german,italian,polish,spanish}.ble` plus `gui_polish.ble`, `gamewon_pol.ble`, `mainmenu_{fre,ger,ita,pol,spa}.ble` and the Polish photo font `photopol16`. UK/US: `text_uk.ble` only. |
+
+Two more data sets mix these:
+- **French/German CD:** the older scripts, scenarios and sprites of `uk-2002-08` with the European language tables. Its
+  `text_polish.ble` differs slightly and `gamewon_pol.ble` is missing.
+- **Late English CD:** the European sprite archive (hence the `eu-2002-08` stamp) with newer data than any other copy: a
+  sixth event (`EVENT_AEROBICS`) and `*_COCKTAIL` lines in `BuildingList.ble`, new guest, mechanic and shark scripts,
+  changed scenarios and a larger `GUI.ble`. Its file group is `UK Comp`.
 
 Consequences for the converter:
 - `pack.json` holds only an opaque `import.reference` over the identifying files' hashes

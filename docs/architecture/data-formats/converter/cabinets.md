@@ -1,8 +1,8 @@
 # Converter: cabinets
 
 ## Cabinets
-Both CDs store the game in InstallShield 6 cabinets: the header `data1.hdr` (file table, directories, file groups) and
-the volumes `data1.cab`, `data2.cab` (stored bytes). The reader supports exactly what both CDs use and refuses the
+The CDs store the game in InstallShield 6 cabinets: the header `data1.hdr` (file table, directories, file groups) and
+the volumes `data1.cab`, `data2.cab` (stored bytes). The reader supports exactly what the CDs use and refuses the
 rest:
 - Header version `0x0100600C` with the `ISc(` signature only, in the header and in every volume it opens.
 - File descriptors of 0x57 bytes; flag 4 is compressed, 8 an invalid placeholder (dropped: its name is garbage).

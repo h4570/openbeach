@@ -609,8 +609,7 @@ private:
                 slots.ids[static_cast<size_t>(at)] = event;
             else if (at == kEventSlots)
                 slots.count = event;
-            else
-                return Fail("EVENT index past the building record", b.key);
+            // With more world events (the copies that have the aerobics show) the id lands past the count, where nothing reads it.
             ++slots.count;
         } else if (f == "CONSTRUCT") {
             b.construct = value;

@@ -2,8 +2,8 @@
 // in the browser, backed by the local file system and a Map instead of File objects and OPFS. tools/wasm_linux.sh runs it.
 //   node node_check.cjs <obl-import-web.js>
 //       the synthetic checks: request errors and the bridge calls (read, progress), no game data
-//   node node_check.cjs <obl-import-web.js> --game <installation> [--compare <pack directory>] [--language <lang>] [--out <dir>]
-//       a full import of the installation (or a CD root: its folder of files); the long steps (maps, sprites, pack) must
+//   node node_check.cjs <obl-import-web.js> --game <installation> | --iso <image> [--compare <pack directory>] [--language <lang>] [--out <dir>]
+//       a full import of the installation, a CD root (its folder of files) or a disc image; the long steps (maps, sprites, pack) must
 //       report their counts up to the total. With --compare the files must equal the pack directory's byte for byte;
 //       --out writes the imported pack to <dir> (e.g. for tools/browser_probe.cjs --pack)
 // Exit code 1 on a failed check.
@@ -174,9 +174,11 @@ function printJsonDifference(actual, expected, where) {
     }
 }
 
-async function full(createOblImport, game, compare, language, out) {
-    const files = pickFolder(game);
-    const plan = {source: "files", root: "packs/base", files: files.map(({path, size}) => ({path, size}))};
+async function full(createOblImport, game, iso, compare, language, out) {
+    // The image is file -1 of the read callback (worker_main.cpp).
+    const files = iso ? Object.assign([], {[-1]: {full: iso, size: fs.statSync(iso).size}}) : pickFolder(game);
+    const plan = iso ? {source: "iso", root: "packs/base", isoSize: files[-1].size}
+        : {source: "files", root: "packs/base", files: files.map(({path, size}) => ({path, size}))};
     if (language) plan.language = language;
     const store = new Map();
     const steps = [];
@@ -218,13 +220,13 @@ async function full(createOblImport, game, compare, language, out) {
 
 async function main() {
     const args = process.argv.slice(2);
-    if (args.length < 1) throw new Error("usage: node node_check.cjs <obl-import-web.js> [--game <dir> --compare <pack dir> [--language <lang>]]");
+    if (args.length < 1) throw new Error("usage: node node_check.cjs <obl-import-web.js> [--game <dir> | --iso <image>] [--compare <pack dir>] [--language <lang>]");
     const createOblImport = require(path.resolve(args[0]));
     const option = (name) => {
         const at = args.indexOf(name);
         return at > 0 ? args[at + 1] : undefined;
     };
-    if (option("--game")) await full(createOblImport, option("--game"), option("--compare"), option("--language"), option("--out"));
+    if (option("--game") || option("--iso")) await full(createOblImport, option("--game"), option("--iso"), option("--compare"), option("--language"), option("--out"));
     else await synthetic(createOblImport);
     process.exit(failures ? 1 : 0);
 }
