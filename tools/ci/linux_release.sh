@@ -45,7 +45,7 @@ for bin in OpenBeach obl-convert; do
         echo "error: $bin links the shared libstdc++" >&2
         exit 1
     fi
-    echo "$bin: glibc $newest, needs $(readelf -d "$build/bin/$bin" | grep -oE '\[[^]]+\]' | tr -d '[]' | tr '\n' ' ')"
+    echo "$bin: glibc $newest, needs $(readelf -d "$build/bin/$bin" 2>/dev/null | grep -oE '\[[^]]+\]' | tr -d '[]' | tr '\n' ' ')"
     objcopy --only-keep-debug "$build/bin/$bin" "$dist/$name-debug/$bin.debug"
     # --strip-all keeps .dynsym: the crash report still names the exported functions (-rdynamic).
     strip --strip-all -o "$stage/$bin" "$build/bin/$bin"
