@@ -16,6 +16,8 @@ mkdir -p "$site"
 cp "$browser/OpenBeach.js" "$browser/OpenBeach.wasm" "$site/"
 cp "$importer/obl-import-web.js" "$importer/obl-import-web.wasm" "$importer/import_worker.js" "$importer/language_ini.js" "$site/"
 cp "$root/web/index.html" "$root/web/site.js" "$root/web/site_text.js" "$root/assets/logo/openbeach-logo.svg" "$site/"
+cp "$root/web/robots.txt" "$root/web/sitemap.xml" "$root/assets/logo/favicon.ico" "$root/assets/logo/apple-touch-icon.png" "$site/"
+cp "$root/assets/logo/openbeach-mark.svg" "$site/favicon.svg"
 cp -r "$root/assets/screenshots" "$site/"
 # GitHub Pages serves the files as they are, without a Jekyll pass.
 touch "$site/.nojekyll"

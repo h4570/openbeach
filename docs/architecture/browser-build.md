@@ -18,10 +18,12 @@ backend has its own video and audio drivers. The target links with `-sENVIRONMEN
 
 ## Site
 One static directory, our code only (no game data), assembled by `tools/web_site.sh <browser bin> <importer bin> <out>`:
-`index.html`, `site.js` and `site_text.js` from `web/`, the logo, the screenshots from `assets/screenshots/`, `OpenBeach.js/.wasm` (the pre-js is compiled in), `obl-import-web.js/.wasm`
+`index.html`, `site.js`, `site_text.js`, `robots.txt` and `sitemap.xml` from `web/`, the logo and the icons from `assets/logo/` (the mark as `favicon.svg`, `favicon.ico` and `apple-touch-icon.png` rendered from it), the screenshots from `assets/screenshots/`, `OpenBeach.js/.wasm` (the pre-js is compiled in), `obl-import-web.js/.wasm`
 and `import_worker.js` from the importer build, and `.nojekyll`. `tools/wasm_linux.sh` assembles it in `$build/site`
 and the CI job `wasm` uploads it as the artifact `browser-site` after a green run. To try it, unpack it and serve it on
 localhost (`python3 -m http.server`): OPFS and Web Locks need a secure context, and the worker does not load from `file:`.
+
+The head carries what a search result and a shared link show: the title, the description, the canonical address (which also covers `?import`), Open Graph tags and a schema.org `WebSite` block, where Google takes the site name from. They stay in English, because Google reads the one URL with an English browser, and `web/site_check.cjs` checks them.
 
 The page comes in the game's six languages (`site_text.js`), picked from `navigator.languages` with English as the fallback; the
 switch in the header is remembered in `localStorage`. Right after an import the game takes the page's language if the copy has it.

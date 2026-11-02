@@ -458,6 +458,18 @@ async function main() {
         const worker = fs.readFileSync(path.join(siteDir, "import_worker.js"), "utf8");
         for (const match of worker.matchAll(/importScripts\(([^)]+)\)/g))
             for (const name of match[1].matchAll(/"([^"]+)"/g)) wanted.add(name[1]);
+        // What crawlers and browsers ask for without being told, and every local file the head links to.
+        for (const name of ["robots.txt", "sitemap.xml", "favicon.ico"]) wanted.add(name);
+        for (const match of html.matchAll(/<link[^>]*\shref="([^"]+)"/g))
+            if (!/^https?:/.test(match[1])) wanted.add(match[1]);
+        const image = html.match(/property="og:image" content="https:\/\/openbeach\.app\/([^"]+)"/);
+        check(image !== null, "site: the social preview image is an absolute URL on the site");
+        if (image) wanted.add(image[1]);
+        const description = html.match(/<meta name="description" content="([^"]+)"/);
+        check(description !== null && description[1].length <= 160, "site: the description fits a search result");
+        check(html.includes('<link rel="canonical" href="https://openbeach.app/">'), "site: the page names its canonical address");
+        const siteName = html.match(/<script type="application\/ld\+json">(.+)<\/script>/);
+        check(siteName !== null && JSON.parse(siteName[1]).name === "OpenBeach", "site: the structured data carries the site name");
         for (const name of wanted) check(fs.existsSync(path.join(siteDir, name)), `site: ${name} is in ${siteDir}`);
     }
 
