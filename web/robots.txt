@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://openbeach.app/sitemap.xml
