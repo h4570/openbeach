@@ -150,6 +150,11 @@
         h1 { font-size: 32px; }
         header img { height: 56px; }
         .screen { aspect-ratio: auto; min-height: 400px; }
+        /* The import layer is taller than the screen on a phone (title, three boxes, the picks and two notes), so as an overlay
+           it spilled over both edges of the clipped screen. In the flow it gives the screen its height instead. */
+        #import:not([hidden]) { position: relative; inset: auto; min-height: 400px; padding: 12px; }
+        #drop { height: auto; padding: 14px; }
+        .layer h2 { font-size: 20px; }
     }
     @media (prefers-reduced-motion: reduce) { .spinner i { animation: none; } #drop { transition: none; } }
 </style>
