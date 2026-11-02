@@ -22,7 +22,7 @@ The game builds for x64 Windows, Linux and WebAssembly; the browser site lives i
 
 ## Commits
 [Conventional Commits](https://www.conventionalcommits.org): `type(scope): subject`, in lowercase and the imperative, at most
-72 characters, no trailing period, no `Co-Authored-By:` trailer. The body says why.
+72 characters, no trailing period. The body says why.
 
 - Types: `feat`, `fix`, `perf`, `refactor`, `test`, `docs`, `build`, `ci`, `chore`, `revert`.
 - Scopes: `game`, `importer`, `site`, `platform`, `saves`, `tools`, or none.

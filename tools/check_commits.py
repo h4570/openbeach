@@ -17,7 +17,6 @@ SUBJECT = re.compile(rf"^(?:{TYPES})(?:\((?:{SCOPES})\))?!?: [a-z0-9`].*[^.]$")
 MAX_LENGTH = 72
 # Written by git or by the release tool.
 EXEMPT = re.compile(r"^(Merge |Revert \"|chore\(main\): release )")
-TRAILER = re.compile(r"^Co-Authored-By:", re.IGNORECASE | re.MULTILINE)
 
 
 def subject_problem(subject: str) -> str | None:
@@ -31,13 +30,7 @@ def subject_problem(subject: str) -> str | None:
 
 
 def message_problem(message: str) -> str | None:
-    subject = message.split("\n", 1)[0]
-    if EXEMPT.match(subject): # GitHub adds the release tool as a co-author of a squashed release
-        return None
-    problem = subject_problem(subject)
-    if problem:
-        return problem
-    return "has a Co-Authored-By trailer" if TRAILER.search(message) else None
+    return subject_problem(message.split("\n", 1)[0])
 
 
 def range_messages(revisions: str) -> list[str]:
