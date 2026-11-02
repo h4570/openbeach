@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "obl.vehicle",
+  "title": "Vehicle (catalog/vehicles/<key>.json)",
+  "description": "A boat or other vehicle a building operates (game-data.md, 'Catalog').",
+  "type": "object",
+  "properties": {
+    "format": {
+      "const": "obl.vehicle"
+    },
+    "version": {
+      "const": 2
+    },
+    "key": {
+      "$ref": "obl.common#/$defs/key"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Display name or text-table key."
+    },
+    "sprite": {
+      "$ref": "obl.common#/$defs/key"
+    },
+    "size": {
+      "$ref": "obl.common#/$defs/size2"
+    },
+    "capacity": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "max_speed": {
+      "type": "number"
+    },
+    "force": {
+      "type": "number"
+    },
+    "mass": {
+      "type": "number"
+    },
+    "move_type": {
+      "enum": [
+        "points",
+        "boundary"
+      ]
+    },
+    "towed": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Name of the object towed by the vehicle."
+    },
+    "anim_set": {
+      "$ref": "obl.common#/$defs/key"
+    },
+    "staff": {
+      "$ref": "obl.common#/$defs/key_list"
+    },
+    "creation_point": {
+      "$ref": "obl.common#/$defs/vec2"
+    }
+  },
+  "required": [
+    "format",
+    "version",
+    "key",
+    "name",
+    "sprite",
+    "size",
+    "capacity",
+    "move_type"
+  ],
+  "additionalProperties": false
+}

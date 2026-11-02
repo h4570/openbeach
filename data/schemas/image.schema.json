@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "obl.image",
+  "title": "Metadata of a single image (images/cursor.json)",
+  "description": "An image that needs a hotspot or a scale beside its PNG (assets.md, 'Other images').",
+  "type": "object",
+  "properties": {
+    "format": { "const": "obl.image" },
+    "version": { "const": 1 },
+    "image": { "$ref": "obl.common#/$defs/path" },
+    "hotspot": { "$ref": "obl.common#/$defs/vec2i" },
+    "scale": { "type": "number", "exclusiveMinimum": 0 }
+  },
+  "required": ["format", "version", "image"],
+  "additionalProperties": false
+}

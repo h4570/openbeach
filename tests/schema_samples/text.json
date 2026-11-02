@@ -1,0 +1,10 @@
+{
+  "format": "obl.text",
+  "version": 1,
+  "language": "pl",
+  "entries": [
+    ["SAMPLE_TITLE", "Przykładowa plaża"],
+    ["SAMPLE_GREETING", "Witaj na wyspie"],
+    ["SAMPLE_TITLE", "A duplicate key: lookup returns the first entry"]
+  ]
+}

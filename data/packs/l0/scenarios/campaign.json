@@ -1,0 +1,9 @@
+{
+  "format": "obl.campaign",
+  "version": 1,
+  "campaign": [{ "scenario": "s1" }],
+  "unlock": "sequential",
+  "always_available": ["s1"],
+  "sandbox_unlock": "campaign_completed_or_always",
+  "sandboxes": [{ "scenario": "s1" }]
+}

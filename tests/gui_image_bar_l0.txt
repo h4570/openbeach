@@ -1,0 +1,22 @@
+# GuiImage/GuiBar frame on the own L0 pack: its sprite and the bars of every colour mode against the L0 digest.
+# The L0 HUD has no GuiBar, so unlike gui_image_bar.txt this script only reports the image route.
+# @env OBL_PACK=l0
+# @timeout 90
+# @check python tools/check_gui_image_bar_frame.py {run} gui_image_bar_frame_l0.json
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario 1
+await gameplay
+call-report ui.gui-image
+expect-last-range calls 1 100000000
+call-drive GuiImageBarFrame 2
+expect-last mismatch 0
+expect-last guard 1
+expect-last changed 1
+expect-last sprite 1
+expect-last written 1
+expect-last restored 1
+expect-last leaked 0
+call-report GuiImageBarFrame
+expect-last calls 1
+quit

@@ -1,0 +1,21 @@
+{
+  "format": "obl.table",
+  "version": 2,
+  "key": "picnic_table",
+  "name": "SAMPLE_PICNIC_TABLE",
+  "table_sprite": "sample_table",
+  "chair_sprite": "sample_chair",
+  "size": [2, 1],
+  "walk_points": [[0, 0.5], [2, 0.5]],
+  "chairs": [
+    { "pos": [0.25, 0.5], "dir": "e", "walk_points": [0], "serve_point": [0.5, 0] },
+    { "pos": [1.75, 0.5], "dir": "w", "walk_points": [1], "serve_point": [1.5, 0] }
+  ],
+  "sit_down_anim": "sit",
+  "sat_down_anims": ["eat", "chat"],
+  "get_up_anim": "stand",
+  "serve_table": true,
+  "table_offset": [0, -4],
+  "has_waiter": true,
+  "waiter": { "sprite": "sample_walker", "walk_anim": "walk", "serve_anim": "serve", "call_anim": "wave", "wait_anim": "idle" }
+}

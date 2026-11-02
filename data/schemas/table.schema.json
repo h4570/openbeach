@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "obl.table",
+  "title": "Table (catalog/tables/<key>.json)",
+  "description": "A table with chairs placed inside a building; one chair per entry of `chairs` (game-data.md, 'Catalog').",
+  "type": "object",
+  "properties": {
+    "format": {
+      "const": "obl.table"
+    },
+    "version": {
+      "const": 2
+    },
+    "key": {
+      "$ref": "obl.common#/$defs/key"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Display name or text-table key."
+    },
+    "table_sprite": {
+      "$ref": "obl.common#/$defs/key"
+    },
+    "chair_sprite": {
+      "$ref": "obl.common#/$defs/key"
+    },
+    "size": {
+      "$ref": "obl.common#/$defs/size2"
+    },
+    "walk_points": {
+      "type": "array",
+      "items": {
+        "$ref": "obl.common#/$defs/vec2"
+      }
+    },
+    "chairs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "pos": {
+            "$ref": "obl.common#/$defs/vec2"
+          },
+          "dir": {
+            "$ref": "obl.common#/$defs/direction"
+          },
+          "walk_points": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "description": "Indices into `walk_points`."
+          },
+          "serve_point": {
+            "description": "Where the waiter stands to serve this chair.",
+            "$ref": "obl.common#/$defs/vec2"
+          }
+        },
+        "required": [
+          "pos",
+          "dir",
+          "walk_points"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "sit_down_anim": {
+      "$ref": "obl.common#/$defs/key"
+    },
+    "sat_down_anims": {
+      "$ref": "obl.common#/$defs/key_list"
+    },
+    "get_up_anim": {
+      "$ref": "obl.common#/$defs/key"
+    },
+    "serve_table": {
+      "type": "boolean"
+    },
+    "table_offset": {
+      "$ref": "obl.common#/$defs/vec2i"
+    },
+    "has_waiter": {
+      "type": "boolean"
+    },
+    "waiter": {
+      "type": "object",
+      "properties": {
+        "sprite": {
+          "$ref": "obl.common#/$defs/key"
+        },
+        "walk_anim": {
+          "$ref": "obl.common#/$defs/key"
+        },
+        "serve_anim": {
+          "$ref": "obl.common#/$defs/key"
+        },
+        "call_anim": {
+          "$ref": "obl.common#/$defs/key"
+        },
+        "wait_anim": {
+          "$ref": "obl.common#/$defs/key"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "format",
+    "version",
+    "key",
+    "name",
+    "table_sprite",
+    "chair_sprite",
+    "size",
+    "walk_points",
+    "chairs"
+  ],
+  "additionalProperties": false
+}

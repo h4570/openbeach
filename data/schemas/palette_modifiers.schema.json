@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "obl.palette_modifiers",
+  "title": "Palette toning tables (sprites/palette_modifiers.json)",
+  "description": "The color tables image (assets.md, 'Sprites'); which tables and palette entries are mixed is the engine's toning rule.",
+  "type": "object",
+  "properties": {
+    "format": { "const": "obl.palette_modifiers" },
+    "version": { "const": 1 },
+    "image": {
+      "description": "RGB PNG, `colors` wide, one row per table.",
+      "$ref": "obl.common#/$defs/path"
+    },
+    "colors": { "const": 64 },
+    "tables": { "type": "integer", "minimum": 1 }
+  },
+  "required": ["format", "version", "image", "colors", "tables"],
+  "additionalProperties": false
+}

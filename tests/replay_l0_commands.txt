@@ -1,0 +1,6 @@
+# The replay of l0_commands.replay (docs/testing/replays.md), recorded on the own L0 pack: every command type of format 1 the L0 content can exercise. A mismatch names the tick;
+# ./tools/replay.ps1 -Replay -Pack l0 keeps the snapshots for world_hash_compare.ps1.
+# @env OBL_PACK=l0
+# @timeout 180
+replay replays/l0_commands.replay
+quit

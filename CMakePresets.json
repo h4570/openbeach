@@ -1,0 +1,23 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": { "major": 3, "minor": 28, "patch": 0 },
+  "configurePresets": [
+    {
+      "name": "x64",
+      "displayName": "x64 game (VS 2026)",
+      "generator": "Visual Studio 18 2026",
+      "architecture": { "value": "x64", "strategy": "set" },
+      "binaryDir": "${sourceDir}/build/x64"
+    }
+  ],
+  "buildPresets": [
+    { "name": "x64-debug", "configurePreset": "x64", "configuration": "Debug" },
+    { "name": "x64-release", "configurePreset": "x64", "configuration": "RelWithDebInfo" }
+  ],
+  "testPresets": [
+    { "name": "x64-debug", "configurePreset": "x64", "configuration": "Debug", "output": { "outputOnFailure": true },
+      "filter": { "exclude": { "name": "^unit(_portable)?_data($|_)", "label": "replay|bot|chaos" } } },
+    { "name": "x64-release", "configurePreset": "x64", "configuration": "RelWithDebInfo", "output": { "outputOnFailure": true },
+      "filter": { "exclude": { "name": "^unit(_portable)?_data($|_)", "label": "replay|bot|chaos" } } }
+  ]
+}

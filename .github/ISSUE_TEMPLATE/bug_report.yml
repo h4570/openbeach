@@ -1,0 +1,39 @@
+name: Bug report
+description: Something in the game or the browser build does not work as it should
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected and what you got instead.
+    validations:
+      required: true
+  - type: dropdown
+    id: build
+    attributes:
+      label: Build
+      options:
+        - Browser
+        - Windows
+        - Linux
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: The release or commit. In the browser also name the browser and its version.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: The scenario and the steps. A save file helps; do not attach files from the game itself.
+  - type: textarea
+    id: log
+    attributes:
+      label: Log
+      description: The error message, or the browser console output.
+      render: text

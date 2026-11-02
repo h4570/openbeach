@@ -1,0 +1,30 @@
+{
+  "format": "obl.sprite",
+  "version": 1,
+  "name": "l0_play_button",
+  "kind": "ui",
+  "pixels": "indexed",
+  "palettes": "l0_play_button.palettes.png",
+  "palette_colors": 256,
+  "palette_count": 1,
+  "animations": [
+    {
+      "name": "l0_play_button",
+      "directions": 4,
+      "frames": 1,
+      "size": [
+        100,
+        24
+      ],
+      "hotspot": [
+        0,
+        0
+      ],
+      "columns": 4,
+      "unique_frames": 4,
+      "sheets": [
+        "l0_play_button/sheet.png"
+      ]
+    }
+  ]
+}

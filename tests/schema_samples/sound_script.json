@@ -1,0 +1,16 @@
+{
+  "format": "obl.sound_script",
+  "version": 2,
+  "crowd": { "max_number": 40, "max_volume": 0.75, "fade_time": 0.5 },
+  "groups": { "footsteps": { "limit": 2 }, "voices": { "limit": 1 } },
+  "sprite_sounds": {
+    "sample_walker": {
+      "walk": { "group": "footsteps", "sounds": [{ "sample": "step_a", "volume": 0.5 }, { "sample": "step_b", "volume": 0.5 }] }
+    }
+  },
+  "building_sounds": { "sample_hut": { "sample": "hut_hum", "volume": 0.25, "loop": true } },
+  "events": {
+    "guest_female_purchase_good": { "sounds": [{ "sample": "cheer", "volume": 1.0 }] },
+    "my_own_event": { "group": "voices", "sounds": [{ "sample": "grumble", "volume": 0.9 }] }
+  }
+}

@@ -1,0 +1,200 @@
+# Linux CI on the own L0 pack: no game data and no secrets. Lints, tool tests, unit tests, the headless L0 scripts and the
+# WebAssembly build with its browser site. A run by hand with `deploy` publishes that site from main once every check passed.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: Publish the browser site after the checks
+        type: boolean
+        default: false
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: pip install clang-format==21.1.2 pillow
+      - name: Formatting
+        run: python tools/format.py --check
+      - name: Docs layout
+        run: python tools/check_docs.py
+      - name: Docs links
+        run: python tools/check_doc_links.py
+      - name: Repository content
+        run: python tools/check_content.py
+      - name: Layer lint
+        run: python tools/check_layers.py
+      - name: Commit format
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          if [ -n "$PR_TITLE" ]; then python tools/check_commits.py "$PR_TITLE"; else python tools/check_commits.py --range -1; fi
+      - name: Tool tests
+        run: |
+          python tests/tools/test_check_docs.py
+          python tests/tools/test_gui_frame_checkers.py
+          python -m unittest discover -s tools/tests
+
+  unit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    name: unit (${{ matrix.compiler }})
+    env:
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+      CCACHE_BASEDIR: ${{ github.workspace }}
+      CCACHE_COMPRESS: "1"
+      CCACHE_MAXSIZE: 400M
+      CCACHE_ARGS: -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+      OBL_UNIT_SKIP_DATA: "1"
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Packages
+        run: |
+          sudo apt-get -o Acquire::Retries=3 update -q
+          sudo apt-get install -y -q --no-install-recommends ninja-build zstd ccache clang
+      - name: Compiler cache
+        uses: actions/cache@v5
+        with:
+          path: .ccache
+          key: ccache-${{ matrix.compiler }}-${{ github.sha }}
+          restore-keys: ccache-${{ matrix.compiler }}-
+      - name: Unit tests
+        run: bash tools/unit_linux.sh ${{ matrix.compiler }} $CCACHE_ARGS -DOBL_UNIT_RELOCATABLE=ON
+
+  sim:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      OBL_SIM_ONLY: "1"
+      OBL_SIM_BUILD: ${{ github.workspace }}/build/linux-sim-x64
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+      CCACHE_BASEDIR: ${{ github.workspace }}
+      CCACHE_COMPRESS: "1"
+      CCACHE_SLOPPINESS: pch_defines,time_macros
+      CCACHE_MAXSIZE: 400M
+      CCACHE_ARGS: -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Packages
+        run: |
+          sudo apt-get -o Acquire::Retries=3 update -q
+          sudo apt-get install -y -q --no-install-recommends ninja-build zstd ccache
+      - name: Compiler cache
+        uses: actions/cache@v5
+        with:
+          path: .ccache
+          key: ccache-sim-${{ github.sha }}
+          restore-keys: ccache-sim-
+      - name: L0 headless tests
+        run: bash tools/ci/l0_sim_tests.sh $CCACHE_ARGS -DOBL_SIM_FAST_BUILD=ON
+      - name: Test logs
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: obl-sim-testlogs
+          path: build/l0-run/testlogs/linux
+          retention-days: 7
+          if-no-files-found: ignore
+
+  wasm:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      EMSDK_VERSION: 6.0.13
+      EMSDK: ${{ github.workspace }}/.emsdk
+      OBL_WASM_BUILD: ${{ github.workspace }}/build/wasm
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+      CCACHE_BASEDIR: ${{ github.workspace }}
+      CCACHE_COMPRESS: "1"
+      CCACHE_SLOPPINESS: pch_defines,time_macros
+      CCACHE_MAXSIZE: 600M
+      CCACHE_ARGS: -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Packages
+        run: |
+          sudo apt-get -o Acquire::Retries=3 update -q
+          sudo apt-get install -y -q --no-install-recommends ninja-build zstd ccache
+      - name: Emscripten cache
+        id: emsdk_cache
+        uses: actions/cache@v5
+        with:
+          path: .emsdk
+          key: emsdk-${{ env.EMSDK_VERSION }}
+      - name: Emscripten
+        if: steps.emsdk_cache.outputs.cache-hit != 'true'
+        run: |
+          git clone --depth 1 https://github.com/emscripten-core/emsdk.git "$EMSDK"
+          "$EMSDK/emsdk" install "$EMSDK_VERSION"
+          "$EMSDK/emsdk" activate "$EMSDK_VERSION"
+      - name: Compiler cache
+        uses: actions/cache@v5
+        with:
+          path: .ccache
+          key: ccache-wasm-${{ github.sha }}
+          restore-keys: ccache-wasm-
+      - name: WebAssembly unit tests and obl-sim
+        run: bash tools/wasm_linux.sh $CCACHE_ARGS
+      - name: Browser site
+        uses: actions/upload-artifact@v6
+        with:
+          name: browser-site
+          path: build/wasm/site
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14
+      - name: Pages artifact
+        if: inputs.deploy
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: build/wasm/site
+      - name: Test logs
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: wasm-testlogs
+          path: build/wasm/l0-run/testlogs/linux
+          retention-days: 7
+          if-no-files-found: ignore
+
+  deploy:
+    if: inputs.deploy && github.ref == 'refs/heads/main'
+    needs: [lint, unit, sim, wasm]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

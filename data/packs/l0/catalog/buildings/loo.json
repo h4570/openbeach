@@ -1,0 +1,284 @@
+{
+  "format": "obl.building",
+  "version": 2,
+  "key": "loo",
+  "name": "Toilet Block",
+  "category": "leisure",
+  "behavior": "toilet",
+  "sprite": "dummy",
+  "icon": 0,
+  "cost": {
+    "build": 800,
+    "refund": 600
+  },
+  "construction": {
+    "build_time": 1,
+    "demolish_time": 1,
+    "max_builders": 4
+  },
+  "size": [
+    3,
+    3
+  ],
+  "build_on": [
+    "land",
+    "beach"
+  ],
+  "baseplates": [
+    7
+  ],
+  "points": {
+    "serve": [
+      0,
+      -64
+    ],
+    "staff": [
+      0,
+      0
+    ],
+    "entrance": [
+      0,
+      0
+    ]
+  },
+  "operation": {
+    "guest_capacity": 4,
+    "opening_hours": "allhours",
+    "max_instances": 99,
+    "max_queue": 6,
+    "attractor": "relief",
+    "power": 0,
+    "staff": {
+      "types": [],
+      "max": 0
+    }
+  },
+  "commodities": [
+    {
+      "commodity": "toilet",
+      "intensity": [
+        0.5,
+        0.5
+      ],
+      "daily_intensity_factor": 0.98,
+      "price": 1.0,
+      "daily_price_factor": 0.98,
+      "cost": 0.1
+    }
+  ],
+  "failure": {
+    "average_time": 6.0,
+    "percent": 5,
+    "age": 2
+  },
+  "footprint": {
+    "size": [
+      3,
+      3
+    ],
+    "layers": {
+      "placement": [
+        [
+          {
+            "margin": 1
+          },
+          {
+            "margin": 1
+          },
+          {
+            "margin": 1
+          },
+          {
+            "margin": 1
+          },
+          {
+            "margin": 1
+          }
+        ],
+        [
+          {
+            "margin": 1
+          },
+          {
+            "terrain": 1
+          },
+          {
+            "terrain": 1
+          },
+          {
+            "terrain": 1
+          },
+          {
+            "margin": 1
+          }
+        ],
+        [
+          {
+            "margin": 1
+          },
+          {
+            "terrain": 1
+          },
+          {
+            "terrain": 1
+          },
+          {
+            "terrain": 1
+          },
+          {
+            "margin": 1
+          }
+        ],
+        [
+          {
+            "margin": 1
+          },
+          {
+            "terrain": 1
+          },
+          {
+            "terrain": 1
+          },
+          {
+            "terrain": 1
+          },
+          {
+            "margin": 1
+          }
+        ],
+        [
+          {
+            "margin": 1
+          },
+          {
+            "margin": 1
+          },
+          {
+            "margin": 1
+          },
+          {
+            "margin": 1
+          },
+          {
+            "margin": 1
+          }
+        ]
+      ],
+      "work": [
+        [
+          {},
+          {},
+          {},
+          {},
+          {}
+        ],
+        [
+          {},
+          {},
+          {},
+          {},
+          {}
+        ],
+        [
+          {},
+          {},
+          {},
+          {},
+          {}
+        ],
+        [
+          {},
+          {},
+          {},
+          {},
+          {}
+        ],
+        [
+          {},
+          {},
+          {
+            "terrain": 1
+          },
+          {},
+          {}
+        ]
+      ],
+      "depth": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "body": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          251658240,
+          251658240,
+          251658240,
+          0
+        ],
+        [
+          0,
+          251658240,
+          251658240,
+          251658240,
+          0
+        ],
+        [
+          0,
+          251658240,
+          251658240,
+          251658240,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ]
+    }
+  },
+  "requires": "rep",
+  "menu": "L0Building"
+}

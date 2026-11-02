@@ -1,0 +1,7 @@
+{
+  "format": "obl.opening_hours",
+  "version": 2,
+  "key": "day",
+  "open": 9.0,
+  "close": 18.0
+}

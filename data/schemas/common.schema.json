@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "obl.common",
+  "title": "Shared definitions of the OpenBeach data formats",
+  "description": "Not a file format: the other schemas reference these definitions (docs/architecture/data-formats/schemas.md).",
+  "$defs": {
+    "version": {
+      "description": "Format version; the engine reads the versions it knows and refuses newer ones.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "key": {
+      "description": "Content key: lowercase ASCII, compared exactly.",
+      "type": "string",
+      "pattern": "^[a-z0-9_]+$"
+    },
+    "pack_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]*$"
+    },
+    "text_key": {
+      "description": "Key of an entry of the text table (text/<lang>.json).",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_. -]+$"
+    },
+    "path": {
+      "description": "File path relative to the pack root (or to the referencing file where a format says so), with '/' separators, lowercase, without '.' or '..' segments.",
+      "type": "string",
+      "pattern": "^(?!.*(^|/)\\.\\.?(/|$))[a-z0-9_.-]+(/[a-z0-9_.-]+)*$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "tier": {
+      "description": "Data tier: 0 own content, 1 simulation data, 2 media (principles.md, 'Data tiers').",
+      "enum": [0, 1, 2]
+    },
+    "vec2i": {
+      "type": "array",
+      "prefixItems": [{ "type": "integer" }, { "type": "integer" }],
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "size2": {
+      "description": "Width and height, positive integers.",
+      "type": "array",
+      "prefixItems": [{ "type": "integer", "minimum": 1 }, { "type": "integer", "minimum": 1 }],
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "vec2": {
+      "type": "array",
+      "prefixItems": [{ "type": "number" }, { "type": "number" }],
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "range": {
+      "description": "A [low, high] pair of numbers; low may exceed high, and endpoints are not reordered.",
+      "$ref": "#/$defs/vec2"
+    },
+    "rect": {
+      "description": "[left, top, right, bottom] in pixels.",
+      "type": "array",
+      "items": { "type": "integer", "minimum": 0 },
+      "minItems": 4,
+      "maxItems": 4
+    },
+    "direction": {
+      "enum": ["n", "ne", "e", "se", "s", "sw", "w", "nw"]
+    },
+    "gender": {
+      "enum": ["m", "f"]
+    },
+    "by_gender": {
+      "description": "A value for men and one for women.",
+      "type": "object",
+      "properties": {
+        "m": { "type": "number" },
+        "f": { "type": "number" }
+      },
+      "required": ["m", "f"],
+      "additionalProperties": false
+    },
+    "terrain": {
+      "description": "Ground a building or scenery object may stand on.",
+      "enum": ["land", "beach", "shallow_water", "deep_sea", "path"]
+    },
+    "key_list": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/key" }
+    },
+    "byte": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 255
+    }
+  }
+}

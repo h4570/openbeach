@@ -1,0 +1,14 @@
+{
+  "format": "obl.credits",
+  "version": 2,
+  "provenance": "own",
+  "rows": [
+    {
+      "font": 0,
+      "line": 1,
+      "color": 0,
+      "long_spacing": false,
+      "kind": 1
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "format": "obl.catalog_index",
+  "version": 2,
+  "commodity_families": ["food", "fun"],
+  "commodities": ["chips", "ride"],
+  "opening_hours": ["daytime"],
+  "desires": ["hunger"],
+  "desire_slots": ["hunger_slot"],
+  "staff": ["vendor", "waiter"],
+  "events": ["juggling"],
+  "beers": ["sample_lager"],
+  "fines": ["litter"],
+  "vehicles": ["raft"],
+  "tables": ["picnic_table"],
+  "scenery": ["palm", "boardwalk"],
+  "buildings": ["snack_hut"]
+}

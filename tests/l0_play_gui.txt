@@ -1,0 +1,74 @@
+# Own rendered L0 HUD, build palette, provider-backed building panel and camera controls.
+# @env OBL_PACK=l0
+# @timeout 120
+# @gameini Language.Language=5
+# @gameini Sound.PlayListCount=0
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario 1
+await gameplay
+expect settings-language 5
+expect-text L0_PLAY_BUILDLIST Build
+expect-text L0_PLAY_CLOSEBUILDING Close shop
+expect-text L0_PLAY_EXITDIALOG Close
+step 5
+expect gui-mode 4
+# The HUD build button opens the first formerly missing dialog.
+click 58 580
+await gui-open-dialogs == 1 5000
+click 246 245
+step 2
+gui-state
+shot l0_build_panel
+gui-click BuildPanel tip L0_PLAY_PLACEBUILDING
+await gui-mode == 5 5000
+gui-click CancelBuildMode tip L0_PLAY_EXITBUILDMODE
+await gui-mode == 4 5000
+await gui-open-dialogs == 0 5000
+# The real selected startup station supplies the panel's building variables and callbacks.
+object-select Building
+await gui-open-dialogs == 1 5000
+gui-click L0Building tip L0_PLAY_CLOSEBUILDING
+step 2
+object-find building REP
+log station station=$id
+object-report $station
+expect-last user-close 1
+gui-click L0Building tip L0_PLAY_OPENBUILDING
+step 2
+object-report $station
+expect-last user-close 0
+gui-click L0Building tip L0_PLAY_LOCKCAMERA
+step 2
+expect gui-selection $station
+gui-click L0Building tip L0_PLAY_LOCKCAMERA
+step 2
+expect gui-selection -1
+gui-click L0Building tip L0_PLAY_SELLBUTTON
+step 2
+expect-text L0_PLAY_CONFIRMSELL Sell
+gui-click ConfirmDemolish tip L0_PLAY_EXITDIALOG
+await gui-open-dialogs == 0 5000
+# Goals and camera are reached from the HUD, then exited through their own controls.
+click 266 580
+await gui-open-dialogs == 1 5000
+gui-click Objectives tip L0_PLAY_EXITDIALOG
+await gui-open-dialogs == 0 5000
+click 162 580
+await gui-mode == 2 5000
+await gui-open-dialogs == 1 5000
+gui-click CameraControls tip L0_PLAY_ZOOMIN
+step 2
+expect zoom-level 0
+gui-click CameraControls tip L0_PLAY_ZOOMOUT
+step 2
+expect zoom-level 1
+gui-click CameraControls tip L0_PLAY_DOCAMERAGRAB
+await gui-camera-photos == 1 5000
+shot l0_camera_controls
+gui-click CameraControls tip L0_PLAY_CAMERAMODE
+await gui-mode == 4 5000
+await gui-open-dialogs == 0 5000
+gui-dump
+expect settings-language 5
+quit

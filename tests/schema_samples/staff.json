@@ -1,0 +1,16 @@
+{
+  "format": "obl.staff",
+  "version": 2,
+  "key": "vendor",
+  "name": "SAMPLE_VENDOR",
+  "gender": "f",
+  "sprite": "sample_walker",
+  "script": "vendor",
+  "menu": "staff_dialog",
+  "wage": 40,
+  "recommended_wage": 45,
+  "scale": 1,
+  "expectation_growth": 0.05,
+  "initial_happiness": 0.75,
+  "hours": [8, 20]
+}

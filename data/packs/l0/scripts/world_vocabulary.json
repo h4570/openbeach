@@ -1,0 +1,438 @@
+{
+  "format": "obl.world_script_vocabulary",
+  "version": 1,
+  "messages": [
+    {
+      "id": 0,
+      "name": "MT_KILLOBJECT"
+    },
+    {
+      "id": 1,
+      "name": "MT_OBJECTCREATED"
+    },
+    {
+      "id": 2,
+      "name": "MT_DISASTER_FINISHED"
+    },
+    {
+      "id": 3,
+      "name": "MT_STATECHANGE"
+    },
+    {
+      "id": 4,
+      "name": "MT_SETOWNER"
+    },
+    {
+      "id": 5,
+      "name": "MT_MOVE2POINT"
+    },
+    {
+      "id": 6,
+      "name": "MT_MOVE2OBJECT"
+    },
+    {
+      "id": 7,
+      "name": "MT_CANT_MOVE"
+    },
+    {
+      "id": 8,
+      "name": "MT_PAVEMENT2POINT"
+    },
+    {
+      "id": 9,
+      "name": "MT_PAVEMENT2OBJECT"
+    },
+    {
+      "id": 10,
+      "name": "MT_MOVE2SEAPOINT"
+    },
+    {
+      "id": 11,
+      "name": "MT_SWIM2SEAPOINT"
+    },
+    {
+      "id": 12,
+      "name": "MT_SEAVEHICLE_MOVE2POINT"
+    },
+    {
+      "id": 13,
+      "name": "MT_PATH_THROUGH_SCENERY"
+    },
+    {
+      "id": 14,
+      "name": "MT_PATH_THROUGH_SCENERY2OBJECT"
+    },
+    {
+      "id": 15,
+      "name": "MT_MOVE_DIRECT_2POINT"
+    },
+    {
+      "id": 16,
+      "name": "MT_MOVE_DIRECT_2OBJECT"
+    },
+    {
+      "id": 17,
+      "name": "MT_PATHBLOCKED"
+    },
+    {
+      "id": 18,
+      "name": "MT_VEHICLE_STOP_TURN"
+    },
+    {
+      "id": 19,
+      "name": "MT_VEHICLE_DEFAULT_ROTATE"
+    },
+    {
+      "id": 20,
+      "name": "MT_VEHICLE_SMOOTH_TURN"
+    },
+    {
+      "id": 21,
+      "name": "MT_MOVESTOP"
+    },
+    {
+      "id": 22,
+      "name": "MT_MOVEIMHERE"
+    },
+    {
+      "id": 23,
+      "name": "MT_ENTERED_SEA"
+    },
+    {
+      "id": 24,
+      "name": "MT_MOVE_CARRY_ON"
+    },
+    {
+      "id": 25,
+      "name": "MT_LAST_POINT"
+    },
+    {
+      "id": 26,
+      "name": "MT_FOLLOWOBJECT"
+    },
+    {
+      "id": 27,
+      "name": "MT_REACHED_FOLLOW_DISTANCE"
+    },
+    {
+      "id": 28,
+      "name": "MT_MOVE_INSIDE_BUILDING"
+    },
+    {
+      "id": 29,
+      "name": "MT_STOP_AND_FACE_ME"
+    },
+    {
+      "id": 30,
+      "name": "MT_IM_READY"
+    },
+    {
+      "id": 31,
+      "name": "MT_MOVE2QUEUEPOINT"
+    },
+    {
+      "id": 32,
+      "name": "MT_QUEUE_FULL"
+    },
+    {
+      "id": 33,
+      "name": "MT_JOIN_QUEUE"
+    },
+    {
+      "id": 34,
+      "name": "MT_BUILDING_FULL"
+    },
+    {
+      "id": 35,
+      "name": "MT_REQUEST_COMMOD"
+    },
+    {
+      "id": 36,
+      "name": "MT_SERVE_GUEST"
+    },
+    {
+      "id": 37,
+      "name": "MT_STAFF_CREATED"
+    },
+    {
+      "id": 38,
+      "name": "MT_NEW_DAY"
+    },
+    {
+      "id": 39,
+      "name": "MT_REPAIR"
+    },
+    {
+      "id": 40,
+      "name": "MT_CONSTRUCT"
+    },
+    {
+      "id": 41,
+      "name": "MT_START_EVENT"
+    },
+    {
+      "id": 42,
+      "name": "MT_NEED_REPAIR"
+    },
+    {
+      "id": 43,
+      "name": "MT_NEED_CLEANING"
+    },
+    {
+      "id": 44,
+      "name": "MT_BUILDING_BEING_REMOVED"
+    },
+    {
+      "id": 45,
+      "name": "MT_BUILDING_CLOSING"
+    },
+    {
+      "id": 46,
+      "name": "MT_DEMOLISH"
+    },
+    {
+      "id": 47,
+      "name": "MT_RE_POLL_FLAG_STATE"
+    },
+    {
+      "id": 48,
+      "name": "MT_SERVED_COMMOD"
+    },
+    {
+      "id": 49,
+      "name": "MT_COMMOD_PRICE"
+    },
+    {
+      "id": 50,
+      "name": "MT_COMMOD_QUALITY"
+    },
+    {
+      "id": 51,
+      "name": "MT_GUEST_ENTER_VEHICLE"
+    },
+    {
+      "id": 52,
+      "name": "MT_GUEST_LEFT_VEHICLE"
+    },
+    {
+      "id": 53,
+      "name": "MT_DROWNING"
+    },
+    {
+      "id": 54,
+      "name": "MT_ANNOY_GUEST"
+    },
+    {
+      "id": 55,
+      "name": "MT_THROWUP"
+    },
+    {
+      "id": 56,
+      "name": "MT_FINISH_ACTION"
+    },
+    {
+      "id": 57,
+      "name": "MT_DO_NEXT_ACTION"
+    },
+    {
+      "id": 58,
+      "name": "MT_EVENT_STARTING"
+    },
+    {
+      "id": 59,
+      "name": "MT_EVENT_FINISHED"
+    },
+    {
+      "id": 60,
+      "name": "MT_PLAYANIMATION"
+    },
+    {
+      "id": 61,
+      "name": "MT_FIGHT_TIME"
+    },
+    {
+      "id": 62,
+      "name": "MT_IMDEAD"
+    },
+    {
+      "id": 63,
+      "name": "MT_UPDATEOPINIONS"
+    },
+    {
+      "id": 64,
+      "name": "MT_MY_WORST_OPINION"
+    },
+    {
+      "id": 65,
+      "name": "MT_MY_BEST_OPINION"
+    },
+    {
+      "id": 66,
+      "name": "MT_IMPROVE_OPINIONS"
+    },
+    {
+      "id": 67,
+      "name": "MT_CHAT"
+    },
+    {
+      "id": 68,
+      "name": "MT_STOPCHAT"
+    },
+    {
+      "id": 69,
+      "name": "MT_WAIT_FOR_BOAT"
+    },
+    {
+      "id": 70,
+      "name": "MT_PRICE_OK"
+    },
+    {
+      "id": 71,
+      "name": "MT_PRICE_NOT_OK"
+    },
+    {
+      "id": 72,
+      "name": "MT_BAD_WEATHER"
+    },
+    {
+      "id": 73,
+      "name": "MT_SPOT_OPINION"
+    },
+    {
+      "id": 74,
+      "name": "MT_NO_STOCK"
+    },
+    {
+      "id": 75,
+      "name": "MT_SEA_STATE_CHANGE"
+    },
+    {
+      "id": 76,
+      "name": "MT_VEHICLE_CREATED"
+    },
+    {
+      "id": 77,
+      "name": "MT_VEHICLE_FULL"
+    },
+    {
+      "id": 78,
+      "name": "MT_BOARD_VEHICLE"
+    },
+    {
+      "id": 79,
+      "name": "MT_LEAVE_VEHICLE"
+    },
+    {
+      "id": 80,
+      "name": "MT_TABLE_CREATED"
+    },
+    {
+      "id": 81,
+      "name": "MT_LOUNGER_CREATED"
+    },
+    {
+      "id": 82,
+      "name": "MT_STAFF_BUSY"
+    },
+    {
+      "id": 83,
+      "name": "MT_GUEST_SERVED"
+    },
+    {
+      "id": 84,
+      "name": "MT_LOOK_AROUND"
+    },
+    {
+      "id": 85,
+      "name": "MT_NEW_HOUR"
+    },
+    {
+      "id": 86,
+      "name": "MT_DIRECT_TO_POINT"
+    },
+    {
+      "id": 87,
+      "name": "MT_PAY_A_FINE"
+    },
+    {
+      "id": 88,
+      "name": "MT_DEC_STAFF_IDLE_TIME"
+    },
+    {
+      "id": 89,
+      "name": "MT_INCREASE_ENERGY"
+    },
+    {
+      "id": 90,
+      "name": "MT_HEAD_HOME"
+    },
+    {
+      "id": 91,
+      "name": "MT_MORE_REPAIRS"
+    },
+    {
+      "id": 92,
+      "name": "MT_REPAIRS_FINISHED"
+    },
+    {
+      "id": 93,
+      "name": "MT_LOOK_FOR_BETTER_JOB"
+    },
+    {
+      "id": 94,
+      "name": "MT_MORE_CONSTRUCTION"
+    },
+    {
+      "id": 95,
+      "name": "MT_CONSTRUCTION_FINISHED"
+    },
+    {
+      "id": 96,
+      "name": "MT_START_BUILDING"
+    },
+    {
+      "id": 97,
+      "name": "MT_CONSTRUCTION_HALFDONE"
+    },
+    {
+      "id": 98,
+      "name": "MT_BUILDERS_LEFT_BASEPLATE"
+    },
+    {
+      "id": 99,
+      "name": "MT_REMOVE_COST_POINT"
+    },
+    {
+      "id": 100,
+      "name": "MT_NEXT_MOVE_POINT"
+    },
+    {
+      "id": 101,
+      "name": "MT_RECEIVED_ATTENTION"
+    },
+    {
+      "id": 102,
+      "name": "MT_NO_ATTENTION"
+    },
+    {
+      "id": 103,
+      "name": "MT_DIALOG_CLOSED"
+    },
+    {
+      "id": 104,
+      "name": "MT_RESTORE_ANIMATION"
+    },
+    {
+      "id": 105,
+      "name": "MT_WAKEUP"
+    },
+    {
+      "id": 106,
+      "name": "MT_GOTO_BED"
+    },
+    {
+      "id": 107,
+      "name": "MT_LEAVE_BUILDING"
+    }
+  ]
+}

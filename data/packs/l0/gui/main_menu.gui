@@ -1,0 +1,68 @@
+#obl-gui 1
+Font(GuiFont8)
+Font(GuiFont8b)
+Font(GuiFont12b)
+
+// Own buttons contain hand-drawn readable captions, independent of the diagnostic text font.
+DialogItem MainMenu(0, 0, 800, 600, None, 0, 0)
+{
+	TGA(0, 0, 800, 600, l0_welcome.tga)
+	Button(310, 314, 490, 354, l0_menu_start, None, ShowScenSel, None, L0_MENU_TIP_START)
+	Button(300, 363, 480, 403, l0_menu_sandbox, None, PlaySandBox, None, L0_MENU_TIP_SANDBOX)
+	Button(290, 412, 470, 452, l0_menu_load, None, LoadGameMenu, None, L0_MENU_TIP_LOAD)
+	Button(280, 461, 460, 501, l0_menu_extras, None, ExtrasMenu, None, L0_MENU_TIP_OPTIONS)
+	Button(270, 510, 450, 550, l0_menu_exit, None, ExitWindows, None, L0_MENU_TIP_EXIT)
+}
+
+DialogItem ScenarioScreen(0, 0, 800, 600, NONE, 0, 0)
+{
+	TGA(0, 0, 800, 600, l0_islands.tga)
+	RadioGroup(0, 0, 532, 476, GAME_SCENARIO_SELECT, None)
+	{
+		RadioButton(168, 408, 348, 448, l0_menu_island_1, 0, 0, None, L0_MENU_TIP_ISLAND)
+	}
+	Variable(561, 289, 777, 319, SS_CUR_SCENARIO_TITLE, 1, 0, 2)
+	Variable(561, 319, 777, 349, SS_CUR_SCENARIO_STATUS, 0, 0, 2)
+	Variable(561, 349, 777, 491, SS_CUR_SCENARIO_DESC, 0, 0, 2)
+	Button(20, 534, 200, 574, l0_menu_menu, None, ShowMainMenu, None, L0_MENU_TIP_MENU)
+	Button(598, 534, 778, 574, l0_menu_play, None, StartNewGame, None, L0_MENU_TIP_PLAY)
+	VariableImage(559, 86, 765, 205, SCENARIO_PIC_LARGE)
+	VariableImage(538, 12, 770, 76, SANDBOX_TITLE)
+}
+
+DialogItem ExtrasScreen(0, 0, 800, 600, NONE, 0, 0)
+{
+	TGA(0, 0, 800, 600, l0_options.tga)
+	Button(334, 363, 514, 403, l0_menu_credits, None, CreditsMenu, None, L0_MENU_TIP_CREDITS)
+	Button(354, 412, 534, 452, l0_menu_reset, None, ResetProgress, None, L0_MENU_TIP_RESET)
+	Button(20, 534, 200, 574, l0_menu_menu, None, ShowMainMenu, None, L0_MENU_TIP_MENU)
+}
+
+DialogItem CreditsScreen(0, 0, 800, 600, NONE, 0, 0)
+{
+	TGA(0, 0, 800, 600, l0_acknowledgements.tga)
+	Button(20, 534, 200, 574, l0_menu_menu, None, ExtrasMenu, None, L0_MENU_TIP_OPTIONS)
+}
+
+DialogItem LoadGameMenu(102, 152, 697, 447, l0_menu_panel, 0, 0)
+{
+	Text(0, 8, 595, 30, L0_LOAD_TITLE, 2, 0, 4)
+	ListBox(160, 57, 135, 261, 0, 0, 0, 0, LoadInfoBox, 15, 5)
+	Text(32, 156, 311, 171, L0_LOAD_SCENARIO, 1, 0, 2)
+	Text(311, 156, 422, 171, L0_LOAD_GAMEINFO, 1, 0, 2)
+	Text(422, 156, 537, 171, L0_LOAD_SAVED, 1, 0, 2)
+	ListBox(32, 172, 537, 262, 551, 157, 567, 262, LoadListBox, 15, 6)
+	VariableImage(43, 61, 151, 132, SCENARIO_PIC_LOAD)
+	Button(411, 53, 511, 77, l0_play_button, L0_LOAD_LOAD, LoadGame, None, L0_LOAD_LOAD)
+	Button(411, 84, 511, 108, l0_play_button, L0_LOAD_DELETE, DeleteLoadGame, None, L0_LOAD_DELETE)
+	Button(411, 115, 511, 139, l0_play_button, L0_LOAD_CANCEL, ExitLoadGame, None, L0_LOAD_CANCEL)
+}
+
+// Use a separate window key so confirmation keeps the options screen open.
+DialogItem ResetProgressConfirm(210, 170, 590, 430, l0_play_panel, 20, 0)
+{
+	Text(0, 8, 380, 40, L0_RESET_TITLE, 2, 0, 4)
+	Text(20, 60, 360, 150, L0_RESET_CONFIRM, 0, 0, 2)
+	Button(60, 200, 160, 224, l0_play_button, L0_RESET_NO, ExitDialog, None, L0_RESET_NO)
+	Button(220, 200, 320, 224, l0_play_button, L0_RESET_YES, ResetProgressConfirm, None, L0_RESET_YES)
+}

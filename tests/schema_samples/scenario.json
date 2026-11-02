@@ -1,0 +1,21 @@
+{
+  "format": "obl.scenario",
+  "version": 1,
+  "id": "sample_isle",
+  "kind": "campaign",
+  "title": "SAMPLE_TITLE",
+  "description": "SAMPLE_DESCRIPTION",
+  "status_texts": { "title": "SAMPLE_STATUS_TITLE", "weather": "SAMPLE_STATUS_WEATHER" },
+  "map": "sample_isle",
+  "start_view": [2048, 2100],
+  "catalog": "catalog/index.json",
+  "guests": "sample_guests",
+  "available_buildings": ["snack_hut", "raft_hire"],
+  "objectives": [{ "text": "SAMPLE_OBJECTIVE_1" }, { "text": "SAMPLE_OBJECTIVE_2" }],
+  "messages": ["SAMPLE_GREETING"],
+  "tilesets": { "pavement": "sample_path", "beach_edge": "sample_edge" },
+  "radar": { "image": "sample_radar", "pos": [8, 8] },
+  "pictures": { "large": "images/screens/sample_isle.png" },
+  "progress_dialog": "progress_dialog",
+  "script": "world.wsc"
+}

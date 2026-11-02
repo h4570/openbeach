@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "obl.pack",
+  "title": "Pack manifest (pack.json)",
+  "description": "Identity, provenance and file list of a pack (principles.md, 'Packs').",
+  "type": "object",
+  "properties": {
+    "format": { "const": "obl.pack" },
+    "version": { "const": 2 },
+    "id": { "$ref": "obl.common#/$defs/pack_id" },
+    "title": { "type": "string", "minLength": 1 },
+    "content_version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "language": {
+      "description": "Default text language of the pack: its text/<lang>.json is in files (BCP 47 tag, as obl.text).",
+      "type": "string",
+      "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$"
+    },
+    "provenance": {
+      "description": "converted: made by obl-convert from the user's copy, never committed; own: authored by us.",
+      "enum": ["converted", "own"]
+    },
+    "import": {
+      "description": "Opaque reference to the import this pack came from (converted packs only). Equal references mean the same imported copy; build detection, source paths and reports stay in the converter.",
+      "type": "object",
+      "properties": {
+        "reference": { "$ref": "obl.common#/$defs/sha256" }
+      },
+      "required": ["reference"],
+      "additionalProperties": false
+    },
+    "converter": { "type": "string", "pattern": "^obl-convert [0-9]+$" },
+    "files": {
+      "description": "Every file of the pack with its hash and tier.",
+      "type": "object",
+      "propertyNames": { "$ref": "obl.common#/$defs/path" },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "sha256": { "$ref": "obl.common#/$defs/sha256" },
+          "tier": { "$ref": "obl.common#/$defs/tier" }
+        },
+        "required": ["sha256", "tier"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["format", "version", "id", "title", "content_version", "provenance", "files"],
+  "additionalProperties": false
+}

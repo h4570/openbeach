@@ -1,0 +1,211 @@
+{
+  "format": "obl.building",
+  "version": 2,
+  "key": "builderyard",
+  "name": "Builder Yard",
+  "category": "other",
+  "behavior": "none",
+  "sprite": "dummy",
+  "icon": 0,
+  "cost": {
+    "build": 500,
+    "refund": 375
+  },
+  "construction": {
+    "build_time": 1,
+    "demolish_time": 1,
+    "max_builders": 4
+  },
+  "size": [
+    2,
+    2
+  ],
+  "build_on": [
+    "land",
+    "beach"
+  ],
+  "baseplates": [
+    7
+  ],
+  "points": {
+    "serve": [
+      0,
+      -64
+    ],
+    "staff": [
+      0,
+      0
+    ],
+    "entrance": [
+      0,
+      0
+    ]
+  },
+  "operation": {
+    "guest_capacity": 4,
+    "opening_hours": "allhours",
+    "max_instances": 99,
+    "max_queue": 6,
+    "attractor": "none",
+    "power": 0,
+    "staff": {
+      "types": [
+        "builder",
+        "builder"
+      ],
+      "max": 4
+    }
+  },
+  "commodities": [],
+  "failure": {
+    "average_time": 6.0,
+    "percent": 5,
+    "age": 2
+  },
+  "footprint": {
+    "size": [
+      2,
+      2
+    ],
+    "layers": {
+      "placement": [
+        [
+          {
+            "margin": 1
+          },
+          {
+            "margin": 1
+          },
+          {
+            "margin": 1
+          },
+          {
+            "margin": 1
+          }
+        ],
+        [
+          {
+            "margin": 1
+          },
+          {
+            "terrain": 1
+          },
+          {
+            "terrain": 1
+          },
+          {
+            "margin": 1
+          }
+        ],
+        [
+          {
+            "margin": 1
+          },
+          {
+            "terrain": 1
+          },
+          {
+            "terrain": 1
+          },
+          {
+            "margin": 1
+          }
+        ],
+        [
+          {
+            "margin": 1
+          },
+          {
+            "margin": 1
+          },
+          {
+            "margin": 1
+          },
+          {
+            "margin": 1
+          }
+        ]
+      ],
+      "work": [
+        [
+          {},
+          {},
+          {},
+          {}
+        ],
+        [
+          {},
+          {},
+          {},
+          {}
+        ],
+        [
+          {},
+          {},
+          {},
+          {}
+        ],
+        [
+          {},
+          {},
+          {
+            "terrain": 1
+          },
+          {}
+        ]
+      ],
+      "depth": [
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "body": [
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          251658240,
+          251658240,
+          0
+        ],
+        [
+          0,
+          251658240,
+          251658240,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ]
+      ]
+    }
+  }
+}

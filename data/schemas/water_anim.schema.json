@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "obl.water_anim",
+  "title": "Water shimmer animation (maps/water/<k>.json)",
+  "description": "A sheet of on/off masks, frames left to right and the masks of a frame top to bottom (maps-scenarios.md, 'Water shimmer'). Tier L2.",
+  "type": "object",
+  "properties": {
+    "format": { "const": "obl.water_anim" },
+    "version": { "const": 1 },
+    "sheet": { "$ref": "obl.common#/$defs/path" },
+    "mask_size": { "$ref": "obl.common#/$defs/size2" },
+    "frames": { "type": "integer", "minimum": 1 },
+    "masks_per_frame": { "type": "integer", "minimum": 1 },
+    "rate": {
+      "description": "Frames per second.",
+      "type": "number",
+      "exclusiveMinimum": 0
+    }
+  },
+  "required": ["format", "version", "sheet", "mask_size", "frames", "masks_per_frame", "rate"],
+  "additionalProperties": false
+}

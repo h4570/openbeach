@@ -1,0 +1,54 @@
+# L0 GUI oracle: the m6_gui_golden.txt visits on the own L0 pack; record only through
+# tools/gui_image_golden.ps1 -Record -Pack l0. The L0 scenario opens no objectives at start, so the script opens them.
+# It visits only the dialogs the L0 pack defines; the building panel is the start station's (L0 has no staff or
+# guest panel). The other dialogs are gaps (docs/build/ci-l0.md).
+# @env OBL_PACK=l0
+# @timeout 180
+# @config rel
+# @gameini Language.Language=0
+# @gameini Sound.MusicVol=0.5
+# @gameini Video.ResWidth=800
+# @gameini Video.ResHeight=600
+# @gameini Video.NudgeScroll=0
+# @gameini Video.SeaEffects=1
+# @gameini Video.LightEffects=1
+# @gameini Video.Keyline=0
+# @check python tools/gui_image_check.py {run} --pack l0
+seed 1
+fixed-dt 0.02
+move 400 300
+boot-gameplay scenario 1
+await gameplay
+await frames 1
+gui-open Objectives
+await gui-open-dialogs == 1
+await gui-animating == 0
+shot m6_gui_objectives
+await frames 1
+gui-close Objectives
+await gui-entries == 0
+shot m6_gui_hud
+await frames 1
+gui-open BuildPanel
+await gui-open-dialogs == 1
+await gui-animating == 0
+shot m6_gui_buildpanel
+await frames 1
+gui-close BuildPanel
+await gui-entries == 0
+gui-open CameraControls
+await gui-open-dialogs == 1
+await gui-animating == 0
+shot m6_gui_cameracontrols
+await frames 1
+gui-close CameraControls
+await gui-entries == 0
+object-select Building
+await frames 10
+await gui-open-dialogs == 1
+await gui-animating == 0
+shot m6_gui_buildinginfo
+await frames 1
+gui-close-all
+await gui-entries == 0
+quit

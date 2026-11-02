@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "obl.fine",
+  "title": "Fine (catalog/fines/<key>.json)",
+  "description": "A fine the player can be charged (game-data.md, 'Catalog').",
+  "type": "object",
+  "properties": {
+    "format": {
+      "const": "obl.fine"
+    },
+    "version": {
+      "const": 2
+    },
+    "key": {
+      "$ref": "obl.common#/$defs/key"
+    },
+    "cost": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "format",
+    "version",
+    "key",
+    "cost"
+  ],
+  "additionalProperties": false
+}

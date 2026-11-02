@@ -1,0 +1,296 @@
+#obl-script 1 object
+// The own L0 guest: arrives, walks to a building it desires, is served, leaves. Every behavior beyond that stays out.
+
+State STATE_NULL
+	OnUpdate
+	End
+	OnEntry
+		Set WalkAnimation "D_WALK_NORMAL";
+		Set StandAnimation "D_STAND_NORMAL";
+		Set WalkSpeed 60;
+		ChangeState STATE_STARTUP;
+	End
+End
+
+State STATE_STARTUP
+	OnUpdate
+	End
+	OnEntry
+		If (WorldStarted)
+			ChangeState STATE_GUEST_ENTERING_WORLD;
+		Else
+			Function SetupStartValues;
+			Message MT_STATECHANGE Me STATE_GUEST_SEARCH_DESIRE 0;
+		End
+	End
+	OnExit
+		PlayAnimation WalkAnimation;
+	End
+End
+
+State STATE_GUEST_ENTERING_WORLD
+	OnEntry
+		Set ActionState 0;
+		PlayAnimation WalkAnimation;
+		ChangeState STATE_GUEST_SEARCH_DESIRE;
+	End
+End
+
+State STATE_GUEST_SEARCH_DESIRE
+	OnUpdate
+		Function UpdateDesires;
+	End
+	OnEntry
+		Set WalkPoint 0;
+		PlayAnimation WalkAnimation;
+		If (NotOnPath)
+			Function GetOnPath;
+		Else
+			Function WalkAlongPath;
+		End
+	End
+	Message MT_DO_NEXT_ACTION
+		OnReceipt
+			If (MessState == STATE_GUEST_SEARCH_DESIRE)
+				Function SearchDesire;
+			End
+		End
+	End
+	Message MT_MOVEIMHERE
+		OnReceipt
+			If (MessState == STATE_GUEST_SEARCH_DESIRE)
+				PlayAnimation StandAnimation;
+				Message MT_DO_NEXT_ACTION Me 0 0 Time 2;
+			End
+		End
+	End
+	Message MT_PATHBLOCKED
+		OnReceipt
+			If (MessState == STATE_GUEST_SEARCH_DESIRE)
+				Message MT_MOVE2POINT Me WalkPointY WalkPointX;
+			End
+		End
+	End
+End
+
+State STATE_GUEST_HEADING_DESIRE
+	OnUpdate
+		Function UpdateDesires;
+	End
+	OnEntry
+		PlayAnimation WalkAnimation;
+		Set ActionState 0;
+	End
+	Message MT_PATHBLOCKED
+		OnReceipt
+			If (MessState == STATE_GUEST_HEADING_DESIRE)
+				// The L0 island has no pavement: walk straight to the building.
+				If (DestObject != NO_OBJECT)
+					Message MT_MOVE2OBJECT Me DestObject 0;
+				Else
+					ChangeState STATE_GUEST_SEARCH_DESIRE;
+				End
+			End
+		End
+	End
+	Message MT_BUILDING_BEING_REMOVED
+		OnReceipt
+			If (Sender == DestObject)
+				Message MT_MOVESTOP Me 0 0;
+				PlayAnimation StandAnimation;
+				Set MissedPurchase true;
+				ChangeState STATE_GUEST_SEARCH_DESIRE;
+			End
+		End
+	End
+	Message MT_BUILDING_CLOSING
+		OnReceipt
+			If (Sender == DestObject)
+				Set MissedPurchase true;
+				Message MT_MOVESTOP Me 0 0;
+				PlayAnimation StandAnimation;
+				ChangeState STATE_GUEST_SEARCH_DESIRE;
+			End
+		End
+	End
+	Message MT_MOVEIMHERE
+		OnReceipt
+			If (MessState == STATE_GUEST_HEADING_DESIRE)
+				PlayAnimation StandAnimation;
+				If (Activity)
+					ChangeState STATE_GUEST_SEARCH_DESIRE;
+				Else
+					ChangeState STATE_GUEST_REACHED_DESIRE;
+				End
+			End
+		End
+	End
+	Message MT_LAST_POINT
+		OnReceipt
+			If (MessState == STATE_GUEST_HEADING_DESIRE)
+				If (Activity == false)
+					PlayAnimation StandAnimation;
+					ChangeState STATE_GUEST_REACHED_DESIRE;
+				End
+			End
+		End
+	End
+End
+
+State STATE_GUEST_REACHED_DESIRE
+	OnEntry
+		If (DestObject != NO_OBJECT)
+			Function AlterQueueOpinion;
+			Function AlterSafetyOpinion;
+			Message MT_REQUEST_COMMOD DestObject DesiredCommod 0;
+		End
+	End
+	Message MT_NO_STOCK
+		OnReceipt
+			Function MissedDesire;
+			ChangeState STATE_GUEST_SEARCH_DESIRE;
+		End
+	End
+	Message MT_COMMOD_PRICE
+		OnReceipt
+			Function FaceSender;
+			Function AlterPriceOpinion;
+			If (MessFloatData > MaxPrice)
+				Message MT_PRICE_NOT_OK Sender MessData DesiredCommod;
+				Function MissedDesire;
+				ChangeState STATE_GUEST_SEARCH_DESIRE;
+			Else
+				If (MessFloatData > Cash)
+					Message MT_PRICE_NOT_OK Sender MessData DesiredCommod;
+					Function MissedDesire;
+					ChangeState STATE_GUEST_SEARCH_DESIRE;
+				Else
+					Message MT_PRICE_OK Sender 0 0;
+				End
+			End
+		End
+	End
+	Message MT_QUEUE_FULL
+		OnReceipt
+			Function MissedDesire;
+			ChangeState STATE_GUEST_SEARCH_DESIRE;
+		End
+	End
+	Message MT_JOIN_QUEUE
+		OnReceipt
+			// WalkPoint marks queue membership only until admission; native opinion helpers also write ActionState.
+			Set WalkPoint 1;
+			Set ActionPerson DestObject;
+			ChangeState STATE_GUEST_WAITING_DESIRE;
+		End
+	End
+	Message MT_IM_READY
+		OnReceipt
+			Set ActionPerson MessData;
+			ChangeState STATE_GUEST_ENTER_BUILDING;
+		End
+	End
+	OnUpdate
+		Function UpdateDesires;
+	End
+	OnExit
+		Function AddRide;
+	End
+End
+
+State STATE_GUEST_ENTER_BUILDING
+	OnEntry
+		// WAITING_DESIRE is also used inside: clear the marker before any delayed move-up can arrive.
+		Set WalkPoint 0;
+		Set ActionState 0;
+		PlayAnimation WalkAnimation;
+		Message MT_MOVE_DIRECT_2OBJECT Me DestObject 1;
+	End
+	Message MT_MOVEIMHERE
+		OnReceipt
+			If (MessState == STATE_GUEST_ENTER_BUILDING)
+				If (ActionState == 0)
+					Set ActionState 1;
+					Message MT_MOVE_INSIDE_BUILDING Me DestObject 0;
+				Else
+					PlayAnimation StandAnimation;
+					ChangeState STATE_GUEST_WAITING_DESIRE;
+					Message MT_IM_READY DestObject ActionPerson DesiredCommod;
+				End
+			End
+		End
+	End
+End
+
+State STATE_GUEST_WAITING_DESIRE
+	OnEntry
+		PlayAnimation StandAnimation;
+	End
+	OnUpdate
+		Function UpdateDesires;
+	End
+	Message MT_MOVE2QUEUEPOINT
+		OnReceipt
+			// Native queue messages do not carry MessState; this handler is already scoped to WAITING_DESIRE.
+			If (WalkPoint == 1)
+				If (Sender == DestObject)
+					PlayAnimation WalkAnimation;
+					Message MT_MOVE2POINT Me MessData MessFlags;
+				End
+			End
+		End
+	End
+	Message MT_IM_READY
+		OnReceipt
+			Set ActionPerson MessData;
+			ChangeState STATE_GUEST_ENTER_BUILDING;
+		End
+	End
+	Message MT_SERVED_COMMOD
+		OnReceipt
+			Set ActionState 0;
+			Function UpdatePriceScore;
+			Minus Cash CommodPrice;
+			PlaySound cash;
+			Function AlterDesires;
+			ChangeState STATE_GUEST_EXIT_BUILDING;
+		End
+	End
+	Message MT_NO_STOCK
+		OnReceipt
+			Function MissedDesire;
+			ChangeState STATE_GUEST_SEARCH_DESIRE;
+		End
+	End
+End
+
+State STATE_GUEST_EXIT_BUILDING
+	OnEntry
+		Set WalkPoint 0;
+		PlayAnimation WalkAnimation;
+		Function SetVisible;
+		// Leaving frees the guest's place in the building; the building then lets the next queued guest in (MT_IM_READY).
+		Message MT_COMMOD_QUALITY DestObject DesiredCommod 0;
+		Message MT_MOVE_INSIDE_BUILDING Me DestObject 1;
+	End
+	Message MT_MOVEIMHERE
+		OnReceipt
+			If (MessState == STATE_GUEST_EXIT_BUILDING)
+				Add WalkPoint 1;
+				If (WalkPoint == 1)
+					Message MT_MOVE_DIRECT_2OBJECT Me DestObject 1;
+				Else
+					ChangeState STATE_GUEST_LEAVING_WORLD;
+				End
+			End
+		End
+	End
+End
+
+State STATE_GUEST_LEAVING_WORLD
+	// No wharf on the L0 island: the guest is removed in this state, which counts the departure.
+	OnEntry
+		Function ClearMyDelayedMsgs;
+		Message MT_KILLOBJECT -2 Me 0;
+	End
+End

@@ -1,0 +1,37 @@
+{
+  "format": "obl.building",
+  "version": 2,
+  "key": "snack_hut",
+  "name": "SAMPLE_SNACK_HUT",
+  "category": "food",
+  "behavior": "general_store",
+  "sprite": "sample_hut",
+  "icon": 7,
+  "menu": "shop_dialog",
+  "cost": { "build": 800, "refund": 200 },
+  "construction": { "build_time": 3, "demolish_time": 1, "max_builders": 2 },
+  "size": [2, 2],
+  "build_on": ["land", "beach"],
+  "baseplates": [1],
+  "points": { "serve": [1, 2], "staff": [0, 1], "entrance": [1, 2], "walk": [[0.5, 2.5], [1.5, 2.5]] },
+  "operation": {
+    "guest_capacity": 4, "opening_hours": "daytime", "max_instances": 0, "max_queue": 5,
+    "attractor": "food", "power": 2, "staff": { "types": ["vendor"], "max": 1 }
+  },
+  "commodities": [
+    { "commodity": "chips", "intensity": [0.6, 0.5], "daily_intensity_factor": 1, "price": 1.5, "daily_price_factor": 1, "cost": 0.4 }
+  ],
+  "failure": { "average_time": 40, "percent": 5, "age": 3 },
+  "tables": [{ "table": "picnic_table", "pos": [3, 0.5] }],
+  "events": ["juggling", "juggling"],
+  "anims": [{ "sprite": "sample_flag", "points": [[4, -30], [4, -30], [-4, -30], [-4, -30]], "flag": true }],
+  "footprint": {
+    "size": [2, 2],
+    "layers": {
+      "placement": [[{}, {}, {}, {}], [{}, { "terrain": 1 }, { "terrain": 1 }, {}], [{}, { "terrain": 1 }, { "terrain": 1 }, {}], [{}, {}, { "terrain": 2 }, {}]],
+      "work": [[{}, {}, {}, {}], [{}, { "building": 1 }, { "building": 1 }, {}], [{}, { "building": 1 }, { "building": 1 }, {}], [{}, {}, {}, {}]],
+      "depth": [[0, 1, 1, 0], [1, 0, 0, 1], [1, 0, 0, 1], [0, 1, 1, 0]],
+      "body": [[0, 0, 0, 0], [0, 3, 3, 0], [0, 3, 3, 0], [0, 0, 0, 0]]
+    }
+  }
+}

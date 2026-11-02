@@ -1,0 +1,79 @@
+#obl-gui 1
+
+Font(GuiFont8)
+
+Font(GuiFont8b)
+
+Font(GuiFont12b)
+
+MainItem {
+	Image(B0, 88, 800, 0, l0_play_bar, None)
+	Button(B8, 32, 108, 8, l0_play_button, L0_PLAY_BUILDLIST, BuildList, None, L0_PLAY_BUILDLIST)
+	Button(B112, 32, 212, 8, l0_play_button, L0_PLAY_CAMERAMODE, CameraMode, None, L0_PLAY_CAMERAMODE)
+	Button(B216, 32, 316, 8, l0_play_button, L0_PLAY_SHOWGOAL, ShowGoal, None, L0_PLAY_SHOWGOAL)
+	Variable(B330, 30, 520, 10, PlayerMoney$, 0, 16777215, 0)
+	Variable(B575, 30, 765, 10, Time, 0, 16777215, 0)
+}
+
+MainItem640 {
+	Image(B0, 70, 640, 0, l0_play_bar640, None)
+	Button(B8, 32, 108, 8, l0_play_button, L0_PLAY_BUILDLIST, BuildList, None, L0_PLAY_BUILDLIST)
+	Button(B112, 32, 212, 8, l0_play_button, L0_PLAY_CAMERAMODE, CameraMode, None, L0_PLAY_CAMERAMODE)
+	Button(B216, 32, 316, 8, l0_play_button, L0_PLAY_SHOWGOAL, ShowGoal, None, L0_PLAY_SHOWGOAL)
+	Variable(B330, 30, 520, 10, PlayerMoney$, 0, 16777215, 0)
+}
+
+DialogItem BuildPanel(210, 120, 590, 380, l0_play_panel, 0, 1)
+{
+	ImageList(12, 35, 160, 95, 52, 52, BUILD_FOOD_SMALL, None)
+	ImageList(12, 105, 160, 165, 52, 52, BUILD_LEISURE_SMALL, None)
+	Variable(170, 40, 360, 60, BUILD_NAME_TEXT, 0, 16777215, 0)
+	Variable(170, 70, 360, 90, BUILD_COST_AMOUNT, 0, 16777215, 0)
+	Button(12, 210, 112, 234, l0_play_button, L0_PLAY_PLACEBUILDING, PlaceBuilding, None, L0_PLAY_PLACEBUILDING)
+	Button(260, 210, 360, 234, l0_play_button, L0_PLAY_EXITDIALOG, ExitDialog, None, L0_PLAY_EXITDIALOG)
+}
+
+DialogItem CancelBuildMode(210, 120, 590, 380, l0_play_panel, 0, 1)
+{
+	Button(12, 35, 112, 59, l0_play_button, L0_PLAY_EXITBUILDMODE, ExitBuildMode, None, L0_PLAY_EXITBUILDMODE)
+}
+
+DialogItem L0Building(210, 120, 590, 380, l0_play_panel, 0, 1)
+{
+	Variable(12, 35, 202, 55, BUILDING_NAME, 0, 16777215, 0)
+	Variable(12, 65, 202, 85, BUILDING_OPEN, 0, 16777215, 0)
+	Button(12, 110, 112, 134, l0_play_button, L0_PLAY_CLOSEBUILDING, CloseBuilding, None, L0_PLAY_CLOSEBUILDING)
+	Button(120, 110, 220, 134, l0_play_button, L0_PLAY_OPENBUILDING, OpenBuilding, None, L0_PLAY_OPENBUILDING)
+	Button(12, 150, 112, 174, l0_play_button, L0_PLAY_CALLREPAIR, CallRepair, None, L0_PLAY_CALLREPAIR)
+	Button(120, 150, 220, 174, l0_play_button, L0_PLAY_CALLCLEANER, CallCleaner, None, L0_PLAY_CALLCLEANER)
+	Button(12, 185, 112, 209, l0_play_button, L0_PLAY_LOCKCAMERA, LockCamera, None, L0_PLAY_LOCKCAMERA)
+	Button(120, 185, 220, 209, l0_play_button, L0_PLAY_SELLBUTTON, SellButton, None, L0_PLAY_SELLBUTTON)
+	Button(260, 210, 360, 234, l0_play_button, L0_PLAY_EXITDIALOG, ExitDialog, None, L0_PLAY_EXITDIALOG)
+}
+
+DialogItem ConfirmDemolish(210, 120, 590, 380, l0_play_panel, 0, 1)
+{
+	Variable(12, 35, 202, 55, BUILDING_NAME, 0, 16777215, 0)
+	Button(12, 110, 112, 134, l0_play_button, L0_PLAY_CONFIRMSELL, ConfirmSell, None, L0_PLAY_CONFIRMSELL)
+	Button(260, 210, 360, 234, l0_play_button, L0_PLAY_EXITDIALOG, ExitDialog, None, L0_PLAY_EXITDIALOG)
+}
+
+DialogItem CameraControls(210, 120, 590, 380, l0_play_panel, 0, 1)
+{
+	Button(12, 35, 112, 59, l0_play_button, L0_PLAY_ZOOMIN, ZoomIn, None, L0_PLAY_ZOOMIN)
+	Button(120, 35, 220, 59, l0_play_button, L0_PLAY_ZOOMOUT, ZoomOut, None, L0_PLAY_ZOOMOUT)
+	Button(12, 115, 112, 139, l0_play_button, L0_PLAY_DOCAMERAGRAB, DoCameraGrab, None, L0_PLAY_DOCAMERAGRAB)
+	Button(260, 210, 360, 234, l0_play_button, L0_PLAY_CAMERAMODE, CameraMode, None, L0_PLAY_CAMERAMODE)
+}
+
+DialogItem Objectives(210, 120, 590, 380, l0_play_panel, 0, 1)
+{
+	Variable(12, 35, 202, 55, SCENARIO_TITLE, 0, 16777215, 0)
+	Variable(12, 70, 202, 90, SCENARIO_DESCRIPTION, 0, 16777215, 0)
+	Button(260, 210, 360, 234, l0_play_button, L0_PLAY_EXITDIALOG, ExitDialog, None, L0_PLAY_EXITDIALOG)
+}
+
+DialogItem L0Progress(0, 0, 93, 59, CLEAR, 24, 0)
+{
+	Variable(2, 22, 82, 42, NumGuests, 0, 16777215, 0)
+}

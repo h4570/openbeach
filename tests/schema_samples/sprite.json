@@ -1,0 +1,21 @@
+{
+  "format": "obl.sprite",
+  "version": 1,
+  "name": "sample_walker",
+  "kind": "character",
+  "tone_group": 1,
+  "pixels": "indexed",
+  "palettes": "sample_walker.palettes.png",
+  "palette_colors": 64,
+  "animations": [
+    {
+      "name": "walk", "directions": 2, "frames": 3, "size": [16, 24], "hotspot": [-8, -22],
+      "sheets": ["sample_walker/walk.png", "sample_walker/walk_p1.png"], "columns": 2, "rows": 2, "unique_frames": 5,
+      "frame_map": [0, 1, 2, 3, 4, 3]
+    },
+    {
+      "name": "idle", "directions": 1, "frames": 2, "size": [16, 24], "hotspot": [-8, -22],
+      "sheets": ["sample_walker/idle.png"], "columns": 2, "unique_frames": 2
+    }
+  ]
+}

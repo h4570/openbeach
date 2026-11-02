@@ -1,0 +1,22 @@
+{
+  "format": "obl.map",
+  "version": 2,
+  "event_area": [10, 20, 300, 400],
+  "size_px": [4096, 4096],
+  "cell_px": 32,
+  "cells": [128, 128],
+  "terrain": "terrain.png",
+  "terrain_types": [
+    { "index": 0, "type": "deep_sea" },
+    { "index": 1, "type": "shallow_water" },
+    { "index": 2, "type": "sand" },
+    { "index": 3, "type": "grass" }
+  ],
+  "height": "height.png",
+  "height_scale": 0.25,
+  "color": "color.png",
+  "depth": "depth.png",
+  "water_anim": "water/1",
+  "depth_plane_offset": 0,
+  "depth_slant_offset": 0
+}

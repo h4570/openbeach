@@ -1,0 +1,32 @@
+{
+  "format": "obl.scenario",
+  "version": 1,
+  "id": "s1",
+  "kind": "campaign",
+  "title": "L0_TITLE",
+  "description": "L0_DESC",
+  "map": "scenario1",
+  "start_view": [
+    2048,
+    2048
+  ],
+  "catalog": "catalog/index.json",
+  "guests": "l0",
+  "available_buildings": [
+    "loo",
+    "kiosk",
+    "hut"
+  ],
+  "tilesets": {
+    "pavement": "pathtile_01"
+  },
+  "radar": {
+    "image": "dummy",
+    "pos": [
+      9,
+      0
+    ]
+  },
+  "progress_dialog": "L0Progress",
+  "script": "world.wsc"
+}

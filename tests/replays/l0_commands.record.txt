@@ -1,0 +1,63 @@
+# Recording script of the own reference replay l0_commands.replay (docs/testing/replays.md): the L0 pack's scenario 1 with every
+# command type of format 1 that L0 content can exercise, each applied at least once, plus a few the executor rejects. Targets come
+# from lookups, never from literal ids. Not a manifest test; re-record with
+#   ./tools/replay.ps1 -Record tests/replays/l0_commands.record.txt
+# Only `command`, `step`, `await` and lookups (`*-find`, `object-report`) between `record` and `record end`.
+# @env OBL_PACK=l0
+# @timeout 300
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario 1
+record replays/l0_commands.replay every 100
+await gameplay
+await frames 20
+command set-game-speed level=2
+step 80
+place-find building LOO
+command place-building key=LOO x=$x y=$y dir=0
+command place-building key=NOSUCHBUILDING x=$x y=$y dir=0
+step 100
+object-find building KIOSK
+command set-price building=$id slot=0 price=3.25
+command set-repair-interval object=$id value=7
+command set-building-open-policy object=$id value=0
+command set-beach-open-policy object=$id value=0
+step 100
+object-find staff Builder 0
+command set-staff-wage staff=$id wage=40
+command copy-staff-wage staff=$id wage=45
+command set-staff-shift staff=$id start=8 end=20
+step 100
+object-find building KIOSK
+command call-repair building=$id
+command call-cleaner building=$id
+step 200
+command set-building-open building=$id open=0
+step 100
+command set-building-open building=$id open=1
+command set-paused paused=1
+step 50
+command resume-game
+step 20
+command set-paused paused=0
+command set-game-speed level=1
+step 100
+command set-game-speed level=2
+object-find building KIOSK
+object-report $id
+object-find staff Builder 1
+command send-staff staff=$id x=$pos-x y=$pos-y z=0
+step 200
+object-find building KIOSK
+log kiosk kiosk=$id
+object-find staff Builder 0
+command send-staff-to staff=$id target=$kiosk
+step 200
+object-find staff Builder 0
+command break-object object=$id
+step 50
+object-find building LOO
+command demolish object=$id
+step 300
+record end
+quit

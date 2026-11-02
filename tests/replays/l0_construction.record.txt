@@ -1,0 +1,44 @@
+# Recording script of the own reference replay l0_construction.replay (docs/testing/replays.md): L0 scenario 1, builders erect a
+# hut, a toilet block and a kiosk (the second builder works shorter shifts), wages and shifts change, the buildings are priced, opened,
+# closed and demolished. Surfaces and scenery have no L0 content (gap in docs/build/ci-l0.md). Re-record with
+#   ./tools/replay.ps1 -Record tests/replays/l0_construction.record.txt
+# @env OBL_PACK=l0
+# @timeout 300
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario 1
+record replays/l0_construction.replay every 100
+await gameplay
+await frames 20
+command set-game-speed level=2
+object-find staff Builder 0
+command set-staff-shift staff=$id start=6 end=22
+object-find staff Builder 1
+command set-staff-shift staff=$id start=6 end=22
+place-find building HUT
+command place-building key=HUT x=$x y=$y dir=0
+step 400
+place-find building LOO
+command place-building key=LOO x=$x y=$y dir=2
+step 400
+place-find building KIOSK
+command place-building key=KIOSK x=$x y=$y dir=0
+step 600
+object-find staff Builder 1
+command set-staff-wage staff=$id wage=60
+command set-staff-shift staff=$id start=10 end=14
+step 200
+object-find building KIOSK 0
+command set-price building=$id slot=0 price=1.5
+command set-building-open building=$id open=0
+step 200
+command set-building-open building=$id open=1
+step 300
+object-find building HUT
+command demolish object=$id
+step 400
+object-find building LOO
+command demolish object=$id
+step 600
+record end
+quit

@@ -1,0 +1,218 @@
+#obl-script 1 object
+// The own L0 builder: waits at the yard, walks to the job the construction manager hands out (MT_CONSTRUCT), works it off
+// (RemoveCostPoint every tick) until MT_CONSTRUCTION_FINISHED, then waits for the next one. Off-shift builders release jobs.
+
+State STATE_NULL
+	OnEntry
+		Set WalkAnimation "D_WALK_NORMAL";
+		Set StandAnimation "D_STAND_NORMAL";
+		ChangeState STATE_STARTUP;
+	End
+End
+
+State STATE_STARTUP
+	OnEntry
+		ChangeState STATE_BUILDER_RESTING;
+	End
+	Message MT_DEMOLISH
+		OnReceipt
+			If (AtWork)
+				ChangeState STATE_BUILDER_GO_BUILD;
+			Else
+				Function FreeBuilderOfJob;
+			End
+		End
+	End
+	Message MT_CONSTRUCT
+		OnReceipt
+			If (AtWork)
+				ChangeState STATE_BUILDER_GO_BUILD;
+			Else
+				Function FreeBuilderOfJob;
+			End
+		End
+	End
+End
+
+State STATE_BUILDER_RESTING
+	OnUpdate
+		If (AtWork)
+			Function ReallocateBuilders;
+		End
+	End
+	OnEntry
+		PlayAnimation StandAnimation;
+		Set BuilderLocation 0;
+		// Asks the manager for work: a waiting job answers with MT_CONSTRUCT.
+		If (AtWork)
+			Function ReallocateBuilders;
+		End
+	End
+	Message MT_DEMOLISH
+		OnReceipt
+			If (AtWork)
+				ChangeState STATE_BUILDER_GO_BUILD;
+			Else
+				Function FreeBuilderOfJob;
+			End
+		End
+	End
+	Message MT_CONSTRUCT
+		OnReceipt
+			If (AtWork)
+				ChangeState STATE_BUILDER_GO_BUILD;
+			Else
+				Function FreeBuilderOfJob;
+			End
+		End
+	End
+End
+
+State STATE_BUILDER_GO_BUILD
+	OnUpdate
+		If (AtWork == false)
+			Function FreeBuilderOfJob;
+			ChangeState STATE_BUILDER_RESTING;
+		End
+	End
+	OnEntry
+		If (AtWork && IsJobStillValid)
+			Set BuilderLocation 1;
+			PlayAnimation WalkAnimation;
+			// The L0 island has no pavement: walk straight to the site.
+			Message MT_MOVE2POINT Me BuildEntPointY BuildEntPointX;
+		Else
+			Function FreeBuilderOfJob;
+			ChangeState STATE_BUILDER_RESTING;
+		End
+	End
+	Message MT_PATHBLOCKED
+		OnReceipt
+			Message MT_MOVE2POINT Me BuildEntPointY BuildEntPointX;
+		End
+	End
+	Message MT_MOVEIMHERE
+		OnReceipt
+			If (MessState == STATE_BUILDER_GO_BUILD)
+				If (AmIDemolishing)
+					ChangeState STATE_BUILDER_DO_DEMOLISHING;
+				Else
+					ChangeState STATE_BUILDER_DO_BUILDING;
+				End
+			End
+		End
+	End
+	Message MT_DEMOLISH
+		OnReceipt
+			If (AtWork)
+				ChangeState STATE_BUILDER_GO_BUILD;
+			Else
+				Function FreeBuilderOfJob;
+			End
+		End
+	End
+	Message MT_CONSTRUCTION_FINISHED
+		OnReceipt
+			Function FreeBuilderOfJob;
+			ChangeState STATE_BUILDER_RESTING;
+		End
+	End
+End
+
+State STATE_BUILDER_DO_BUILDING
+	OnEntry
+		PlayAnimation StandAnimation;
+		Set BuilderLocation 3;
+	End
+	OnUpdate
+		If (AtWork && IsJobStillValid)
+			Function RemoveCostPoint;
+		Else
+			Function FreeBuilderOfJob;
+			ChangeState STATE_BUILDER_RESTING;
+		End
+	End
+	Message MT_DEMOLISH
+		OnReceipt
+			If (AtWork)
+				ChangeState STATE_BUILDER_GO_BUILD;
+			Else
+				Function FreeBuilderOfJob;
+			End
+		End
+	End
+	Message MT_CONSTRUCTION_FINISHED
+		OnReceipt
+			Set BuilderLocation 5;
+			Function FreeBuilderOfJob;
+			ChangeState STATE_BUILDER_RESTING;
+		End
+	End
+	Message MT_DEMOLISH
+		OnReceipt
+			If (AtWork)
+				ChangeState STATE_BUILDER_GO_BUILD;
+			Else
+				Function FreeBuilderOfJob;
+			End
+		End
+	End
+	Message MT_CONSTRUCT
+		OnReceipt
+			If (AtWork)
+				ChangeState STATE_BUILDER_GO_BUILD;
+			Else
+				Function FreeBuilderOfJob;
+			End
+		End
+	End
+End
+
+State STATE_BUILDER_DO_DEMOLISHING
+	OnEntry
+		PlayAnimation StandAnimation;
+		Set BuilderLocation 3;
+	End
+	OnUpdate
+		If (AtWork && IsJobStillValid)
+			Function RemoveCostPoint;
+		Else
+			Function FreeBuilderOfJob;
+			ChangeState STATE_BUILDER_RESTING;
+		End
+	End
+	Message MT_DEMOLISH
+		OnReceipt
+			If (AtWork)
+				ChangeState STATE_BUILDER_GO_BUILD;
+			Else
+				Function FreeBuilderOfJob;
+			End
+		End
+	End
+	Message MT_CONSTRUCTION_FINISHED
+		OnReceipt
+			Set BuilderLocation 5;
+			Function FreeBuilderOfJob;
+			ChangeState STATE_BUILDER_RESTING;
+		End
+	End
+	Message MT_DEMOLISH
+		OnReceipt
+			If (AtWork)
+				ChangeState STATE_BUILDER_GO_BUILD;
+			Else
+				Function FreeBuilderOfJob;
+			End
+		End
+	End
+	Message MT_CONSTRUCT
+		OnReceipt
+			If (AtWork)
+				ChangeState STATE_BUILDER_GO_BUILD;
+			Else
+				Function FreeBuilderOfJob;
+			End
+		End
+	End
+End

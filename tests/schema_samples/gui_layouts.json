@@ -1,0 +1,12 @@
+{
+  "format": "obl.gui_layouts",
+  "version": 1,
+  "layouts": {
+    "main_menu": { "pl": "main_menu_pl.gui", "*": "main_menu.gui" },
+    "in_game": { "*": "in_game.gui" }
+  },
+  "fonts": {
+    "pl": { "gui_small": "sample_font_8_pl" },
+    "*": { "gui_small": "sample_font_8" }
+  }
+}

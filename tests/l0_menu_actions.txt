@@ -1,0 +1,58 @@
+# Credits, Load and Reset in the L0 main menu: the own credits and object browser tables and the menu dialogs of the L0 pack.
+# Reset is answered "no" (a "yes" rewrites the progress file); Load is cancelled.
+# @env OBL_PACK=l0
+# @env OBL_WINDOWED=1
+# @gameini Language.Language=0
+# @gameini Sound.PlayListCount=0
+# @timeout 120
+seed 1
+fixed-dt 0.02
+await state == 1
+await frames 20
+await gui-animating == 0
+gui-click MainMenu tip L0_MENU_TIP_OPTIONS
+await frames 20
+await gui-animating == 0
+gui-state ExtrasScreen
+expect-last visible 1
+# Credits opens the roll (the tables load); its back button returns to the extras
+gui-click ExtrasScreen tip L0_MENU_TIP_CREDITS
+await frames 20
+await gui-animating == 0
+gui-state CreditsScreen
+expect-last visible 1
+gui-click CreditsScreen tip L0_MENU_TIP_OPTIONS
+await frames 20
+await gui-animating == 0
+gui-state ExtrasScreen
+expect-last visible 1
+# Reset asks in its own confirm dialog; "no" closes it
+gui-click ExtrasScreen tip L0_MENU_TIP_RESET
+await frames 20
+await gui-animating == 0
+gui-state ResetProgressConfirm
+expect-last visible 1
+gui-click ResetProgressConfirm tip L0_RESET_NO
+await frames 20
+await gui-animating == 0
+gui-state ResetProgressConfirm
+expect-last visible 0
+gui-click ExtrasScreen tip L0_MENU_TIP_MENU
+await frames 20
+await gui-animating == 0
+gui-state MainMenu
+expect-last visible 1
+# Load opens the save list; cancel returns to the main menu
+gui-click MainMenu tip L0_MENU_TIP_LOAD
+await frames 20
+await gui-animating == 0
+gui-state LoadGameMenu
+expect-last visible 1
+gui-click LoadGameMenu tip L0_LOAD_CANCEL
+await frames 20
+await gui-animating == 0
+gui-state LoadGameMenu
+expect-last visible 0
+gui-state MainMenu
+expect-last visible 1
+quit

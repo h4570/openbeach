@@ -1,0 +1,30 @@
+{
+  "format": "obl.sprite",
+  "version": 1,
+  "name": "UI3_bp_thumb_grey",
+  "kind": "ui",
+  "pixels": "indexed",
+  "palettes": "UI3_bp_thumb_grey.palettes.png",
+  "palette_colors": 256,
+  "palette_count": 1,
+  "animations": [
+    {
+      "name": "UI3_bp_thumb_grey",
+      "directions": 1,
+      "frames": 1,
+      "size": [
+        48,
+        48
+      ],
+      "hotspot": [
+        0,
+        0
+      ],
+      "columns": 1,
+      "unique_frames": 1,
+      "sheets": [
+        "UI3_bp_thumb_grey/sheet.png"
+      ]
+    }
+  ]
+}

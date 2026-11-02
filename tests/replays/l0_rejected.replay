@@ -1,0 +1,39 @@
+OBL-replay 1
+start scenario 1
+seed 1
+fixed-dt 0.02
+hash-schema 3
+@0 hash 8b961d96a90f8884 world=347c70b4/55 economy=789a9828/18 map=d35709af/32772 objects=3f3f5aaa/7 buildings=36b3a59b/195 staff=292a594a/84 ferry=09f31930/40 repair=216add6a/7 feedback=ffb7c4d6/15 messages=04f668da/2 cleaning=c75fa4ba/5 construction=a771e050/14 weather=585424b3/28 rng=511f88fc/2
+@20 set-game-speed level=2
+@70 place-building key=NOSUCHBUILDING x=57 y=62 dir=0
+@70 place-building key=LOO x=57 y=62 dir=9
+@70 place-building key=LOO x=-5 y=-5 dir=0
+@70 place-building key=LOO x=57 y=62 dir=0
+@71 place-building key=LOO x=57 y=62 dir=0
+@71 place-scenery key=NOSUCHSCENERY x=3 y=3 dir=0
+@71 paint-surface key=NOSUCHSURFACE x=3 y=3
+@71 dozer x=-1 y=-1
+@100 hash 81f776ac4794c99d world=e12961f9/55 economy=5230611d/18 map=bc1f9b97/32772 objects=c9bea090/7 buildings=63fcb6e6/256 staff=dc64878a/84 ferry=09f31930/40 repair=216add6a/7 feedback=2d3f2282/15 messages=04f668da/2 cleaning=c75fa4ba/5 construction=7df8fdac/57 weather=585424b3/28 rng=dbcb8c50/2
+@121 set-staff-wage staff=3 wage=5000
+@121 copy-staff-wage staff=3 wage=2
+@121 set-staff-shift staff=3 start=30 end=2
+@121 set-staff-wage staff=1 wage=40
+@121 send-staff staff=3 x=-1 y=-1 z=0
+@121 send-staff-to staff=3 target=99999
+@121 dismiss-staff staff=1
+@121 hire-staff profession=Banker
+@121 hire-staff profession=Builder
+@171 set-price building=3 slot=0 price=3
+@171 set-price building=1 slot=9 price=3
+@171 set-price building=1 slot=0 price=5000
+@171 set-event-price building=1 slot=0 price=3
+@171 set-beer building=1 key=NOSUCHBEER
+@171 set-show building=1 slot=0 key=NOSUCHSHOW
+@171 set-building-open building=3 open=0
+@171 set-game-speed level=7
+@171 demolish object=99999
+@171 place-building key=LOO x=69 y=62 dir=0
+@200 hash 1ec5b3ca0f14a153 world=b201085e/55 economy=7c0858d8/18 map=fb512059/32772 objects=0e83c1d9/7 buildings=32399ae4/317 staff=7f66034e/106 ferry=09f31930/40 repair=157c40b4/12 feedback=0bb1e359/15 messages=04f668da/2 cleaning=c75fa4ba/5 construction=960047fb/100 weather=16c4ac98/28 rng=85831e42/2
+@300 hash a7561e5101c3afd7 world=88384201/55 economy=7c0858d8/18 map=fb512059/32772 objects=0e83c1d9/7 buildings=32399ae4/317 staff=d7d38f63/84 ferry=09f31930/40 repair=157c40b4/12 feedback=c4a56a3c/15 messages=04f668da/2 cleaning=c75fa4ba/5 construction=004139c9/100 weather=16c4ac98/28 rng=283ddc25/2
+@371 hash adced46a36a637e4 world=1cdb40f5/55 economy=e1e0b1f5/18 map=fb512059/32772 objects=0e83c1d9/7 buildings=32399ae4/317 staff=fc36004b/84 ferry=09f31930/40 repair=157c40b4/12 feedback=b20bc69a/15 messages=04f668da/2 cleaning=c75fa4ba/5 construction=b773e802/100 weather=29601a90/28 rng=9ddf53b2/2
+end 371

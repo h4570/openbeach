@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "obl.commodity",
+  "title": "Commodity (catalog/commodities/<key>.json)",
+  "description": "A product a building sells (game-data.md, 'Catalog').",
+  "type": "object",
+  "properties": {
+    "format": {
+      "const": "obl.commodity"
+    },
+    "version": {
+      "const": 2
+    },
+    "key": {
+      "$ref": "obl.common#/$defs/key"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Display name or text-table key."
+    },
+    "family": {
+      "$ref": "obl.common#/$defs/key"
+    }
+  },
+  "required": [
+    "format",
+    "version",
+    "key",
+    "name",
+    "family"
+  ],
+  "additionalProperties": false
+}

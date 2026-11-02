@@ -1,0 +1,9 @@
+# The own L0 pack (data/packs/l0/) boots to the main menu state without any converted or reference file: every file the
+# loaders read is ours, and a missing one stops the game (FatalError), which fails this script.
+# @env OBL_PACK=l0
+# @timeout 120
+seed 1
+fixed-dt 0.02
+await state == 1
+step 20
+quit

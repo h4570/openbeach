@@ -1,0 +1,30 @@
+# Own menu button art and the full HUD strip after the real menu -> scenario -> world transition.
+# @env OBL_PACK=l0
+# @env OBL_WINDOWED=1
+# @gameini Language.Language=0
+# @gameini Sound.PlayListCount=0
+# @check python tools/check_l0_menu_transition.py {run}
+seed 1
+fixed-dt 0.02
+await state == 1
+await frames 20
+await gui-animating == 0
+shot l0_menu_labels
+gui-click MainMenu tip L0_MENU_TIP_START
+await frames 20
+await gui-animating == 0
+gui-state ScenarioScreen
+expect-last visible 1
+shot l0_scenario_labels
+gui-click ScenarioScreen tip L0_MENU_TIP_PLAY
+await gameplay
+step 5
+expect gui-mode 4
+expect gui-entries 0
+shot l0_menu_world
+# The HUD remains interactive after the old menu and loading screen disappear.
+click 58 580
+await gui-open-dialogs == 1 5000
+gui-click BuildPanel tip L0_PLAY_EXITDIALOG
+await gui-open-dialogs == 0 5000
+quit

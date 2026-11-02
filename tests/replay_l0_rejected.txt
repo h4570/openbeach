@@ -1,0 +1,6 @@
+# The replay of l0_rejected.replay (docs/testing/replays.md), recorded on the own L0 pack: refused commands of every family between accepted ones. A mismatch names the tick;
+# ./tools/replay.ps1 -Replay -Pack l0 keeps the snapshots for world_hash_compare.ps1.
+# @env OBL_PACK=l0
+# @timeout 180
+replay replays/l0_rejected.replay
+quit

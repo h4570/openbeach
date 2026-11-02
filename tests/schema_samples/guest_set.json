@@ -1,0 +1,29 @@
+{
+  "format": "obl.guest_set",
+  "version": 2,
+  "types": [
+    {
+      "key": "surfer",
+      "name": "SAMPLE_SURFER",
+      "gender": "m",
+      "sprite": "sample_walker",
+      "default_sprite": 0,
+      "colour": 2,
+      "drunk_type": "tired",
+      "money": 150,
+      "litter": 0.2,
+      "swim_energy": 0.8,
+      "nights": [2, 5],
+      "sleep_time": [22, 23.5],
+      "wake_time": [7, 9],
+      "preferences": { "snacks": [0.2, 0.6], "swimming": [0.5, 1] },
+      "tolerances": { "crowding": [0.3, 0.9], "attractiveness": [0, 0.5] },
+      "opinion_effects": { "price": [0.1, 0.2] },
+      "opinion_start": { "beauty": [0.4, 0.6] },
+      "start": { "bladder": 0.1, "drunk": 0 },
+      "decay": { "drunk": 0.01 },
+      "max": { "alcohol": 2, "snacks": 3 }
+    }
+  ],
+  "names": { "surnames": ["SAMPLE_SURNAME_1"], "male": ["SAMPLE_MALE_1"], "female": ["SAMPLE_FEMALE_1"] }
+}

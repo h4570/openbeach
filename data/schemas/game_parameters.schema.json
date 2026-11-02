@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "obl.game_parameters",
+  "title": "Game parameters (rules/game_parameters.json)",
+  "description": "Named settings with our snake_case names; integers stay integers, floats follow the bit-exact float rule (game-data.md, 'Game parameters').",
+  "type": "object",
+  "properties": {
+    "format": {
+      "const": "obl.game_parameters"
+    },
+    "version": {
+      "const": 1
+    },
+    "parameters": {
+      "type": "object",
+      "propertyNames": {
+        "$ref": "obl.common#/$defs/key"
+      },
+      "additionalProperties": {
+        "type": [
+          "boolean",
+          "integer",
+          "number",
+          "string"
+        ]
+      }
+    }
+  },
+  "required": [
+    "format",
+    "version",
+    "parameters"
+  ],
+  "additionalProperties": false
+}

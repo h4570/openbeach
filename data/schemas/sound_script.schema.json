@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "obl.sound_script",
+  "title": "Sound script (sounds/sound_script.json)",
+  "description": "Which samples play for sprite animations, buildings and named game events, plus the crowd sound (assets.md, 'Sounds').",
+  "type": "object",
+  "properties": {
+    "format": { "const": "obl.sound_script" },
+    "version": { "const": 2 },
+    "crowd": {
+      "type": "object",
+      "properties": {
+        "max_number": { "type": "number" },
+        "max_volume": { "type": "number" },
+        "fade_time": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "groups": {
+      "description": "Authored sound groups by name; limit is how many samples of the group may play at once. A referenced group must be declared here.",
+      "type": "object",
+      "propertyNames": { "$ref": "obl.common#/$defs/key" },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "limit": { "type": "integer", "minimum": 0 }
+        },
+        "required": ["limit"],
+        "additionalProperties": false
+      }
+    },
+    "sprite_sounds": {
+      "description": "Sprite key to animation key to the samples one of which plays.",
+      "type": "object",
+      "propertyNames": { "$ref": "obl.common#/$defs/key" },
+      "additionalProperties": {
+        "type": "object",
+        "propertyNames": { "$ref": "obl.common#/$defs/key" },
+        "additionalProperties": {
+          "type": "object",
+          "properties": {
+            "group": { "$ref": "#/$defs/group" },
+            "sounds": { "$ref": "#/$defs/sounds", "minItems": 1 }
+          },
+          "required": ["sounds"],
+          "additionalProperties": false
+        }
+      }
+    },
+    "building_sounds": {
+      "type": "object",
+      "propertyNames": { "$ref": "obl.common#/$defs/key" },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "sample": { "$ref": "obl.common#/$defs/key" },
+          "volume": { "type": "number" },
+          "loop": { "type": "boolean" }
+        },
+        "required": ["sample", "volume", "loop"],
+        "additionalProperties": false
+      }
+    },
+    "events": {
+      "description": "Event name to the samples one of which plays at random. Names are open: an event the game does not fire stays unused, and a fired event absent here is silent.",
+      "type": "object",
+      "propertyNames": { "$ref": "obl.common#/$defs/key" },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "group": { "$ref": "#/$defs/group" },
+          "sounds": { "$ref": "#/$defs/sounds" }
+        },
+        "required": ["sounds"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["format", "version"],
+  "additionalProperties": false,
+  "$defs": {
+    "group": {
+      "description": "Name of a declared sound group; absent means none.",
+      "$ref": "obl.common#/$defs/key"
+    },
+    "sounds": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "sample": {
+            "description": "Name of sounds/<sample>.wav.",
+            "$ref": "obl.common#/$defs/key"
+          },
+          "volume": { "type": "number" }
+        },
+        "required": ["sample", "volume"],
+        "additionalProperties": false
+      }
+    }
+  }
+}

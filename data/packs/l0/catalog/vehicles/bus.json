@@ -1,0 +1,22 @@
+{
+  "format": "obl.vehicle",
+  "version": 2,
+  "key": "bus",
+  "name": "Island Shuttle",
+  "sprite": "dummy",
+  "size": [
+    32,
+    32
+  ],
+  "capacity": 6,
+  "max_speed": 200,
+  "force": 200,
+  "mass": 1,
+  "move_type": "points",
+  "creation_point": [
+    0,
+    0
+  ],
+  "towed": "NONE",
+  "anim_set": "dummy"
+}

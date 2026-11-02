@@ -1,0 +1,10 @@
+{
+  "format": "obl.game_parameters",
+  "version": 1,
+  "parameters": {
+    "show_tutorial": true,
+    "max_guests": 120,
+    "day_length_seconds": 240.5,
+    "start_message": "SAMPLE_GREETING"
+  }
+}

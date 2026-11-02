@@ -1,0 +1,20 @@
+{
+  "format": "obl.scenery",
+  "version": 2,
+  "key": "boardwalk",
+  "name": "SAMPLE_BOARDWALK",
+  "category": "paths",
+  "sprite": "sample_path",
+  "icon": 3,
+  "menu": "scenery_dialog",
+  "size": [1, 1],
+  "cost": 5,
+  "build_on": ["land", "beach", "path"],
+  "collide": false,
+  "rating": 0.1,
+  "clean": false,
+  "repair": true,
+  "burn": false,
+  "user_remove": true,
+  "path_flag": 1
+}

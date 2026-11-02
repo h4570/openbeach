@@ -1,0 +1,14 @@
+{
+  "format": "obl.building",
+  "version": 2,
+  "key": "raft_hire",
+  "name": "SAMPLE_RAFT_HIRE",
+  "category": "leisure",
+  "sprite": "sample_jetty",
+  "cost": { "build": 1200 },
+  "size": [3, 1],
+  "build_on": ["shallow_water", "deep_sea"],
+  "vehicles": ["raft", "raft"],
+  "vehicle_places": [{ "dir": 2, "offset": [1, 1] }],
+  "staff_files": { "female": "sample_female_staff", "male": "sample_male_staff" }
+}

@@ -1,0 +1,37 @@
+# Own silent MP3s and MPEG-1 intro in a hidden window, including the separate night stream.
+# @env OBL_PACK=l0
+# @env OBL_WINDOWED=1
+# @env OBL_PLAYMOVIE=1
+# @gameini Sound.PlayListCount=0
+# @timeout 60
+# @expect-log intro movie: packs/l0/video/intro.mpg
+# @expect-log music: packs/l0/music/night6.mp3
+expect intro-movie-player 1
+expect intro-movie-complete 1
+expect intro-movie-skipped 0
+expect-range intro-movie-frames 20 30
+music-night-playlist
+expect-last success 1
+await music-seconds > 0.1 5000
+music-report
+expect-last active 1
+expect-last failed 0
+expect-last energy 0
+music-night 1
+expect-last index 1
+await music-seconds > 0.1 5000
+music-report
+expect-last active 1
+expect-last failed 0
+expect-last energy 0
+music-close
+boot-gameplay scenario 1
+await gameplay
+next-state 6
+await state == 6
+await music-seconds > 0.1 5000
+music-report
+expect-last active 1
+expect-last failed 0
+expect-last energy 0
+quit

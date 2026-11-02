@@ -1,0 +1,357 @@
+{
+  "format": "obl.save",
+  "version": 2,
+  "header": {
+    "saved_at": 1700000000,
+    "scenario": "sample_island",
+    "sandbox": true,
+    "title": "SAMPLE_ISLAND",
+    "title_text": "Our little island",
+    "day": 2,
+    "day_time": 0.5,
+    "cash": 250.25,
+    "guests": 0,
+    "packs": [
+      {
+        "id": "sample-own",
+        "content_version": "1.0.0",
+        "pack_hash": "0000000000000000000000000000000000000000000000000000000000000000"
+      }
+    ],
+    "converted_from": null
+  },
+  "world": {
+    "game_time": 12.5,
+    "game_day": 2,
+    "script_state": 0,
+    "available_buildings": [
+      "sample_hut"
+    ],
+    "profit_history": [
+      -0.0,
+      "f32:7fc00001",
+      "f32:00000001"
+    ]
+  },
+  "player": {
+    "name": "Sam",
+    "cash": 250.25
+  },
+  "map": {
+    "cells": [
+      2,
+      2
+    ],
+    "island_size": 2,
+    "areas_open": [
+      true,
+      false
+    ],
+    "cell_state": {
+      "terrain": [[1, 0], [2, 1], [1, 0]],
+      "building": [[4, 0]],
+      "border": [[4, 0]],
+      "border_blocked": [[4, 0]],
+      "around_building": [[4, 0]],
+      "beach": [[4, 0]],
+      "margin": [[4, 0]],
+      "unnamed": [[4, 0]],
+      "built": [[4, 0]],
+      "grass": [[4, 0]],
+      "blocked": [[4, 0]],
+      "neighbours": [[4, 0]],
+      "surface": [[4, 0]],
+      "path": [[4, 0]],
+      "free_deep": [[4, 0]],
+      "free_shallow": [[4, 0]],
+      "free_land": [[4, 0]]
+    },
+    "heights": [
+      0,
+      3,
+      3,
+      0
+    ]
+  },
+  "objects": [
+    {
+      "id": 1,
+      "kind": "building",
+      "type": "sample_hut",
+      "pos": [
+        1,
+        0,
+        38.25
+      ],
+      "dir": "s",
+      "sprite": {
+        "start_time": 0.0,
+        "anim_type": 0,
+        "fps": 10,
+        "anim": 0,
+        "frame": 0,
+        "palette": 0,
+        "lit": false,
+        "keyline": false,
+        "triggered_sound": false
+      },
+      "base": {
+        "waiting_for_death": false,
+        "requires_attention": false,
+        "owner": 0,
+        "state": "STATE_NULL",
+        "visible": true,
+        "draw_offset_x": 0,
+        "draw_offset_y": 0,
+        "sprite": "sample_hut",
+        "debug_break": false,
+        "select_level": 0
+      },
+      "static": {
+        "grid_w": 0,
+        "grid_h": 0,
+        "cleaner_claimed": false,
+        "mechanic_claimed": false,
+        "called_cleaning": false,
+        "called_repairing": false,
+        "urgent_cleaning": false,
+        "urgent_repairing": false
+      }
+    }
+  ],
+  "managers": {
+    "objects": {
+      "next_id": 2,
+      "keyline": false
+    },
+    "repair": {
+      "building_jobs": [
+        {
+          "object": 1,
+          "calls": 1,
+          "distance": 12.5,
+          "time_called": 3.0,
+          "urgent": false,
+          "type": "inspection"
+        }
+      ],
+      "scenery_jobs": [],
+      "active_jobs": [],
+      "breakdowns": 0,
+      "vandalisms": 0,
+      "active_count": 0
+    },
+    "cleaning": {
+      "jobs": [],
+      "active_jobs": [
+        {
+          "object": 1,
+          "cleaning": true,
+          "urgent": false
+        }
+      ],
+      "cleanings": 1,
+      "active_count": 1
+    },
+    "events": {
+      "next_event": 0,
+      "event_count": 1,
+      "current_event_count": 1,
+      "current_events": [
+        0
+      ],
+      "day_offset": 0,
+      "current_day_offset": 0
+    },
+    "commodities": {
+      "complaints": [
+        0,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    "ferry": {
+      "boats": [
+        {
+          "guest_info": 2,
+          "guests": 4,
+          "time": 9.5,
+          "day": 1,
+          "time_flags": 0,
+          "guests_by_type": [
+            {
+              "keyword": "family",
+              "count": 4,
+              "random": 0
+            }
+          ]
+        }
+      ],
+      "next_boat": 0,
+      "performances": [],
+      "departures": {
+        "average_happiness": [],
+        "happy": 0,
+        "unhappy": 0
+      }
+    },
+    "feedback": {
+      "pending": [],
+      "history": [
+        {
+          "object": 1,
+          "day": 1,
+          "hour": 10.25,
+          "wide": false,
+          "text": "Sample feedback"
+        }
+      ],
+      "cleaner_messages": 0,
+      "lifeguard_messages": 0,
+      "security_guard_messages": 0,
+      "mechanic_messages": 0,
+      "rep_messages": 0,
+      "builder_messages": 0,
+      "staff_messages": 0,
+      "suppressed_count": 0,
+      "suppress_world": false,
+      "suppress_objects": false,
+      "suppressed": [],
+      "last_missed_desires_check": 0.0
+    },
+    "messages": {
+      "delayed": [
+        {
+          "sender": 1,
+          "receiver": 1,
+          "type": 5,
+          "flags": 0,
+          "data": 0,
+          "float_data": 0.0,
+          "time": 12.0,
+          "extra": 0
+        }
+      ]
+    },
+    "construction": {
+      "jobs": [
+        {
+          "building": 1,
+          "builders": 0,
+          "hoardings": [
+            {
+              "dir": 0,
+              "x": 10,
+              "y": 20,
+              "extra": 0
+            }
+          ],
+          "construction_start": 3.0,
+          "demolition_start": 0.0,
+          "construction_done": 8.0,
+          "demolition_done": 0.0,
+          "construction_progress": 0.5,
+          "demolition_progress": 0.0,
+          "under_construction": true,
+          "under_demolition": false,
+          "started": true,
+          "finished": false,
+          "work_points": [
+            {
+              "x": 0,
+              "y": 0,
+              "dir": 0
+            },
+            {
+              "x": 0,
+              "y": 0,
+              "dir": 0
+            },
+            {
+              "x": 0,
+              "y": 0,
+              "dir": 0
+            },
+            {
+              "x": 0,
+              "y": 0,
+              "dir": 0
+            },
+            {
+              "x": 0,
+              "y": 0,
+              "dir": 0
+            },
+            {
+              "x": 0,
+              "y": 0,
+              "dir": 0
+            },
+            {
+              "x": 0,
+              "y": 0,
+              "dir": 0
+            },
+            {
+              "x": 0,
+              "y": 0,
+              "dir": 0
+            },
+            {
+              "x": 0,
+              "y": 0,
+              "dir": 0
+            },
+            {
+              "x": 0,
+              "y": 0,
+              "dir": 0
+            }
+          ]
+        }
+      ],
+      "constructions": 1,
+      "builders": []
+    }
+  },
+  "view": {
+    "camera": [
+      10,
+      20
+    ],
+    "position": {
+      "x": 10.5,
+      "y": 20.0
+    },
+    "velocity": {
+      "x": 0.0,
+      "y": 0.0
+    },
+    "burn_queue": [],
+    "locked": false,
+    "moving": false
+  }
+}

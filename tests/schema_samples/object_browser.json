@@ -1,0 +1,37 @@
+{
+  "format": "obl.object_browser",
+  "version": 2,
+  "provenance": "own",
+  "lists": {
+    "guest": [
+      {
+        "key": "TEST_HAPPINESS",
+        "filter": "guest_happiness"
+      },
+      {
+        "separator": true
+      }
+    ],
+    "building": [],
+    "cell": [],
+    "staff": [],
+    "hire": [],
+    "event": []
+  },
+  "headings": [
+    {
+      "key": "TEST_HEADING",
+      "filter": "guest_happiness"
+    }
+  ],
+  "buttons": [
+    "test_button",
+    "test_button",
+    "test_button",
+    "test_button",
+    "test_button",
+    "test_button",
+    "test_button",
+    "test_button"
+  ]
+}

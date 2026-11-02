@@ -1,0 +1,10 @@
+#obl-gui 1
+DialogItem DeepRedLogo(0, 0, 800, 600, NONE, 0, 0)
+{
+	TGA(0, 0, 800, 600, l0_opening.tga)
+}
+
+DialogItem FrontScreen(0, 0, 800, 600, NONE, 0, 0)
+{
+	TGA(0, 0, 800, 600, l0_title.tga)
+}

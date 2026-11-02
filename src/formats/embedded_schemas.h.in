@@ -1,0 +1,6 @@
+#pragma once
+
+namespace obl::formats {
+inline constexpr const char* kEmbeddedSchemas[] = {
+@OBL_EMBEDDED_SCHEMAS@};
+}

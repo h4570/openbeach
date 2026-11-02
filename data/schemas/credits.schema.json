@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "obl.credits",
+  "type": "object",
+  "properties": {
+    "format": {
+      "const": "obl.credits"
+    },
+    "version": {
+      "const": 2
+    },
+    "provenance": {
+      "enum": [
+        "converted",
+        "own"
+      ]
+    },
+    "rows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "font": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3
+          },
+          "line": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "color": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 16777215
+          },
+          "long_spacing": {
+            "type": "boolean"
+          },
+          "kind": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1
+          }
+        },
+        "required": [
+          "font",
+          "line",
+          "color",
+          "long_spacing",
+          "kind"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1,
+      "maxItems": 10000
+    }
+  },
+  "required": [
+    "format",
+    "version",
+    "provenance",
+    "rows"
+  ],
+  "additionalProperties": false
+}

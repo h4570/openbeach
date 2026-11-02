@@ -1,0 +1,61 @@
+#obl-script 1 world
+// The own L0 scenario: a small island, three buildings (the kiosk stands from the start, for the guests) and the own guest script.
+State STATE_WORLD_STARTUP
+	OnEntry
+		LoadScript GuestLogic data/script/object/guest.lgc;
+		LoadScript BuilderLogic data/script/object/builder.lgc;
+		Area Beach 1 54 54 50 50 78 50 50 78 78 78;
+		BoatEntry 2300 4000 6 -32 0;
+		BoatPoint 2300 4000;
+		BoatPoint 2112 4000 Unload;
+		BoatPoint 2300 4000 Destroy;
+		BoatExit 2300 4000 6 -32 0;
+		BoatEvent Day 0 Time 14 6;
+		Create Building REP 60 60 0;
+		Create Building KIOSK 66 60 0;
+		Create Building BUILDERYARD 56 66 0;
+		Set PlayerCash 20000;
+		MoveCamera 2048 2048 0;
+		ChangeState STATE_WORLD_RUNGAME;
+	End
+	OnUpdate
+	End
+	OnExit
+	End
+End
+
+// The goal: every offered building finished and at least 1 earned from visitors before 17:00 on day 1
+// (day 2 to the player). tests/bots/l0/build_tree.bot wins it headless.
+State STATE_WORLD_RUNGAME
+	OnEntry
+	End
+	OnUpdate
+		If ( BuildTreeExist == 1 )
+			If ( IncomeToday >= 1 )
+				Set ScenarioObj0 1;
+				ShowMenu ScenarioWon L0_WON;
+				Function UnlockNextScenario;
+				ChangeState STATE_WORLD_AFTERGAME;
+				Function PauseGame;
+			End
+		End
+		If ( GameDay >= 1 )
+			If ( GameTime >= 17 )
+				ShowMenu ScenarioLost L0_LOST;
+				ChangeState STATE_WORLD_AFTERGAME;
+				Function PauseGame;
+			End
+		End
+	End
+	OnExit
+	End
+End
+
+State STATE_WORLD_AFTERGAME
+	OnEntry
+	End
+	OnUpdate
+	End
+	OnExit
+	End
+End

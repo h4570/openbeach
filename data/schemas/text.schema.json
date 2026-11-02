@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "obl.text",
+  "title": "Text table of one language (text/<lang>.json)",
+  "description": "The effective table in order, duplicates kept (lookup returns the first) (assets.md, 'Texts').",
+  "type": "object",
+  "properties": {
+    "format": { "const": "obl.text" },
+    "version": { "const": 1 },
+    "language": {
+      "description": "BCP 47 tag.",
+      "type": "string",
+      "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$"
+    },
+    "entries": {
+      "description": "[key, value] pairs. Keys are any string: the effective table of a converted pack may hold keys no visible line has.",
+      "type": "array",
+      "items": {
+        "type": "array",
+        "prefixItems": [{ "type": "string" }, { "type": "string" }],
+        "minItems": 2,
+        "maxItems": 2
+      }
+    }
+  },
+  "required": ["format", "version", "language", "entries"],
+  "additionalProperties": false
+}

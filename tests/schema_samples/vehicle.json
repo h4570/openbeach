@@ -1,0 +1,16 @@
+{
+  "format": "obl.vehicle",
+  "version": 2,
+  "key": "raft",
+  "name": "SAMPLE_RAFT",
+  "sprite": "sample_raft",
+  "size": [1, 2],
+  "capacity": 2,
+  "max_speed": 1.5,
+  "force": 0.25,
+  "mass": 3,
+  "move_type": "boundary",
+  "anim_set": "paddle",
+  "staff": [],
+  "creation_point": [0.5, 1.5]
+}

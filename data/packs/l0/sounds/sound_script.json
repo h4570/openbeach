@@ -1,0 +1,28 @@
+{
+  "format": "obl.sound_script",
+  "version": 2,
+  "crowd": {
+    "max_number": 20.0,
+    "max_volume": 1.0,
+    "fade_time": 0.3
+  },
+  "groups": {
+    "effects": {
+      "limit": 2
+    }
+  },
+  "sprite_sounds": {
+    "dummy": {
+      "dummy": {
+        "sounds": [
+          {
+            "sample": "beep",
+            "volume": 1.0
+          }
+        ]
+      }
+    }
+  },
+  "building_sounds": {},
+  "events": {}
+}

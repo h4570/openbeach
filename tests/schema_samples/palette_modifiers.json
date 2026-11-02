@@ -1,0 +1,7 @@
+{
+  "format": "obl.palette_modifiers",
+  "version": 1,
+  "image": "palette_modifiers.png",
+  "colors": 64,
+  "tables": 8
+}

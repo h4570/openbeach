@@ -1,0 +1,7 @@
+{
+  "format": "obl.opening_hours",
+  "version": 2,
+  "key": "night",
+  "open": 21.0,
+  "close": 4.0
+}

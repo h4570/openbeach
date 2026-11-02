@@ -1,0 +1,26 @@
+# The own L0 guest script (scripts/object/guest.obs): guests arrive, walk to a building, are served and leave, on the own
+# pack alone. A missing or refused script stops the game (FatalError), which fails this script.
+# @env OBL_PACK=l0
+# @timeout 300
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario 1
+await gameplay
+step 50
+expect buildings 3
+spawn-guests 3
+# The real enqueue/dequeue posts two move-ups at +3 s. Sample each target before and after delivery;
+# one recipient has already been admitted and returned to the shared waiting state inside.
+guest-queue-probe
+boot-gameplay scenario 1
+await gameplay
+step 50
+spawn-guests 6
+step 20
+expect guests 6
+step 6000
+# All six are served and leave: a guest that queues waits in STATE_GUEST_WAITING_DESIRE and is let in when the kiosk frees a place.
+expect guests-departed-total 6
+expect guests 0
+expect-range income-today 0.01 100000
+quit

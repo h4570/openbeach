@@ -1,0 +1,11 @@
+name: Feature request
+description: An idea for the game, the browser build or the tools
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: The idea
+      description: What you would like and why.
+    validations:
+      required: true

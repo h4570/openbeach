@@ -1,0 +1,109 @@
+{
+  "format": "obl.guest_set",
+  "version": 2,
+  "types": [
+    {
+      "key": "visitor",
+      "name": "Visitor",
+      "gender": "m",
+      "sprite": "dummy",
+      "money": 200,
+      "nights": [
+        1,
+        2
+      ],
+      "preferences": {
+        "soft_drinks": [
+          0.9,
+          1.0
+        ],
+        "stroll": [
+          0.01,
+          0.02
+        ]
+      },
+      "tolerances": {
+        "beauty": [
+          0.5,
+          1.0
+        ],
+        "crowding": [
+          0.5,
+          1.0
+        ],
+        "attractiveness": [
+          0.5,
+          1.0
+        ],
+        "price": [
+          0.5,
+          1.0
+        ],
+        "variety": [
+          0.5,
+          1.0
+        ],
+        "cleanliness": [
+          0.5,
+          1.0
+        ],
+        "safety": [
+          0.5,
+          1.0
+        ]
+      },
+      "opinion_start": {
+        "beauty": [
+          0.8,
+          0.9
+        ],
+        "crowding": [
+          0.8,
+          0.9
+        ],
+        "attractiveness": [
+          0.8,
+          0.9
+        ],
+        "price": [
+          0.8,
+          0.9
+        ],
+        "variety": [
+          0.8,
+          0.9
+        ],
+        "cleanliness": [
+          0.8,
+          0.9
+        ],
+        "safety": [
+          0.8,
+          0.9
+        ]
+      },
+      "max": {
+        "soft_drinks": 1.0
+      },
+      "sleep_time": [
+        22,
+        24
+      ],
+      "wake_time": [
+        7,
+        9
+      ]
+    }
+  ],
+  "names": {
+    "surnames": [
+      "L0_SURNAME"
+    ],
+    "male": [
+      "L0_MALE"
+    ],
+    "female": [
+      "L0_FEMALE"
+    ]
+  }
+}

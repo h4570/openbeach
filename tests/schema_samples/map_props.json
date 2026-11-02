@@ -1,0 +1,8 @@
+{
+  "format": "obl.map_props",
+  "version": 1,
+  "props": {
+    "sample_tree": ["sample_tree_small", "sample_tree_tall"],
+    "sample_lamp": ["sample_lamp"]
+  }
+}

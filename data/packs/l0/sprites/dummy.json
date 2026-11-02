@@ -1,0 +1,48 @@
+{
+  "format": "obl.sprite",
+  "version": 1,
+  "name": "dummy",
+  "kind": "special",
+  "pixels": "indexed",
+  "palettes": "dummy.palettes.png",
+  "palette_colors": 256,
+  "palette_count": 1,
+  "animations": [
+    {
+      "name": "dummy",
+      "directions": 2,
+      "frames": 1,
+      "sheets": [
+        "dummy/dummy.png"
+      ],
+      "size": [
+        40,
+        78
+      ],
+      "hotspot": [
+        -18,
+        -77
+      ],
+      "columns": 2,
+      "unique_frames": 2
+    },
+    {
+      "name": "dummy",
+      "directions": 1,
+      "frames": 2,
+      "sheets": [
+        "dummy/dummy_1.png"
+      ],
+      "size": [
+        40,
+        78
+      ],
+      "hotspot": [
+        -18,
+        -77
+      ],
+      "columns": 2,
+      "unique_frames": 2
+    }
+  ]
+}
