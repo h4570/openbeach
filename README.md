@@ -31,8 +31,8 @@ scenarios without a window, graphics or sound.
 <p align="center"><img src="assets/screenshots/browser.jpg" alt="OpenBeach running the game in a browser tab" width="640"></p>
 
 <p align="center">
-  <img src="assets/screenshots/buildings.jpg" alt="Buildings of a resort" width="320">
-  <img src="assets/screenshots/beach.jpg" alt="Guests on the beach" width="320">
+  <img src="assets/screenshots/night.jpg" alt="A night at the resort" width="320">
+  <img src="assets/screenshots/staff.jpg" alt="Managing the staff" width="320">
 </p>
 
 ## What you need
