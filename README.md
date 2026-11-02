@@ -1,5 +1,7 @@
 <p align="center"><img src="assets/logo/openbeach-logo.svg" alt="OpenBeach" width="220"></p>
 
+<p align="center"><b><a href="https://openbeach.app">Play in your browser: openbeach.app</a></b></p>
+
 <p align="center">
   <a href="https://github.com/h4570/openbeach/actions/workflows/ci.yml"><img src="https://github.com/h4570/openbeach/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"></a>
   <a href="https://github.com/h4570/openbeach/releases"><img src="https://img.shields.io/github/v/release/h4570/openbeach?label=release" alt="Release"></a>
