@@ -1,0 +1,17 @@
+# A replay checkpoint that does not match is reported with its tick and every differing section, and the replay goes on
+# (docs/testing/replays.md): l0_mismatch.replay (recorded on the own L0 pack) has two wrong checkpoints between two real ones, @50 with two wrong section digests
+# and @70 without digests.
+# @env OBL_PACK=l0
+# @timeout 120
+# @expect-log replay mismatch tick=50 expected=0123456789abcdef actual=[0-9a-f]{16} checkpoint=1 sections=buildings,staff$
+# @expect-log replay section tick=50 name=buildings expected=36b3a59b/196 actual=36b3a59b/195$
+# @expect-log replay section tick=50 name=staff expected=e5bcc68b/84 actual=e5bcc68a/84$
+# @expect-log replay mismatch tick=70 expected=0123456789abcdef actual=[0-9a-f]{16} checkpoint=2 sections=unrecognized$
+# @expect-log replay sections tick=70 actual=world=[0-9a-f]{8}/55 economy=
+replay replays/l0_mismatch.replay allow-mismatch
+expect-last mismatches 2
+expect-last first-mismatch-tick 50
+expect-last differing-sections 2
+expect-last checkpoints 4
+expect-last ticks 100
+quit

@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "obl.campaign",
+  "title": "Campaign (scenarios/campaign.json)",
+  "description": "Campaign order, unlock rule, sandbox entries and the menu screens they use (maps-scenarios.md, 'Campaign').",
+  "type": "object",
+  "properties": {
+    "format": {
+      "const": "obl.campaign"
+    },
+    "version": {
+      "const": 1
+    },
+    "campaign": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "scenario": {
+            "$ref": "obl.common#/$defs/key"
+          },
+          "completion_screen": {
+            "description": "Image shown when the scenario is won.",
+            "$ref": "obl.common#/$defs/path"
+          }
+        },
+        "required": [
+          "scenario"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1
+    },
+    "unlock": {
+      "description": "sequential: a scenario opens when the previous one is won; all: every scenario is open.",
+      "enum": [
+        "sequential",
+        "all"
+      ]
+    },
+    "sandboxes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "scenario": {
+            "$ref": "obl.common#/$defs/key"
+          }
+        },
+        "required": [
+          "scenario"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "scenario_screen": {
+      "$ref": "obl.common#/$defs/path"
+    },
+    "initially_available": {
+      "$ref": "obl.common#/$defs/key_list"
+    },
+    "always_available": {
+      "$ref": "obl.common#/$defs/key_list"
+    },
+    "sandbox_unlock": {
+      "enum": [
+        "all",
+        "campaign_completed_or_always"
+      ]
+    }
+  },
+  "required": [
+    "format",
+    "version",
+    "campaign",
+    "unlock"
+  ],
+  "additionalProperties": false
+}

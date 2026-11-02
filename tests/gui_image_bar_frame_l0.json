@@ -1,0 +1,7 @@
+{
+  "sha256": "18020f848b320548dccb921629487a50978e24e7edc6d2d5d487190bff126879",
+  "width": 256,
+  "height": 192,
+  "source": "L0 pack; UI3_bp_thumb and the bars of every colour mode; RGB555 work buffer 256x192; seed 1; fixed-dt 0.02",
+  "class": "l0"
+}

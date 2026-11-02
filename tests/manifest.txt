@@ -1,0 +1,34 @@
+# Test manifest for tools/runtests.ps1: one script per line, `#` starts a comment.
+# Per-test timeout and frame cap live in the script itself (# @timeout / # @maxfps), see tools/autotest.ps1.
+# Tests boot fresh scenarios or sandbox worlds; no local baseline save is required.
+# *.ctest lines run ctest tests without the game (tests/unit, docs/testing/unit-tests.md); unit_data skips without run/.
+# A trailing @full tag keeps a line out of the default run; runtests.ps1 -Full or
+# a filter naming the entry exactly runs it (docs/testing/test-runner.md).
+# Game tests run in the standalone host OpenBeach.exe, without any reference code.
+# Pack class (docs/build/ci-l0.md): a trailing @l0 tag marks an entry that needs no imported data
+# (own L0 pack or no game data); untagged entries are Private, checks against the imported pack. runtests.ps1 -Pack
+# public runs the @l0 entries only, -Pack private (default) every entry.
+unit.ctest @l0
+unit_optimized.ctest @l0
+headless_mismatch.ctest @l0
+headless_replay_l0_commands.ctest @l0
+headless_replay_l0_construction.ctest @l0
+headless_replay_l0_gui.ctest @l0
+headless_replay_l0_rejected.ctest @l0
+l0_boot.txt @headless @l0
+l0_gameplay.txt @headless @l0
+l0_goal.txt @headless @l0
+l0_builders.txt @headless @l0
+l0_play_gui.txt @l0
+l0_menu_transition.txt @l0
+m6_gui_golden_l0.txt @l0
+l0_media.txt @hidden @l0
+l0_menu_actions.txt @hidden @l0
+l0_guests.txt @headless @l0
+golden_hash_l0_s1.golden @l0
+gui_image_bar_l0.txt @hidden @l0
+replay_mismatch.txt @l0
+replay_l0_commands.txt @l0
+replay_l0_construction.txt @l0
+replay_l0_gui.txt @l0
+replay_l0_rejected.txt @l0

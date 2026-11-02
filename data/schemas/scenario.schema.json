@@ -1,0 +1,239 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "obl.scenario",
+  "title": "Scenario (scenarios/<id>/scenario.json)",
+  "description": "A playable setup: map, catalog, guests, available buildings, texts and the world script (maps-scenarios.md, 'Scenarios').",
+  "type": "object",
+  "properties": {
+    "format": {
+      "const": "obl.scenario"
+    },
+    "version": {
+      "const": 1
+    },
+    "id": {
+      "description": "Scenario content key, also used in replay headers; for example sample_isle.",
+      "$ref": "obl.common#/$defs/key"
+    },
+    "kind": {
+      "enum": [
+        "campaign",
+        "sandbox"
+      ]
+    },
+    "title": {
+      "$ref": "obl.common#/$defs/text_key"
+    },
+    "description": {
+      "$ref": "obl.common#/$defs/text_key"
+    },
+    "status_texts": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "$ref": "obl.common#/$defs/text_key"
+        },
+        "area": {
+          "$ref": "obl.common#/$defs/text_key"
+        },
+        "temperature": {
+          "$ref": "obl.common#/$defs/text_key"
+        },
+        "weather": {
+          "$ref": "obl.common#/$defs/text_key"
+        },
+        "hazards": {
+          "$ref": "obl.common#/$defs/text_key"
+        }
+      },
+      "additionalProperties": false
+    },
+    "map": {
+      "$ref": "obl.common#/$defs/key"
+    },
+    "start_view": {
+      "$ref": "obl.common#/$defs/vec2i"
+    },
+    "catalog": {
+      "description": "The catalog index, normally catalog/index.json.",
+      "$ref": "obl.common#/$defs/path"
+    },
+    "guests": {
+      "description": "Guest set (guests/<key>.json).",
+      "$ref": "obl.common#/$defs/key"
+    },
+    "available_buildings": {
+      "$ref": "obl.common#/$defs/key_list"
+    },
+    "objectives": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "$ref": "obl.common#/$defs/text_key"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "messages": {
+      "type": "array",
+      "items": {
+        "$ref": "obl.common#/$defs/text_key"
+      },
+      "description": "Ordered list of feedback message types suppressed in this scenario."
+    },
+    "tilesets": {
+      "type": "object",
+      "properties": {
+        "pavement": {
+          "$ref": "obl.common#/$defs/key"
+        },
+        "beach_edge": {
+          "$ref": "obl.common#/$defs/key"
+        }
+      },
+      "additionalProperties": false
+    },
+    "radar": {
+      "type": "object",
+      "properties": {
+        "image": {
+          "$ref": "obl.common#/$defs/key"
+        },
+        "pos": {
+          "$ref": "obl.common#/$defs/vec2i"
+        }
+      },
+      "required": [
+        "image",
+        "pos"
+      ],
+      "additionalProperties": false
+    },
+    "pictures": {
+      "type": "object",
+      "properties": {
+        "large": {
+          "oneOf": [
+            {
+              "$ref": "obl.common#/$defs/path"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "sprite": {
+                  "$ref": "obl.common#/$defs/key"
+                },
+                "frame": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "sprite",
+                "frame"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "load": {
+          "oneOf": [
+            {
+              "$ref": "obl.common#/$defs/path"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "sprite": {
+                  "$ref": "obl.common#/$defs/key"
+                },
+                "frame": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "sprite",
+                "frame"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "save": {
+          "oneOf": [
+            {
+              "$ref": "obl.common#/$defs/path"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "sprite": {
+                  "$ref": "obl.common#/$defs/key"
+                },
+                "frame": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "sprite",
+                "frame"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "progress_dialog": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Name of a GUI dialog (gui/*.gui)."
+    },
+    "script": {
+      "description": "World script relative to the scenario directory.",
+      "$ref": "obl.common#/$defs/path"
+    },
+    "objectives_title": {
+      "$ref": "obl.common#/$defs/text_key"
+    },
+    "menu_texts": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "$ref": "obl.common#/$defs/text_key"
+        },
+        "description": {
+          "$ref": "obl.common#/$defs/text_key"
+        }
+      },
+      "required": [
+        "title",
+        "description"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "format",
+    "version",
+    "id",
+    "kind",
+    "title",
+    "map",
+    "start_view",
+    "catalog",
+    "guests",
+    "available_buildings",
+    "script"
+  ],
+  "additionalProperties": false
+}

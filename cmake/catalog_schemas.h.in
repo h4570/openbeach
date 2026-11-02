@@ -1,0 +1,5 @@
+#pragma once
+namespace obl::catalog {
+inline constexpr const char* kSchemas[] = {
+@OBL_CATALOG_SCHEMAS@};
+}

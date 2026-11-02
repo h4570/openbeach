@@ -1,0 +1,251 @@
+<!doctype html>
+<!-- The browser game's site (docs/architecture/browser-build.md, "Site"): the description of the project and, in a frame, the
+     importer's drop zone, which converts the player's own copy into OPFS packs/base in a worker (import_worker.js), then the
+     game: a loading line while browser_files.js copies the game files, a ready layer whose click starts main (browsers open
+     Web Audio only inside a user gesture), the canvas scaled at its own aspect, and a "game ended" layer. site.js holds the
+     logic and site_text.js the page's six languages; tools/web_site.sh assembles the site and the build copies this page
+     beside OpenBeach.js as index.html. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OpenBeach</title>
+<style>
+    :root { --navy: #0a1f3c; --sea: #176b87; --lagoon: #37b3b0; --logo: #398ff5; --coral: #ff7a59; --red: #c9472a; --sun: #ffc266;
+        --sand: #f4e3c1; --mist: #d5e6f2; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body { color: var(--navy); font: 16px/1.55 "Segoe UI", system-ui, -apple-system, Roboto, sans-serif; overflow-x: hidden;
+        background: linear-gradient(180deg, #ffe6bd 0%, #ffcf9c 26%, #ffab86 48%, #37b3b0 76%, #176b87 100%) fixed; }
+    a { color: inherit; }
+    .waves { position: fixed; left: 0; right: 0; bottom: 0; width: 100%; height: 120px; z-index: 0; pointer-events: none; }
+    .page { position: relative; z-index: 1; max-width: 1240px; margin: 0 auto; padding: 14px 24px 28px; }
+    header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+    header img { height: 76px; display: block; }
+    nav { display: flex; align-items: center; gap: 18px; font-size: 15px; }
+    nav a { display: block; }
+    nav a:hover { color: var(--red); }
+    nav svg { display: block; width: 24px; height: 24px; }
+    .switch { display: flex; align-items: center; gap: 6px; }
+    .switch svg { fill: none; stroke: currentColor; stroke-width: 1.8; }
+    select { font: inherit; color: var(--navy); background: var(--sand); border: 0; border-radius: 10px; padding: 6px 10px; cursor: pointer; }
+    .hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.8fr); gap: 32px; align-items: center; }
+    h1 { font-size: 40px; line-height: 1.12; margin: 0 0 12px; letter-spacing: -.8px; }
+    h1 em { color: var(--red); font-style: normal; }
+    .lead { margin: 0 0 16px; }
+    .facts { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; font-size: 15px; }
+    .facts li { padding-left: 22px; position: relative; }
+    .facts li::before { content: ""; position: absolute; left: 2px; top: .5em; width: 10px; height: 10px; border-radius: 50%; background: var(--sea); }
+    .flags-title { margin: 14px 0 6px; font-size: 14px; font-weight: 600; }
+    .flags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .flag { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 6px; border-radius: 999px; background: #ffffffc4; font-size: 13px; }
+    .flag svg { display: block; width: 20px; height: 14px; border-radius: 2px; box-shadow: 0 0 0 1px #0a1f3c26; }
+    .frame { border-radius: 18px; padding: 12px; background: linear-gradient(145deg, #fbeed3, #e5c895);
+        box-shadow: 0 24px 60px #06152c99, inset 0 0 0 1px #ffffff80; }
+    .screen { position: relative; aspect-ratio: 4 / 3; border-radius: 9px; overflow: hidden; color: #fff;
+        background: linear-gradient(180deg, #0e3050, #14506f); }
+    /* SDL sets the canvas's pixel size (the game's 800x600 and up) and an inline CSS size; the page scales it to the largest
+       box of the canvas's own aspect left beside the frame and its bar (site.js keeps --aspect at width / height). */
+    #canvas { position: absolute; inset: 0; visibility: hidden; display: block; outline: none; background: #000; }
+    body.playing { height: 100vh; overflow: hidden; }
+    body.playing .page { max-width: none; padding: 8px 16px; }
+    body.playing .hide-playing, body.playing .hero > div:first-child, body.playing .waves { display: none; }
+    body.playing .hero { display: block; }
+    body.playing .frame { width: fit-content; margin: 0 auto; }
+    body.playing .screen { aspect-ratio: auto; }
+    body.playing #canvas { position: static; visibility: visible;
+        width: min(calc(100vw - 56px), calc((100vh - 86px) * var(--aspect, 1.3333))) !important;
+        height: min(calc(100vh - 86px), calc((100vw - 56px) / var(--aspect, 1.3333))) !important; }
+    .layer { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+        gap: 12px; padding: 20px; text-align: center; }
+    .layer[hidden], .gamebar[hidden] { display: none; }
+    .layer h2 { margin: 0; font-size: 24px; }
+    .layer p { margin: 0; }
+    .soft { color: var(--mist); font-size: 14px; }
+    .notice { color: var(--sun); font-weight: 600; font-size: 14px; }
+    #drop { width: 100%; height: 100%; border: 2px dashed #ffffff66; border-radius: 12px; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; gap: 10px; padding: 18px; transition: .15s; }
+    #drop[hidden] { display: none; }
+    #drop.over { border-color: var(--sun); background: #ffc26626; }
+    .kinds { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin: 6px 0; }
+    .kind { background: #ffffff14; border: 1px solid #ffffff26; border-radius: 10px; padding: 8px 14px; font-size: 14px; }
+    .kind b { display: block; font-weight: 600; }
+    .kind span { color: var(--mist); font-size: 12.5px; }
+    .pick label { color: var(--sun); text-decoration: underline; cursor: pointer; }
+    .pick input, .secondary input { display: none; }
+    .bars { width: min(440px, 100%); text-align: left; display: grid; gap: 14px; }
+    .bars[hidden] { display: none; }
+    .bars h2 { text-align: center; }
+    .row { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; margin-bottom: 5px; }
+    .row span:last-child { color: var(--mist); font-variant-numeric: tabular-nums; }
+    progress { appearance: none; display: block; width: 100%; height: 14px; border: 0; border-radius: 999px; overflow: hidden; background: #ffffff1f; }
+    progress::-webkit-progress-bar { background: #ffffff1f; }
+    progress::-webkit-progress-value { background: linear-gradient(90deg, var(--lagoon), var(--sun), var(--coral)); border-radius: 999px; }
+    progress::-moz-progress-bar { background: linear-gradient(90deg, var(--lagoon), var(--sun), var(--coral)); border-radius: 999px; }
+    #import-progress { height: 7px; }
+    #import-progress::-webkit-progress-value { background: var(--lagoon); }
+    #import-progress::-moz-progress-bar { background: var(--lagoon); }
+    .sub[hidden] { display: none; }
+    .spinner { width: min(260px, 80%); height: 7px; border-radius: 999px; overflow: hidden; background: #ffffff1f; }
+    .spinner i { display: block; width: 35%; height: 100%; border-radius: 999px; background: var(--lagoon); animation: slide 1.3s ease-in-out infinite alternate; }
+    @keyframes slide { from { margin-left: 0; } to { margin-left: 65%; } }
+    .play { font: inherit; font-weight: 700; font-size: 26px; border: 0; border-radius: 999px; padding: 16px 54px; background: var(--coral); color: #fff;
+        cursor: pointer; box-shadow: 0 8px 20px #ff7a5966; }
+    /* The title at the top and the rest at the bottom, with the two equal rows holding the button in the exact centre. */
+    #start:not([hidden]) { display: grid; grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr); justify-items: center; padding: 24px 20px; }
+    #start h2 { align-self: start; }
+    .foot { align-self: end; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .foot { width: 100%; }
+    .foot .soft { font-size: 13px; }
+    .foot .secondary { gap: 6px; }
+    .foot .secondary a, .foot .secondary label, .foot .secondary button { font-size: 13px; padding: 5px 11px; }
+    #start-status:empty { display: none; }
+    .field { display: flex; align-items: center; gap: 10px; font-size: 15px; }
+    .field[hidden] { display: none; }
+    .secondary { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+    .secondary a, .secondary label, .secondary button { font: inherit; font-size: 14px; color: #fff; background: #ffffff1f; border: 1px solid #ffffff59; border-radius: 999px;
+        padding: 7px 16px; cursor: pointer; text-decoration: none; }
+    .secondary a:hover, .secondary label:hover, .secondary button:hover { background: #ffffff33; }
+    .gamebar { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 8px; font-size: 14px; }
+    .gamebar span { background: #ffffffa8; border-radius: 999px; padding: 2px 11px; }
+    .gamebar button { font: inherit; font-weight: 600; color: var(--navy); background: none; border: 0; cursor: pointer; margin-left: 14px; }
+    section h2 { font-size: 22px; margin: 28px 0 12px; }
+    .how { margin-top: 28px; padding: 18px 24px 22px; border-radius: 16px; background: #0a1f3cd9; color: #fff; }
+    .how h2 { margin: 0 0 14px; }
+    .steps { list-style: none; margin: 0; padding: 0; counter-reset: step; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px 28px; }
+    .steps li { counter-increment: step; display: flex; align-items: center; gap: 12px; font-size: 15px; }
+    .steps li::before { content: counter(step); flex: none; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center;
+        font-weight: 700; color: var(--navy); background: var(--sun); }
+    /* Each column's share is its image's width / height, so that all three come out equally tall without a crop. */
+    .shots { display: grid; grid-template-columns: 1.3345fr 1.3455fr 1.1696fr; gap: 14px; align-items: start; }
+    .shots figure { margin: 0; }
+    .shots img { display: block; width: 100%; height: auto; border-radius: 12px; box-shadow: 0 10px 28px #06152c66; }
+    .shots figcaption { margin-top: 6px; color: #fff; font-size: 14px; text-align: center; }
+    footer { margin-top: 28px; background: #0a1f3cd9; color: #fff; border-radius: 10px; padding: 8px 14px; font-size: 14px; text-align: center; }
+    @media (max-width: 860px) {
+        .hero { grid-template-columns: minmax(0, 1fr); }
+        .shots { grid-template-columns: minmax(0, 1fr); }
+        h1 { font-size: 32px; }
+        header img { height: 56px; }
+        .screen { aspect-ratio: auto; min-height: 400px; }
+    }
+    @media (prefers-reduced-motion: reduce) { .spinner i { animation: none; } #drop { transition: none; } }
+</style>
+</head>
+<body>
+<svg class="waves" viewBox="0 0 1440 120" preserveAspectRatio="none" aria-hidden="true"><path fill="#f4e3c1" fill-opacity=".55" d="M0 70c180-40 360-40 540-8s360 40 540 8 240-30 360-14v64H0z"/><path fill="#f4e3c1" d="M0 96c200-26 400-26 620-4s420 24 820-8v36H0z"/></svg>
+<div class="page">
+<header class="hide-playing">
+    <img src="openbeach-logo.svg" alt="OpenBeach">
+    <nav>
+        <a href="https://github.com/h4570/openbeach" aria-label="GitHub" title="GitHub"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg></a>
+        <div class="switch"><svg viewBox="2 2 20 20" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 3.8 5.5 3.8 9s-1.300 6.500-3.800 9c-2.500-2.500-3.800-5.500-3.800-9S9.500 5.500 12 3z"/></svg>
+            <select id="site-language" aria-label="Language"></select></div>
+    </nav>
+</header>
+<main class="hero">
+    <div>
+        <h1><span data-t="heroTitle">Your beach resort,</span> <em data-t="heroAccent">back in the browser.</em></h1>
+        <p class="lead" data-t="lead">OpenBeach is an open-source engine that plays the 2002 resort tycoon Beach Life on the files of your own copy.</p>
+        <ul class="facts">
+            <li data-t="fact1">Runs here, with no install</li>
+            <li data-t="fact2">Your copy stays on your machine, nothing is uploaded</li>
+            <li data-t="fact3">Saves live in this browser, and you can export them</li>
+            <li data-t="fact4">Open source on GitHub</li>
+        </ul>
+        <p class="flags-title" data-t="flagsTitle">Game languages</p>
+        <div class="flags">
+            <span class="flag"><svg viewBox="0 0 30 20" aria-hidden="true"><path fill="#012169" d="M0 0h30v20H0z"/><path stroke="#fff" stroke-width="4" d="M0 0l30 20M30 0L0 20"/><path stroke="#c8102e" stroke-width="1.6" d="M0 0l30 20M30 0L0 20"/><path stroke="#fff" stroke-width="6.6" d="M15 0v20M0 10h30"/><path stroke="#c8102e" stroke-width="4" d="M15 0v20M0 10h30"/></svg>English</span>
+            <span class="flag"><svg viewBox="0 0 30 20" aria-hidden="true"><path fill="#0055a4" d="M0 0h10v20h-10z"/><path fill="#fff" d="M10 0h10v20h-10z"/><path fill="#ef4135" d="M20 0h10v20h-10z"/></svg>Français</span>
+            <span class="flag"><svg viewBox="0 0 30 20" aria-hidden="true"><path fill="#009246" d="M0 0h10v20h-10z"/><path fill="#fff" d="M10 0h10v20h-10z"/><path fill="#ce2b37" d="M20 0h10v20h-10z"/></svg>Italiano</span>
+            <span class="flag"><svg viewBox="0 0 30 20" aria-hidden="true"><path fill="#000" d="M0 0h30v6.66667H0z"/><path fill="#d00" d="M0 6.66667h30v6.66667H0z"/><path fill="#ffce00" d="M0 13.3333h30v6.66667H0z"/></svg>Deutsch</span>
+            <span class="flag"><svg viewBox="0 0 30 20" aria-hidden="true"><path fill="#aa151b" d="M0 0h30v20H0z"/><path fill="#f1bf00" d="M0 5h30v10H0z"/></svg>Español</span>
+            <span class="flag"><svg viewBox="0 0 30 20" aria-hidden="true"><path fill="#fff" d="M0 0h30v10H0z"/><path fill="#dc143c" d="M0 10h30v10H0z"/></svg>Polski</span>
+        </div>
+    </div>
+    <div class="frame">
+        <div class="screen">
+            <canvas id="canvas" tabindex="-1" oncontextmenu="event.preventDefault()"></canvas>
+            <div id="import" class="layer" hidden>
+                <div id="drop">
+                    <h2 data-t="dropTitle">Drop your copy of the game here</h2>
+                    <div class="kinds">
+                        <div class="kind"><b data-t="kindIso">Disc image</b><span data-t="kindIsoNote">a .iso file</span></div>
+                        <div class="kind"><b data-t="kindFolder">Game folder</b><span data-t="kindFolderNote">your installation</span></div>
+                        <div class="kind"><b data-t="kindDrive">Disc drive</b><span data-t="kindDriveNote">if your browser allows it</span></div>
+                    </div>
+                    <p class="pick"><span data-t="pickPrefix">or pick</span>
+                        <label><span data-t="pickIso">a disc image</span><input id="import-iso" type="file" accept=".iso"></label>
+                        <span data-t="pickOr">or</span>
+                        <label><span data-t="pickFolder">a folder</span><input id="import-folder" type="file" webkitdirectory></label></p>
+                    <p class="soft" data-t="consent">By adding it you confirm it is your own legal copy.</p>
+                    <p class="notice" data-t="languageNote">Important: the game will only be available in the languages of your copy.</p>
+                    <p id="drop-status" class="soft"></p>
+                </div>
+                <div id="import-bars" class="bars" hidden>
+                    <h2 data-t="converting">Importing your copy</h2>
+                    <div>
+                        <div class="row"><span id="import-step"></span><span id="import-percent"></span></div>
+                        <progress id="import-main" max="1" value="0"></progress>
+                    </div>
+                    <div id="import-sub" class="sub" hidden>
+                        <div class="row"><span id="import-status"></span><span id="import-count"></span></div>
+                        <progress id="import-progress" max="1" value="0"></progress>
+                    </div>
+                    <p class="soft" data-t="convertNote">This takes a few minutes and happens only once. Keep this tab open.</p>
+                </div>
+            </div>
+            <!-- Shown until site.js picks the importer or the game. -->
+            <div id="loading" class="layer"><p id="loading-text" data-t="loading">Loading...</p><div class="spinner"><i></i></div>
+                <noscript>The game needs JavaScript.</noscript></div>
+            <div id="start" class="layer" hidden>
+                <h2 data-t="ready">Game loaded</h2>
+                <button id="start-button" class="play" data-t="play">Play</button>
+                <div class="foot">
+                    <div id="start-language-row" class="field" hidden><label for="start-language" data-t="language">Game language</label><select id="start-language"></select></div>
+                    <div class="secondary">
+                        <button onclick="Module.downloadSaves()" data-t="downloadSaves">Download saves</button>
+                        <label><span data-t="importSaves">Import saves</span><input id="import-saves" type="file" accept=".json"></label>
+                        <a href="?import" data-t="importAgain">Import the game again</a>
+                    </div>
+                    <p class="soft" data-t="savesNote">Saves live only in this browser. Clearing its data deletes them.</p>
+                    <p id="start-status" class="soft"></p>
+                </div>
+            </div>
+            <div id="ended" class="layer" hidden>
+                <h2 data-t="ended">The game ended</h2>
+                <button class="play" onclick="location.reload()" data-t="play">Play</button>
+                <div class="secondary"><button onclick="Module.downloadSaves()" data-t="downloadSaves">Download saves</button>
+                    <button onclick="Module.downloadLog()" data-t="downloadLog">Download log</button></div>
+            </div>
+        </div>
+        <div id="game-bar" class="gamebar" hidden>
+            <span data-t="savedHere">Saves live only in this browser: download a copy</span>
+            <div><button onclick="Module.downloadSaves()" data-t="downloadSaves">Download saves</button>
+                <button id="fullscreen" data-t="fullscreen">Fullscreen</button></div>
+        </div>
+    </div>
+</main>
+<section class="how hide-playing">
+    <h2 data-t="howTitle">How it works</h2>
+    <ol class="steps">
+        <li data-t="how1">Drop your copy of the game on the page.</li>
+        <li data-t="how2">Your browser converts it once and stores it privately.</li>
+        <li data-t="how3">Play. The game starts from this storage next time.</li>
+    </ol>
+</section>
+<section class="hide-playing">
+    <h2 data-t="shotsTitle">Screenshots</h2>
+    <div class="shots">
+        <figure><a href="screenshots/buildings.jpg"><img src="screenshots/buildings.jpg" alt="" width="1101" height="825" loading="lazy"></a><figcaption data-t="shot1">Building the resort</figcaption></figure>
+        <figure><a href="screenshots/beach.jpg"><img src="screenshots/beach.jpg" alt="" width="1102" height="819" loading="lazy"></a><figcaption data-t="shot2">Guests on the beach</figcaption></figure>
+        <figure><a href="screenshots/browser.jpg"><img src="screenshots/browser.jpg" alt="" width="986" height="843" loading="lazy"></a><figcaption data-t="shot3">The game in your browser</figcaption></figure>
+    </div>
+</section>
+<footer class="hide-playing" data-t="footer">OpenBeach is an unofficial fan project, not affiliated with the makers of the original game. It contains no game data.</footer>
+</div>
+<script src="language_ini.js"></script>
+<script src="site_text.js"></script>
+<script src="site.js"></script>
+</body>
+</html>

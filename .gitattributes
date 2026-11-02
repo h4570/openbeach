@@ -1,0 +1,5 @@
+*.sh text eol=lf
+# Pack data is read byte for byte (the GUI layout header ends in a bare LF, file hashes): no CRLF conversion on checkout.
+data/packs/** -text
+# Binary references: a line-ending rewrite must never touch them.
+*.png binary

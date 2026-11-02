@@ -1,0 +1,17 @@
+{
+  "format": "obl.sprite",
+  "version": 1,
+  "name": "sample_hut",
+  "kind": "building",
+  "pixels": "rgba",
+  "scale": 2,
+  "depth_extents": [40, 40, 52, 52],
+  "animations": [
+    { "name": "image", "plane": "color", "directions": 1, "frames": 1, "size": [64, 48], "hotspot": [-32, -40],
+      "sheets": ["sample_hut/image.png"], "columns": 1, "unique_frames": 1 },
+    { "name": "depth", "plane": "depth", "directions": 1, "frames": 1, "size": [64, 48], "hotspot": [-32, -40],
+      "sheets": ["sample_hut/depth.png"], "columns": 1, "unique_frames": 1 },
+    { "name": "pick", "plane": "pick", "directions": 1, "frames": 1, "size": [64, 48], "hotspot": [-32, -40],
+      "sheets": ["sample_hut/pick.png"], "columns": 1, "unique_frames": 1 }
+  ]
+}

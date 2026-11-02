@@ -1,0 +1,23 @@
+{
+  "format": "obl.game_parameters",
+  "version": 1,
+  "parameters": {
+    "play_movie": true,
+    "sound_enabled": true,
+    "night_day_enabled": true,
+    "startup_in_windowed_mode": false,
+    "quick_load_map": false,
+    "day_length_in_seconds": 600,
+    "map_gridsize_xy": 40,
+    "map_scale_z": 2.5,
+    "buffer_lightmaps": false,
+    "dont_unload_map_chunks": false,
+    "refresh_rects": false,
+    "debugfont_filename": "l0_diagnostic",
+    "debugfont_name": "L0 Diagnostic",
+    "debugfont_size": 6,
+    "map_rmb_movement_speed": 10,
+    "map_nudge_speed": 30,
+    "map_max_velocity": 60.0
+  }
+}

@@ -1,0 +1,6 @@
+# The replay of l0_gui.replay (docs/testing/replays.md), recorded on the own L0 pack: the pack's own building panel, commands submitted by GUI callbacks. A mismatch names the tick;
+# ./tools/replay.ps1 -Replay -Pack l0 keeps the snapshots for world_hash_compare.ps1.
+# @env OBL_PACK=l0
+# @timeout 180
+replay replays/l0_gui.replay
+quit

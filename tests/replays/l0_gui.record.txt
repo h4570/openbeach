@@ -1,0 +1,29 @@
+# Recording script of the own reference replay l0_gui.replay (docs/testing/replays.md): L0 scenario 1 driven through the pack's own
+# GUI. The HUD speed controls and the start station's building panel submit the commands; the recording holds them as commands and
+# the replay runs without GUI callbacks. Re-record with
+#   ./tools/replay.ps1 -Record tests/replays/l0_gui.record.txt
+# @env OBL_PACK=l0
+# @gameini Language.Language=5
+# @gameini Sound.PlayListCount=0
+# @timeout 300
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario 1
+record replays/l0_gui.replay every 10
+await gameplay
+step 5
+object-select Building
+await gui-open-dialogs == 1 5000
+step 2
+object-find building REP
+log station station=$id
+gui-click L0Building tip L0_PLAY_CLOSEBUILDING
+step 20
+gui-click L0Building tip L0_PLAY_OPENBUILDING
+step 20
+gui-click L0Building tip L0_PLAY_CLOSEBUILDING
+step 20
+gui-click L0Building tip L0_PLAY_OPENBUILDING
+step 20
+record end
+quit

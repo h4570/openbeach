@@ -1,0 +1,55 @@
+# Recording script of the own reference replay l0_rejected.replay (docs/testing/replays.md): L0 scenario 1 with commands the
+# executor refuses (unknown keys, tiles off the map, a bad direction, a footprint on a standing building), values outside their
+# range, targets that are no building or staff member and controls the L0 content has no owner for, between accepted ones.
+# `command` arguments overwrite $x/$y, so every placement follows its own place-find. Re-record with
+#   ./tools/replay.ps1 -Record tests/replays/l0_rejected.record.txt
+# @env OBL_PACK=l0
+# @timeout 300
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario 1
+record replays/l0_rejected.replay every 100
+await gameplay
+await frames 20
+command set-game-speed level=2
+step 50
+object-find building KIOSK
+log kiosk kiosk=$id
+place-find building LOO
+command place-building key=NOSUCHBUILDING x=$x y=$y dir=0
+command place-building key=LOO x=$x y=$y dir=9
+command place-building key=LOO x=-5 y=-5 dir=0
+place-find building LOO
+command place-building key=LOO x=$x y=$y dir=0
+step 1
+command place-building key=LOO x=$x y=$y dir=0
+command place-scenery key=NOSUCHSCENERY x=3 y=3 dir=0
+command paint-surface key=NOSUCHSURFACE x=3 y=3
+command dozer x=-1 y=-1
+step 50
+object-find staff Builder 0
+log builder builder=$id
+command set-staff-wage staff=$builder wage=5000
+command copy-staff-wage staff=$builder wage=2
+command set-staff-shift staff=$builder start=30 end=2
+command set-staff-wage staff=$kiosk wage=40
+command send-staff staff=$builder x=-1 y=-1 z=0
+command send-staff-to staff=$builder target=99999
+command dismiss-staff staff=$kiosk
+command hire-staff profession=Banker
+command hire-staff profession=Builder
+step 50
+command set-price building=$builder slot=0 price=3
+command set-price building=$kiosk slot=9 price=3
+command set-price building=$kiosk slot=0 price=5000
+command set-event-price building=$kiosk slot=0 price=3
+command set-beer building=$kiosk key=NOSUCHBEER
+command set-show building=$kiosk slot=0 key=NOSUCHSHOW
+command set-building-open building=$builder open=0
+command set-game-speed level=7
+command demolish object=99999
+place-find building LOO
+command place-building key=LOO x=$x y=$y dir=0
+step 200
+record end
+quit

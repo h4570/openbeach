@@ -1,0 +1,11 @@
+{
+  "format": "obl.beer",
+  "version": 2,
+  "key": "sample_lager",
+  "brand": "SAMPLE_LAGER",
+  "base_cost": 0.6,
+  "strength_cost": 0.1,
+  "alcohol_strength": 0.4,
+  "price": 2,
+  "effect": "happy"
+}

@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "obl.map_props",
+  "title": "Map prop lookup (maps/props.json)",
+  "description": "Save-name content keys to candidate catalog scenery keys. Placements remain in scenario scripts; created_as selects the definition when a name is shared.",
+  "type": "object",
+  "properties": {
+    "format": { "const": "obl.map_props" },
+    "version": { "const": 1 },
+    "props": {
+      "type": "object",
+      "propertyNames": { "$ref": "obl.common#/$defs/key" },
+      "additionalProperties": {
+        "type": "array",
+        "items": { "$ref": "obl.common#/$defs/key" },
+        "minItems": 1,
+        "uniqueItems": true
+      }
+    }
+  },
+  "required": ["format", "version", "props"],
+  "additionalProperties": false
+}

@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "obl.beer",
+  "title": "Beer (catalog/beers/<key>.json)",
+  "description": "A drink brand; bars take price and cost of alcohol from it (game-data.md, 'Catalog').",
+  "type": "object",
+  "properties": {
+    "format": {
+      "const": "obl.beer"
+    },
+    "version": {
+      "const": 2
+    },
+    "key": {
+      "$ref": "obl.common#/$defs/key"
+    },
+    "brand": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Display name or text-table key."
+    },
+    "cocktail": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Display name or text-table key."
+    },
+    "base_cost": {
+      "type": "number"
+    },
+    "strength_cost": {
+      "type": "number"
+    },
+    "alcohol_strength": {
+      "type": "number"
+    },
+    "price": {
+      "type": "number"
+    },
+    "effect": {
+      "enum": [
+        "fight",
+        "flirt",
+        "vandalise",
+        "happy",
+        "sad"
+      ]
+    }
+  },
+  "required": [
+    "format",
+    "version",
+    "key",
+    "base_cost",
+    "price",
+    "effect"
+  ],
+  "additionalProperties": false
+}

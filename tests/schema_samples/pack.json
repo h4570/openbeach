@@ -1,0 +1,12 @@
+{
+  "format": "obl.pack",
+  "version": 2,
+  "id": "l0-sample",
+  "title": "Schema sample pack",
+  "content_version": "0.1.0",
+  "provenance": "own",
+  "files": {
+    "catalog/buildings/snack_hut.json": { "sha256": "0b5f0c6a3c1e6d0f7a3b2c1d4e5f60718293a4b5c6d7e8f90123456789abcdef", "tier": 0 },
+    "sprites/snack_hut/image.png": { "sha256": "f0e1d2c3b4a5968778695a4b3c2d1e0ff0e1d2c3b4a5968778695a4b3c2d1e0f", "tier": 2 }
+  }
+}

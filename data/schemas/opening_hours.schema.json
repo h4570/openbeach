@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "obl.opening_hours",
+  "title": "Opening hours (catalog/opening_hours/<key>.json)",
+  "description": "A named opening time range in game hours (game-data.md, 'Catalog').",
+  "type": "object",
+  "properties": {
+    "format": {
+      "const": "obl.opening_hours"
+    },
+    "version": {
+      "const": 2
+    },
+    "key": {
+      "$ref": "obl.common#/$defs/key"
+    },
+    "open": {
+      "type": "number"
+    },
+    "close": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "format",
+    "version",
+    "key",
+    "open",
+    "close"
+  ],
+  "additionalProperties": false
+}

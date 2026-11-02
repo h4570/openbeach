@@ -1,0 +1,10 @@
+{
+  "format": "obl.desire",
+  "version": 2,
+  "key": "hungry",
+  "name": "Hungry",
+  "families": [
+    "meals",
+    "snacks"
+  ]
+}

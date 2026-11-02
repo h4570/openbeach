@@ -1,0 +1,6 @@
+# ctest headless_batch: several scripts in one headless process (docs/architecture/headless/scripts.md, "Script lists"). The reload check
+# runs before and after a script that plays another world, with the same expected hashes; the refused script aborts alone.
+headless_save_reload.txt
+../command_hire_staff.txt
+headless_refuse.txt
+headless_save_reload.txt

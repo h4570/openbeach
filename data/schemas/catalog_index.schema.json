@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "obl.catalog_index",
+  "title": "Catalog order (catalog/index.json)",
+  "description": "Keys of every catalog kind in id order: an entry's id is its position (game-data.md, 'Catalog').",
+  "type": "object",
+  "properties": {
+    "format": {
+      "const": "obl.catalog_index"
+    },
+    "version": {
+      "const": 2
+    },
+    "commodity_families": {
+      "$ref": "obl.common#/$defs/key_list",
+      "uniqueItems": true
+    },
+    "commodities": {
+      "$ref": "obl.common#/$defs/key_list",
+      "uniqueItems": true
+    },
+    "opening_hours": {
+      "$ref": "obl.common#/$defs/key_list",
+      "uniqueItems": true
+    },
+    "desires": {
+      "$ref": "obl.common#/$defs/key_list",
+      "uniqueItems": true
+    },
+    "desire_slots": {
+      "$ref": "obl.common#/$defs/key_list",
+      "uniqueItems": true
+    },
+    "staff": {
+      "$ref": "obl.common#/$defs/key_list",
+      "uniqueItems": true
+    },
+    "events": {
+      "$ref": "obl.common#/$defs/key_list",
+      "uniqueItems": true
+    },
+    "beers": {
+      "$ref": "obl.common#/$defs/key_list",
+      "uniqueItems": true
+    },
+    "fines": {
+      "$ref": "obl.common#/$defs/key_list",
+      "uniqueItems": true
+    },
+    "vehicles": {
+      "$ref": "obl.common#/$defs/key_list",
+      "uniqueItems": true
+    },
+    "tables": {
+      "$ref": "obl.common#/$defs/key_list",
+      "uniqueItems": true
+    },
+    "scenery": {
+      "$ref": "obl.common#/$defs/key_list",
+      "uniqueItems": true
+    },
+    "buildings": {
+      "$ref": "obl.common#/$defs/key_list",
+      "uniqueItems": true
+    }
+  },
+  "required": [
+    "format",
+    "version",
+    "commodity_families",
+    "commodities",
+    "opening_hours",
+    "desires",
+    "desire_slots",
+    "staff",
+    "events",
+    "beers",
+    "fines",
+    "vehicles",
+    "tables",
+    "scenery",
+    "buildings"
+  ],
+  "additionalProperties": false
+}

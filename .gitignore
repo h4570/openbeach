@@ -1,0 +1,20 @@
+# Original game data (never commit)
+/og-data/
+# Working copy of the game used by the launcher
+/run/
+# Build outputs
+/build/
+/out/
+# Compiler cache of the CI jobs (.github/workflows/ci.yml): a clean checkout keeps bot evidence creditable
+/.ccache/
+.vs/
+*.user
+# An agent's local pointers
+/CLAUDE.local.md
+# Python
+__pycache__/
+*.pyc
+# Logs
+*.log
+# Parallel test slots (tools/runtests.ps1 -Jobs N)
+/run-slots/

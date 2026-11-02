@@ -1,0 +1,390 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "obl.guest_set",
+  "title": "Guest set (guests/<set>.json)",
+  "description": "Guest types of a scenario and the name pools; a missing member of a group map is 0 (game-data.md, 'Guest sets').",
+  "type": "object",
+  "properties": {
+    "format": {
+      "const": "obl.guest_set"
+    },
+    "version": {
+      "const": 2
+    },
+    "types": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "$ref": "obl.common#/$defs/key"
+          },
+          "name": {
+            "type": "string",
+            "description": "Display-name text key, or an empty string to select a name from the name pools."
+          },
+          "gender": {
+            "$ref": "obl.common#/$defs/gender"
+          },
+          "sprite": {
+            "$ref": "obl.common#/$defs/key"
+          },
+          "default_sprite": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "colour": {
+            "$ref": "obl.common#/$defs/byte"
+          },
+          "drunk_type": {
+            "enum": [
+              "none",
+              "tired",
+              "flirt",
+              "fight",
+              "vandalise"
+            ]
+          },
+          "money": {
+            "type": "number"
+          },
+          "litter": {
+            "type": "number"
+          },
+          "attractive": {
+            "type": "number"
+          },
+          "attractive_pref": {
+            "type": "number"
+          },
+          "swim_energy": {
+            "type": "number"
+          },
+          "swim_dist": {
+            "type": "number"
+          },
+          "sunburn_time": {
+            "type": "number"
+          },
+          "nights": {
+            "description": "[min, max] nights of stay.",
+            "type": "array",
+            "items": {
+              "$ref": "obl.common#/$defs/byte"
+            },
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "sleep_time": {
+            "$ref": "obl.common#/$defs/range"
+          },
+          "wake_time": {
+            "$ref": "obl.common#/$defs/range"
+          },
+          "preferences": {
+            "type": "object",
+            "properties": {
+              "alcohol": {
+                "$ref": "obl.common#/$defs/range"
+              },
+              "amusement": {
+                "$ref": "obl.common#/$defs/range"
+              },
+              "meals": {
+                "$ref": "obl.common#/$defs/range"
+              },
+              "party_fun": {
+                "$ref": "obl.common#/$defs/range"
+              },
+              "snacks": {
+                "$ref": "obl.common#/$defs/range"
+              },
+              "soft_drinks": {
+                "$ref": "obl.common#/$defs/range"
+              },
+              "souvenirs": {
+                "$ref": "obl.common#/$defs/range"
+              },
+              "sports_fun": {
+                "$ref": "obl.common#/$defs/range"
+              },
+              "sunbathe": {
+                "$ref": "obl.common#/$defs/range"
+              },
+              "swimming": {
+                "$ref": "obl.common#/$defs/range"
+              },
+              "water_fun": {
+                "$ref": "obl.common#/$defs/range"
+              },
+              "stroll": {
+                "$ref": "obl.common#/$defs/range"
+              },
+              "sleep": {
+                "$ref": "obl.common#/$defs/range"
+              }
+            },
+            "additionalProperties": false
+          },
+          "tolerances": {
+            "type": "object",
+            "properties": {
+              "beauty": {
+                "$ref": "obl.common#/$defs/range"
+              },
+              "crowding": {
+                "$ref": "obl.common#/$defs/range"
+              },
+              "attractiveness": {
+                "$ref": "obl.common#/$defs/range"
+              },
+              "price": {
+                "$ref": "obl.common#/$defs/range"
+              },
+              "variety": {
+                "$ref": "obl.common#/$defs/range"
+              },
+              "cleanliness": {
+                "$ref": "obl.common#/$defs/range"
+              },
+              "safety": {
+                "$ref": "obl.common#/$defs/range"
+              }
+            },
+            "additionalProperties": false
+          },
+          "opinion_effects": {
+            "type": "object",
+            "properties": {
+              "beauty": {
+                "$ref": "obl.common#/$defs/range"
+              },
+              "crowding": {
+                "$ref": "obl.common#/$defs/range"
+              },
+              "attractiveness": {
+                "$ref": "obl.common#/$defs/range"
+              },
+              "price": {
+                "$ref": "obl.common#/$defs/range"
+              },
+              "variety": {
+                "$ref": "obl.common#/$defs/range"
+              },
+              "cleanliness": {
+                "$ref": "obl.common#/$defs/range"
+              },
+              "safety": {
+                "$ref": "obl.common#/$defs/range"
+              }
+            },
+            "additionalProperties": false
+          },
+          "opinion_start": {
+            "type": "object",
+            "properties": {
+              "beauty": {
+                "$ref": "obl.common#/$defs/range"
+              },
+              "crowding": {
+                "$ref": "obl.common#/$defs/range"
+              },
+              "attractiveness": {
+                "$ref": "obl.common#/$defs/range"
+              },
+              "price": {
+                "$ref": "obl.common#/$defs/range"
+              },
+              "variety": {
+                "$ref": "obl.common#/$defs/range"
+              },
+              "cleanliness": {
+                "$ref": "obl.common#/$defs/range"
+              },
+              "safety": {
+                "$ref": "obl.common#/$defs/range"
+              }
+            },
+            "additionalProperties": false
+          },
+          "start": {
+            "type": "object",
+            "properties": {
+              "bladder": {
+                "type": "number"
+              },
+              "fight": {
+                "type": "number"
+              },
+              "flirt": {
+                "type": "number"
+              },
+              "ill": {
+                "type": "number"
+              },
+              "drunk": {
+                "type": "number"
+              },
+              "sunburn": {
+                "type": "number"
+              },
+              "vandalise": {
+                "type": "number"
+              }
+            },
+            "additionalProperties": false
+          },
+          "decay": {
+            "type": "object",
+            "properties": {
+              "drunk": {
+                "type": "number"
+              },
+              "flirt": {
+                "type": "number"
+              },
+              "fight": {
+                "type": "number"
+              },
+              "vandalise": {
+                "type": "number"
+              },
+              "ill": {
+                "type": "number"
+              }
+            },
+            "additionalProperties": false
+          },
+          "max": {
+            "type": "object",
+            "properties": {
+              "accommodation": {
+                "type": "integer"
+              },
+              "alcohol": {
+                "type": "integer"
+              },
+              "amusement": {
+                "type": "integer"
+              },
+              "first_aid": {
+                "type": "integer"
+              },
+              "headache": {
+                "type": "integer"
+              },
+              "meals": {
+                "type": "integer"
+              },
+              "party_fun": {
+                "type": "integer"
+              },
+              "shower": {
+                "type": "integer"
+              },
+              "snacks": {
+                "type": "integer"
+              },
+              "soft_drinks": {
+                "type": "integer"
+              },
+              "souvenirs": {
+                "type": "integer"
+              },
+              "sports_fun": {
+                "type": "integer"
+              },
+              "sunbathe": {
+                "type": "integer"
+              },
+              "swim_fun": {
+                "type": "integer"
+              },
+              "toilet": {
+                "type": "integer"
+              },
+              "water_sports_fun": {
+                "type": "integer"
+              },
+              "stroll": {
+                "type": "integer"
+              },
+              "leave": {
+                "type": "integer"
+              },
+              "vandalise": {
+                "type": "integer"
+              },
+              "fight": {
+                "type": "integer"
+              },
+              "flirt": {
+                "type": "integer"
+              },
+              "umbrellas": {
+                "type": "integer"
+              },
+              "suntan": {
+                "type": "integer"
+              },
+              "intimacy": {
+                "type": "integer"
+              },
+              "sleep": {
+                "type": "integer"
+              },
+              "scared": {
+                "type": "integer"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "key",
+          "name",
+          "gender",
+          "sprite"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1
+    },
+    "names": {
+      "type": "object",
+      "properties": {
+        "surnames": {
+          "type": "array",
+          "items": {
+            "$ref": "obl.common#/$defs/text_key"
+          }
+        },
+        "male": {
+          "type": "array",
+          "items": {
+            "$ref": "obl.common#/$defs/text_key"
+          }
+        },
+        "female": {
+          "type": "array",
+          "items": {
+            "$ref": "obl.common#/$defs/text_key"
+          }
+        }
+      },
+      "required": [
+        "surnames",
+        "male",
+        "female"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "format",
+    "version",
+    "types",
+    "names"
+  ],
+  "additionalProperties": false
+}

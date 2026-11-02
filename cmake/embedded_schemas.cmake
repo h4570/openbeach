@@ -1,0 +1,18 @@
+# Generate from the checked-in schemas at configure time; schema edits and additions regenerate the bundle.
+function(obl_embedded_schemas target)
+    set(root "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/..")
+    file(GLOB schemas CONFIGURE_DEPENDS "${root}/data/schemas/*.schema.json")
+    list(SORT schemas)
+    set(OBL_EMBEDDED_SCHEMAS "")
+    foreach(schema IN LISTS schemas)
+        file(READ "${schema}" content)
+        if(content MATCHES "\\)obl_schema\"")
+            message(FATAL_ERROR "Schema contains the bundle raw-string delimiter: ${schema}")
+        endif()
+        string(APPEND OBL_EMBEDDED_SCHEMAS "R\"obl_schema(${content})obl_schema\",\n")
+    endforeach()
+    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${schemas})
+    configure_file("${root}/src/formats/embedded_schemas.h.in"
+        "${CMAKE_CURRENT_BINARY_DIR}/embedded_schemas.gen.h" @ONLY)
+    target_include_directories(${target} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+endfunction()

@@ -1,0 +1,3 @@
+[
+ {"at": 3, "eval": "(async()=>{const c=document.getElementById('canvas'); const out=[]; for (const [w,h] of [[800,600],[1280,720],[1920,1080],[1280,960]]) { c.width=w; c.height=h; c.style.width=w+'px'; c.style.height=h+'px'; await new Promise(r=>setTimeout(r,100)); const r=c.getBoundingClientRect(); out.push({px:[w,h], box:[Math.round(r.width),Math.round(r.height)], ratioOk: Math.abs(r.width/r.height-w/h)<0.01, fitsViewport: r.width<=innerWidth+1 && r.height<=innerHeight+1}); } return out; })()"}
+]

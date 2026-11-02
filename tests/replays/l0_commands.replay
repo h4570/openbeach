@@ -1,0 +1,47 @@
+OBL-replay 1
+start scenario 1
+seed 1
+fixed-dt 0.02
+hash-schema 3
+@0 hash 8b961d96a90f8884 world=347c70b4/55 economy=789a9828/18 map=d35709af/32772 objects=3f3f5aaa/7 buildings=36b3a59b/195 staff=292a594a/84 ferry=09f31930/40 repair=216add6a/7 feedback=ffb7c4d6/15 messages=04f668da/2 cleaning=c75fa4ba/5 construction=a771e050/14 weather=585424b3/28 rng=511f88fc/2
+@20 set-game-speed level=2
+@100 hash e67cf0addb2837b8 world=75133a79/55 economy=789a9828/18 map=d35709af/32772 objects=3f3f5aaa/7 buildings=36b3a59b/195 staff=44f84c6a/84 ferry=09f31930/40 repair=216add6a/7 feedback=2d3f2282/15 messages=04f668da/2 cleaning=c75fa4ba/5 construction=a771e050/14 weather=585424b3/28 rng=6b863263/2
+@100 place-building key=LOO x=57 y=62 dir=0
+@100 place-building key=NOSUCHBUILDING x=57 y=62 dir=0
+@200 hash e28d15ec0dc7f4a9 world=d7430a26/55 economy=e516a6bc/18 map=bc1f9b97/32772 objects=c9bea090/7 buildings=b1faa7ee/256 staff=a7a3fb0a/84 ferry=09f31930/40 repair=157c40b4/12 feedback=0bb1e359/15 messages=04f668da/2 cleaning=c75fa4ba/5 construction=2a1d1467/57 weather=16c4ac98/28 rng=ab1b0f6b/2
+@200 set-price building=1 slot=0 price=3.25
+@200 set-repair-interval object=1 value=7
+@200 set-building-open-policy object=1 value=0
+@200 set-beach-open-policy object=1 value=0
+@300 hash 8059d92600a32bce world=ebeb2125/55 economy=e516a6bc/18 map=bc1f9b97/32772 objects=c9bea090/7 buildings=83d9b522/256 staff=cd2e706a/84 ferry=09f31930/40 repair=157c40b4/12 feedback=c4a56a3c/15 messages=04f668da/2 cleaning=c75fa4ba/5 construction=2735645e/57 weather=16c4ac98/28 rng=d0be5291/2
+@300 set-staff-wage staff=3 wage=40
+@300 copy-staff-wage staff=3 wage=45
+@300 set-staff-shift staff=3 start=8 end=20
+@400 hash 920ce3a87872a5d5 world=59620f9a/55 economy=83502573/18 map=bc1f9b97/32772 objects=c9bea090/7 buildings=83d9b522/256 staff=fb2ca40b/84 ferry=09f31930/40 repair=157c40b4/12 feedback=b20bc69a/15 messages=04f668da/2 cleaning=c75fa4ba/5 construction=e4a07926/57 weather=29601a90/28 rng=ff9ddbed/2
+@400 call-repair building=1
+@400 call-cleaner building=1
+@500 hash 80c60691512b3a1d world=90691f73/55 economy=97dd5d8f/18 map=bc1f9b97/32772 objects=c9bea090/7 buildings=95420f45/260 staff=f3f6dffb/84 ferry=09f31930/40 repair=415b1da4/27 feedback=119fd71d/20 messages=04f668da/2 cleaning=04f6de77/9 construction=a771e050/14 weather=887e9180/28 rng=87086da7/2
+@600 hash 1dd42226a165b9a6 world=67eee6e7/55 economy=97dd5d8f/18 map=bc1f9b97/32772 objects=c9bea090/7 buildings=95420f45/260 staff=1b842461/84 ferry=09f31930/40 repair=415b1da4/27 feedback=cfd55b38/20 messages=04f668da/2 cleaning=04f6de77/9 construction=a771e050/14 weather=887e9180/28 rng=263d5b45/2
+@600 set-building-open building=1 open=0
+@700 hash ae37859623a538dd world=2d0f407e/55 economy=cb899c54/18 map=bc1f9b97/32772 objects=c9bea090/7 buildings=265ad4ad/260 staff=19ed3d33/84 ferry=09f31930/40 repair=415b1da4/27 feedback=91f8a47b/20 messages=04f668da/2 cleaning=04f6de77/9 construction=a771e050/14 weather=6e609300/28 rng=34cec743/2
+@700 set-building-open building=1 open=1
+@700 set-paused paused=1
+@750 resume-game
+@770 set-paused paused=0
+@770 set-game-speed level=1
+@800 hash d84445044d35fcd1 world=c1138a11/55 economy=cb899c54/18 map=bc1f9b97/32772 objects=c9bea090/7 buildings=95420f45/260 staff=64e18816/84 ferry=09f31930/40 repair=415b1da4/27 feedback=b93bc47f/20 messages=04f668da/2 cleaning=04f6de77/9 construction=a771e050/14 weather=6e609300/28 rng=6b915721/2
+@870 set-game-speed level=2
+@870 send-staff staff=4 x=2112 y=3871 z=0
+@900 hash 5ae7d9fd1f4a4025 world=ed06bc56/55 economy=cb899c54/18 map=bc1f9b97/32772 objects=c9bea090/7 buildings=95420f45/260 staff=0be73b10/84 ferry=09f31930/40 repair=415b1da4/27 feedback=b93bc47f/20 messages=04f668da/2 cleaning=04f6de77/9 construction=a771e050/14 weather=6e609300/28 rng=54765984/2
+@1000 hash 9c06c7bf7fa9ee9a world=497d7b10/55 economy=5d7df045/18 map=bc1f9b97/32772 objects=6926067b/7 buildings=95420f45/260 guests=9372913a/318 staff=7d5cb1dd/84 vehicles=4e855f20/36 ferry=233ec565/13 repair=415b1da4/27 feedback=d12c9a8f/26 messages=04f668da/2 cleaning=04f6de77/9 construction=a771e050/14 weather=373cd8d0/28 rng=7a4ba2ed/2
+@1070 send-staff-to staff=3 target=1
+@1100 hash 1207e8bfe7dfe9bb world=1441794d/55 economy=ef780322/18 map=bc1f9b97/32772 objects=6926067b/7 buildings=63048cb5/260 guests=28b3f2b5/318 staff=b3e56d9b/84 vehicles=4e855f20/36 ferry=233ec565/13 repair=415b1da4/27 feedback=e670b69a/32 messages=4f2f46d7/38 cleaning=04f6de77/9 construction=a771e050/14 weather=4ac3f794/28 rng=40f10df3/2
+@1200 hash f28050dbeb58b220 world=cc095acb/55 economy=ef780322/18 map=bc1f9b97/32772 objects=6926067b/7 buildings=63048cb5/260 guests=7a7a115a/318 staff=80034635/84 vehicles=4e855f20/36 ferry=233ec565/13 repair=415b1da4/27 feedback=ada1ac11/32 messages=b586aa97/38 cleaning=04f6de77/9 construction=a771e050/14 weather=4ac3f794/28 rng=8961afc4/2
+@1270 break-object object=3
+@1300 hash b007659f19450538 world=dc56b1af/55 economy=d98927b1/18 map=bc1f9b97/32772 objects=6926067b/7 buildings=b79a15b6/260 guests=bd7b9bc6/318 staff=a52f7b04/84 vehicles=4e855f20/36 ferry=233ec565/13 repair=2bbc7f29/27 feedback=0ff4d1ee/32 messages=d1d24dfa/38 cleaning=04f6de77/9 construction=a771e050/14 weather=07061dbe/28 rng=1ede7f4c/2
+@1320 demolish object=5
+@1400 hash 0acf16ea51a284e9 world=56990d16/55 economy=3cdf4054/18 map=bc1f9b97/32772 objects=6926067b/7 buildings=2d50d4b2/260 guests=3ece8438/318 staff=f829dde0/84 vehicles=4e855f20/36 ferry=233ec565/13 repair=4f4a9c81/22 feedback=5992dc2e/32 messages=fdcba018/38 cleaning=04f6de77/9 construction=1df28974/57 weather=e1c9c71a/28 rng=74e7fddd/2
+@1500 hash 37650751f8465dba world=3b8f6576/55 economy=3cdf4054/18 map=bc1f9b97/32772 objects=6926067b/7 buildings=2d50d4b2/260 guests=4fbdd156/318 staff=11e2bceb/84 vehicles=4e855f20/36 ferry=233ec565/13 repair=4f4a9c81/22 feedback=2c92535e/32 messages=6cbebaff/38 cleaning=04f6de77/9 construction=982222a3/57 weather=e1c9c71a/28 rng=745c6199/2
+@1600 hash e2b3569b9f53ecfa world=c1b70ce6/55 economy=546f655e/18 map=bc1f9b97/32772 objects=6926067b/7 buildings=2d50d4b2/260 guests=c0a20d62/318 staff=7f8afbcf/84 vehicles=4e855f20/36 ferry=233ec565/13 repair=4f4a9c81/22 feedback=a3132ae4/35 messages=e8d2b4fe/38 cleaning=04f6de77/9 construction=845af717/57 weather=2d140d4e/28 rng=c1808c4a/2
+@1620 hash dca09af28e612461 world=34ab331f/55 economy=546f655e/18 map=bc1f9b97/32772 objects=6926067b/7 buildings=2d50d4b2/260 guests=488cc3b6/318 staff=1ba9b9fb/84 vehicles=4e855f20/36 ferry=233ec565/13 repair=4f4a9c81/22 feedback=a3132ae4/35 messages=18e84995/38 cleaning=04f6de77/9 construction=246c286c/57 weather=2d140d4e/28 rng=bcc52f48/2
+end 1620

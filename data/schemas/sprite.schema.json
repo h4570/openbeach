@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "obl.sprite",
+  "title": "Sprite (sprites/<name>.json)",
+  "description": "Animations with PNG sheet pages each, palettes for indexed pixels (assets.md, 'Sprites'). Tier L1; sheets and palettes are L2.",
+  "type": "object",
+  "properties": {
+    "format": { "const": "obl.sprite" },
+    "version": { "const": 1 },
+    "name": { "$ref": "obl.common#/$defs/key" },
+    "kind": { "enum": ["ui", "character", "building", "object_variants", "special"] },
+    "tone_group": {
+      "description": "Palette toning group (palette_modifiers.json); 0 or absent: none.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "pixels": { "enum": ["indexed", "rgba"] },
+    "palettes": {
+      "description": "RGB PNG, one row per palette variant, relative to the sprite JSON.",
+      "$ref": "obl.common#/$defs/path"
+    },
+    "palette_colors": { "enum": [64, 256] },
+    "palette_count": { "type": "integer", "minimum": 1 },
+    "scale": {
+      "description": "Texture pixels per logical unit (HD sheets); default 1.",
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "depth_extents": {
+      "description": "Buildings: per direction (0..3), the extent in pixels over which a construction preview spreads the footprint's depth difference.",
+      "type": "array",
+      "items": { "type": "integer", "minimum": 0, "maximum": 255 },
+      "minItems": 4,
+      "maxItems": 4
+    },
+    "animations": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/animation" }
+    },
+    "autotile": {
+      "description": "Path tilesets: frame per neighbor mask (bits 0..7 = N, NE, E, SE, S, SW, W, NW), -1 for none.",
+      "type": "object",
+      "properties": {
+        "masks": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": -1, "maximum": 255 },
+          "minItems": 256,
+          "maxItems": 256
+        },
+        "full": { "type": "integer", "minimum": 0, "maximum": 255 }
+      },
+      "required": ["masks", "full"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["format", "version", "name", "kind", "pixels", "animations"],
+  "additionalProperties": false,
+  "oneOf": [
+    {
+      "properties": { "pixels": { "const": "indexed" } },
+      "required": ["palettes", "palette_colors"]
+    },
+    {
+      "description": "True-color sprites have no palettes, so no palette variants and no toning.",
+      "properties": {
+        "pixels": { "const": "rgba" },
+        "palettes": false,
+        "palette_colors": false,
+        "palette_count": false,
+        "tone_group": false
+      }
+    }
+  ],
+  "$defs": {
+    "animation": {
+      "type": "object",
+      "properties": {
+        "name": { "$ref": "obl.common#/$defs/key" },
+        "plane": {
+          "description": "Building planes; absent for plain animations.",
+          "enum": ["color", "depth", "light", "pick", "shadow"]
+        },
+        "directions": { "type": "integer", "minimum": 1 },
+        "frames": { "type": "integer", "minimum": 1 },
+        "size": { "$ref": "obl.common#/$defs/size2" },
+        "hotspot": { "$ref": "obl.common#/$defs/vec2i" },
+        "sheets": {
+          "description": "Pages of the unique frames, left to right and top down, `columns` x `rows` frames per page; relative to the sprite JSON.",
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "obl.common#/$defs/path" }
+        },
+        "columns": { "type": "integer", "minimum": 1 },
+        "rows": {
+          "description": "Frame rows per page; absent: one page holds every row.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "unique_frames": { "type": "integer", "minimum": 1 },
+        "frame_map": {
+          "description": "Unique frame of each direction * frames + frame; omitted when it is the identity.",
+          "type": "array",
+          "items": { "type": "integer", "minimum": 0 }
+        },
+        "run_length": {
+          "description": "Pixels after which the frames' long runs are split when the engine run-length encodes them; omitted for 127.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 127
+        }
+      },
+      "required": ["name", "directions", "frames", "size", "hotspot", "sheets", "columns", "unique_frames"],
+      "additionalProperties": false
+    }
+  }
+}

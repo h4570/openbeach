@@ -1,0 +1,10 @@
+# ctest headless_save_fixture: writes the save that tests/replays/headless_save_s1.replay starts from (`start save`,
+# docs/architecture/headless/index.md): scenario 1 after 300 ticks, through the game's obl.save writer with a fixed save time.
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario 1
+await gameplay
+step 300
+serial-save testlogs/headless/save_s1.obl.save
+serial-cleanup
+quit

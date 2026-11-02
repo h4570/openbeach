@@ -1,0 +1,2 @@
+# Files tools/windows_syntax_linux.sh skips, one repo-relative path per line.
+# Only add entries when neither a compat entry nor a portable fix can make them parse.

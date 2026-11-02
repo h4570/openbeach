@@ -1,0 +1,52 @@
+# Own builder scripts stop unfinished jobs at shift end, resume and demolish.
+# @env OBL_PACK=l0
+# @timeout 120
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario 1
+await gameplay
+command set-game-speed level=2
+object-find staff Builder 0
+log first first=$id
+command set-staff-shift staff=$first start=9 end=10
+object-find staff Builder 1
+log second second=$id
+command set-staff-shift staff=$second start=9 end=10
+command place-building key=HUT x=63 y=61 dir=0
+step 200
+object-report $first
+expect-last state 95
+object-report $second
+expect-last state 95
+object-find building HUT
+log hut hut=$id
+object-report $hut
+expect-last build-job 1
+step 100
+object-report $hut
+expect-last build-job 1
+command set-staff-shift staff=$first start=9 end=22
+command set-staff-shift staff=$second start=9 end=22
+step 800
+object-report $hut
+expect-last build-job 0
+command demolish object=$hut
+step 20
+object-report $first
+expect-last state 100
+command set-staff-shift staff=$first start=22 end=6
+command set-staff-shift staff=$second start=22 end=6
+step 100
+object-report $first
+expect-last state 95
+object-report $second
+expect-last state 95
+object-report $hut
+expect-last demolish-job 1
+command set-staff-shift staff=$first start=9 end=22
+command set-staff-shift staff=$second start=9 end=22
+step 800
+object-report $hut
+expect-last exists 0
+expect demolish-income-today 225
+quit

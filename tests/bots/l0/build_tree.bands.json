@@ -1,0 +1,18 @@
+{
+ "schema_version": 1,
+ "run": "build_tree.bot",
+ "bot": "build-tree-s1",
+ "start": "s1",
+ "outcome": "won",
+ "seeds": [1, 2, 3],
+ "ticks": [864, 865],
+ "end": {"cash": [18802.0, 18806.0], "guests": [6, 6], "rating": [84, 85]},
+ "hours": [
+  {"day": 0, "hour": 9, "cash": [20000.0, 20000.0], "guests": [0, 0], "rating": [0, 0]},
+  {"day": 0, "hour": 10, "cash": [18880.0, 18880.0], "guests": [0, 0], "rating": [0, 0]},
+  {"day": 0, "hour": 11, "cash": [18860.0, 18860.0], "guests": [0, 0], "rating": [0, 0]},
+  {"day": 0, "hour": 12, "cash": [18840.0, 18840.0], "guests": [0, 0], "rating": [0, 0]},
+  {"day": 0, "hour": 13, "cash": [18820.0, 18820.0], "guests": [0, 0], "rating": [0, 0]},
+  {"day": 0, "hour": 14, "cash": [18800.0, 18800.0], "guests": [6, 6], "rating": [84, 85]}
+ ]
+}

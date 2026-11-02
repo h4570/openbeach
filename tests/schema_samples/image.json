@@ -1,0 +1,6 @@
+{
+  "format": "obl.image",
+  "version": 1,
+  "image": "cursor.png",
+  "hotspot": [3, 2]
+}

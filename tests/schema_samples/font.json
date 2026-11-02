@@ -1,0 +1,10 @@
+{
+  "format": "obl.font",
+  "version": 1,
+  "name": "sample_font_8",
+  "size": 8,
+  "bold": false,
+  "atlas": "sample_font_8.png",
+  "glyphs": { "0041": [0, 0, 6, 9], "0042": [6, 0, 12, 9], "017c": [12, 0, 17, 9] },
+  "kerning": [["0041", "0042", -1]]
+}

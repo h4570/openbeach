@@ -1,0 +1,139 @@
+{
+  "format": "obl.feedback_vocabulary",
+  "version": 1,
+  "commodity_keys": [
+    "FEEDBACK_ACCOMMODATION",
+    "FEEDBACK_ALCOHOL",
+    "FEEDBACK_AMUSEMENT",
+    "FEEDBACK_FIRSTAID",
+    "FEEDBACK_HEADACHE",
+    "FEEDBACK_MEALS",
+    "FEEDBACK_PARTYFUN",
+    "FEEDBACK_SHOWER",
+    "FEEDBACK_SNACKS",
+    "FEEDBACK_SOFTDRINKS",
+    "FEEDBACK_SOUVENIRS",
+    "FEEDBACK_SPORTSFUN",
+    "FEEDBACK_SUNBATHING",
+    "FEEDBACK_SWIMMINGFUN",
+    "FEEDBACK_TOILET",
+    "FEEDBACK_WATERSPORTSFUN",
+    "FEEDBACK_STROLLAROUND",
+    "FEEDBACK_LEAVERESORT",
+    "FEEDBACK_VANDALISE",
+    "FEEDBACK_FIGHT",
+    "FEEDBACK_FLIRT",
+    "FEEDBACK_UMBRELLAS",
+    "FEEDBACK_SUNTANLOTION",
+    "FEEDBACK_HARDSEX",
+    "FEEDBACK_SLEEP",
+    "FEEDBACK_SCARED"
+  ],
+  "message_types": [
+    {
+      "word": "MESS_TYPE_WORLD",
+      "silences": "world"
+    },
+    {
+      "word": "MESS_TYPE_OBJECT",
+      "silences": "object"
+    },
+    {
+      "word": "MESS_TYPE_SCENERY",
+      "type": 3
+    },
+    {
+      "word": "MESS_TYPE_BUILDING",
+      "type": 4
+    },
+    {
+      "word": "MESS_TYPE_GUEST",
+      "type": 5
+    },
+    {
+      "word": "MESS_TYPE_VEHICLE",
+      "type": 6
+    },
+    {
+      "word": "MESS_TYPE_STAFF",
+      "type": 7
+    },
+    {
+      "word": "MESS_TYPE_LIFEGUARD",
+      "type": 8
+    },
+    {
+      "word": "MESS_TYPE_MECHANIC",
+      "type": 9
+    },
+    {
+      "word": "MESS_TYPE_REP",
+      "type": 10
+    },
+    {
+      "word": "MESS_TYPE_BUILDER",
+      "type": 11
+    },
+    {
+      "word": "MESS_TYPE_CLEANER",
+      "type": 12
+    },
+    {
+      "word": "MESS_TYPE_SECURITYGUARD",
+      "type": 13
+    }
+  ],
+  "missing_staff": [
+    {
+      "class": "Cleaner",
+      "key": "FEEDBACK_NO_CLEANERS",
+      "type": "MESS_TYPE_CLEANER"
+    },
+    {
+      "class": "Rep",
+      "key": "FEEDBACK_NO_REPS",
+      "type": "MESS_TYPE_REP"
+    },
+    {
+      "class": "Mechanic",
+      "key": "FEEDBACK_NO_MECHANICS",
+      "type": "MESS_TYPE_MECHANIC"
+    },
+    {
+      "class": "SecurityGuard",
+      "key": "FEEDBACK_NO_SECURITY",
+      "type": "MESS_TYPE_SECURITYGUARD"
+    },
+    {
+      "class": "Lifeguard",
+      "key": "FEEDBACK_NO_LIFEGUARDS",
+      "type": "MESS_TYPE_LIFEGUARD"
+    }
+  ],
+  "professions": [
+    {
+      "name": "Cleaner",
+      "hire_type": 0
+    },
+    {
+      "name": "Builder",
+      "hire_type": 1
+    },
+    {
+      "name": "Mechanic",
+      "hire_type": 2
+    },
+    {
+      "name": "Rep",
+      "hire_type": 3
+    },
+    {
+      "name": "Lifeguard",
+      "hire_type": 4
+    },
+    {
+      "name": "SecurityGuard",
+      "hire_type": 5
+    }
+  ]
+}

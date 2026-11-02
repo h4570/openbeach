@@ -1,0 +1,5289 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "obl.save",
+  "title": "Saved world",
+  "description": "Saved simulation state: header, world, player, map, objects, managers and view. The schema also accepts partial synthetic documents for contract tests.",
+  "type": "object",
+  "properties": {
+    "format": {
+      "const": "obl.save"
+    },
+    "version": {
+      "const": 2
+    },
+    "header": {
+      "type": "object",
+      "properties": {
+        "saved_at": {
+          "$ref": "#/$defs/u32"
+        },
+        "scenario": {
+          "$ref": "obl.common#/$defs/key"
+        },
+        "sandbox": {
+          "type": "boolean"
+        },
+        "title": {
+          "$ref": "obl.common#/$defs/text_key"
+        },
+        "title_text": {
+          "type": "string"
+        },
+        "day": {
+          "$ref": "#/$defs/i32"
+        },
+        "day_time": {
+          "$ref": "#/$defs/f32"
+        },
+        "cash": {
+          "$ref": "#/$defs/f32"
+        },
+        "guests": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "packs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/pack"
+          },
+          "minItems": 1
+        },
+        "converted_from": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/origin"
+            }
+          ]
+        }
+      },
+      "required": [
+        "saved_at",
+        "scenario",
+        "sandbox",
+        "title_text",
+        "day",
+        "day_time",
+        "cash",
+        "guests",
+        "packs",
+        "converted_from"
+      ],
+      "additionalProperties": false
+    },
+    "world": {
+      "type": "object",
+      "properties": {
+        "map_id": {
+          "description": "The map of the world: maps/<id>/ of the pack.",
+          "$ref": "obl.common#/$defs/key"
+        },
+        "game_start_time": {
+          "$ref": "#/$defs/f32"
+        },
+        "game_time": {
+          "$ref": "#/$defs/f32"
+        },
+        "day_time": {
+          "$ref": "#/$defs/f32"
+        },
+        "last_day_time": {
+          "$ref": "#/$defs/f32"
+        },
+        "previous_day_time": {
+          "$ref": "#/$defs/f32"
+        },
+        "delta_time": {
+          "$ref": "#/$defs/f32"
+        },
+        "speed": {
+          "$ref": "#/$defs/f32"
+        },
+        "next_staff_feedback_time": {
+          "$ref": "#/$defs/f32"
+        },
+        "power_use": {
+          "$ref": "#/$defs/f32"
+        },
+        "max_power": {
+          "$ref": "#/$defs/f32"
+        },
+        "current_power": {
+          "$ref": "#/$defs/f32"
+        },
+        "power_demand": {
+          "$ref": "#/$defs/f32"
+        },
+        "scenic_value": {
+          "$ref": "#/$defs/f32"
+        },
+        "water_contamination": {
+          "$ref": "#/$defs/f32"
+        },
+        "income_today": {
+          "$ref": "#/$defs/f32"
+        },
+        "demolition_income_today": {
+          "$ref": "#/$defs/f32"
+        },
+        "fine_income_today": {
+          "$ref": "#/$defs/f32"
+        },
+        "accommodation_income_today": {
+          "$ref": "#/$defs/f32"
+        },
+        "attraction_income_today": {
+          "$ref": "#/$defs/f32"
+        },
+        "retail_income_today": {
+          "$ref": "#/$defs/f32"
+        },
+        "total_fines": {
+          "$ref": "#/$defs/f32"
+        },
+        "costs_today": {
+          "$ref": "#/$defs/f32"
+        },
+        "construction_cost_today": {
+          "$ref": "#/$defs/f32"
+        },
+        "scenery_cost_today": {
+          "$ref": "#/$defs/f32"
+        },
+        "wages_cost_today": {
+          "$ref": "#/$defs/f32"
+        },
+        "stock_cost_today": {
+          "$ref": "#/$defs/f32"
+        },
+        "average_profit": {
+          "$ref": "#/$defs/f32"
+        },
+        "average_cost": {
+          "$ref": "#/$defs/f32"
+        },
+        "average_income": {
+          "$ref": "#/$defs/f32"
+        },
+        "average_attractiveness": {
+          "$ref": "#/$defs/f32"
+        },
+        "average_beauty": {
+          "$ref": "#/$defs/f32"
+        },
+        "average_safety": {
+          "$ref": "#/$defs/f32"
+        },
+        "game_day": {
+          "$ref": "#/$defs/i32"
+        },
+        "speed_level": {
+          "$ref": "#/$defs/i32"
+        },
+        "script_flags": {
+          "$ref": "#/$defs/i32"
+        },
+        "script_state": {
+          "$ref": "#/$defs/i32"
+        },
+        "guests": {
+          "$ref": "#/$defs/i32"
+        },
+        "litter": {
+          "$ref": "#/$defs/i32"
+        },
+        "buildings": {
+          "$ref": "#/$defs/i32"
+        },
+        "buildings_constructed": {
+          "$ref": "#/$defs/i32"
+        },
+        "different_buildings_constructed": {
+          "$ref": "#/$defs/i32"
+        },
+        "bars_constructed": {
+          "$ref": "#/$defs/i32"
+        },
+        "buildings_left_to_build": {
+          "$ref": "#/$defs/i32"
+        },
+        "party_count": {
+          "$ref": "#/$defs/i32"
+        },
+        "romance_count": {
+          "$ref": "#/$defs/i32"
+        },
+        "drunk_count": {
+          "$ref": "#/$defs/i32"
+        },
+        "guests_drowned": {
+          "$ref": "#/$defs/i32"
+        },
+        "guests_eaten": {
+          "$ref": "#/$defs/i32"
+        },
+        "unbuilt_after_startup": {
+          "$ref": "#/$defs/i32"
+        },
+        "startup": {
+          "type": "boolean"
+        },
+        "breakdowns_allowed": {
+          "type": "boolean"
+        },
+        "litter_allowed": {
+          "type": "boolean"
+        },
+        "paused": {
+          "type": "boolean"
+        },
+        "forced_paused": {
+          "type": "boolean"
+        },
+        "available_buildings": {
+          "type": "array",
+          "items": {
+            "$ref": "obl.common#/$defs/key"
+          },
+          "uniqueItems": true
+        },
+        "script_variables": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/i32"
+          }
+        },
+        "objective_status": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/u32"
+          }
+        },
+        "total_guest_arrivals": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/i32"
+          }
+        },
+        "total_guest_departures": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/i32"
+          }
+        },
+        "today_guest_arrivals": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/i32"
+          }
+        },
+        "today_guest_departures": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/i32"
+          }
+        },
+        "total_unhappy_departures": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/i32"
+          }
+        },
+        "today_unhappy_departures": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/i32"
+          }
+        },
+        "profit_history": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/f32"
+          }
+        },
+        "income_history": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/f32"
+          }
+        },
+        "cost_history": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/f32"
+          }
+        }
+      },
+      "required": [
+        "game_time",
+        "game_day",
+        "script_state"
+      ],
+      "additionalProperties": false
+    },
+    "player": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "cash": {
+          "$ref": "#/$defs/f32"
+        }
+      },
+      "required": [
+        "name",
+        "cash"
+      ],
+      "additionalProperties": false
+    },
+    "map": {
+      "type": "object",
+      "properties": {
+        "cells": {
+          "$ref": "obl.common#/$defs/size2"
+        },
+        "island_size": {
+          "$ref": "#/$defs/i32"
+        },
+        "areas_open": {
+          "description": "Open flag of every beach area, then every sea area, in the map's area order.",
+          "type": "array",
+          "items": {
+            "type": "boolean"
+          }
+        },
+        "cell_state": {
+          "description": "The cell words: one run-length list of [count, value] per field, in cell order (saves.md, Map cells).",
+          "type": "object",
+          "properties": {
+            "terrain": {
+              "$ref": "#/$defs/cell_4bit_runs"
+            },
+            "building": {
+              "$ref": "#/$defs/cell_bit_runs"
+            },
+            "border": {
+              "$ref": "#/$defs/cell_bit_runs"
+            },
+            "border_blocked": {
+              "$ref": "#/$defs/cell_bit_runs"
+            },
+            "around_building": {
+              "$ref": "#/$defs/cell_bit_runs"
+            },
+            "beach": {
+              "$ref": "#/$defs/cell_bit_runs"
+            },
+            "margin": {
+              "$ref": "#/$defs/cell_bit_runs"
+            },
+            "unnamed": {
+              "$ref": "#/$defs/cell_bit_runs"
+            },
+            "built": {
+              "$ref": "#/$defs/cell_bit_runs"
+            },
+            "grass": {
+              "$ref": "#/$defs/cell_3bit_runs"
+            },
+            "blocked": {
+              "$ref": "#/$defs/cell_bit_runs"
+            },
+            "neighbours": {
+              "$ref": "#/$defs/cell_byte_runs"
+            },
+            "surface": {
+              "$ref": "#/$defs/cell_4bit_runs"
+            },
+            "path": {
+              "$ref": "#/$defs/cell_bit_runs"
+            },
+            "free_deep": {
+              "$ref": "#/$defs/cell_bit_runs"
+            },
+            "free_shallow": {
+              "$ref": "#/$defs/cell_bit_runs"
+            },
+            "free_land": {
+              "$ref": "#/$defs/cell_bit_runs"
+            }
+          },
+          "required": [
+            "terrain",
+            "building",
+            "border",
+            "border_blocked",
+            "around_building",
+            "beach",
+            "margin",
+            "unnamed",
+            "built",
+            "grass",
+            "blocked",
+            "neighbours",
+            "surface",
+            "path",
+            "free_deep",
+            "free_shallow",
+            "free_land"
+          ],
+          "additionalProperties": false
+        },
+        "heights": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 65535
+          }
+        }
+      },
+      "required": [
+        "cells",
+        "cell_state",
+        "heights"
+      ],
+      "additionalProperties": false
+    },
+    "objects": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/object"
+      }
+    },
+    "managers": {
+      "type": "object",
+      "properties": {
+        "objects": {
+          "type": "object",
+          "description": "ObjectManager: the id the next new object gets and the global keyline switch.",
+          "properties": {
+            "next_id": {
+              "$ref": "#/$defs/u32"
+            },
+            "keyline": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "next_id"
+          ],
+          "additionalProperties": false
+        },
+        "repair": {
+          "type": "object",
+          "properties": {
+            "building_jobs": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "object": {
+                    "$ref": "#/$defs/object_ref"
+                  },
+                  "calls": {
+                    "$ref": "#/$defs/u32"
+                  },
+                  "distance": {
+                    "$ref": "#/$defs/f32"
+                  },
+                  "time_called": {
+                    "$ref": "#/$defs/f32"
+                  },
+                  "urgent": {
+                    "type": "boolean"
+                  },
+                  "type": {
+                    "$ref": "#/$defs/repair_job_type"
+                  }
+                },
+                "required": [
+                  "object",
+                  "calls",
+                  "distance",
+                  "time_called",
+                  "urgent",
+                  "type"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "scenery_jobs": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "object": {
+                    "$ref": "#/$defs/object_ref"
+                  },
+                  "calls": {
+                    "$ref": "#/$defs/u32"
+                  },
+                  "distance": {
+                    "$ref": "#/$defs/f32"
+                  },
+                  "time_called": {
+                    "$ref": "#/$defs/f32"
+                  },
+                  "urgent": {
+                    "type": "boolean"
+                  },
+                  "type": {
+                    "$ref": "#/$defs/repair_job_type"
+                  }
+                },
+                "required": [
+                  "object",
+                  "calls",
+                  "distance",
+                  "time_called",
+                  "urgent",
+                  "type"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "active_jobs": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "object": {
+                    "$ref": "#/$defs/object_ref"
+                  },
+                  "repairing": {
+                    "type": "boolean"
+                  },
+                  "urgent": {
+                    "type": "boolean"
+                  },
+                  "type": {
+                    "$ref": "#/$defs/repair_job_type"
+                  }
+                },
+                "required": [
+                  "object",
+                  "repairing",
+                  "urgent",
+                  "type"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "breakdowns": {
+              "$ref": "#/$defs/i32"
+            },
+            "vandalisms": {
+              "$ref": "#/$defs/i32"
+            },
+            "active_count": {
+              "$ref": "#/$defs/i32"
+            }
+          },
+          "required": [
+            "building_jobs",
+            "scenery_jobs",
+            "active_jobs",
+            "breakdowns",
+            "vandalisms",
+            "active_count"
+          ],
+          "additionalProperties": false,
+          "description": "RepairManager: waiting building jobs (type 0 inspection, 2 breakdown), scenery jobs and the jobs mechanics have taken."
+        },
+        "feedback": {
+          "type": "object",
+          "description": "FeedbackManager: queued and shown feedback (the object id it is about, negative for world notices, and the shown text), per-staff message counters, suppressed message ids.",
+          "properties": {
+            "pending": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "object": {
+                    "$ref": "#/$defs/i32"
+                  },
+                  "wide": {
+                    "type": "boolean"
+                  },
+                  "text": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "object",
+                  "wide",
+                  "text"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "history": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "object": {
+                    "$ref": "#/$defs/i32"
+                  },
+                  "day": {
+                    "$ref": "#/$defs/i32"
+                  },
+                  "hour": {
+                    "$ref": "#/$defs/f32"
+                  },
+                  "wide": {
+                    "type": "boolean"
+                  },
+                  "text": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "object",
+                  "day",
+                  "hour",
+                  "wide",
+                  "text"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "cleaner_messages": {
+              "$ref": "#/$defs/i32"
+            },
+            "lifeguard_messages": {
+              "$ref": "#/$defs/i32"
+            },
+            "security_guard_messages": {
+              "$ref": "#/$defs/i32"
+            },
+            "mechanic_messages": {
+              "$ref": "#/$defs/i32"
+            },
+            "rep_messages": {
+              "$ref": "#/$defs/i32"
+            },
+            "builder_messages": {
+              "$ref": "#/$defs/i32"
+            },
+            "staff_messages": {
+              "$ref": "#/$defs/i32"
+            },
+            "suppressed_count": {
+              "$ref": "#/$defs/i32"
+            },
+            "suppress_world": {
+              "type": "boolean"
+            },
+            "suppress_objects": {
+              "type": "boolean"
+            },
+            "suppressed": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/i32"
+              },
+              "maxItems": 100
+            },
+            "last_missed_desires_check": {
+              "$ref": "#/$defs/f32"
+            }
+          },
+          "required": [
+            "pending",
+            "history",
+            "cleaner_messages",
+            "lifeguard_messages",
+            "security_guard_messages",
+            "mechanic_messages",
+            "rep_messages",
+            "builder_messages",
+            "staff_messages",
+            "suppressed_count",
+            "suppress_world",
+            "suppress_objects",
+            "suppressed",
+            "last_missed_desires_check"
+          ],
+          "additionalProperties": false
+        },
+        "messages": {
+          "type": "object",
+          "description": "MessageHandler: delayed messages; type is the engine message type, time the delivery time in game seconds.",
+          "properties": {
+            "delayed": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "sender": {
+                    "$ref": "#/$defs/i32"
+                  },
+                  "receiver": {
+                    "$ref": "#/$defs/i32"
+                  },
+                  "type": {
+                    "$ref": "#/$defs/i32"
+                  },
+                  "flags": {
+                    "$ref": "#/$defs/i32"
+                  },
+                  "data": {
+                    "$ref": "#/$defs/i32"
+                  },
+                  "float_data": {
+                    "$ref": "#/$defs/f32"
+                  },
+                  "time": {
+                    "$ref": "#/$defs/f32"
+                  },
+                  "extra": {
+                    "$ref": "#/$defs/i32"
+                  }
+                },
+                "required": [
+                  "sender",
+                  "receiver",
+                  "type",
+                  "flags",
+                  "data",
+                  "float_data",
+                  "time",
+                  "extra"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "delayed"
+          ],
+          "additionalProperties": false
+        },
+        "cleaning": {
+          "type": "object",
+          "properties": {
+            "jobs": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "object": {
+                    "$ref": "#/$defs/object_ref"
+                  },
+                  "calls": {
+                    "$ref": "#/$defs/u32"
+                  },
+                  "time_called": {
+                    "$ref": "#/$defs/f32"
+                  },
+                  "urgent": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "object",
+                  "calls",
+                  "time_called",
+                  "urgent"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "active_jobs": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "object": {
+                    "$ref": "#/$defs/object_ref"
+                  },
+                  "cleaning": {
+                    "type": "boolean"
+                  },
+                  "urgent": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "object",
+                  "cleaning",
+                  "urgent"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "cleanings": {
+              "$ref": "#/$defs/i32"
+            },
+            "active_count": {
+              "$ref": "#/$defs/i32"
+            }
+          },
+          "required": [
+            "jobs",
+            "active_jobs",
+            "cleanings",
+            "active_count"
+          ],
+          "additionalProperties": false,
+          "description": "CleaningManager: waiting jobs and the jobs cleaners have taken."
+        },
+        "construction": {
+          "type": "object",
+          "description": "ConstructionManager: build and demolition jobs by building object id with hoardings and work points, and the builders.",
+          "properties": {
+            "jobs": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "building": {
+                    "$ref": "#/$defs/object_ref"
+                  },
+                  "builders": {
+                    "$ref": "#/$defs/i32"
+                  },
+                  "hoardings": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "dir": {
+                          "$ref": "#/$defs/i32"
+                        },
+                        "x": {
+                          "$ref": "#/$defs/i32"
+                        },
+                        "y": {
+                          "$ref": "#/$defs/i32"
+                        },
+                        "extra": {
+                          "$ref": "#/$defs/i32"
+                        }
+                      },
+                      "required": [
+                        "dir",
+                        "x",
+                        "y",
+                        "extra"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "construction_start": {
+                    "$ref": "#/$defs/f32"
+                  },
+                  "demolition_start": {
+                    "$ref": "#/$defs/f32"
+                  },
+                  "construction_done": {
+                    "$ref": "#/$defs/f32"
+                  },
+                  "demolition_done": {
+                    "$ref": "#/$defs/f32"
+                  },
+                  "construction_progress": {
+                    "$ref": "#/$defs/f32"
+                  },
+                  "demolition_progress": {
+                    "$ref": "#/$defs/f32"
+                  },
+                  "under_construction": {
+                    "type": "boolean"
+                  },
+                  "under_demolition": {
+                    "type": "boolean"
+                  },
+                  "started": {
+                    "type": "boolean"
+                  },
+                  "finished": {
+                    "type": "boolean"
+                  },
+                  "work_points": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "x": {
+                          "$ref": "#/$defs/u32"
+                        },
+                        "y": {
+                          "$ref": "#/$defs/u32"
+                        },
+                        "dir": {
+                          "$ref": "#/$defs/i32"
+                        }
+                      },
+                      "required": [
+                        "x",
+                        "y",
+                        "dir"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "minItems": 10,
+                    "maxItems": 10
+                  },
+                  "work_point_owners": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/i32"
+                    },
+                    "maxItems": 10,
+                    "description": "Builder token holding each work point; -1 means free, and so does a missing entry."
+                  }
+                },
+                "required": [
+                  "building",
+                  "builders",
+                  "hoardings",
+                  "construction_start",
+                  "demolition_start",
+                  "construction_done",
+                  "demolition_done",
+                  "construction_progress",
+                  "demolition_progress",
+                  "under_construction",
+                  "under_demolition",
+                  "started",
+                  "finished",
+                  "work_points"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "constructions": {
+              "$ref": "#/$defs/i32"
+            },
+            "builders": {
+              "description": "At most 50 builders.",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "staff": {
+                    "$ref": "#/$defs/object_ref"
+                  },
+                  "status": {
+                    "$ref": "#/$defs/builder_status"
+                  },
+                  "location": {
+                    "$ref": "#/$defs/u32"
+                  },
+                  "building": {
+                    "$ref": "#/$defs/object_ref"
+                  },
+                  "manual": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "staff",
+                  "status",
+                  "location",
+                  "building",
+                  "manual"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "jobs",
+            "constructions",
+            "builders"
+          ],
+          "additionalProperties": false
+        },
+        "weather": {
+          "type": "object",
+          "properties": {
+            "light_index": {
+              "$ref": "#/$defs/u32"
+            },
+            "light_previous_index": {
+              "$ref": "#/$defs/u32"
+            },
+            "time": {
+              "$ref": "#/$defs/f32"
+            },
+            "desire_modifiers": {
+              "description": "Added to a guest's desires when a weather entry activates.",
+              "$ref": "#/$defs/desire_values"
+            },
+            "next_event": {
+              "$ref": "#/$defs/i32"
+            },
+            "event_count": {
+              "$ref": "#/$defs/i32"
+            },
+            "light_flash": {
+              "type": "boolean"
+            },
+            "light_colour": {
+              "$ref": "#/$defs/i32"
+            },
+            "flash_time": {
+              "$ref": "#/$defs/f32"
+            },
+            "manual": {
+              "type": "boolean"
+            },
+            "manual_colour": {
+              "$ref": "#/$defs/u32"
+            },
+            "strike_time": {
+              "$ref": "#/$defs/f32"
+            },
+            "strike_level": {
+              "$ref": "#/$defs/i32"
+            },
+            "strike_building": {
+              "$ref": "#/$defs/object_ref"
+            },
+            "striking_building": {
+              "type": "boolean"
+            },
+            "strike_area": {
+              "type": "object",
+              "properties": {
+                "top": {
+                  "$ref": "#/$defs/u32"
+                },
+                "bottom": {
+                  "$ref": "#/$defs/u32"
+                },
+                "left": {
+                  "$ref": "#/$defs/u32"
+                },
+                "right": {
+                  "$ref": "#/$defs/u32"
+                }
+              },
+              "required": [
+                "top",
+                "bottom",
+                "left",
+                "right"
+              ],
+              "additionalProperties": false
+            },
+            "strike_point": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "$ref": "#/$defs/f32"
+                },
+                "y": {
+                  "$ref": "#/$defs/f32"
+                },
+                "z": {
+                  "$ref": "#/$defs/f32"
+                }
+              },
+              "required": [
+                "x",
+                "y",
+                "z"
+              ],
+              "additionalProperties": false
+            },
+            "strikes": {
+              "type": "boolean"
+            },
+            "lightning_lightmap": {
+              "type": "boolean"
+            },
+            "previous_state": {
+              "$ref": "#/$defs/weather_state"
+            },
+            "state": {
+              "$ref": "#/$defs/weather_state"
+            },
+            "last_colour": {
+              "$ref": "#/$defs/u32"
+            },
+            "day_offset": {
+              "$ref": "#/$defs/i32"
+            },
+            "current_day_offset": {
+              "$ref": "#/$defs/i32"
+            }
+          },
+          "required": [
+            "light_index",
+            "light_previous_index",
+            "time",
+            "desire_modifiers",
+            "next_event",
+            "event_count",
+            "light_flash",
+            "light_colour",
+            "flash_time",
+            "manual",
+            "manual_colour",
+            "strike_time",
+            "strike_level",
+            "strike_building",
+            "striking_building",
+            "strike_area",
+            "strike_point",
+            "strikes",
+            "lightning_lightmap",
+            "previous_state",
+            "state",
+            "last_colour",
+            "day_offset",
+            "current_day_offset"
+          ],
+          "additionalProperties": false,
+          "description": "Weather: light cycle, active weather kind (state 0..5) and its desire modifiers, lightning."
+        },
+        "ferry": {
+          "type": "object",
+          "description": "FerryManager: the boat schedule, the index of the next boat (-1 past the end), pending performance boats and departure statistics per guest type slot.",
+          "properties": {
+            "boats": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/boat"
+              }
+            },
+            "next_boat": {
+              "$ref": "#/$defs/i32"
+            },
+            "performances": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/boat"
+              }
+            },
+            "departures": {
+              "type": "object",
+              "properties": {
+                "average_happiness": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/f32"
+                  },
+                  "maxItems": 20
+                },
+                "happy": {
+                  "$ref": "#/$defs/u32"
+                },
+                "unhappy": {
+                  "$ref": "#/$defs/u32"
+                }
+              },
+              "required": [
+                "average_happiness",
+                "happy",
+                "unhappy"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "boats",
+            "next_boat",
+            "performances",
+            "departures"
+          ],
+          "additionalProperties": false
+        },
+        "events": {
+          "type": "object",
+          "properties": {
+            "next_event": {
+              "$ref": "#/$defs/i32"
+            },
+            "event_count": {
+              "$ref": "#/$defs/i32"
+            },
+            "current_event_count": {
+              "$ref": "#/$defs/i32"
+            },
+            "current_events": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/i32"
+              }
+            },
+            "day_offset": {
+              "$ref": "#/$defs/i32"
+            },
+            "current_day_offset": {
+              "$ref": "#/$defs/i32"
+            }
+          },
+          "required": [
+            "next_event",
+            "event_count",
+            "current_event_count",
+            "current_events",
+            "day_offset",
+            "current_day_offset"
+          ],
+          "additionalProperties": false,
+          "description": "EventManager: cursor and size of the scenario's disaster schedule, the running events by schedule index."
+        },
+        "commodities": {
+          "type": "object",
+          "properties": {
+            "complaints": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/u32"
+              },
+              "maxItems": 26
+            }
+          },
+          "required": [
+            "complaints"
+          ],
+          "additionalProperties": false,
+          "description": "Missed desires per commodity family since the last half-hourly feedback review. When absent, loading leaves these counters unchanged."
+        },
+        "beer": {
+          "type": "object",
+          "properties": {
+            "served": {
+              "$ref": "#/$defs/i32",
+              "description": "Beers served by all buildings since the last random effect; every twentieth serving draws an effect."
+            }
+          },
+          "required": [
+            "served"
+          ],
+          "additionalProperties": false,
+          "description": "Beer round shared by every bar. When absent, loading preserves the session counter."
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "view": {
+      "type": "object",
+      "properties": {
+        "camera": {
+          "description": "Top-left corner of the view in map pixels.",
+          "$ref": "obl.common#/$defs/vec2i"
+        },
+        "position": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "$ref": "#/$defs/f32"
+            },
+            "y": {
+              "$ref": "#/$defs/f32"
+            }
+          },
+          "additionalProperties": false,
+          "description": "The camera as floats (camera is truncated from it)."
+        },
+        "velocity": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "$ref": "#/$defs/f32"
+            },
+            "y": {
+              "$ref": "#/$defs/f32"
+            }
+          },
+          "additionalProperties": false
+        },
+        "burn_queue": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/u32"
+          }
+        },
+        "locked": {
+          "type": "boolean"
+        },
+        "moving": {
+          "type": "boolean"
+        },
+        "move_duration": {
+          "$ref": "#/$defs/f32"
+        },
+        "move_start_time": {
+          "$ref": "#/$defs/f32"
+        },
+        "move_start": {
+          "$ref": "obl.common#/$defs/vec2i"
+        },
+        "move_destination": {
+          "$ref": "obl.common#/$defs/vec2i"
+        },
+        "last_unburn_time": {
+          "$ref": "#/$defs/f32"
+        },
+        "guests_drawn": {
+          "$ref": "#/$defs/i32"
+        }
+      },
+      "required": [
+        "camera"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "format",
+    "version",
+    "header",
+    "world",
+    "map",
+    "objects",
+    "managers"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "cell_bit_runs": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "prefixItems": [
+          {
+            "type": "integer",
+            "minimum": 1
+          },
+          {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1
+          }
+        ],
+        "minItems": 2,
+        "maxItems": 2
+      }
+    },
+    "cell_3bit_runs": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "prefixItems": [
+          {
+            "type": "integer",
+            "minimum": 1
+          },
+          {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 7
+          }
+        ],
+        "minItems": 2,
+        "maxItems": 2
+      }
+    },
+    "cell_4bit_runs": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "prefixItems": [
+          {
+            "type": "integer",
+            "minimum": 1
+          },
+          {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 15
+          }
+        ],
+        "minItems": 2,
+        "maxItems": 2
+      }
+    },
+    "cell_byte_runs": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "prefixItems": [
+          {
+            "type": "integer",
+            "minimum": 1
+          },
+          {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255
+          }
+        ],
+        "minItems": 2,
+        "maxItems": 2
+      }
+    },
+    "i32": {
+      "type": "integer",
+      "minimum": -2147483648,
+      "maximum": 2147483647
+    },
+    "u32": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4294967295
+    },
+    "f32": {
+      "oneOf": [
+        {
+          "type": "number",
+          "minimum": -3.4028234663852886e+38,
+          "maximum": 3.4028234663852886e+38
+        },
+        {
+          "type": "string",
+          "pattern": "^f32:[0-9a-f]{8}$"
+        }
+      ]
+    },
+    "pack": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "obl.common#/$defs/pack_id"
+        },
+        "content_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pack_hash": {
+          "$ref": "obl.common#/$defs/sha256"
+        }
+      },
+      "required": [
+        "id",
+        "content_version",
+        "pack_hash"
+      ],
+      "additionalProperties": false
+    },
+    "origin": {
+      "type": "object",
+      "properties": {
+        "format": {
+          "type": "string",
+          "minLength": 1
+        },
+        "file": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "format",
+        "file"
+      ],
+      "additionalProperties": false
+    },
+    "object": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/u32"
+        },
+        "kind": {
+          "enum": [
+            "building",
+            "guest",
+            "scenery",
+            "vehicle",
+            "table",
+            "staff",
+            "animal",
+            "performer"
+          ]
+        },
+        "type": {
+          "$ref": "obl.common#/$defs/key"
+        },
+        "class": {
+          "description": "The class of a staff member or performer, which the loader requires for those kinds.",
+          "enum": [
+            "service",
+            "waiter",
+            "lifeguard",
+            "mechanic",
+            "rep",
+            "builder",
+            "cleaner",
+            "security",
+            "cabaret",
+            "singer",
+            "weightlifter",
+            "catwalk",
+            "wettshirt",
+            "aerobic"
+          ]
+        },
+        "created_as": {
+          "description": "Creation content key when it differs from `type`; for example sample_tree_tall for sample_tree.",
+          "$ref": "obl.common#/$defs/key"
+        },
+        "pos": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/f32"
+          },
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "dir": {
+          "description": "Rotation of a building (a quarter turn per step: n, e, s, w); other kinds keep their facing in their own state.",
+          "$ref": "obl.common#/$defs/direction"
+        },
+        "sprite": {
+          "$ref": "#/$defs/sprite_state",
+          "default": {}
+        },
+        "base": {
+          "$ref": "#/$defs/base_state",
+          "default": {}
+        },
+        "static": {
+          "$ref": "#/$defs/static_state"
+        },
+        "moving": {
+          "$ref": "#/$defs/moving_state"
+        },
+        "scenery": {
+          "$ref": "#/$defs/scenery_state"
+        },
+        "staff": {
+          "$ref": "#/$defs/staff_state"
+        },
+        "service": {
+          "$ref": "#/$defs/service_state"
+        },
+        "lifeguard": {
+          "$ref": "#/$defs/lifeguard_state"
+        },
+        "mechanic": {
+          "$ref": "#/$defs/mechanic_state"
+        },
+        "rep": {
+          "$ref": "#/$defs/rep_state"
+        },
+        "builder": {
+          "$ref": "#/$defs/builder_state"
+        },
+        "cleaner": {
+          "$ref": "#/$defs/cleaner_state"
+        },
+        "security": {
+          "$ref": "#/$defs/security_state"
+        },
+        "shark": {
+          "$ref": "#/$defs/shark_state"
+        },
+        "vehicle": {
+          "$ref": "#/$defs/vehicle_state"
+        },
+        "table": {
+          "$ref": "#/$defs/table_state"
+        },
+        "guest": {
+          "$ref": "#/$defs/guest_state"
+        },
+        "building": {
+          "$ref": "#/$defs/building_state"
+        },
+        "performer": {
+          "$ref": "#/$defs/performer_state"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "type"
+      ],
+      "additionalProperties": false
+    },
+    "object_ref": {
+      "description": "An object id of `objects`, or -1 for none.",
+      "type": "integer",
+      "minimum": -1,
+      "maximum": 2147483647
+    },
+    "boat": {
+      "type": "object",
+      "description": "One ferry arrival: guest_info 0 random count, 1 fixed, 2 per guest type entry, 3 performance; guests_by_type names scenario guest types (unused tail left out).",
+      "properties": {
+        "guest_info": {
+          "$ref": "#/$defs/i32"
+        },
+        "guests_by_type": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "keyword": {
+                "type": "string"
+              },
+              "count": {
+                "$ref": "#/$defs/i32"
+              },
+              "random": {
+                "$ref": "#/$defs/i32"
+              }
+            },
+            "additionalProperties": false
+          },
+          "maxItems": 20
+        },
+        "guests": {
+          "$ref": "#/$defs/i32"
+        },
+        "time": {
+          "$ref": "#/$defs/f32"
+        },
+        "day": {
+          "$ref": "#/$defs/i32"
+        },
+        "time_flags": {
+          "$ref": "#/$defs/i32"
+        }
+      },
+      "required": [
+        "guest_info",
+        "guests_by_type",
+        "guests",
+        "time",
+        "day",
+        "time_flags"
+      ],
+      "additionalProperties": false
+    },
+    "sprite_state": {
+      "type": "object",
+      "description": "Sprite animation state; `dir` is the facing (left out for buildings, whose rotation is the object's `dir`).",
+      "properties": {
+        "start_time": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "anim_type": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "fps": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "anim": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "frame": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "dir": {
+          "$ref": "#/$defs/u32"
+        },
+        "palette": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "lit": {
+          "type": "boolean",
+          "default": false
+        },
+        "keyline": {
+          "type": "boolean",
+          "default": false
+        },
+        "triggered_sound": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "base_state": {
+      "type": "object",
+      "description": "Entity state; `sprite` is the sprite name under the content key rule.",
+      "properties": {
+        "waiting_for_death": {
+          "type": "boolean",
+          "default": false
+        },
+        "requires_attention": {
+          "type": "boolean",
+          "default": false
+        },
+        "owner": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "state": {
+          "$ref": "#/$defs/object_state",
+          "default": 0
+        },
+        "visible": {
+          "type": "boolean",
+          "default": false
+        },
+        "draw_offset_x": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "draw_offset_y": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "sprite": {
+          "type": "string",
+          "default": ""
+        },
+        "debug_break": {
+          "type": "boolean",
+          "default": false
+        },
+        "select_level": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "static_state": {
+      "type": "object",
+      "description": "Prop state (scenery, buildings, tables).",
+      "properties": {
+        "grid_w": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "grid_h": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "cleaner_claimed": {
+          "type": "boolean",
+          "default": false
+        },
+        "mechanic_claimed": {
+          "type": "boolean",
+          "default": false
+        },
+        "called_cleaning": {
+          "type": "boolean",
+          "default": false
+        },
+        "called_repairing": {
+          "type": "boolean",
+          "default": false
+        },
+        "urgent_cleaning": {
+          "type": "boolean",
+          "default": false
+        },
+        "urgent_repairing": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "moving_state": {
+      "type": "object",
+      "description": "Mover state (guests, staff, vehicles, sharks, performers); `path` while walking a path. `building` is an object id or -1 (none).",
+      "properties": {
+        "last_time_remaining": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "moving": {
+          "type": "boolean",
+          "default": false
+        },
+        "mass": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "position": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            },
+            "y": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            }
+          },
+          "additionalProperties": false,
+          "default": {}
+        },
+        "velocity": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            },
+            "y": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            }
+          },
+          "additionalProperties": false,
+          "default": {}
+        },
+        "steer_force": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            },
+            "y": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            }
+          },
+          "additionalProperties": false,
+          "default": {}
+        },
+        "max_force": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "max_velocity": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "target": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            },
+            "y": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            }
+          },
+          "additionalProperties": false,
+          "default": {}
+        },
+        "destination": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            },
+            "y": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            },
+            "z": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            }
+          },
+          "additionalProperties": false,
+          "default": {}
+        },
+        "destination_object": {
+          "$ref": "#/$defs/object_ref",
+          "default": -1
+        },
+        "leaving_building": {
+          "$ref": "#/$defs/object_ref",
+          "default": -1
+        },
+        "behaviour": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "group": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "following": {
+          "type": "boolean",
+          "default": false
+        },
+        "follow_object": {
+          "$ref": "#/$defs/object_ref",
+          "default": -1
+        },
+        "follow_distance": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "reached_follow_distance": {
+          "type": "boolean",
+          "default": false
+        },
+        "path": {
+          "type": "object",
+          "properties": {
+            "time_stamp": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            },
+            "ref_count": {
+              "$ref": "#/$defs/u32",
+              "default": 0
+            },
+            "steps": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "x": {
+                    "$ref": "#/$defs/u32",
+                    "default": 0
+                  },
+                  "y": {
+                    "$ref": "#/$defs/u32",
+                    "default": 0
+                  }
+                },
+                "additionalProperties": false
+              },
+              "default": []
+            },
+            "start": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "$ref": "#/$defs/u32",
+                  "default": 0
+                },
+                "y": {
+                  "$ref": "#/$defs/u32",
+                  "default": 0
+                }
+              },
+              "additionalProperties": false,
+              "default": {}
+            },
+            "stop": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "$ref": "#/$defs/u32",
+                  "default": 0
+                },
+                "y": {
+                  "$ref": "#/$defs/u32",
+                  "default": 0
+                }
+              },
+              "additionalProperties": false,
+              "default": {}
+            },
+            "type": {
+              "$ref": "#/$defs/route_type",
+              "default": "pavement"
+            },
+            "valid": {
+              "type": "boolean",
+              "default": false
+            },
+            "reverse": {
+              "type": "boolean",
+              "default": false
+            },
+            "current_step": {
+              "$ref": "#/$defs/u32",
+              "default": 0
+            }
+          },
+          "additionalProperties": false
+        },
+        "walk_in_building": {
+          "type": "boolean",
+          "default": false
+        },
+        "building": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "building_traversal": {
+          "description": "Direction flag: zero means forwards, nonzero means backwards. The byte value is preserved.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255,
+          "default": 0
+        },
+        "walk_points": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "current_walk_point": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "entered_sea": {
+          "type": "boolean",
+          "default": false
+        },
+        "inside_building": {
+          "type": "boolean",
+          "default": false
+        },
+        "move_to_entrance": {
+          "type": "boolean",
+          "default": false
+        },
+        "control_direction": {
+          "type": "boolean",
+          "default": false
+        },
+        "vehicle_path": {
+          "type": "boolean",
+          "default": false
+        },
+        "position_offset": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "last_dir": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "anim_half_time": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "waiting_for_arrival": {
+          "type": "boolean",
+          "default": false
+        },
+        "message_received": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "turn_type": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "target_tolerance": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        }
+      },
+      "additionalProperties": false
+    },
+    "scenery_state": {
+      "type": "object",
+      "description": "SceneryObject state; `owner_building` is an object id or -1 (none).",
+      "properties": {
+        "attached_guests": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/object_ref"
+          },
+          "maxItems": 2,
+          "default": []
+        },
+        "items": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "attached_count": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "max_attached": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "free_seat": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "vandalised": {
+          "type": "boolean",
+          "default": false
+        },
+        "repair_state": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "flash_light": {
+          "type": "boolean",
+          "default": false
+        },
+        "pre_vandalism_anim": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "reburn_rect": {
+          "type": "object",
+          "properties": {
+            "left": {
+              "$ref": "#/$defs/u32",
+              "default": 0
+            },
+            "top": {
+              "$ref": "#/$defs/u32",
+              "default": 0
+            },
+            "right": {
+              "$ref": "#/$defs/u32",
+              "default": 0
+            },
+            "bottom": {
+              "$ref": "#/$defs/u32",
+              "default": 0
+            }
+          },
+          "additionalProperties": false,
+          "default": {}
+        },
+        "screen_rect": {
+          "type": "object",
+          "properties": {
+            "left": {
+              "$ref": "#/$defs/u32",
+              "default": 0
+            },
+            "top": {
+              "$ref": "#/$defs/u32",
+              "default": 0
+            },
+            "right": {
+              "$ref": "#/$defs/u32",
+              "default": 0
+            },
+            "bottom": {
+              "$ref": "#/$defs/u32",
+              "default": 0
+            }
+          },
+          "additionalProperties": false,
+          "default": {}
+        },
+        "lights_on": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "lights_off": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "sound_playing": {
+          "type": "boolean",
+          "default": false
+        },
+        "owner_building": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "can_select": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "staff_state": {
+      "type": "object",
+      "description": "StaffObject state shared by every profession; `home` and `goto_object` are object ids.",
+      "properties": {
+        "home": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "wage": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "walk_point": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "happiness": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "salary_expectation": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "start_time": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "end_time": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "hours_in_row": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "overwork_reduction": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "idle_time_per_hour": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "hired_on": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "directed": {
+          "type": "boolean",
+          "default": false
+        },
+        "goto_object": {
+          "$ref": "#/$defs/i32",
+          "default": -1
+        },
+        "last_action": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "direct_pos": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            },
+            "y": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            }
+          },
+          "additionalProperties": false,
+          "default": {}
+        },
+        "found_directing": {
+          "type": "boolean",
+          "default": false
+        },
+        "feedback_messages": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "cant_do_job": {
+          "type": "boolean",
+          "default": false
+        },
+        "wander_pos": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            },
+            "y": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            },
+            "z": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            }
+          },
+          "additionalProperties": false,
+          "default": {}
+        },
+        "debug_info": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "thoughts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 3,
+          "default": []
+        },
+        "sacked": {
+          "type": "boolean",
+          "default": false
+        },
+        "ended_shift": {
+          "type": "boolean",
+          "default": false
+        },
+        "gone_past_shift": {
+          "type": "boolean",
+          "default": false
+        },
+        "target_happiness": {
+          "description": "Happiness transition (target, rate per update, active). When the three fields are absent, constructor values are preserved.",
+          "$ref": "#/$defs/f32"
+        },
+        "happiness_rate": {
+          "$ref": "#/$defs/f32"
+        },
+        "happiness_changing": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "service_state": {
+      "type": "object",
+      "description": "Service staff action state, including restaurant waiters; shared staff fields are stored separately.",
+      "properties": {
+        "action_state": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "lifeguard_state": {
+      "type": "object",
+      "description": "Lifeguard rescue, movement, feedback and activity state.",
+      "properties": {
+        "saving": {
+          "type": "boolean",
+          "default": false
+        },
+        "rescue_then_death": {
+          "type": "boolean",
+          "default": false
+        },
+        "saving_guest": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "beach_area": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "exit_point": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            },
+            "y": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            },
+            "z": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            }
+          },
+          "additionalProperties": false,
+          "default": {}
+        },
+        "return_animation": {
+          "type": "string",
+          "default": ""
+        },
+        "current_animation": {
+          "type": "string",
+          "default": ""
+        },
+        "leave_state": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "stop_action": {
+          "type": "boolean",
+          "default": false
+        },
+        "action_state": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "attached_offset_x": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "attached_offset_y": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "feedback_status": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "required_feedback": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "current_feedback": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "saves": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "drowned": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "guest_drowned": {
+          "type": "boolean",
+          "default": false
+        },
+        "times_called_out": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "times_path_blocked": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "influence_area": {
+          "$ref": "#/$defs/i32",
+          "default": -1
+        },
+        "in_my_area": {
+          "type": "boolean",
+          "default": false
+        },
+        "in_sea": {
+          "type": "boolean",
+          "default": false
+        },
+        "entering_sea": {
+          "type": "boolean",
+          "default": false
+        },
+        "at_hotel": {
+          "type": "boolean",
+          "default": false
+        },
+        "draw_guest": {
+          "type": "boolean",
+          "default": false
+        },
+        "attached": {
+          "$ref": "#/$defs/attached_sprite"
+        }
+      },
+      "additionalProperties": false
+    },
+    "mechanic_state": {
+      "type": "object",
+      "description": "Mechanic repair, inspection, watering and activity state.",
+      "properties": {
+        "class_count": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "vandalism": {
+          "type": "boolean",
+          "default": false
+        },
+        "breakdown": {
+          "type": "boolean",
+          "default": false
+        },
+        "watering": {
+          "type": "boolean",
+          "default": false
+        },
+        "found_repair": {
+          "type": "boolean",
+          "default": false
+        },
+        "found_better_job": {
+          "type": "boolean",
+          "default": false
+        },
+        "last_task_time": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "feedback_status": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "required_feedback": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "current_feedback": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "repair_type": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "watering_pos": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            },
+            "y": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            },
+            "z": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            }
+          },
+          "additionalProperties": false,
+          "default": {}
+        },
+        "inspections_today": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "repairs_today": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "vandals_today": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "watered_today": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "action_state": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "rep_state": {
+      "type": "object",
+      "description": "Guest representative conversation, feedback and activity state.",
+      "properties": {
+        "class_count": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "talking_guest": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "counters": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/i32"
+            }
+          },
+          "default": []
+        },
+        "return_animation": {
+          "type": "string",
+          "default": ""
+        },
+        "current_animation": {
+          "type": "string",
+          "default": ""
+        },
+        "leave_state": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "stop_action": {
+          "type": "boolean",
+          "default": false
+        },
+        "action_state": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "attached_offset_x": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "attached_offset_y": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "feedback_status": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "required_feedback": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "current_feedback": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "guests_talked_to_today": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "min_talk_time": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "max_talk_time": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "time_with_guests": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "sent_to_guest": {
+          "type": "boolean",
+          "default": false
+        },
+        "guest_offset_y": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "guest_offset_x": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "guest_opinion_value": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "attached": {
+          "$ref": "#/$defs/attached_sprite"
+        }
+      },
+      "additionalProperties": false
+    },
+    "builder_state": {
+      "type": "object",
+      "description": "Builder job, work location, feedback and activity state.",
+      "properties": {
+        "class_count": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "nearest_valid_tile_x": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "nearest_valid_tile_y": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "whistling": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "anim_repeats": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "last_task_time": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "number": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "home_point": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            },
+            "y": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            },
+            "z": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            }
+          },
+          "additionalProperties": false,
+          "default": {}
+        },
+        "action_state": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "night": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "in_hut": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "current_feedback": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "feedback_status": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "required_feedback": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "location": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "job_type": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "last_start_time": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "check_for_jobs": {
+          "type": "boolean",
+          "default": false
+        },
+        "wait_till_morning": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "cleaner_state": {
+      "type": "object",
+      "description": "Cleaner job, cleaning totals, feedback and activity state.",
+      "properties": {
+        "class_count": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "litter_found": {
+          "type": "boolean",
+          "default": false
+        },
+        "toilet_found": {
+          "type": "boolean",
+          "default": false
+        },
+        "bin_found": {
+          "type": "boolean",
+          "default": false
+        },
+        "clean_toilets": {
+          "type": "boolean",
+          "default": false
+        },
+        "clean_litter": {
+          "type": "boolean",
+          "default": false
+        },
+        "clean_bins": {
+          "type": "boolean",
+          "default": false
+        },
+        "last_task_time": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "litter_distance": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "toilets_today": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "bins_today": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "litter_today": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "busy_toilet": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "feedback_status": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "required_feedback": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "current_feedback": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "bin_pos": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            },
+            "y": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            },
+            "z": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            }
+          },
+          "additionalProperties": false,
+          "default": {}
+        },
+        "action_state": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "urgent_type": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "urgent_clean": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "security_state": {
+      "type": "object",
+      "description": "Security patrol, offences, fines, feedback and activity state.",
+      "properties": {
+        "class_count": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "offender": {
+          "$ref": "#/$defs/i32",
+          "default": -1
+        },
+        "fight_with": {
+          "$ref": "#/$defs/i32",
+          "default": -1
+        },
+        "tolerance": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "tolerance_level": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "severity": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "action": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "double_fine": {
+          "type": "boolean",
+          "default": false
+        },
+        "misdemeanour_found": {
+          "type": "boolean",
+          "default": false
+        },
+        "should_reprimand": {
+          "type": "boolean",
+          "default": false
+        },
+        "should_detain": {
+          "type": "boolean",
+          "default": false
+        },
+        "not_enough_bins": {
+          "type": "boolean",
+          "default": false
+        },
+        "misdemeanour_pos": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            },
+            "y": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            },
+            "z": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            }
+          },
+          "additionalProperties": false,
+          "default": {}
+        },
+        "minor_fines_today": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "serious_fines_today": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "vandals": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "fights": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "jailed": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "feedback_status": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "required_feedback": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "current_feedback": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "action_state": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "minor_fine_amount": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "serious_fine_amount": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "fine_total_today": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "fine_offset": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            },
+            "y": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            },
+            "z": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            }
+          },
+          "additionalProperties": false,
+          "default": {}
+        },
+        "fine_level": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "cautioned": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "shark_state": {
+      "type": "object",
+      "description": "Shark state; `victim` and `owner` (set by the script) are object ids.",
+      "properties": {
+        "alert_range": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "sniff_range": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "swim_rect": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/u32"
+          },
+          "minItems": 4,
+          "maxItems": 4,
+          "default": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "action_state": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "victim": {
+          "$ref": "#/$defs/i32",
+          "default": -1
+        },
+        "guests_eaten": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "owner": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "attached_sprite": {
+      "type": "object",
+      "description": "A sprite attached by the script: the sprite name (content key) and its state.",
+      "properties": {
+        "sprite": {
+          "type": "string",
+          "default": ""
+        },
+        "start_time": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "anim_type": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "fps": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "anim": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "frame": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "dir": {
+          "$ref": "#/$defs/u32"
+        },
+        "palette": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "lit": {
+          "type": "boolean",
+          "default": false
+        },
+        "keyline": {
+          "type": "boolean",
+          "default": false
+        },
+        "triggered_sound": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "vehicle_state": {
+      "type": "object",
+      "description": "Vehicle state; `guests` and `owner` are object ids, `vehicle_type` the vehicle enum.",
+      "properties": {
+        "guests": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/i32"
+          },
+          "maxItems": 300,
+          "default": []
+        },
+        "guests_to_wait_for": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "current_capacity": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "ride_time": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "owner": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "destroy_point": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "unload_point": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "unload_dir": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "turn_area": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "$ref": "#/$defs/u32",
+              "default": 0
+            },
+            "y": {
+              "$ref": "#/$defs/u32",
+              "default": 0
+            }
+          },
+          "additionalProperties": false,
+          "default": {}
+        },
+        "way_points": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "$ref": "#/$defs/f32",
+                "default": 0.0
+              },
+              "y": {
+                "$ref": "#/$defs/f32",
+                "default": 0.0
+              },
+              "z": {
+                "$ref": "#/$defs/f32",
+                "default": 0.0
+              }
+            },
+            "additionalProperties": false
+          },
+          "minItems": 64,
+          "maxItems": 64,
+          "default": [
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          ]
+        },
+        "way_point_count": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "current_way_point": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "roam_point": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            },
+            "y": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            },
+            "z": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            }
+          },
+          "additionalProperties": false,
+          "default": {}
+        },
+        "fish_point": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            },
+            "y": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            },
+            "z": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            }
+          },
+          "additionalProperties": false,
+          "default": {}
+        },
+        "move_to_turn_point": {
+          "type": "boolean",
+          "default": false
+        },
+        "fishing": {
+          "type": "boolean",
+          "default": false
+        },
+        "turn_anim": {
+          "type": "boolean",
+          "default": false
+        },
+        "turn_cw": {
+          "type": "boolean",
+          "default": false
+        },
+        "turns": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "turn_anim_start_time": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "turn_anim_length": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "start_circuit_point": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "stop_circuit_point": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "current_circuit_point": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "vehicle_type": {
+          "$ref": "#/$defs/vehicle_type",
+          "default": "jetski"
+        },
+        "wait_for_guest_to_board": {
+          "type": "boolean",
+          "default": false
+        },
+        "playing_door_anim": {
+          "type": "boolean",
+          "default": false
+        },
+        "ferry_entry_point": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            },
+            "y": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            },
+            "z": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            }
+          },
+          "additionalProperties": false,
+          "default": {}
+        },
+        "ferry_exit_point": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            },
+            "y": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            },
+            "z": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            }
+          },
+          "additionalProperties": false,
+          "default": {}
+        },
+        "ferry_entry_offset": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            },
+            "y": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            }
+          },
+          "additionalProperties": false,
+          "default": {}
+        },
+        "ferry_exit_offset": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            },
+            "y": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            }
+          },
+          "additionalProperties": false,
+          "default": {}
+        },
+        "ferry_entry_dir": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "ferry_exit_dir": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "got_grid": {
+          "type": "boolean",
+          "default": false
+        },
+        "grid": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "$ref": "#/$defs/u32",
+              "default": 0
+            },
+            "y": {
+              "$ref": "#/$defs/u32",
+              "default": 0
+            }
+          },
+          "additionalProperties": false,
+          "default": {}
+        },
+        "sprites": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/sprite_state"
+          },
+          "maxItems": 5
+        }
+      },
+      "additionalProperties": false
+    },
+    "table_state": {
+      "type": "object",
+      "description": "Furniture state: chairs (with sprites when the table has chair sprites), the waiter, plates.",
+      "properties": {
+        "chairs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "seated": {
+                "type": "boolean",
+                "default": false
+              },
+              "occupier": {
+                "$ref": "#/$defs/i32",
+                "default": -1
+              },
+              "dir": {
+                "$ref": "#/$defs/u32",
+                "default": 0
+              },
+              "position": {
+                "$ref": "#/$defs/u32",
+                "default": 0
+              },
+              "waiting_for_waiter": {
+                "type": "boolean",
+                "default": false
+              },
+              "sprite": {
+                "$ref": "#/$defs/sprite_state"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "draw_waiter": {
+          "type": "boolean",
+          "default": false
+        },
+        "waiter_serving": {
+          "$ref": "#/$defs/i32",
+          "default": -1
+        },
+        "waiter_pos": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "waiter": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "waiter_ready": {
+          "type": "boolean",
+          "default": false
+        },
+        "rotation": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "owner": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "serve_table": {
+          "type": "boolean",
+          "default": false
+        },
+        "guests_removed": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "guests_added": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "plates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "draw": {
+                "type": "boolean",
+                "default": false
+              },
+              "sprite": {
+                "$ref": "#/$defs/sprite_state",
+                "default": {}
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "guest_state": {
+      "type": "object",
+      "description": "GuestObject state; ids are numbers, the *_type fields catalog buildings (null none).",
+      "properties": {
+        "tolerance": {
+          "type": "object",
+          "properties": {
+            "beauty_low": {
+              "$ref": "#/$defs/f32"
+            },
+            "beauty_high": {
+              "$ref": "#/$defs/f32"
+            },
+            "crowding_low": {
+              "$ref": "#/$defs/f32"
+            },
+            "crowding_high": {
+              "$ref": "#/$defs/f32"
+            },
+            "attractiveness_low": {
+              "$ref": "#/$defs/f32"
+            },
+            "attractiveness_high": {
+              "$ref": "#/$defs/f32"
+            },
+            "price_low": {
+              "$ref": "#/$defs/f32"
+            },
+            "price_high": {
+              "$ref": "#/$defs/f32"
+            },
+            "variety_low": {
+              "$ref": "#/$defs/f32"
+            },
+            "variety_high": {
+              "$ref": "#/$defs/f32"
+            },
+            "cleanliness_low": {
+              "$ref": "#/$defs/f32"
+            },
+            "cleanliness_high": {
+              "$ref": "#/$defs/f32"
+            },
+            "safety_low": {
+              "$ref": "#/$defs/f32"
+            },
+            "safety_high": {
+              "$ref": "#/$defs/f32"
+            }
+          },
+          "additionalProperties": false,
+          "default": {}
+        },
+        "person": {
+          "type": "object",
+          "properties": {
+            "alcohol": {
+              "$ref": "#/$defs/f32"
+            },
+            "amusement": {
+              "$ref": "#/$defs/f32"
+            },
+            "meals": {
+              "$ref": "#/$defs/f32"
+            },
+            "party_fun": {
+              "$ref": "#/$defs/f32"
+            },
+            "snacks": {
+              "$ref": "#/$defs/f32"
+            },
+            "soft_drinks": {
+              "$ref": "#/$defs/f32"
+            },
+            "souvenirs": {
+              "$ref": "#/$defs/f32"
+            },
+            "sports_fun": {
+              "$ref": "#/$defs/f32"
+            },
+            "sunbathe": {
+              "$ref": "#/$defs/f32"
+            },
+            "swimming": {
+              "$ref": "#/$defs/f32"
+            },
+            "water_fun": {
+              "$ref": "#/$defs/f32"
+            },
+            "stroll": {
+              "$ref": "#/$defs/f32"
+            },
+            "sleep": {
+              "$ref": "#/$defs/f32"
+            }
+          },
+          "additionalProperties": false,
+          "default": {}
+        },
+        "desires": {
+          "$ref": "#/$defs/desire_values",
+          "default": {}
+        },
+        "opinion": {
+          "type": "object",
+          "properties": {
+            "beauty": {
+              "$ref": "#/$defs/f32"
+            },
+            "crowding": {
+              "$ref": "#/$defs/f32"
+            },
+            "attractiveness": {
+              "$ref": "#/$defs/f32"
+            },
+            "price": {
+              "$ref": "#/$defs/f32"
+            },
+            "variety": {
+              "$ref": "#/$defs/f32"
+            },
+            "cleanliness": {
+              "$ref": "#/$defs/f32"
+            },
+            "safety": {
+              "$ref": "#/$defs/f32"
+            }
+          },
+          "additionalProperties": false,
+          "default": {}
+        },
+        "rides": {
+          "type": "object",
+          "properties": {
+            "last": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/i32"
+              },
+              "minItems": 5,
+              "maxItems": 5,
+              "default": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "start": {
+              "$ref": "#/$defs/i32",
+              "default": 0
+            },
+            "end": {
+              "$ref": "#/$defs/i32",
+              "default": 0
+            }
+          },
+          "additionalProperties": false,
+          "default": {}
+        },
+        "inventory": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/i32"
+          },
+          "maxItems": 5,
+          "default": []
+        },
+        "desired_commodity_slot": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "vehicle": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "activity": {
+          "type": "boolean",
+          "default": false
+        },
+        "stop_action": {
+          "type": "boolean",
+          "default": false
+        },
+        "walk_points": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "$ref": "#/$defs/f32",
+                "default": 0.0
+              },
+              "y": {
+                "$ref": "#/$defs/f32",
+                "default": 0.0
+              },
+              "z": {
+                "$ref": "#/$defs/f32",
+                "default": 0.0
+              }
+            },
+            "additionalProperties": false
+          },
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          ]
+        },
+        "walk_point": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "drunk": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "oxygen": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "cash": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "name": {
+          "type": "string",
+          "default": ""
+        },
+        "happiness": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "walk_animation": {
+          "type": "string",
+          "default": ""
+        },
+        "stand_animation": {
+          "type": "string",
+          "default": ""
+        },
+        "fidget": {
+          "type": "boolean",
+          "default": false
+        },
+        "current_animation": {
+          "type": "string",
+          "default": ""
+        },
+        "return_animation": {
+          "type": "string",
+          "default": ""
+        },
+        "leave_state": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "event": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "action_state": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "repeat_action": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "attached_offset_x": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "attached_offset_y": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "fight_person": {
+          "$ref": "#/$defs/i32",
+          "default": -1
+        },
+        "activity_person": {
+          "$ref": "#/$defs/i32",
+          "default": -1
+        },
+        "just_littered": {
+          "type": "boolean",
+          "default": false
+        },
+        "time_littered": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "staying_at": {
+          "$ref": "#/$defs/i32",
+          "default": -1
+        },
+        "wake_time": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "bed_time": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "nights_to_stay": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "day_arrived": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "time_arrived": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "time_to_leave": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "last_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/i32"
+          },
+          "minItems": 2,
+          "maxItems": 2,
+          "default": [
+            0,
+            0
+          ]
+        },
+        "last_activity": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/i32"
+          },
+          "minItems": 2,
+          "maxItems": 2,
+          "default": [
+            0,
+            0
+          ]
+        },
+        "array_pos": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "sunburn": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "lotion": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "applied_lotion": {
+          "type": "boolean",
+          "default": false
+        },
+        "best_spot_opinion": {
+          "type": "boolean",
+          "default": false
+        },
+        "best": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "best_type": {
+          "$ref": "#/$defs/catalog_ref",
+          "default": null
+        },
+        "best_score": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "worst_spot_opinion": {
+          "type": "boolean",
+          "default": false
+        },
+        "worst_type": {
+          "$ref": "#/$defs/catalog_ref",
+          "default": null
+        },
+        "worst_score": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "current": {
+          "$ref": "#/$defs/i32",
+          "default": -1
+        },
+        "current_type": {
+          "$ref": "#/$defs/catalog_ref",
+          "default": null
+        },
+        "current_score": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "price_score": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "queue_score": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "safety_score": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "clean_score": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "missed_purchase": {
+          "type": "boolean",
+          "default": false
+        },
+        "food_ill": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "ill": {
+          "type": "boolean",
+          "default": false
+        },
+        "last_good": {
+          "type": "boolean",
+          "default": false
+        },
+        "last_bad": {
+          "type": "boolean",
+          "default": false
+        },
+        "has_sat_down": {
+          "type": "boolean",
+          "default": false
+        },
+        "leaving_early": {
+          "type": "boolean",
+          "default": false
+        },
+        "thoughts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/i32"
+          },
+          "maxItems": 3,
+          "default": []
+        },
+        "offence_state": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "time_of_offence": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "last_update": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "attached": {
+          "$ref": "#/$defs/attached_sprite"
+        },
+        "topless": {
+          "description": "Whether the guest is topless. When this, times_blocked, mood_icon_time or worst is absent, its constructor value is preserved.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "times_blocked": {
+          "$ref": "#/$defs/i32"
+        },
+        "mood_icon_time": {
+          "$ref": "#/$defs/f32"
+        },
+        "worst": {
+          "description": "The worst spot of the day (object id), the counterpart of `best`.",
+          "$ref": "#/$defs/i32"
+        }
+      },
+      "additionalProperties": false
+    },
+    "catalog_ref": {
+      "description": "A catalog content key, or null for none.",
+      "anyOf": [
+        {
+          "$ref": "obl.common#/$defs/key"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "building_state": {
+      "type": "object",
+      "description": "BuildingObject state; ids are numbers, `beer` and event slots catalog keys (null none).",
+      "properties": {
+        "staff": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/i32"
+              },
+              "busy": {
+                "$ref": "#/$defs/i32"
+              }
+            },
+            "additionalProperties": false
+          },
+          "maxItems": 10,
+          "default": []
+        },
+        "male_staff": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "female_staff": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "non_serve_staff": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/i32"
+          },
+          "maxItems": 10,
+          "default": []
+        },
+        "non_serve_staff_count": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "burn": {
+          "type": "boolean",
+          "default": false
+        },
+        "entrance": {
+          "type": "boolean",
+          "default": false
+        },
+        "queue_point": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            },
+            "y": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            },
+            "z": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            }
+          },
+          "additionalProperties": false,
+          "default": {}
+        },
+        "serve_point": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            },
+            "y": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            },
+            "z": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            }
+          },
+          "additionalProperties": false,
+          "default": {}
+        },
+        "entrance_point": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            },
+            "y": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            },
+            "z": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            }
+          },
+          "additionalProperties": false,
+          "default": {}
+        },
+        "queue_direction": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            },
+            "y": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            },
+            "z": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            }
+          },
+          "additionalProperties": false,
+          "default": {}
+        },
+        "top_world_pos": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            },
+            "y": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            },
+            "z": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            }
+          },
+          "additionalProperties": false,
+          "default": {}
+        },
+        "placed": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "lilos": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "boards": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "snorkels": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "current_capacity": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "vehicle_count": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "vehicles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/i32"
+              },
+              "in_use": {
+                "$ref": "#/$defs/i32"
+              }
+            },
+            "additionalProperties": false
+          },
+          "maxItems": 6,
+          "default": []
+        },
+        "last_message_time": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "lights_on": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "lights_off": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "has_ball": {
+          "type": "boolean",
+          "default": false
+        },
+        "ball_position": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            },
+            "y": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            },
+            "z": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            }
+          },
+          "additionalProperties": false,
+          "default": {}
+        },
+        "open_status": {
+          "$ref": "#/$defs/building_open",
+          "default": "open"
+        },
+        "guests": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "satisfaction": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "commodities": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "intensity_male": {
+                "$ref": "#/$defs/f32"
+              },
+              "intensity_female": {
+                "$ref": "#/$defs/f32"
+              },
+              "price": {
+                "$ref": "#/$defs/f32"
+              },
+              "price_factor": {
+                "$ref": "#/$defs/f32"
+              },
+              "cost": {
+                "$ref": "#/$defs/f32"
+              }
+            },
+            "additionalProperties": false
+          },
+          "maxItems": 5,
+          "default": []
+        },
+        "beer_strength": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "beer": {
+          "$ref": "#/$defs/catalog_ref",
+          "default": null
+        },
+        "income_today": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "cost_today": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "profit_today": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "average_profit": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "age": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "profit_history": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/f32"
+          },
+          "maxItems": 64,
+          "default": []
+        },
+        "last_fault_day_time": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "last_fault_day": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "faults": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "user_repair_interval": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "repair_interval": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "repair_state": {
+          "$ref": "#/$defs/building_wear",
+          "default": "sound"
+        },
+        "was_broken": {
+          "type": "boolean",
+          "default": false
+        },
+        "last_repair_call": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "last_repair_day_time": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "last_repair_day": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "visits_today": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "visits_since_cleaned": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "last_fail_time": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "power_consumption": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "cleaned_today": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "closed_for_power": {
+          "type": "boolean",
+          "default": false
+        },
+        "user_closed": {
+          "type": "boolean",
+          "default": false
+        },
+        "called_for_inspection": {
+          "type": "boolean",
+          "default": false
+        },
+        "called_for_repair": {
+          "type": "boolean",
+          "default": false
+        },
+        "built_by_user": {
+          "type": "boolean",
+          "default": false
+        },
+        "table_count": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "tables": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/i32"
+          },
+          "maxItems": 10,
+          "default": []
+        },
+        "burn_limbo": {
+          "type": "boolean",
+          "default": false
+        },
+        "screen_extents": {
+          "type": "object",
+          "properties": {
+            "left": {
+              "$ref": "#/$defs/u32",
+              "default": 0
+            },
+            "top": {
+              "$ref": "#/$defs/u32",
+              "default": 0
+            },
+            "right": {
+              "$ref": "#/$defs/u32",
+              "default": 0
+            },
+            "bottom": {
+              "$ref": "#/$defs/u32",
+              "default": 0
+            }
+          },
+          "additionalProperties": false,
+          "default": {}
+        },
+        "screen_rect": {
+          "type": "object",
+          "properties": {
+            "left": {
+              "$ref": "#/$defs/u32",
+              "default": 0
+            },
+            "top": {
+              "$ref": "#/$defs/u32",
+              "default": 0
+            },
+            "right": {
+              "$ref": "#/$defs/u32",
+              "default": 0
+            },
+            "bottom": {
+              "$ref": "#/$defs/u32",
+              "default": 0
+            }
+          },
+          "additionalProperties": false,
+          "default": {}
+        },
+        "time_in_limbo": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "shadow_offset": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "pick_offset": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "light_map_offset": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "sound_playing": {
+          "type": "boolean",
+          "default": false
+        },
+        "sound_id": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "under_construction": {
+          "type": "boolean",
+          "default": false
+        },
+        "under_demolition": {
+          "type": "boolean",
+          "default": false
+        },
+        "events": {
+          "type": "object",
+          "properties": {
+            "owner": {
+              "$ref": "#/$defs/i32",
+              "default": -1
+            },
+            "active": {
+              "type": "boolean",
+              "default": false
+            },
+            "slots": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "event": {
+                    "$ref": "#/$defs/catalog_ref",
+                    "default": null
+                  },
+                  "actor_count": {
+                    "$ref": "#/$defs/u32",
+                    "default": 0
+                  },
+                  "actors": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/i32"
+                    },
+                    "default": []
+                  },
+                  "guest_count": {
+                    "$ref": "#/$defs/u32",
+                    "default": 0
+                  },
+                  "guests": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/i32"
+                    },
+                    "default": []
+                  },
+                  "start": {
+                    "$ref": "#/$defs/f32",
+                    "default": 0.0
+                  },
+                  "duration": {
+                    "$ref": "#/$defs/f32",
+                    "default": 0.0
+                  },
+                  "price": {
+                    "$ref": "#/$defs/f32",
+                    "default": 0.0
+                  }
+                },
+                "additionalProperties": false
+              },
+              "minItems": 3,
+              "maxItems": 3,
+              "default": [
+                {
+                  "event": null,
+                  "actor_count": 0,
+                  "actors": [],
+                  "guest_count": 0,
+                  "guests": [],
+                  "start": 0.0,
+                  "duration": 0.0,
+                  "price": 0.0
+                },
+                {
+                  "event": null,
+                  "actor_count": 0,
+                  "actors": [],
+                  "guest_count": 0,
+                  "guests": [],
+                  "start": 0.0,
+                  "duration": 0.0,
+                  "price": 0.0
+                },
+                {
+                  "event": null,
+                  "actor_count": 0,
+                  "actors": [],
+                  "guest_count": 0,
+                  "guests": [],
+                  "start": 0.0,
+                  "duration": 0.0,
+                  "price": 0.0
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "thoughts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "object": {
+                "$ref": "#/$defs/i32",
+                "default": 0
+              },
+              "text": {
+                "type": "string",
+                "default": ""
+              }
+            },
+            "additionalProperties": false
+          },
+          "default": []
+        },
+        "queue": {
+          "type": "object",
+          "properties": {
+            "owner": {
+              "$ref": "#/$defs/i32",
+              "default": -1
+            },
+            "max_length": {
+              "$ref": "#/$defs/i32",
+              "default": 0
+            },
+            "serve_point": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "$ref": "#/$defs/f32",
+                  "default": 0.0
+                },
+                "y": {
+                  "$ref": "#/$defs/f32",
+                  "default": 0.0
+                }
+              },
+              "additionalProperties": false,
+              "default": {}
+            },
+            "direction": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "$ref": "#/$defs/f32",
+                  "default": 0.0
+                },
+                "y": {
+                  "$ref": "#/$defs/f32",
+                  "default": 0.0
+                }
+              },
+              "additionalProperties": false,
+              "default": {}
+            },
+            "guests": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/i32"
+              },
+              "default": []
+            },
+            "commodities": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/i32"
+              },
+              "default": []
+            },
+            "tail": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "$ref": "#/$defs/f32",
+                  "default": 0.0
+                },
+                "y": {
+                  "$ref": "#/$defs/f32",
+                  "default": 0.0
+                }
+              },
+              "additionalProperties": false,
+              "description": "Position where the next guest stands. When absent, loading preserves the reconstructed tail."
+            },
+            "points": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "x": {
+                    "$ref": "#/$defs/f32",
+                    "default": 0.0
+                  },
+                  "y": {
+                    "$ref": "#/$defs/f32",
+                    "default": 0.0
+                  }
+                },
+                "additionalProperties": false
+              },
+              "description": "The limit + 1 standing points of a queue with limit 1..10, serve side first. When absent, loading reconstructs a straight line from the serve point."
+            }
+          },
+          "additionalProperties": false
+        },
+        "lounger_count": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "loungers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/i32"
+          },
+          "maxItems": 20,
+          "default": []
+        },
+        "influence_area": {
+          "$ref": "#/$defs/i32",
+          "default": -1
+        },
+        "anim_time": {
+          "$ref": "#/$defs/f32",
+          "default": 0.0
+        },
+        "sprites": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/sprite_state"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "performer_state": {
+      "type": "object",
+      "description": "Performer state; `owner` (the show building) and `contestant` are object ids.",
+      "properties": {
+        "action_state": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "performer_type": {
+          "$ref": "#/$defs/u32",
+          "default": 0
+        },
+        "owner": {
+          "$ref": "#/$defs/i32",
+          "default": 0
+        },
+        "finished": {
+          "type": "boolean",
+          "default": false
+        },
+        "contestant": {
+          "$ref": "#/$defs/i32"
+        },
+        "action_point": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            },
+            "y": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            },
+            "z": {
+              "$ref": "#/$defs/f32",
+              "default": 0.0
+            }
+          },
+          "additionalProperties": false
+        },
+        "attached": {
+          "$ref": "#/$defs/attached_sprite"
+        }
+      },
+      "additionalProperties": false
+    },
+    "weather_state": {
+      "anyOf": [
+        {
+          "enum": [
+            "heat_wave",
+            "normal",
+            "overcast",
+            "light_rain",
+            "heavy_rain",
+            "thunderstorm"
+          ]
+        },
+        {
+          "$ref": "#/$defs/i32"
+        }
+      ]
+    },
+    "building_wear": {
+      "anyOf": [
+        {
+          "enum": [
+            "sound",
+            "worn",
+            "very_worn",
+            "broken"
+          ]
+        },
+        {
+          "$ref": "#/$defs/i32"
+        }
+      ]
+    },
+    "building_open": {
+      "anyOf": [
+        {
+          "enum": [
+            "open",
+            "closed"
+          ]
+        },
+        {
+          "$ref": "#/$defs/i32"
+        }
+      ]
+    },
+    "repair_job_type": {
+      "anyOf": [
+        {
+          "enum": [
+            "inspection",
+            "scenery",
+            "breakdown",
+            "watering"
+          ]
+        },
+        {
+          "$ref": "#/$defs/i32"
+        }
+      ]
+    },
+    "builder_status": {
+      "anyOf": [
+        {
+          "enum": [
+            "available",
+            "unavailable"
+          ]
+        },
+        {
+          "$ref": "#/$defs/i32"
+        }
+      ]
+    },
+    "route_type": {
+      "anyOf": [
+        {
+          "enum": [
+            "pavement",
+            "land",
+            "shallow_or_land",
+            "sea",
+            "land_or_blocked"
+          ]
+        },
+        {
+          "$ref": "#/$defs/i32"
+        }
+      ]
+    },
+    "vehicle_type": {
+      "anyOf": [
+        {
+          "enum": [
+            "jetski",
+            "speedboat",
+            "ferry",
+            "banana",
+            "pedaloe",
+            "coach",
+            "fishing_boat"
+          ]
+        },
+        {
+          "$ref": "#/$defs/i32"
+        }
+      ]
+    },
+    "object_state": {
+      "description": "A state name of the pack's scripts/object_vocabulary.json, or the number of a state the pack does not name.",
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^STATE_[A-Z0-9_]+$"
+        },
+        {
+          "$ref": "#/$defs/i32"
+        }
+      ]
+    },
+    "desire_values": {
+      "type": "object",
+      "properties": {
+        "accommodation": {
+          "$ref": "#/$defs/f32"
+        },
+        "alcohol": {
+          "$ref": "#/$defs/f32"
+        },
+        "amusement": {
+          "$ref": "#/$defs/f32"
+        },
+        "first_aid": {
+          "$ref": "#/$defs/f32"
+        },
+        "headache": {
+          "$ref": "#/$defs/f32"
+        },
+        "meals": {
+          "$ref": "#/$defs/f32"
+        },
+        "party_fun": {
+          "$ref": "#/$defs/f32"
+        },
+        "shower": {
+          "$ref": "#/$defs/f32"
+        },
+        "snacks": {
+          "$ref": "#/$defs/f32"
+        },
+        "soft_drinks": {
+          "$ref": "#/$defs/f32"
+        },
+        "souvenirs": {
+          "$ref": "#/$defs/f32"
+        },
+        "sports_fun": {
+          "$ref": "#/$defs/f32"
+        },
+        "sunbathe": {
+          "$ref": "#/$defs/f32"
+        },
+        "swim_fun": {
+          "$ref": "#/$defs/f32"
+        },
+        "toilet": {
+          "$ref": "#/$defs/f32"
+        },
+        "water_sports_fun": {
+          "$ref": "#/$defs/f32"
+        },
+        "stroll": {
+          "$ref": "#/$defs/f32"
+        },
+        "leave": {
+          "$ref": "#/$defs/f32"
+        },
+        "vandalise": {
+          "$ref": "#/$defs/f32"
+        },
+        "fight": {
+          "$ref": "#/$defs/f32"
+        },
+        "flirt": {
+          "$ref": "#/$defs/f32"
+        },
+        "umbrellas": {
+          "$ref": "#/$defs/f32"
+        },
+        "suntan": {
+          "$ref": "#/$defs/f32"
+        },
+        "intimacy": {
+          "$ref": "#/$defs/f32"
+        },
+        "sleep": {
+          "$ref": "#/$defs/f32"
+        },
+        "scared": {
+          "$ref": "#/$defs/f32"
+        }
+      },
+      "additionalProperties": false,
+      "description": "One float per guest desire; a missing desire is 0."
+    }
+  }
+}

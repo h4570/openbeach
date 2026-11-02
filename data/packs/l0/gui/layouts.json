@@ -1,0 +1,11 @@
+{
+  "format": "obl.gui_layouts",
+  "version": 1,
+  "layouts": {
+    "in_game": { "*": "in_game.gui" },
+    "intro": { "*": "intro.gui" },
+    "main_menu": { "*": "main_menu.gui" },
+    "reset_menu": { "*": "main_menu.gui" },
+    "game_won": { "*": "game_won.gui" }
+  }
+}

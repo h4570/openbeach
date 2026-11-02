@@ -1,0 +1,9 @@
+# ctest headless_refuse: the headless host refuses directives that need input, a presented frame, the GUI or audio, and then runs
+# nothing (docs/architecture/headless/scripts.md, "Test scripts"). Five refused lines (the last one a renderer-only probe); `log` and `quit` are allowed but never run.
+log not reached
+click 400 300
+shot refused
+gui-open DLG_OPTIONS
+music-report
+expect map-hash-lo 1
+quit

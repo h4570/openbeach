@@ -1,0 +1,30 @@
+{
+  "format": "obl.sprite",
+  "version": 1,
+  "name": "l0_play_bar",
+  "kind": "ui",
+  "pixels": "indexed",
+  "palettes": "l0_play_bar.palettes.png",
+  "palette_colors": 256,
+  "palette_count": 1,
+  "animations": [
+    {
+      "name": "l0_play_bar",
+      "directions": 1,
+      "frames": 1,
+      "size": [
+        800,
+        88
+      ],
+      "hotspot": [
+        0,
+        0
+      ],
+      "columns": 1,
+      "unique_frames": 1,
+      "sheets": [
+        "l0_play_bar/sheet.png"
+      ]
+    }
+  ]
+}

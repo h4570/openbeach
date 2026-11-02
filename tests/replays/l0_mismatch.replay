@@ -1,0 +1,14 @@
+OBL-replay 1
+start scenario 1
+seed 1
+fixed-dt 0.02
+hash-schema 3
+# Hand-edited from the first 100 ticks of l0_commands.replay (docs/testing/replays.md), recorded on the own L0 pack. @0 and @100 are the real checkpoints. @50 has a
+# wrong total and the real section digests of tick 50 except two: the staff hash (last digit) and the buildings field count, so the
+# report must name exactly buildings and staff. @70 has a wrong total and no digests (the report says sections=unknown and prints the actual ones).
+@0 hash 8b961d96a90f8884 world=347c70b4/55 economy=789a9828/18 map=d35709af/32772 objects=3f3f5aaa/7 buildings=36b3a59b/195 staff=292a594a/84 ferry=09f31930/40 repair=216add6a/7 feedback=ffb7c4d6/15 messages=04f668da/2 cleaning=c75fa4ba/5 construction=a771e050/14 weather=585424b3/28 rng=511f88fc/2
+@20 set-game-speed level=2
+@50 hash 0123456789abcdef world=447b4591/55 economy=789a9828/18 map=d35709af/32772 objects=3f3f5aaa/7 buildings=36b3a59b/196 staff=e5bcc68b/84 ferry=09f31930/40 repair=216add6a/7 feedback=ffb7c4d6/15 messages=04f668da/2 cleaning=c75fa4ba/5 construction=a771e050/14 weather=585424b3/28 rng=052ce8c9/2
+@70 hash 0123456789abcdef
+@100 hash e67cf0addb2837b8 world=75133a79/55 economy=789a9828/18 map=d35709af/32772 objects=3f3f5aaa/7 buildings=36b3a59b/195 staff=44f84c6a/84 ferry=09f31930/40 repair=216add6a/7 feedback=2d3f2282/15 messages=04f668da/2 cleaning=c75fa4ba/5 construction=a771e050/14 weather=585424b3/28 rng=6b863263/2
+end 100

@@ -1,0 +1,10 @@
+# The own L0 scenario won headless on data/packs/l0 alone (tools/ci/l0_sim_tests.sh, OBL_PACK=l0): its goal is one finished
+# building of every offered type (BuildTreeExist) and at least 1 of guest income before 17:00 on day 1.
+# build-tree-s1 finishes the buildings, then waits for the 14:00 shuttle's visitors to buy drinks.
+OBL-bot 1
+bot build-tree-s1
+start scenario s1
+seed 1
+fixed-dt 0.02
+max-ticks 20000
+expect won

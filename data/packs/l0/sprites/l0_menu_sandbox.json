@@ -1,0 +1,30 @@
+{
+  "format": "obl.sprite",
+  "version": 1,
+  "name": "l0_menu_sandbox",
+  "kind": "ui",
+  "pixels": "indexed",
+  "palettes": "l0_menu_sandbox.palettes.png",
+  "palette_colors": 256,
+  "palette_count": 1,
+  "animations": [
+    {
+      "name": "l0_menu_sandbox",
+      "directions": 4,
+      "frames": 1,
+      "size": [
+        180,
+        40
+      ],
+      "hotspot": [
+        0,
+        0
+      ],
+      "columns": 4,
+      "unique_frames": 4,
+      "sheets": [
+        "l0_menu_sandbox/sheet.png"
+      ]
+    }
+  ]
+}

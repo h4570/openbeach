@@ -1,0 +1,24 @@
+# Buildings alone cannot win; the scheduled shuttle arrives even when the rating is zero.
+# @env OBL_PACK=l0
+# @timeout 120
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario 1
+await gameplay
+command set-game-speed level=2
+command place-building key=LOO x=59 y=63 dir=0
+step 25
+command place-building key=HUT x=63 y=61 dir=0
+step 675
+expect building-state-1 0
+expect build-tree-missing 0
+expect guests 0
+expect guests-arrived-total 0
+expect income-today 0
+expect scenario-objective0 0
+# The same bot used to win at tick 648. Now it must wait for actual sales.
+step 300
+expect guests-arrived-total 6
+expect-range income-today 1 12
+expect scenario-objective0 1
+quit

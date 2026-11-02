@@ -1,0 +1,11 @@
+{
+  "format": "obl.campaign",
+  "version": 1,
+  "campaign": [
+    { "scenario": "sample_isle", "completion_screen": "images/screens/sample_done.png" },
+    { "scenario": "sample_reef" }
+  ],
+  "unlock": "sequential",
+  "sandboxes": [{ "scenario": "sample_sandbox" }],
+  "scenario_screen": "images/screens/sample_select.png"
+}

@@ -1,0 +1,191 @@
+{
+  "format": "obl.text",
+  "version": 1,
+  "language": "en",
+  "entries": [
+    [
+      "L0_TITLE",
+      "OpenBeach L0"
+    ],
+    [
+      "L0_DESC",
+      "Finish every offered building and earn 1 from visitors before 17:00 on day 2."
+    ],
+    [
+      "L0_WON",
+      "Every building is ready and visitors have bought drinks. Scenario won."
+    ],
+    [
+      "L0_LOST",
+      "17:00 on day 2: finish the buildings and serve visitors. Scenario lost."
+    ],
+    [
+      "BUILDING_NAME_HUT",
+      "Beach Hut"
+    ],
+    [
+      "BUILDING_NAME_KIOSK",
+      "Soda Kiosk"
+    ],
+    [
+      "BUILDING_NAME_LOO",
+      "Toilet Block"
+    ],
+    [
+      "BUILDING_NAME_REP",
+      "Rep Office"
+    ],
+    [
+      "BUILD_DESC_HUT",
+      "Build a beach hut on the island."
+    ],
+    [
+      "BUILD_DESC_KIOSK",
+      "Build a soda kiosk on the island."
+    ],
+    [
+      "BUILD_DESC_LOO",
+      "Build a toilet block on the island."
+    ],
+    [
+      "BUILD_DESC_REP",
+      "Build a rep office on the island."
+    ],
+    [
+      "BUILD_TIPTEXT_HUT",
+      "Beach Hut"
+    ],
+    [
+      "BUILD_TIPTEXT_KIOSK",
+      "Soda Kiosk"
+    ],
+    [
+      "BUILD_TIPTEXT_LOO",
+      "Toilet Block"
+    ],
+    [
+      "BUILD_TIPTEXT_REP",
+      "Rep Office"
+    ],
+    [
+      "CLOSED",
+      "Closed"
+    ],
+    [
+      "L0_PLAY_BUILDLIST",
+      "Build"
+    ],
+    [
+      "L0_PLAY_CALLCLEANER",
+      "Clean"
+    ],
+    [
+      "L0_PLAY_CALLREPAIR",
+      "Repair"
+    ],
+    [
+      "L0_PLAY_CAMERAMODE",
+      "Back"
+    ],
+    [
+      "L0_PLAY_CLOSEBUILDING",
+      "Close shop"
+    ],
+    [
+      "L0_PLAY_CONFIRMSELL",
+      "Sell"
+    ],
+    [
+      "L0_PLAY_DOCAMERAGRAB",
+      "Photo"
+    ],
+    [
+      "L0_PLAY_EXITBUILDMODE",
+      "Cancel"
+    ],
+    [
+      "L0_PLAY_EXITDIALOG",
+      "Close"
+    ],
+    [
+      "L0_PLAY_LOCKCAMERA",
+      "Follow"
+    ],
+    [
+      "L0_PLAY_OPENBUILDING",
+      "Open shop"
+    ],
+    [
+      "L0_PLAY_PLACEBUILDING",
+      "Place"
+    ],
+    [
+      "L0_PLAY_SELLBUTTON",
+      "Sell"
+    ],
+    [
+      "L0_PLAY_SHOWGOAL",
+      "Goals"
+    ],
+    [
+      "L0_PLAY_ZOOMIN",
+      "Zoom in"
+    ],
+    [
+      "L0_PLAY_ZOOMOUT",
+      "Zoom out"
+    ],
+    [
+      "OPEN",
+      "Open"
+    ],
+    [
+      "CREDIT_ENTRY_0",
+      "OpenBeach L0 (own placeholder island)"
+    ],
+    [
+      "L0_LOAD_CANCEL",
+      "Cancel"
+    ],
+    [
+      "L0_LOAD_DELETE",
+      "Delete"
+    ],
+    [
+      "L0_LOAD_GAMEINFO",
+      "Game"
+    ],
+    [
+      "L0_LOAD_LOAD",
+      "Load"
+    ],
+    [
+      "L0_LOAD_SAVED",
+      "Saved"
+    ],
+    [
+      "L0_LOAD_SCENARIO",
+      "Scenario"
+    ],
+    [
+      "L0_LOAD_TITLE",
+      "Load game"
+    ],
+    [
+      "L0_RESET_CONFIRM",
+      "Reset all scenario progress?"
+    ],
+    [
+      "L0_RESET_NO",
+      "No"
+    ],
+    [
+      "L0_RESET_TITLE",
+      "Reset progress"
+    ],
+    [
+      "L0_RESET_YES",
+      "Yes"
+    ]
+  ]
+}

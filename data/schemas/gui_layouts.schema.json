@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "obl.gui_layouts",
+  "title": "GUI layout choice (gui/layouts.json)",
+  "description": "Which layout file and which fonts each language uses; '*' is the fallback (game-data.md, 'GUI layouts').",
+  "type": "object",
+  "properties": {
+    "format": {
+      "const": "obl.gui_layouts"
+    },
+    "version": {
+      "const": 1
+    },
+    "layouts": {
+      "type": "object",
+      "propertyNames": {
+        "$ref": "obl.common#/$defs/key"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "propertyNames": {
+          "type": "string",
+          "pattern": "^(\\*|[a-z]{2,3}(-[A-Za-z0-9]{2,8})*)$"
+        },
+        "additionalProperties": {
+          "$ref": "obl.common#/$defs/path"
+        },
+        "required": [
+          "*"
+        ]
+      }
+    },
+    "fonts": {
+      "description": "Language to font role to font key.",
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^(\\*|[a-z]{2,3}(-[A-Za-z0-9]{2,8})*)$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "propertyNames": {
+          "$ref": "obl.common#/$defs/key"
+        },
+        "additionalProperties": {
+          "$ref": "obl.common#/$defs/key"
+        }
+      }
+    }
+  },
+  "required": [
+    "format",
+    "version",
+    "layouts"
+  ],
+  "additionalProperties": false
+}

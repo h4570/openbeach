@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "obl.scenery",
+  "title": "Scenery object (catalog/scenery/<key>.json)",
+  "description": "Paths, plants, furniture and other placeable objects (game-data.md, 'Catalog').",
+  "type": "object",
+  "properties": {
+    "format": {
+      "const": "obl.scenery"
+    },
+    "version": {
+      "const": 2
+    },
+    "key": {
+      "$ref": "obl.common#/$defs/key"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Display name or text-table key."
+    },
+    "category": {
+      "enum": [
+        "furniture",
+        "paths",
+        "plants",
+        "ornaments",
+        "trees",
+        "shrubs",
+        "billboard",
+        "other"
+      ]
+    },
+    "sprite": {
+      "$ref": "obl.common#/$defs/key"
+    },
+    "anim": {
+      "$ref": "obl.common#/$defs/key"
+    },
+    "icon": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "menu": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Name of a GUI dialog (gui/*.gui)."
+    },
+    "size": {
+      "$ref": "obl.common#/$defs/size2"
+    },
+    "cost": {
+      "type": "integer"
+    },
+    "build_on": {
+      "type": "array",
+      "items": {
+        "$ref": "obl.common#/$defs/terrain"
+      },
+      "uniqueItems": true
+    },
+    "collide": {
+      "type": "boolean"
+    },
+    "capacity": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "rating": {
+      "type": "number"
+    },
+    "clean": {
+      "type": "boolean"
+    },
+    "repair": {
+      "type": "boolean"
+    },
+    "burn": {
+      "type": "boolean"
+    },
+    "user_remove": {
+      "type": "boolean"
+    },
+    "vegetation": {
+      "type": "boolean"
+    },
+    "water": {
+      "type": "boolean"
+    },
+    "path_flag": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "format",
+    "version",
+    "key",
+    "name",
+    "category",
+    "sprite",
+    "size",
+    "cost",
+    "build_on"
+  ],
+  "additionalProperties": false
+}

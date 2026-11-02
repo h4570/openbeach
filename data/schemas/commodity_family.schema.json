@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "obl.commodity_family",
+  "title": "Commodity family (catalog/commodity_families/<key>.json)",
+  "description": "A group of commodities that guests desire and buildings attract with (game-data.md, 'Catalog').",
+  "type": "object",
+  "properties": {
+    "format": {
+      "const": "obl.commodity_family"
+    },
+    "version": {
+      "const": 2
+    },
+    "key": {
+      "$ref": "obl.common#/$defs/key"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Display name or text-table key."
+    }
+  },
+  "required": [
+    "format",
+    "version",
+    "key",
+    "name"
+  ],
+  "additionalProperties": false
+}

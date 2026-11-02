@@ -1,0 +1,12 @@
+{
+  "format": "obl.water_anim",
+  "version": 1,
+  "sheet": "1.png",
+  "mask_size": [
+    128,
+    128
+  ],
+  "frames": 15,
+  "masks_per_frame": 4,
+  "rate": 7.5
+}

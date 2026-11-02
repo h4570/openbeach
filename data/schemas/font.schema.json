@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "obl.font",
+  "title": "Bitmap font (fonts/<name>.json)",
+  "description": "Glyph rectangles in an indexed atlas keyed by Unicode code point, with effective kerning pairs (assets.md, 'Fonts'). Tier L1; the atlas is L2.",
+  "type": "object",
+  "properties": {
+    "format": { "const": "obl.font" },
+    "version": { "const": 1 },
+    "name": { "$ref": "obl.common#/$defs/key" },
+    "size": { "type": "integer", "minimum": 1 },
+    "bold": { "type": "boolean" },
+    "atlas": { "$ref": "obl.common#/$defs/path" },
+    "scale": { "type": "number", "exclusiveMinimum": 0 },
+    "glyphs": {
+      "description": "Code point (lowercase hex, at least 4 digits) to [left, top, right, bottom] in the atlas.",
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/code_point" },
+      "additionalProperties": { "$ref": "obl.common#/$defs/rect" }
+    },
+    "kerning": {
+      "description": "Non-zero pairs only: [first, second, offset in pixels].",
+      "type": "array",
+      "items": {
+        "type": "array",
+        "prefixItems": [{ "$ref": "#/$defs/code_point" }, { "$ref": "#/$defs/code_point" }, { "type": "integer" }],
+        "minItems": 3,
+        "maxItems": 3
+      }
+    }
+  },
+  "required": ["format", "version", "name", "size", "bold", "atlas", "glyphs"],
+  "additionalProperties": false,
+  "$defs": {
+    "code_point": { "type": "string", "pattern": "^[0-9a-f]{4,6}$" }
+  }
+}

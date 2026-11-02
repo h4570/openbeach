@@ -1,0 +1,28 @@
+# ctest headless_save_reload: a save loaded after play in the same process simulates like a fresh process loading it
+# (docs/architecture/headless/replays.md, "A save start"). Scenario 1 after 300 ticks is saved and loaded back at once, then the commands of
+# tests/replays/headless_save_s1.replay run with its checkpoint hashes, which a fresh process (ctest headless_save) produces.
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario 1
+await gameplay
+step 300
+serial-save
+seed 1
+fixed-dt 0.02
+serial-load
+await gameplay
+world-hash expect a84df88e9bb361ab
+command set-game-speed level=2
+step 150
+world-hash expect 4d344a6e55743906
+command place-building key=LOO x=49 y=36 dir=0
+command place-building key=NOSUCHBUILDING x=1 y=1 dir=0
+step 150
+world-hash expect df0d4378c2ac8609
+command set-paused paused=1
+step 100
+command set-paused paused=0
+step 200
+world-hash expect a07d872847e82c9f
+serial-cleanup
+quit

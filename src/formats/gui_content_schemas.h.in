@@ -1,0 +1,5 @@
+#pragma once
+namespace obl::gui_content {
+inline constexpr char kBrowserSchema[] = R"schema(@OBL_BROWSER_SCHEMA@)schema";
+inline constexpr char kCreditsSchema[] = R"schema(@OBL_CREDITS_SCHEMA@)schema";
+}

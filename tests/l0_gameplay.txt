@@ -1,0 +1,32 @@
+# The own L0 pack (data/packs/l0/) reaches gameplay with its own map, scenario, world script and catalog, without any
+# converted or reference file: a missing or refused file stops the game (FatalError), which fails this script.
+# @env OBL_PACK=l0
+# @timeout 120
+# @gameini Language.Language=5
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario 1
+await gameplay
+expect settings-language 5
+# The pack has English only: the screen follows it, the INI keeps the player's Polish.
+expect settings-shown-language 0
+expect-text L0_PLAY_BUILDLIST Build
+expect-text L0_PLAY_CLOSEBUILDING Close shop
+expect-text L0_PLAY_EXITDIALOG Close
+step 50
+expect cash 20000
+expect buildings 3
+expect guests 0
+# The catalog's own toilet block is placed on the island (800 to build) and stands.
+place-find building LOO
+command place-building key=LOO x=$x y=$y dir=0
+step 1
+expect cash 19200
+object-find building LOO
+expect-last count 1
+command-report
+expect-last applied 1
+step 500
+expect buildings 4
+expect settings-language 5
+quit

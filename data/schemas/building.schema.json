@@ -1,0 +1,432 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "obl.building",
+  "title": "Building (catalog/buildings/<key>.json)",
+  "description": "A placeable building's appearance, construction, services and footprint (game-data.md, 'Catalog').",
+  "type": "object",
+  "properties": {
+    "format": {
+      "const": "obl.building"
+    },
+    "version": {
+      "const": 2
+    },
+    "key": {
+      "$ref": "obl.common#/$defs/key"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Display name or text-table key."
+    },
+    "category": {
+      "enum": [
+        "hotel",
+        "food",
+        "leisure",
+        "other"
+      ]
+    },
+    "behavior": {
+      "description": "Building service behavior, independent of the catalog key; values are defined in src/game/tables/building_behavior.h.",
+      "enum": ["none", "hotel", "accom_block", "beach_hut", "main_pool", "lifeguard_post", "mechanic_home", "builder_home", "cleaner_home", "rep_office", "security_post", "stage", "ship_stop", "bus_stop", "complaints_hut", "ice_stall", "fast_food", "water_cleaner", "toilet", "jetski_hire", "speedboat_hire", "equipment_hire", "bar", "cocktail_bar", "dj_club_footprint", "dj_club_offset", "first_aid", "power_generator", "souvenir_shop", "general_store", "jetty"]
+    },
+    "sprite": {
+      "$ref": "obl.common#/$defs/key"
+    },
+    "icon": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "menu": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Name of a GUI dialog (gui/*.gui)."
+    },
+    "requires": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Prerequisite identifier in the build tree."
+    },
+    "cost": {
+      "type": "object",
+      "properties": {
+        "build": {
+          "type": "integer"
+        },
+        "refund": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "build"
+      ],
+      "additionalProperties": false
+    },
+    "construction": {
+      "type": "object",
+      "properties": {
+        "build_time": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "demolish_time": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_builders": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "anim": {
+          "description": "Custom construction sprite.",
+          "$ref": "obl.common#/$defs/key"
+        }
+      },
+      "additionalProperties": false
+    },
+    "size": {
+      "$ref": "obl.common#/$defs/size2"
+    },
+    "build_on": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "land",
+          "beach",
+          "shallow_water",
+          "deep_sea"
+        ]
+      },
+      "uniqueItems": true,
+      "minItems": 1
+    },
+    "baseplates": {
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "description": "Base plate type of each plate."
+    },
+    "points": {
+      "type": "object",
+      "properties": {
+        "serve": {
+          "$ref": "obl.common#/$defs/vec2i"
+        },
+        "staff": {
+          "$ref": "obl.common#/$defs/vec2i"
+        },
+        "entrance": {
+          "$ref": "obl.common#/$defs/vec2i"
+        },
+        "walk": {
+          "type": "array",
+          "items": {
+            "$ref": "obl.common#/$defs/vec2"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "operation": {
+      "type": "object",
+      "properties": {
+        "guest_capacity": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "opening_hours": {
+          "$ref": "obl.common#/$defs/key"
+        },
+        "max_instances": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_queue": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "attractor": {
+          "description": "Commodity family that draws guests.",
+          "$ref": "obl.common#/$defs/key"
+        },
+        "power": {
+          "type": "integer"
+        },
+        "staff": {
+          "type": "object",
+          "properties": {
+            "types": {
+              "$ref": "obl.common#/$defs/key_list"
+            },
+            "max": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "types"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "commodities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "commodity": {
+            "$ref": "obl.common#/$defs/key"
+          },
+          "intensity": {
+            "description": "[men, women].",
+            "$ref": "obl.common#/$defs/vec2"
+          },
+          "daily_intensity_factor": {
+            "type": "number"
+          },
+          "price": {
+            "type": "number"
+          },
+          "daily_price_factor": {
+            "type": "number"
+          },
+          "cost": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "commodity",
+          "intensity",
+          "daily_intensity_factor",
+          "price",
+          "daily_price_factor",
+          "cost"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "failure": {
+      "type": "object",
+      "properties": {
+        "average_time": {
+          "type": "number"
+        },
+        "percent": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "age": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "vehicles": {
+      "$ref": "obl.common#/$defs/key_list"
+    },
+    "vehicle_places": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "dir": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "offset": {
+            "$ref": "obl.common#/$defs/vec2i"
+          }
+        },
+        "required": [
+          "dir",
+          "offset"
+        ],
+        "additionalProperties": false
+      },
+      "description": "Vehicle starting positions; the number of positions is independent of the number of entries in `vehicles`."
+    },
+    "tables": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "table": {
+            "$ref": "obl.common#/$defs/key"
+          },
+          "pos": {
+            "$ref": "obl.common#/$defs/vec2"
+          }
+        },
+        "required": [
+          "table",
+          "pos"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "$ref": "obl.common#/$defs/key"
+      },
+      "description": "Effective event slots, duplicates included."
+    },
+    "anims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "sprite": {
+            "$ref": "obl.common#/$defs/key"
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "$ref": "obl.common#/$defs/vec2i"
+            },
+            "minItems": 4,
+            "maxItems": 4
+          },
+          "flag": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "sprite",
+          "points",
+          "flag"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "staff_files": {
+      "type": "object",
+      "properties": {
+        "female": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Display name or text-table key."
+        },
+        "male": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Display name or text-table key."
+        }
+      },
+      "additionalProperties": false
+    },
+    "footprint": {
+      "type": "object",
+      "properties": {
+        "size": {
+          "$ref": "obl.common#/$defs/size2"
+        },
+        "layers": {
+          "type": "object",
+          "properties": {
+            "placement": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/footprint_cell"
+                }
+              },
+              "description": "(h + 2) rows of (w + 2) cells, as the engine reads them. Placement mask per cell: 0 free, 0x200 margin that needs a reachable edge, other values block the cell and mark it as building."
+            },
+            "work": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/footprint_cell"
+                }
+              },
+              "description": "(h + 2) rows of (w + 2) cells, as the engine reads them. Grid flags the finished building writes into each cell (free land/water, built) and the builders' work points."
+            },
+            "depth": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 4294967295
+                }
+              },
+              "description": "(h + 2) rows of (w + 2) cells, as the engine reads them. Depth offset per cell (lifts the sprites of actors standing in front of the building); 0 leaves the cell's offset."
+            },
+            "body": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 4294967295
+                }
+              },
+              "description": "(h + 2) rows of (w + 2) cells, as the engine reads them. Body and surface per cell: 1 body, the surface bit lays a base plate."
+            }
+          },
+          "required": [
+            "placement",
+            "work",
+            "depth",
+            "body"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "size",
+        "layers"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "footprint_cell": {
+      "description": "The cell-word fields of map.cell_state that are not 0 (saves.md, Map cells).",
+      "type": "object",
+      "properties": {
+        "terrain": { "type": "integer", "minimum": 0, "maximum": 15 },
+        "building": { "type": "integer", "minimum": 0, "maximum": 1 },
+        "border": { "type": "integer", "minimum": 0, "maximum": 1 },
+        "border_blocked": { "type": "integer", "minimum": 0, "maximum": 1 },
+        "around_building": { "type": "integer", "minimum": 0, "maximum": 1 },
+        "beach": { "type": "integer", "minimum": 0, "maximum": 1 },
+        "margin": { "type": "integer", "minimum": 0, "maximum": 1 },
+        "unnamed": { "type": "integer", "minimum": 0, "maximum": 1 },
+        "built": { "type": "integer", "minimum": 0, "maximum": 1 },
+        "grass": { "type": "integer", "minimum": 0, "maximum": 7 },
+        "blocked": { "type": "integer", "minimum": 0, "maximum": 1 },
+        "neighbours": { "type": "integer", "minimum": 0, "maximum": 255 },
+        "surface": { "type": "integer", "minimum": 0, "maximum": 15 },
+        "path": { "type": "integer", "minimum": 0, "maximum": 1 },
+        "free_deep": { "type": "integer", "minimum": 0, "maximum": 1 },
+        "free_shallow": { "type": "integer", "minimum": 0, "maximum": 1 },
+        "free_land": { "type": "integer", "minimum": 0, "maximum": 1 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "format",
+    "version",
+    "key",
+    "name",
+    "sprite",
+    "cost",
+    "size",
+    "build_on"
+  ],
+  "additionalProperties": false
+}

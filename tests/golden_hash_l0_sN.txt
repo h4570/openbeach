@@ -1,0 +1,27 @@
+# L0 tables of the golden_hash_sN cash/weather fixture: the same steps on the own L0 pack (data/packs/l0/), whose
+# campaign has scenario 1 only. The private tables (golden_hash_s1/s3/s12) stay the guard of the imported pack.
+# @env OBL_PACK=l0
+# @timeout 90
+# @gameini Language.Language=5
+# @gameini Video.ResWidth=800
+# @gameini Video.ResHeight=600
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario {scenario}
+await gameplay
+await frames 60
+speed 8
+# Initialize scenario-created fields before taking the first snapshot.
+step 200
+world-hash every 200
+step 200
+weather-insert 0 0.75
+step 200
+set-cash 12345.5
+step 200
+world-hash expect-same
+world-hash off
+expect-last checkpoint 4
+expect-last steps 600
+expect-last-range fields 1000 1000000
+quit

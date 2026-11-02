@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "obl.staff",
+  "title": "Staff type (catalog/staff/<key>.json)",
+  "description": "A hireable staff type (game-data.md, 'Catalog').",
+  "type": "object",
+  "properties": {
+    "format": {
+      "const": "obl.staff"
+    },
+    "version": {
+      "const": 2
+    },
+    "key": {
+      "$ref": "obl.common#/$defs/key"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Display name or text-table key."
+    },
+    "gender": {
+      "$ref": "obl.common#/$defs/gender"
+    },
+    "sprite": {
+      "$ref": "obl.common#/$defs/key"
+    },
+    "script": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Object script that drives the staff member (scripts/object/<script>.obs)."
+    },
+    "menu": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Name of a GUI dialog (gui/*.gui)."
+    },
+    "wage": {
+      "type": "integer"
+    },
+    "recommended_wage": {
+      "type": "integer"
+    },
+    "scale": {
+      "type": "number"
+    },
+    "expectation_growth": {
+      "type": "number"
+    },
+    "initial_happiness": {
+      "type": "number"
+    },
+    "hours": {
+      "description": "[start, end] working hours.",
+      "$ref": "obl.common#/$defs/vec2i"
+    }
+  },
+  "required": [
+    "format",
+    "version",
+    "key",
+    "name",
+    "gender",
+    "sprite",
+    "script",
+    "menu",
+    "wage",
+    "recommended_wage",
+    "scale",
+    "expectation_growth",
+    "initial_happiness",
+    "hours"
+  ],
+  "additionalProperties": false
+}

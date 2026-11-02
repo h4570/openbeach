@@ -1,0 +1,24 @@
+{
+  "format": "obl.object_browser",
+  "version": 2,
+  "provenance": "own",
+  "lists": {
+    "guest": [],
+    "building": [],
+    "cell": [],
+    "staff": [],
+    "hire": [],
+    "event": []
+  },
+  "headings": [],
+  "buttons": [
+    "l0_play_button",
+    "l0_play_button",
+    "l0_play_button",
+    "l0_play_button",
+    "l0_play_button",
+    "l0_play_button",
+    "l0_play_button",
+    "l0_play_button"
+  ]
+}

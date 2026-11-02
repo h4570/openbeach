@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "obl.map",
+  "title": "Map (maps/<map>/map.json)",
+  "description": "Terrain grid and pre-rendered images of one island; paths are relative to the map directory (maps-scenarios.md, 'Maps').",
+  "type": "object",
+  "properties": {
+    "format": {
+      "const": "obl.map"
+    },
+    "version": {
+      "const": 2
+    },
+    "size_px": {
+      "$ref": "obl.common#/$defs/size2"
+    },
+    "cell_px": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "cells": {
+      "$ref": "obl.common#/$defs/size2"
+    },
+    "terrain": {
+      "description": "Indexed PNG, one pixel per cell (tier L1).",
+      "$ref": "obl.common#/$defs/path"
+    },
+    "terrain_types": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "index": {
+            "$ref": "obl.common#/$defs/byte"
+          },
+          "type": {
+            "enum": [
+              "grass",
+              "sand",
+              "shallow_water",
+              "deep_sea",
+              "shoreline",
+              "rock",
+              "path"
+            ]
+          }
+        },
+        "required": [
+          "index",
+          "type"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1
+    },
+    "height": {
+      "description": "8-bit gray PNG (tier L1); flat when absent.",
+      "$ref": "obl.common#/$defs/path"
+    },
+    "height_scale": {
+      "type": "number"
+    },
+    "color": {
+      "description": "RGB PNG of the whole map (tier L2).",
+      "$ref": "obl.common#/$defs/path"
+    },
+    "depth": {
+      "description": "16-bit gray PNG of the whole map (tier L2).",
+      "$ref": "obl.common#/$defs/path"
+    },
+    "water_anim": {
+      "description": "Water shimmer under maps/, e.g. water/1 for maps/water/1.json.",
+      "$ref": "obl.common#/$defs/path"
+    },
+    "depth_plane_offset": {
+      "type": "number"
+    },
+    "depth_slant_offset": {
+      "type": "number"
+    },
+    "event_area": {
+      "description": "Event placement bounds in world coordinates: min x, min y, max x, max y.",
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "minimum": -2147483648,
+        "maximum": 2147483647
+      },
+      "minItems": 4,
+      "maxItems": 4
+    }
+  },
+  "required": [
+    "format",
+    "version",
+    "size_px",
+    "cell_px",
+    "cells",
+    "terrain",
+    "terrain_types",
+    "color",
+    "depth",
+    "event_area"
+  ],
+  "additionalProperties": false
+}

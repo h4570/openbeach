@@ -1,0 +1,5 @@
+[
+ {"at": 10, "shot": "pl_game"},
+ {"at": 12, "eval": "location.reload()"},
+ {"at": 60, "eval": "(async()=>{ for(let i=0;i<200 && document.getElementById('start').hidden;++i) await new Promise(r=>setTimeout(r,500)); const s=document.getElementById('start-language'); return {codes:[...s.options].map(o=>o.value).join(), value:s.value, ini:Module.readSettings(), startShown: !document.getElementById('start').hidden}; })()"}
+]

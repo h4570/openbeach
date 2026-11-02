@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "obl.desire_slot",
+  "title": "Desire slot (catalog/desire_slots/<key>.json)",
+  "description": "One of the 26 guest desire slots, in id order; script_name is the Weather modifier word that sets it (game-data.md, 'Catalog').",
+  "type": "object",
+  "properties": {
+    "format": {
+      "const": "obl.desire_slot"
+    },
+    "version": {
+      "const": 2
+    },
+    "key": {
+      "$ref": "obl.common#/$defs/key"
+    },
+    "script_name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Word of world scripts, matched exactly; a slot without one has no modifier."
+    }
+  },
+  "required": [
+    "format",
+    "version",
+    "key"
+  ],
+  "additionalProperties": false
+}

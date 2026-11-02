@@ -1,0 +1,12 @@
+OBL-replay 1
+start scenario s1
+seed 1
+fixed-dt 0.02
+hash-schema 3
+# The headless host's mismatch report (ctest headless_mismatch, docs/testing/replays.md), on the own L0 pack (OBL_PACK=l0). Both
+# checkpoints have a wrong total on purpose. @0 carries the real tick-0 section digests of l0_commands except the staff hash (last
+# digit), so the report names exactly staff; @150 has no digests, so the report says sections=unrecognized and prints the actual ones.
+@0 hash 6d42f0b32a776cbc world=347c70b4/55 economy=789a9828/18 map=d35709af/32772 objects=3f3f5aaa/7 buildings=36b3a59b/195 staff=292a594b/84 ferry=09f31930/40 repair=216add6a/7 feedback=ffb7c4d6/15 messages=04f668da/2 cleaning=c75fa4ba/5 construction=a771e050/14 weather=585424b3/28 rng=511f88fc/2
+@0 set-game-speed level=2
+@150 hash b480be1aba43da9e
+end 150
