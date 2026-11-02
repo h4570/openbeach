@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/h4570/openbeach/compare/v1.2.0...v1.3.0) (2026-11-02)
+
+
+### Features
+
+* **site:** answer the usual questions in a faq section ([#10](https://github.com/h4570/openbeach/issues/10)) ([e90afe9](https://github.com/h4570/openbeach/commit/e90afe9ca93da0c30899538620e7fb96a89b4e30))
+
 ## [1.2.0](https://github.com/h4570/openbeach/compare/v1.1.0...v1.2.0) (2026-11-02)
 
 
