@@ -1,0 +1,42 @@
+# Keeps the list of stargazers in the README up to date (tools/update_stargazers.py). A new star starts it; the daily run
+# catches an unstar, which sends no event. Pushes made with github.token start no other workflow, so this commit does not
+# run CI or the release workflow. It commits only when the list changed.
+name: Stargazers
+
+on:
+  watch:
+    types: [started]
+  schedule:
+    - cron: "17 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: stargazers
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    # A star event carries the default branch; a dispatch on another branch would write there.
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Update the README
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python tools/update_stargazers.py
+      - name: Commit
+        run: |
+          if git diff --quiet -- README.md; then exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "docs: update the stargazers list" -- README.md
+          git pull --rebase origin main
+          git push origin HEAD:main

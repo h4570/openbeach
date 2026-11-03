@@ -195,7 +195,7 @@
         <p class="lead" data-t="lead">OpenBeach is an open-source engine that plays the 2002 resort tycoon Beach Life on the files of your own copy.</p>
         <ul class="facts">
             <li data-t="fact1">Runs here, <strong>with no install</strong></li>
-            <li data-t="factPlatforms">Works on <strong>Windows, macOS and Linux</strong>, in any modern browser</li>
+            <li data-t="factPlatforms">Works on <strong>Windows, macOS, Linux and Android</strong>, in any modern browser</li>
             <li data-t="fact2">Your copy stays on your machine, nothing is uploaded</li>
             <li data-t="fact3">Saves live in this browser, and you can export them</li>
             <li data-t="fact4">Open source on GitHub</li>
@@ -217,9 +217,8 @@
                 <div id="drop">
                     <h2 data-t="dropTitle">Drop your copy of the game here</h2>
                     <div class="kinds">
-                        <div class="kind"><b data-t="kindIso">Disc image</b><span data-t="kindIsoNote">a .iso file</span></div>
+                        <div class="kind"><b data-t="kindIso">Disc image</b><span data-t="kindIsoNote">a .iso file or a mounted drive</span></div>
                         <div class="kind"><b data-t="kindFolder">Game folder</b><span data-t="kindFolderNote">your installation</span></div>
-                        <div class="kind"><b data-t="kindDrive">Disc drive</b><span data-t="kindDriveNote">if your browser allows it</span></div>
                     </div>
                     <p class="pick"><span data-t="pickPrefix">or pick</span>
                         <label><span data-t="pickIso">a disc image</span><input id="import-iso" type="file" accept=".iso"></label>
@@ -299,6 +298,9 @@
 </section>
 <section class="faq hide-playing" id="faq">
     <h2 data-t="faqTitle">Questions and answers</h2>
+    <details><summary data-t="faq11q">Where do I get an .iso file? I only have the old box of the game</summary>
+        <p data-t="faq11a">If the disc is lost or scratched, or your computer has no disc drive (new ones rarely do), you can look for an image of your own edition of the game on the internet.</p>
+        <p data-t="faq11b">If you still have the disc, make an image of it on a computer with a drive: ImgBurn or AnyBurn on Windows, Disk Utility on a Mac (a “DVD/CD master” image, renamed from .cdr to .iso) or the dd command on Linux. A phone cannot read discs, so copy the .iso file over.</p></details>
     <details><summary data-t="faq1q">Does Beach Life run on Windows 11 and Windows 10?</summary>
         <p data-t="faq1a">Yes. OpenBeach plays the game inside your browser, so there is no installer and no compatibility mode to set up. It is built and tested with Chrome and Edge on Windows.</p></details>
     <details><summary data-t="faq2q">Can I play Beach Life on a Mac or on Linux?</summary>
@@ -306,7 +308,7 @@
     <details><summary data-t="faq3q">Does it work on a phone or tablet?</summary>
         <p data-t="faq3a">Experimentally. Touch controls are new and still rough: tap to click, drag with one finger to move the map, press and hold to keep the left button down, tap with two fingers to right-click and drag with two fingers to scroll. While placing a building, drag a finger to aim and lift it to place; the Space and Esc buttons below the game turn the building and leave the mode. The game keeps about 1 GB of data in the browser, so a desktop or laptop is still the better choice.</p></details>
     <details><summary data-t="faq4q">Do I need the original game?</summary>
-        <p data-t="faq4a">Yes. OpenBeach contains no graphics, music or other data of the game. Drop your own copy on the page: a disc image (.iso), the folder of an installation, or the disc itself if your browser can read the drive.</p></details>
+        <p data-t="faq4a">Yes. OpenBeach contains no graphics, music or other data of the game. Drop your own copy on the page: a disc image (.iso) or a mounted drive, or the folder of an installation.</p></details>
     <details><summary data-t="faq5q">Which copies of the game work?</summary>
         <p data-t="faq5a">The European and the French/German CD, the UK/US CD (Virtual Resort: Spring Break), the later English CD, and the installed folders of these. A copy the importer does not know is refused with a message and nothing is changed.</p></details>
     <details><summary data-t="faq6q">Is my copy uploaded anywhere?</summary>
