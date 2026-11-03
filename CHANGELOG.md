@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.5.0](https://github.com/h4570/openbeach/compare/v1.4.0...v1.5.0) (2026-11-03)
+
+
+### Features
+
+* attach a windows x64 zip and player guides to each release ([676cef6](https://github.com/h4570/openbeach/commit/676cef6cfc62673d130ca69e7bbf40f7bdaf4f99))
+* **game:** show the openbeach logo as the program icon ([03cce54](https://github.com/h4570/openbeach/commit/03cce54f8a54b07db524e21fb48c3b354bde24b8))
+
+
+### Bug Fixes
+
+* **site:** fullscreen the page, not the canvas ([#25](https://github.com/h4570/openbeach/issues/25)) ([59d3548](https://github.com/h4570/openbeach/commit/59d3548977a422216a88d580bca61732a4ade77b))
+* **site:** reword the last faq question in all languages ([#23](https://github.com/h4570/openbeach/issues/23)) ([4a9502b](https://github.com/h4570/openbeach/commit/4a9502b17b5b536a910307314f0fa4939a1b74d2))
+
 ## [1.4.0](https://github.com/h4570/openbeach/compare/v1.3.0...v1.4.0) (2026-11-03)
 
 
