@@ -139,7 +139,9 @@
         body.playing .screen { grid-row: 1 / 3; }
         body.playing .touch-keys { align-self: end; margin-top: 0; gap: 6px; flex-direction: column; align-items: center; }
         body.playing .touch-keys .key { height: 44px; }
-        body.playing .gamebar { flex-direction: column; align-self: start; }
+        body.playing .gamebar { flex-direction: column; align-self: start; gap: 6px; }
+        body.playing .gamebar span { border-radius: 14px; padding: 6px 12px; text-align: center; }
+        body.playing .gamebar button { margin: 0 8px; }
     }
     /* The keys are drawn as keycaps: a long one for Space and a square one for Esc. A press sinks the top of the cap. */
     .touch-keys button { padding: 0; border: 0; background: none; line-height: 0; touch-action: manipulation; user-select: none;
