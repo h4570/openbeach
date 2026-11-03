@@ -8,6 +8,13 @@
 // (the importer picks the pack's language among the copy's tables; on success the worker also sets Language in OPFS
 // BeachLife.ini to its index in the game's numbering, so the game and the converted texts agree) and receives
 // {type: "progress", step, done?, total?} (done/total count the items of a long step), then {type: "done", files} or {type: "error", message}.
+// `workers` (optional) is the number of helper workers to start, for tests; by default shard.js chooses it from the machine.
+//
+// With helpers (shard.js), this worker is the coordinator: it starts them as nested workers running this same script, each
+// with its own wasm instance and no shared memory, hands them the picked files (File objects) and the spooled CD archive
+// (Blobs), and they convert their shares of the sprites and maps while this worker only gathers their progress. It then runs
+// the whole import itself, taking their finished units instead of converting them, so the pack is the one a single worker
+// writes. A helper that fails ends the helpers, and this worker imports alone: its error is then a single worker's.
 //
 // The converters run synchronously, so this worker answers their calls synchronously (Module.oblImport, read by
 // worker_main.cpp): reads go through FileReaderSync, written files stay Blobs (the browser may keep them on disk) until
@@ -16,9 +23,16 @@
 // way: spoolCreate/spoolAppend build a Blob piece by piece, spoolRead reads ranges of it, spoolRemove drops it.
 "use strict";
 
-importScripts("obl-import-web.js", "language_ini.js");
+importScripts("obl-import-web.js", "language_ini.js", "shard.js");
 
 const reader = new FileReaderSync();
+const {chooseHelperCount, runHelpers, runShardJob, kQuietSteps, kQuietCounts} = self.oblShard;
+
+// Unit bytes are kept as Blobs (the browser may keep them on disk), and a Blob goes to another worker without being copied.
+const kBlobCodec = {
+    keep: (bytes) => new Blob([bytes]),
+    read: (blob) => new Uint8Array(reader.readAsArrayBuffer(blob)),
+};
 
 // Appended bytes are folded into the spool's Blob in pieces of this size, so few small arrays stay in memory.
 const kSpoolPiece = 16 << 20;
@@ -49,8 +63,11 @@ function makeWindowReader() {
 }
 
 // The calls of worker_main.cpp; `pending` holds the written files by storage key.
-function makeBridge(inputs, pending, report) {
+// `options.spools`: [name, Blob] pairs another worker extracted, which this one's CD source adopts instead of extracting again.
+function makeBridge(inputs, pending, report, options = {}) {
     const spools = new Map(); // name -> {blob, parts, size of parts}
+    for (const [name, blob] of options.spools || []) spools.set(name, {blob, parts: [], partBytes: 0});
+    let mute = null; // steps whose progress is not reported: the replay of what the helpers already showed
     const readInput = makeWindowReader();
     const readSpool = makeWindowReader();
     const fold = (spool) => {
@@ -100,10 +117,24 @@ function makeBridge(inputs, pending, report) {
         spoolRemove(name) {
             spools.delete(name);
         },
+        spoolHas: (name) => spools.has(name),
+        exportSpools() {
+            const exported = [];
+            for (const [name, spool] of spools) {
+                fold(spool);
+                exported.push([name, spool.blob]);
+            }
+            return exported;
+        },
+        muteReplay(on) {
+            mute = on ? {steps: kQuietSteps, counts: kQuietCounts} : null;
+        },
         progress(step) {
+            if (mute && mute.steps.has(step)) return;
             report({type: "progress", step, at: Date.now()});
         },
         count(step, done, total) {
+            if (mute && mute.counts.has(step)) return;
             report({type: "progress", step, done, total, at: Date.now()});
         },
     };
@@ -171,28 +202,78 @@ async function writeLanguage(language) {
     }
 }
 
-self.onmessage = async (event) => {
-    const request = event.data;
+// The plan the module reads: where the files come from and where the pack goes.
+function planOf(request, root) {
+    // The player chooses on the start layer, among the pack's tables; the browser's language is only a hint for the first start.
+    const plan = {source: request.source, root, preferredLanguage: browserLanguage(navigator.language)};
+    if (request.source === "iso") {
+        plan.isoSize = request.image.size;
+    } else {
+        plan.files = request.files.map((file, index) => ({
+            path: (request.paths && request.paths[index]) || file.webkitRelativePath || file.name, size: file.size}));
+    }
+    return plan;
+}
+
+// The helper's side (shard.js): converts a share of the units and posts them back.
+function runHelper(job) {
+    const post = (message) => self.postMessage(message);
+    runShardJob(job, {
+        codec: kBlobCodec,
+        createModule: () => createOblImport(),
+        makeBridge: (shardJob, store, report) => makeBridge(shardJob.request, new Map(), report, {spools: shardJob.spools}),
+    }, post);
+}
+
+// Converts the sprites and maps on helper workers; true when `units` holds what they made. False: the caller imports alone.
+async function convertOnHelpers(request, plan, module, bridge, units, helpers) {
+    const run = (extra) => module.ccall("obl_import", "number", ["string"], [JSON.stringify({...plan, ...extra})]);
+    // A CD's sprite archive is extracted once, here; the helpers adopt it from the spool instead of each extracting it.
+    if (run({stage: "prepare"}) !== 0) return false;
+    const spools = bridge.exportSpools();
+    const result = await runHelpers({
+        count: helpers,
+        spawn: () => new Worker(self.location.href),
+        jobFor: (index) => ({type: "shard", plan: JSON.stringify(plan), shard: {index, count: helpers}, request, spools}),
+        store: units,
+        report: (message) => self.postMessage(message),
+    });
+    if (!result.ok) units.clear();
+    return result.ok;
+}
+
+async function importPack(request) {
     const root = request.root || "packs/base";
     const pending = new Map();
+    const module = await createOblImport();
+    const units = self.oblShard.makeUnitStore(kBlobCodec);
+    const bridge = makeBridge(request, pending, (message) => self.postMessage(message));
+    module.oblImport = Object.assign(bridge, units.bridge);
+    const plan = planOf(request, root);
+    const helpers = typeof Worker === "undefined" ? 1 : request.workers || chooseHelperCount({
+        hardwareConcurrency: navigator.hardwareConcurrency, deviceMemory: navigator.deviceMemory});
+    const shared = helpers > 1 && await convertOnHelpers(request, plan, module, bridge, units, helpers);
+    if (shared) {
+        plan.stage = "units";
+        bridge.muteReplay(true);
+    }
+    if (module.ccall("obl_import", "number", ["string"], [JSON.stringify(plan)]) !== 0) {
+        self.postMessage({type: "error", message: module.UTF8ToString(module._obl_import_error())});
+        return;
+    }
+    await persist(root, pending, (done, total) => self.postMessage({type: "progress", step: "storing", done, total, at: Date.now()}));
+    await writeLanguage(module.UTF8ToString(module._obl_import_language()));
+    self.postMessage({type: "done", files: pending.size});
+}
+
+self.onmessage = async (event) => {
+    const request = event.data;
+    if (request.type === "shard") {
+        runHelper(request);
+        return;
+    }
     try {
-        const module = await createOblImport();
-        module.oblImport = makeBridge(request, pending, (message) => self.postMessage(message));
-        // The player chooses on the start layer, among the pack's tables; the browser's language is only a hint for the first start.
-        const plan = {source: request.source, root, preferredLanguage: browserLanguage(navigator.language)};
-        if (request.source === "iso") {
-            plan.isoSize = request.image.size;
-        } else {
-            plan.files = request.files.map((file, index) => ({
-                path: (request.paths && request.paths[index]) || file.webkitRelativePath || file.name, size: file.size}));
-        }
-        if (module.ccall("obl_import", "number", ["string"], [JSON.stringify(plan)]) !== 0) {
-            self.postMessage({type: "error", message: module.UTF8ToString(module._obl_import_error())});
-            return;
-        }
-        await persist(root, pending, (done, total) => self.postMessage({type: "progress", step: "storing", done, total, at: Date.now()}));
-        await writeLanguage(module.UTF8ToString(module._obl_import_language()));
-        self.postMessage({type: "done", files: pending.size});
+        await importPack(request);
     } catch (error) {
         self.postMessage({type: "error", message: String(error)});
     }

@@ -53,4 +53,5 @@ target_link_options(obl-import-web PRIVATE -fwasm-exceptions -sMODULARIZE=1 -sEX
 add_custom_command(TARGET obl-import-web POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/import_worker.js ${CMAKE_BINARY_DIR}/bin/
     COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/language_ini.js ${CMAKE_BINARY_DIR}/bin/
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/shard.js ${CMAKE_BINARY_DIR}/bin/
     VERBATIM)

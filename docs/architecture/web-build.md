@@ -43,6 +43,11 @@ Each of these is behind `EMSCRIPTEN` / `__EMSCRIPTEN__`, and the native builds a
   with Node's JavaScript stack trace, which names our functions. `InitFaultHandlers` is empty there.
 
 ## Threads
+The browser import (`importer/web/`) gets its parallelism without threads: helper Web Workers, each with its own wasm instance,
+talk only by `postMessage` (the page is not cross-origin isolated, so no `SharedArrayBuffer`). `node_check.cjs --game <dir>
+--workers <n>` runs the same protocol under Node with `worker_threads`, requires the files of a single worker, and prints both
+timings; its synthetic run (CI) checks `shard.js` and a sharded import of a fake copy that must end like a single worker's.
+
 The game creates no thread; `std::thread` appears only in Windows test tools. The `std::mutex`es (`core/log.cpp`,
 `game/ui/sound_bank.cpp`) and `std::atomic`s compile to no-ops without `-pthread`, so no `SharedArrayBuffer` is needed.
 

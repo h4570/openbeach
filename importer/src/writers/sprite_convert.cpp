@@ -307,6 +307,17 @@ bool ToneGroupsOfGuestSets(const std::vector<std::vector<uint8_t>>& installedSet
     return true;
 }
 
+bool PrepareSpriteData(const ByteSource& source, std::string& error)
+{
+    const auto path = FindFile(source, kSpriteDataPath);
+    uint8_t head[1] = {};
+    if (!path || !source.Read(*path, 0, head)) {
+        error = "no readable Data/Sprites/BLSprite.dat under " + source.Describe("");
+        return false;
+    }
+    return true;
+}
+
 bool SpriteArchive::Open(const ByteSource& source, SpriteArchive& archive, std::string& error)
 {
     const auto headerPath = FindFile(source, kSpriteHeaderPath);
@@ -378,19 +389,26 @@ bool SpriteArchive::Convert(PackSink& out, const json_schema::Registry& schemas,
     };
     // The part of a sprite that needs the calling thread: schema validation, the JSON file and the counters.
     const int total = static_cast<int>(bank.sprites.size());
-    const auto finish = [&](const SpriteRecord& sprite, const std::string& key, nlohmann::ordered_json& json, std::string& err) {
+    const auto validate = [&](const std::string& key, nlohmann::ordered_json& json, std::string& err) {
         if (key.starts_with("pathtile_") && !autotile_.is_null()) json["autotile"] = autotile_;
         if (!formats::ValidateDocument(schemas, "obl.sprite", json, err)) {
             err = "sprites/" + key + ".json: " + err;
             return false;
         }
-        const std::string text = json.dump(2) + "\n";
-        if (!write(key + ".json", std::span(reinterpret_cast<const uint8_t*>(text.data()), text.size()), err)) return false;
+        return true;
+    };
+    const auto count = [&](const SpriteRecord& sprite) {
         ++stats.sprites;
         stats.animations += static_cast<int>(sprite.anims.size());
         for (const auto& anim : sprite.anims) stats.frames += anim.uniqueFrames;
         // Every sprite: the big ones take seconds each, so a coarser count looks like a hang.
         if (stats.report) stats.report(stats.sprites, total);
+    };
+    const auto finish = [&](const SpriteRecord& sprite, const std::string& key, nlohmann::ordered_json& json, std::string& err) {
+        if (!validate(key, json, err)) return false;
+        const std::string text = json.dump(2) + "\n";
+        if (!write(key + ".json", std::span(reinterpret_cast<const uint8_t*>(text.data()), text.size()), err)) return false;
+        count(sprite);
         return true;
     };
     const auto toneOf = [&](const std::string& key) {
@@ -415,7 +433,56 @@ bool SpriteArchive::Convert(PackSink& out, const json_schema::Registry& schemas,
         }
     }
 
-    if (EffectiveJobs(stats.jobs, todo.size()) <= 1) {
+    const UnitExchange* exchange = stats.exchange;
+    if (exchange && exchange->shard) {
+        // One sprite as a unit: the files a serial run writes for it in order, the JSON last, and the error that ended it.
+        const auto convertUnit = [&](size_t index) {
+            UnitOutput unit;
+            const SpriteRecord& sprite = *todo[index];
+            const std::string key = LowerAscii(sprite.name);
+            const ConvertedFileSink keep = [&](const std::string& relative, std::span<const uint8_t> bytes, std::string&) {
+                unit.files.emplace_back(relative, std::vector<uint8_t>(bytes.begin(), bytes.end()));
+                return true;
+            };
+            nlohmann::ordered_json json;
+            if (!ConvertSprite(sprite, readBlock, keep, json, unit.error, toneOf(key)) || !validate(key, json, unit.error)) return unit;
+            const std::string text = json.dump(2) + "\n";
+            unit.files.emplace_back(key + ".json", std::vector<uint8_t>(text.begin(), text.end()));
+            return unit;
+        };
+        std::vector<uint64_t> costs;
+        for (const SpriteRecord* sprite : todo) costs.push_back(SpriteMemory(*sprite));
+        const std::vector<int> owner = AssignUnits(costs, exchange->shard->count);
+        const int mine = static_cast<int>(std::count(owner.begin(), owner.end(), exchange->shard->index));
+        int done = 0;
+        if (stats.report) stats.report(0, mine);
+        for (size_t index = 0; index < todo.size(); ++index) {
+            if (owner[index] != exchange->shard->index) continue;
+            UnitOutput unit = convertUnit(index);
+            const bool failed = !unit.error.empty();
+            exchange->sink("sprites", index, unit);
+            // The units after a failed one are never taken: the whole import stops at it.
+            if (failed) return true;
+            if (stats.report) stats.report(++done, mine);
+        }
+        return true;
+    }
+    if (exchange && exchange->source) {
+        for (size_t index = 0; index < todo.size(); ++index) {
+            UnitOutput unit;
+            if (!exchange->source("sprites", index, unit)) {
+                error = "sprite " + LowerAscii(todo[index]->name) + ": no result from the worker that converted it";
+                return false;
+            }
+            for (const auto& [relative, bytes] : unit.files)
+                if (!write(relative, bytes, error)) return false;
+            if (!unit.error.empty()) {
+                error = unit.error;
+                return false;
+            }
+            count(*todo[index]);
+        }
+    } else if (EffectiveJobs(stats.jobs, todo.size()) <= 1) {
         for (const SpriteRecord* sprite : todo) {
             const std::string key = LowerAscii(sprite->name);
             nlohmann::ordered_json json;

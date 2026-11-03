@@ -6,6 +6,7 @@
 
 #include "openbeach/importer/byte_source.h"
 #include "openbeach/importer/pack_sink.h"
+#include "openbeach/importer/shard.h"
 #include "openbeach/importer/spool.h"
 
 #include <cstdint>
@@ -41,6 +42,14 @@ struct ImportOptions {
     // Worker threads for the sprite and map images (0: one per hardware thread). The pack is the same for every value; the
     // default, one, converts on the calling thread, which is all the browser build (no threads) ever does.
     int jobs = 1;
+    // Sharing the work between instances of the importer that have no common memory (shard.h; the browser's workers). Without
+    // `exchange->shard` and `exchange->source` the import converts everything itself. A shard run does only the "maps" and
+    // "sprites" units of its share, hands them to `exchange->sink` and writes nothing (it returns true when its share is done
+    // or ended at a failed unit, false when it could not start: the caller then imports alone). With a source the whole
+    // import runs and takes those units from it, so the pack, the first error and the progress are those of an import alone.
+    UnitExchange exchange;
+    // A CD: only extract the sprite archive into the spool and keep it there, for the shards to adopt; nothing is converted.
+    bool prepareSpool = false;
     // The executables the source may hold (KnownExe, importer/src/source/source.h); empty means the supported builds.
     // Tests pass their own table so a synthetic copy imports end to end.
     std::span<const KnownExe> knownExes;

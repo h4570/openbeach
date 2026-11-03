@@ -34,8 +34,15 @@ std::string NormalizeSourcePath(std::string path)
 class Writer {
 public:
     Writer(const ByteSource& source, PackSink& out, const json_schema::Registry& schemas, int& files, std::string& error,
-            const std::function<void(int done, int total)>& report, int jobs)
-        : m_source(source), m_out(out), m_schemas(schemas), m_files(files), m_error(error), m_report(report), m_jobs(jobs)
+            const std::function<void(int done, int total)>& report, int jobs, const UnitExchange* exchange)
+        : m_source(source),
+          m_out(out),
+          m_schemas(schemas),
+          m_files(files),
+          m_error(error),
+          m_report(report),
+          m_jobs(jobs),
+          m_exchange(exchange)
     {}
 
     bool Run()
@@ -81,6 +88,7 @@ private:
     };
     struct Step {
         uint64_t cost = 0; // memory a worker holds for the step, in bytes
+        int unit = -1; // an image step's number among the image steps (shard.h)
         std::function<Outputs()> work;
         std::function<bool()> commit; // without `work`: the step itself; with it: unused, the outputs are written
     };
@@ -89,8 +97,8 @@ private:
     static constexpr uint64_t kTerrainCost = 4 << 20, kHeightCost = 96 << 20, kPlanesCost = 256 << 20, kWaterCost = 16 << 20;
     static constexpr uint64_t kMemoryBudget = 1ull << 30;
 
-    void AddStep(std::function<bool()> commit) { m_steps.push_back({0, {}, std::move(commit)}); }
-    void AddImage(uint64_t cost, std::function<Outputs()> work) { m_steps.push_back({cost, std::move(work), {}}); }
+    void AddStep(std::function<bool()> commit) { m_steps.push_back({0, -1, {}, std::move(commit)}); }
+    void AddImage(uint64_t cost, std::function<Outputs()> work) { m_steps.push_back({cost, m_images++, std::move(work), {}}); }
     // The error a serial run reports at this point, after the steps before it.
     void AddFailure(std::string message)
     {
@@ -109,8 +117,22 @@ private:
 
     bool Execute()
     {
+        if (m_exchange && m_exchange->shard) return ExecuteShard(*m_exchange);
         const std::function<uint64_t(size_t)> cost = [&](size_t i) { return m_steps[i].cost; };
-        const std::function<Outputs(size_t)> produce = [&](size_t i) { return m_steps[i].work ? m_steps[i].work() : Outputs{}; };
+        const std::function<Outputs(size_t)> produce = [&](size_t i) {
+            if (!m_steps[i].work) return Outputs{};
+            if (!m_exchange || !m_exchange->source) return m_steps[i].work();
+            // The image was converted by another instance; a failed unit comes with the files it wrote before the failure.
+            Outputs outputs;
+            UnitOutput unit;
+            if (!m_exchange->source("maps", static_cast<size_t>(m_steps[i].unit), unit)) {
+                outputs.error = "no result from the worker that converted map image " + std::to_string(m_steps[i].unit);
+                return outputs;
+            }
+            outputs.files = std::move(unit.files);
+            outputs.error = std::move(unit.error);
+            return outputs;
+        };
         const std::function<bool(size_t, Outputs&)> consume = [&](size_t i, Outputs& outputs) {
             if (!m_steps[i].work) return m_steps[i].commit();
             for (const auto& [name, bytes] : outputs.files)
@@ -119,6 +141,41 @@ private:
             return Fail(outputs.error);
         };
         return RunOrdered<Outputs>(m_steps.size(), m_jobs, kMemoryBudget, cost, produce, consume);
+    }
+
+    // Converts this shard's images and hands each to the sink; nothing reaches the pack. Which shard converts an image comes
+    // from AssignUnits over the costs, which every instance computes alike from the same plan.
+    bool ExecuteShard(const UnitExchange& exchange)
+    {
+        std::vector<size_t> images; // the steps with work, by unit number
+        std::vector<uint64_t> costs;
+        for (size_t i = 0; i < m_steps.size(); ++i)
+            if (m_steps[i].work) {
+                images.push_back(i);
+                costs.push_back(m_steps[i].cost);
+            }
+        const std::vector<int> owner = AssignUnits(costs, exchange.shard->count);
+        std::vector<size_t> mine;
+        for (size_t unit = 0; unit < images.size(); ++unit)
+            if (owner[unit] == exchange.shard->index) mine.push_back(unit);
+        const int total = static_cast<int>(mine.size());
+        int done = 0;
+        if (m_report) m_report(0, total);
+        const std::function<uint64_t(size_t)> cost = [&](size_t n) { return costs[mine[n]]; };
+        const std::function<Outputs(size_t)> produce = [&](size_t n) { return m_steps[images[mine[n]]].work(); };
+        const std::function<bool(size_t, Outputs&)> consume = [&](size_t n, Outputs& outputs) {
+            UnitOutput unit;
+            unit.files = std::move(outputs.files);
+            unit.error = std::move(outputs.error);
+            const bool failed = !unit.error.empty();
+            exchange.sink("maps", mine[n], unit);
+            // The images after a failed one are never taken: the whole import stops at it.
+            if (failed) return false;
+            if (m_report) m_report(++done, total);
+            return true;
+        };
+        RunOrdered<Outputs>(mine.size(), m_jobs, kMemoryBudget, cost, produce, consume);
+        return true;
     }
 
     // Reads the scenarios in key order, the cheap parts (PIS entries, metadata, scripts) now and the images as steps.
@@ -321,6 +378,8 @@ private:
     std::string& m_error;
     const std::function<void(int done, int total)>& m_report;
     int m_jobs;
+    const UnitExchange* m_exchange;
+    int m_images = 0; // the image steps planned so far
     std::vector<Step> m_steps;
     std::map<std::string, std::string> m_maps;
     std::set<std::string> m_water, m_definitions, m_written;
@@ -408,11 +467,16 @@ bool StampIsCurrent(const std::string& stamp, const std::string& header, const P
 } // namespace
 
 bool ConvertMaps(const ByteSource& source, PackSink& out, const json_schema::Registry& schemas, int& files, std::string& error,
-        const std::function<void(int done, int total)>& report, bool* upToDate, int jobs)
+        const std::function<void(int done, int total)>& report, bool* upToDate, int jobs, const UnitExchange* exchange)
 {
     files = 0;
     if (upToDate) *upToDate = false;
     try {
+        if (exchange && exchange->shard) {
+            // A shard only converts images; the instance that takes them over decides on the stamp and writes it.
+            Writer writer(source, out, schemas, files, error, report, jobs, exchange);
+            return writer.Run();
+        }
         // Every build's post-build step asks for the maps and the PNGs take seconds per island: skip when the stamp of the last
         // conversion names these inputs, this revision and outputs that are all still there. The stamp is removed first,
         // so an interrupted run is redone, and written last.
@@ -430,7 +494,7 @@ bool ConvertMaps(const ByteSource& source, PackSink& out, const json_schema::Reg
             }
         }
         out.Remove(stamp);
-        Writer writer(source, out, schemas, files, error, report, jobs);
+        Writer writer(source, out, schemas, files, error, report, jobs, exchange);
         if (!writer.Run()) return false;
         if (header.empty()) return true;
         std::string text = header;

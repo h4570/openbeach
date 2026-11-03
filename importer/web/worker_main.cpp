@@ -6,7 +6,12 @@
 //   obl_import(request JSON) -> 0 on success, then obl_import_language() for the pack's language, or obl_import_error()
 //   for the message of a failure.
 // Request: {"source": "files" | "iso", "files": [{"path", "size"}] | "isoSize": n, "root": "packs/base", "language"?,
-// "preferredLanguage"?}.
+// "preferredLanguage"?, "stage"?, "shard"?}. `stage` splits one import between instances (shard.js):
+//   absent    the whole import by this instance
+//   "prepare" a CD's sprite archive is extracted into the spool and kept there; nothing is converted
+//   "shard"   with "shard": {"index", "count"}: converts that share of the maps' and sprites' units and hands each to
+//             Module.oblImport.unitPut/unitEnd; writes nothing to the pack
+//   "units"   the whole import, taking the maps' and sprites' units from Module.oblImport.unitOpen/... (the shards' output)
 
 #include "importer/web/storage_sink.h"
 #include "importer/web/web_source.h"
@@ -53,6 +58,31 @@ EM_JS(int, SpoolReadJs, (const char* name, double offset, uint8_t* out, size_t l
 });
 EM_JS(void, SpoolRemoveJs, (const char* name), {
     Module.oblImport.spoolRemove(UTF8ToString(name));
+});
+EM_JS(int, SpoolHasJs, (const char* name), {
+    return Module.oblImport.spoolHas(UTF8ToString(name)) ? 1 : 0;
+});
+EM_JS(void, UnitPutJs, (const char* step, size_t unit, const char* path, const uint8_t* bytes, size_t length), {
+    Module.oblImport.unitPut(UTF8ToString(step), unit, UTF8ToString(path), HEAPU8.slice(bytes, bytes + length));
+});
+EM_JS(void, UnitEndJs, (const char* step, size_t unit, const char* error), {
+    Module.oblImport.unitEnd(UTF8ToString(step), unit, UTF8ToString(error));
+});
+EM_JS(int, UnitOpenJs, (const char* step, size_t unit), {
+    return Module.oblImport.unitOpen(UTF8ToString(step), unit);
+});
+EM_JS(char*, UnitPathJs, (int index), {
+    return stringToNewUTF8(Module.oblImport.unitPath(index));
+});
+EM_JS(uint8_t*, UnitBytesJs, (int index, size_t* length), {
+    const bytes = Module.oblImport.unitBytes(index);
+    const out = _malloc(Math.max(bytes.length, 1));
+    HEAPU8.set(bytes, out);
+    HEAPU32[length >> 2] = bytes.length;
+    return out;
+});
+EM_JS(char*, UnitErrorJs, (), {
+    return stringToNewUTF8(Module.oblImport.unitError());
 });
 EM_JS(void, ProgressJs, (const char* step), {
     Module.oblImport.progress(UTF8ToString(step));
@@ -118,7 +148,34 @@ public:
     }
 
     void Remove(std::string_view name) override { SpoolRemoveJs(std::string(name).c_str()); }
+
+    bool Has(std::string_view name) const override { return SpoolHasJs(std::string(name).c_str()) != 0; }
 };
+
+// The units of the maps and sprites another instance converted, taken from JavaScript's store.
+bool TakeUnit(std::string_view step, size_t unit, UnitOutput& output)
+{
+    const int files = UnitOpenJs(std::string(step).c_str(), unit);
+    if (files < 0) return false;
+    for (int i = 0; i < files; ++i) {
+        char* path = UnitPathJs(i);
+        size_t length = 0;
+        uint8_t* bytes = UnitBytesJs(i, &length);
+        output.files.emplace_back(path, std::vector<uint8_t>(bytes, bytes + length));
+        std::free(path);
+        std::free(bytes);
+    }
+    char* error = UnitErrorJs();
+    output.error = error;
+    std::free(error);
+    return true;
+}
+
+void GiveUnit(std::string_view step, size_t unit, UnitOutput& output)
+{
+    for (const auto& [path, bytes] : output.files) UnitPutJs(std::string(step).c_str(), unit, path.c_str(), bytes.data(), bytes.size());
+    UnitEndJs(std::string(step).c_str(), unit, output.error.c_str());
+}
 
 std::string g_error;
 std::string g_language;
@@ -161,6 +218,24 @@ bool Run(const char* requestText)
     };
     JsSpool spool;
     options.spool = &spool;
+    const std::string stage = request.value("stage", std::string());
+    Shard shard;
+    if (stage == "prepare") {
+        options.prepareSpool = true;
+    } else if (stage == "shard") {
+        shard = {request.at("shard").at("index").get<int>(), request.at("shard").at("count").get<int>()};
+        if (shard.count < 1 || shard.index < 0 || shard.index >= shard.count) {
+            g_error = "bad import request: shard out of range";
+            return false;
+        }
+        options.exchange.shard = &shard;
+        options.exchange.sink = GiveUnit;
+    } else if (stage == "units") {
+        options.exchange.source = TakeUnit;
+    } else if (!stage.empty()) {
+        g_error = "bad import request: unknown stage " + stage;
+        return false;
+    }
     options.progress = [](std::string_view step) { ProgressJs(std::string(step).c_str()); };
     if (!ImportPack(*source, *pack, schemas, options, error)) {
         g_error = error;

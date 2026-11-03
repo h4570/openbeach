@@ -16,6 +16,7 @@
 #include "importer/src/writers/media_convert.h"
 #include "importer/src/writers/sound_convert.h"
 #include "importer/src/writers/sound_script_convert.h"
+#include "importer/src/writers/sprite_convert.h"
 #include "importer/src/writers/text_convert.h"
 #include "importer/web/web_source.h"
 #include "openbeach/importer/import.h"
@@ -264,6 +265,75 @@ Imported Import(const ByteSource& source, std::span<const KnownExe> known, std::
     return out;
 }
 
+// A memory spool that counts the files extracted into it.
+class CountingSpool final : public Spool {
+public:
+    bool Create(std::string_view name) override
+    {
+        ++created;
+        return inner_->Create(name);
+    }
+    bool Append(std::string_view name, std::span<const uint8_t> bytes) override { return inner_->Append(name, bytes); }
+    bool Read(std::string_view name, uint64_t offset, std::span<uint8_t> out) override { return inner_->Read(name, offset, out); }
+    void Remove(std::string_view name) override { inner_->Remove(name); }
+    bool Has(std::string_view name) const override { return inner_->Has(name); }
+
+    int created = 0;
+
+private:
+    std::unique_ptr<Spool> inner_ = OpenMemorySpool();
+};
+
+// The import shared between `shards` instances that meet only through the units they hand over, as the browser's workers do:
+// a CD first has its sprite archive extracted once, every shard converts its share, and one more instance imports the whole
+// copy from their units. `spool` is shared the way the workers share Blobs.
+Imported ImportSharded(
+        const ByteSource& source, std::span<const KnownExe> known, std::optional<std::string> language, int shards, Spool* spool)
+{
+    obl::json_schema::Registry schemas;
+    Imported out;
+    OBL_REQUIRE(obl::formats::LoadEmbeddedSchemas(schemas, out.error));
+    ImportOptions base;
+    base.language = std::move(language);
+    base.spool = spool;
+    base.knownExes = known;
+    if (IsCdRoot(source)) {
+        ImportOptions prepare = base;
+        prepare.prepareSpool = true;
+        MemorySink nothing;
+        OBL_REQUIRE(ImportPack(source, nothing, schemas, prepare, out.error));
+        OBL_CHECK(nothing.files().empty());
+    }
+    std::map<std::pair<std::string, size_t>, UnitOutput> units;
+    for (int index = 0; index < shards; ++index) {
+        const Shard shard{index, shards};
+        ImportOptions options = base;
+        options.exchange.shard = &shard;
+        options.exchange.sink = [&units](std::string_view step, size_t unit, UnitOutput& output) {
+            units[{std::string(step), unit}] = std::move(output);
+        };
+        std::vector<std::string> steps;
+        options.progress = [&](std::string_view step) { steps.emplace_back(step); };
+        MemorySink nothing;
+        OBL_REQUIRE(ImportPack(source, nothing, schemas, options, out.error));
+        OBL_CHECK(nothing.files().empty()); // a shard writes no file of the pack
+        OBL_CHECK(steps.empty());
+    }
+    ImportOptions options = base;
+    options.exchange.source = [&units](std::string_view step, size_t unit, UnitOutput& output) {
+        const auto it = units.find({std::string(step), unit});
+        if (it == units.end()) return false;
+        output = it->second;
+        return true;
+    };
+    options.progress = [&](std::string_view step) { out.steps.emplace_back(step); };
+    options.count = [&](std::string_view step, uint64_t done, uint64_t total) {
+        if (step == "sprites") out.spriteCounts.emplace_back(done, total);
+    };
+    out.ok = ImportPack(source, out.pack, schemas, options, out.error);
+    return out;
+}
+
 MemorySource SourceOf(const Files& files)
 {
     MemorySource source;
@@ -338,6 +408,78 @@ OBL_TEST_CASE("convert.import_synthetic_cd_image")
     OBL_REQUIRE(fromCd.ok);
     OBL_CHECK(fromCd.steps == kSteps);
     OBL_CHECK(fromCd.pack.files() == fromInstallation.pack.files());
+}
+
+OBL_TEST_CASE("convert.import_in_shards_equals_import_alone")
+{
+    // The pack (pack.json and both stamps included), the steps and the counts are the same for one instance and for several
+    // that share the units of the maps and the sprites; a CD's sprite archive is extracted once, not once per shard.
+    const std::vector<uint8_t> exe = GameExe();
+    const std::string hash = obl::sha256::Hex(exe); // KnownExe holds a view of it
+    const KnownExe known[] = {{hash, ExeBuild::DigitalOct2002}};
+    Files installed = Installation(exe);
+    const MemorySource source = SourceOf(installed);
+    const Imported alone = Import(source, known);
+    OBL_REQUIRE(alone.ok);
+    for (int shards : {1, 2, 3, 8}) {
+        CountingSpool spool;
+        const Imported shared = ImportSharded(source, known, std::nullopt, shards, &spool);
+        OBL_REQUIRE(shared.ok);
+        OBL_CHECK(shared.pack.files() == alone.pack.files());
+        OBL_CHECK(shared.steps == alone.steps);
+        OBL_CHECK(shared.spriteCounts == alone.spriteCounts);
+    }
+
+    installed.erase("BeachLife.exe");
+    installed.erase("BeachLife.ini");
+    const obl::test::SyntheticCabinetFiles cabinet = obl::test::SyntheticCabinet(installed, "Game");
+    obl::test::SyntheticIso iso;
+    iso.Add("data1.hdr", cabinet.hdr);
+    iso.Add("data1.cab", cabinet.cab);
+    iso.Add("BeachLife.exe", exe);
+    const std::vector<uint8_t> image = iso.Build();
+    std::string error;
+    const auto disc = web::OpenIsoSource(
+            image.size(),
+            [&](uint64_t offset, std::span<uint8_t> out) {
+                if (offset > image.size() || out.size() > image.size() - offset) return false;
+                std::copy_n(image.begin() + static_cast<std::ptrdiff_t>(offset), out.size(), out.begin());
+                return true;
+            },
+            error);
+    OBL_REQUIRE(disc != nullptr);
+    const Imported fromCd = Import(*disc, known, "en");
+    OBL_REQUIRE(fromCd.ok);
+    for (int shards : {2, 3}) {
+        CountingSpool spool;
+        const Imported shared = ImportSharded(*disc, known, "en", shards, &spool);
+        OBL_REQUIRE(shared.ok);
+        OBL_CHECK(shared.pack.files() == fromCd.pack.files());
+        OBL_CHECK(shared.steps == fromCd.steps);
+    }
+
+    // A file too large for memory is extracted once into a shared spool: a source that keeps it leaves it for the next to adopt,
+    // and the next neither extracts it again nor removes it.
+    CountingSpool spool;
+    CdSourceLimits limits;
+    limits.memory = 0;
+    limits.keepSpooled = true;
+    std::vector<uint8_t> first(24), second(24);
+    {
+        const auto extracting = OpenCdSource(*disc, spool, error, limits);
+        OBL_REQUIRE(extracting != nullptr);
+        PrepareSpriteData(*extracting, error);
+        OBL_CHECK_EQ(spool.created, 1);
+        OBL_REQUIRE(extracting->Read(*FindFile(*extracting, "Data/Sprites/BLSprite.dat"), 0, first));
+    }
+    limits.keepSpooled = false;
+    {
+        const auto adopting = OpenCdSource(*disc, spool, error, limits);
+        OBL_REQUIRE(adopting != nullptr);
+        OBL_REQUIRE(adopting->Read(*FindFile(*adopting, "Data/Sprites/BLSprite.dat"), 0, second));
+    }
+    OBL_CHECK_EQ(spool.created, 1);
+    OBL_CHECK(first == second);
 }
 
 OBL_TEST_CASE("convert.import_refusals_name_their_step")

@@ -24,6 +24,13 @@ public:
     virtual bool Read(std::string_view name, uint64_t offset, std::span<uint8_t> out) = 0;
     // Drops the file `name`; a missing one is not an error.
     virtual void Remove(std::string_view name) = 0;
+    // True when the file `name` exists, so a source can adopt what another instance of the importer already extracted into
+    // the same spool (the browser's workers share their Blobs). A spool that cannot tell says no.
+    virtual bool Has(std::string_view name) const
+    {
+        (void)name;
+        return false;
+    }
 };
 
 // Files in `directory` (created when missing) under names unique to this spool; the files left are removed when the spool

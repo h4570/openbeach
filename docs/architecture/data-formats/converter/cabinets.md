@@ -35,7 +35,9 @@ source in it.
   files are removed with the source.
 - Spools: `OpenDirectorySpool` (CLI: `<output>.spool/` beside the output or pack directory, never inside it, since `pack.json` lists every file of the pack directory), `OpenMemorySpool` (tests), and in the browser
   `JsSpool` (`web/worker_main.cpp`), which appends to a Blob in 16 MB pieces and reads ranges with `FileReaderSync`, so
-  the 467 MB archive never sits in the WebAssembly heap.
+  the 467 MB archive never sits in the WebAssembly heap. A source adopts a spool file that is already there (`Spool::Has`), and the
+  coordinator's source keeps its spool files (`CdSourceLimits::keepSpooled`), so the browser's helper workers do not extract
+  the archive again (converter index, "Sharded conversion").
 
 Unit test `convert.cd_source_presents_the_installed_tree` (synthetic cabinet: tree, ranged reads in memory and spooled,
 spool cleanup, MD5 failure); `data.convert_sprites_of_cd_equal_installation` converts sprites from the European CD

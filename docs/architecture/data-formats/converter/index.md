@@ -83,7 +83,8 @@ Library `obl_convert` (`importer/CMakeLists.txt`, headers included as `"importer
 (`OpenIsoSource`: an ISO 9660 image with Joliet names; `OpenPickedFilesSource`: the files of a picked folder, rooted at
 the folder holding `BeachLife.exe` or `data1.hdr`) and `storage_sink.h` (`OpenStorageSink`: the pack under a key prefix
 of a `PackStorage`). The Emscripten part: `worker_main.cpp` (`obl_import`, binding those to JavaScript),
-`import_worker.js` (the Web Worker: `FileReaderSync` reads, Blobs while converting, OPFS after success) and
+`import_worker.js` (the Web Worker: `FileReaderSync` reads, Blobs while converting, OPFS after success),
+`shard.js` (the part of the sharded import that does not depend on the host, see "Sharded conversion") and
 `node_check.cjs` (the same adapter under Node); `web/CMakeLists.txt` builds `obl-import-web.js/.wasm` in the `wasm` job
 (see the browser adapter below).
 
@@ -98,6 +99,35 @@ before it are written), and the progress reports are the same sequence. Schema v
 estimates of the tasks held stay within 768 MB (sprites) or 1 GB (maps); a task bigger than that runs alone. The API takes
 the count too (`SpriteConversionStats::jobs`, `ConvertMaps(..., jobs)`, `ImportOptions::jobs`; 0 means one per hardware
 thread) and defaults to 1. The browser build (Emscripten, no pthreads) always runs serially.
+
+**Sharded conversion (the browser).** The site is not cross-origin isolated, so a page has no threads and no shared memory.
+Its import worker (the coordinator) therefore starts *helper workers*, nested Web Workers running the same script, each with
+its own wasm instance, and the only thing between them is `postMessage`. The unit of work is the one of the native pool, and
+`openbeach/importer/shard.h` names it: a sprite of the bank (`todo` in `SpriteArchive::Convert`) or an image step of the map
+writer (`Writer::Step::unit`), numbered in the order a serial run does them. `AssignUnits` gives each unit to a shard,
+heaviest first to the least loaded, from the same cost estimates the pool uses, so every instance computes the same split.
+`ImportOptions::exchange` carries three modes of the one `ImportPack`, selected by the request's `stage`:
+- `prepare` (a CD): the sprite archive is extracted into the spool once, by the coordinator, and kept there
+  (`CdSourceLimits::keepSpooled`, `PrepareSpriteData`).
+- `shard` (`{"index", "count"}`): the instance runs only the `maps` and `sprites` steps, converts the units it owns and hands each to
+  `exchange.sink` as a `UnitOutput` (its files in write order, with the PNGs, the validated JSON, and the error that ended it).
+  It writes nothing to the pack, not even a stamp. It stops after its first failed unit, since the import stops there too. A
+  CD source adopts the spooled archive of the coordinator (`Spool::Has`) instead of extracting it again; the helpers get the
+  spool's Blobs, the picked `File` objects and the same request, and re-open the cabinets only for the small files they read.
+- `units`: the coordinator runs the whole import, and the `maps` and `sprites` steps take each unit from `exchange.source` (what
+  the helpers sent) instead of converting it. Writing the files, the counters, the first error, both conversion stamps
+  (written once, here) and `pack.json` (last, over the whole file set) are the code of the serial path, so the pack is the one a
+  single worker writes, byte for byte; a failed unit reports its message after the files it wrote, in unit order, which is the
+  error of the lowest-index failing unit.
+
+`shard.js` picks the helpers (`navigator.hardwareConcurrency` minus one core for the page, at most 8; at most 4, 2 or 1 when
+`navigator.deviceMemory` is at most 8, 4 or 2 GB; at most 3 when the browser does not report it, as Safari and Firefox do not,
+because iOS kills the whole tab when the heaps of the helpers run it out of memory; fewer than 2 means no helpers), runs them (`runHelpers`) and holds the
+units (`makeUnitStore`, Blobs in the page, bytes under Node). The coordinator mostly waits and adds the helpers' counts into one
+`maps` progress over all units; the replay in `units` does not report the steps the helpers showed, so the bar never goes back.
+With one helper, or when a helper fails, dies or cannot start (no nested workers), the coordinator discards the helpers and
+imports alone along today's path, so a damaged copy gives a single worker's message. The page cancels by terminating the
+coordinator, which ends its helpers. Memory is one wasm heap per helper plus the coordinator's.
 
 **Schemas.** Every JSON is validated against its schema before it is written; an invalid document stops the
 conversion with the schema errors (exit 1). The CLI uses its embedded `data/schemas/` bundle by default, so a standalone converter needs no schema files

@@ -3,6 +3,7 @@
 #include "importer/src/readers/sprite_bank.h"
 #include "openbeach/importer/byte_source.h"
 #include "openbeach/importer/pack_sink.h"
+#include "openbeach/importer/shard.h"
 
 #include <nlohmann/json.hpp>
 
@@ -52,6 +53,9 @@ struct SpriteConversionStats {
     // Worker threads that decode and encode sprites (0: one per hardware thread). The output is the same for every value;
     // 1 converts one sprite at a time on the calling thread, and the browser build always does.
     int jobs = 1;
+    // Sharing the sprites between instances (shard.h): a shard run converts its share into `exchange->sink` and writes nothing
+    // to the pack, a run with a source takes each sprite's files from it. Null: every sprite is converted and written here.
+    const UnitExchange* exchange = nullptr;
     // Called every few sprites and after the last one with the sprites done and the total of the conversion.
     std::function<void(int done, int total)> report;
 };
@@ -93,6 +97,9 @@ private:
     std::string dataPath_; // inside data_
     std::map<std::string, int> toneGroups_; // ToneGroupsOfGuestSets of the root's guest sets
 };
+
+// Reads the first bytes of BLSprite.dat, which extracts it from a CD into the spool when it is not there yet.
+bool PrepareSpriteData(const ByteSource& source, std::string& error);
 
 bool ConvertSprites(const ByteSource& source, PackSink& out, const json_schema::Registry& schemas, const std::string& filter,
         SpriteConversionStats& stats, std::string& error);
