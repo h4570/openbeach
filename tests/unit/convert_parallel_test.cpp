@@ -1,6 +1,7 @@
 // Parallel conversion (importer/src/writers/ordered_pool.h and its use by sprite_convert.cpp and map_convert.cpp): the worker
 // pool commits in item order and bounds its memory, and the converters give the same files, the same first error and the same
-// progress with one job and with four. Every input is synthetic.
+// progress with one job and with four. The same holds when the units are shared between shards that only meet through a
+// UnitExchange (openbeach/importer/shard.h), as the browser's workers do. Every input is synthetic.
 
 #include "unit_test.h"
 
@@ -8,6 +9,7 @@
 #include "formats/map_pack.h"
 #include "formats/schemas.h"
 #include "importer/src/writers/map_convert.h"
+#include "openbeach/importer/shard.h"
 #include "importer/src/writers/ordered_pool.h"
 #include "importer/src/writers/sprite_convert.h"
 #include "synthetic_map.h"
@@ -102,6 +104,42 @@ OBL_TEST_CASE("convert.ordered_pool_bounds_the_memory_in_flight")
     OBL_CHECK(peak >= 40);
 }
 
+// --- shards ------------------------------------------------------------------------------------------------------------
+
+// The units the shards made, by step and number: what the workers of the browser hand to the one that runs the whole import.
+using Units = std::map<std::pair<std::string, size_t>, UnitOutput>;
+
+UnitExchange Taking(const Units& units)
+{
+    UnitExchange exchange;
+    exchange.source = [&units](std::string_view step, size_t unit, UnitOutput& output) {
+        const auto it = units.find({std::string(step), unit});
+        if (it == units.end()) return false;
+        output = it->second;
+        return true;
+    };
+    return exchange;
+}
+
+OBL_TEST_CASE("convert.shard_assignment_balances_and_is_stable")
+{
+    const std::vector<uint64_t> costs = {5, 100, 5, 5, 90, 5, 5, 80, 5, 5, 5, 70};
+    for (int count : {1, 2, 3, 5}) {
+        const std::vector<int> owner = AssignUnits(costs, count);
+        OBL_CHECK(owner == AssignUnits(costs, count));
+        std::vector<uint64_t> load(static_cast<size_t>(count), 0);
+        for (size_t i = 0; i < costs.size(); ++i) {
+            OBL_REQUIRE(owner[i] >= 0 && owner[i] < count);
+            load[static_cast<size_t>(owner[i])] += costs[i];
+        }
+        // No shard carries more than the average plus the largest unit.
+        uint64_t sum = 0;
+        for (uint64_t value : load) sum += value;
+        for (uint64_t value : load) OBL_CHECK(value <= sum / count + 100);
+    }
+    OBL_CHECK(AssignUnits({}, 3).empty());
+}
+
 // --- sprites -----------------------------------------------------------------------------------------------------------
 
 struct SpriteArchiveBytes {
@@ -175,6 +213,45 @@ void CheckSameSprites(const SpriteRun& serial, const SpriteRun& parallel)
     OBL_CHECK_EQ(parallel.fileCount, serial.fileCount);
 }
 
+// The sprites converted by `shards` instances that share nothing, then by one that takes their units over.
+SpriteRun ConvertSharded(const SpriteArchiveBytes& archive, int shards)
+{
+    MemorySource source;
+    source.Add("Data/Sprites/BLSprite.hdr", archive.header);
+    source.Add("Data/Sprites/BLSprite.dat", archive.data);
+    obl::json_schema::Registry schemas;
+    SpriteRun run;
+    OBL_REQUIRE(obl::formats::LoadEmbeddedSchemas(schemas, run.error));
+    Units units;
+    for (int index = 0; index < shards; ++index) {
+        const Shard shard{index, shards};
+        UnitExchange exchange;
+        exchange.shard = &shard;
+        exchange.sink = [&units](std::string_view step, size_t unit, UnitOutput& output) {
+            units[{std::string(step), unit}] = std::move(output);
+        };
+        MemorySink untouched;
+        SpriteConversionStats stats;
+        stats.exchange = &exchange;
+        SpriteArchive opened;
+        OBL_REQUIRE(SpriteArchive::Open(source, opened, run.error));
+        OBL_REQUIRE(opened.Convert(untouched, schemas, "", stats, run.error));
+        OBL_CHECK(untouched.files().empty()); // a shard writes nothing, not even the stamp
+    }
+    const UnitExchange exchange = Taking(units);
+    MemorySink sink;
+    SpriteConversionStats stats;
+    stats.exchange = &exchange;
+    stats.report = [&](int done, int total) { run.reports.emplace_back(done, total); };
+    run.ok = ConvertSprites(source, sink, schemas, "", stats, run.error);
+    run.files = sink.files();
+    run.sprites = stats.sprites;
+    run.animations = stats.animations;
+    run.frames = stats.frames;
+    run.fileCount = stats.files;
+    return run;
+}
+
 std::vector<std::string> SpriteNames(size_t count)
 {
     std::vector<std::string> names;
@@ -190,6 +267,9 @@ OBL_TEST_CASE("convert.parallel_sprites_equal_serial")
     OBL_CHECK_EQ(serial.sprites, 24);
     OBL_CHECK_EQ(serial.reports.size(), size_t{24});
     for (int jobs : {2, 4, 0}) CheckSameSprites(serial, ConvertWithJobs(archive, jobs));
+    // Shared between shards, the sprites, the stamp and the counts are those of one instance.
+    OBL_CHECK(serial.files.contains(std::string("sprites/") + kSpriteStampName));
+    for (int shards : {1, 2, 3, 5}) CheckSameSprites(serial, ConvertSharded(archive, shards));
 }
 
 OBL_TEST_CASE("convert.parallel_sprites_report_the_first_error_of_a_serial_run")
@@ -202,6 +282,7 @@ OBL_TEST_CASE("convert.parallel_sprites_report_the_first_error_of_a_serial_run")
     OBL_CHECK(serial.error.find("sprite_109") != std::string::npos);
     OBL_CHECK_EQ(serial.sprites, 9);
     for (int jobs : {2, 4, 0}) CheckSameSprites(serial, ConvertWithJobs(damaged, jobs));
+    for (int shards : {2, 3, 5}) CheckSameSprites(serial, ConvertSharded(damaged, shards));
 
     // A name that repeats in another case is refused after the sprites before it, as with one job.
     auto names = SpriteNames(12);
@@ -211,6 +292,7 @@ OBL_TEST_CASE("convert.parallel_sprites_report_the_first_error_of_a_serial_run")
     OBL_CHECK(repeated.error.find("occurs twice") != std::string::npos);
     OBL_CHECK_EQ(repeated.sprites, 8);
     CheckSameSprites(repeated, ConvertWithJobs(ManySprites(names), 4));
+    CheckSameSprites(repeated, ConvertSharded(ManySprites(names), 3));
 }
 
 // --- maps --------------------------------------------------------------------------------------------------------------
@@ -274,6 +356,37 @@ MapRun ConvertMapsWithJobs(const Files& files, int jobs)
     return run;
 }
 
+// The maps converted by `shards` instances that share nothing, then by one that takes their images over.
+MapRun ConvertMapsSharded(const Files& files, int shards)
+{
+    MemorySource source;
+    for (const auto& [path, bytes] : files) source.Add(path, bytes);
+    obl::json_schema::Registry schemas;
+    MapRun run;
+    OBL_REQUIRE(obl::formats::LoadEmbeddedSchemas(schemas, run.error));
+    Units units;
+    for (int index = 0; index < shards; ++index) {
+        const Shard shard{index, shards};
+        UnitExchange exchange;
+        exchange.shard = &shard;
+        exchange.sink = [&units](std::string_view step, size_t unit, UnitOutput& output) {
+            units[{std::string(step), unit}] = std::move(output);
+        };
+        MemorySink untouched;
+        int written = 0;
+        // A damaged input may fail a cheap step of the plan before any image: that is the importer's to report, not the shard's.
+        ConvertMaps(source, untouched, schemas, written, run.error, {}, nullptr, 1, &exchange);
+        OBL_CHECK(untouched.files().empty());
+    }
+    const UnitExchange exchange = Taking(units);
+    MemorySink sink;
+    run.ok = ConvertMaps(
+            source, sink, schemas, run.fileCount, run.error, [&](int done, int total) { run.reports.emplace_back(done, total); }, nullptr,
+            1, &exchange);
+    run.files = sink.files();
+    return run;
+}
+
 void CheckSameMaps(const MapRun& serial, const MapRun& parallel)
 {
     OBL_CHECK_EQ(parallel.ok, serial.ok);
@@ -293,6 +406,7 @@ OBL_TEST_CASE("convert.parallel_maps_equal_serial")
     OBL_CHECK(serial.files.contains("maps/props.json"));
     OBL_CHECK_EQ(serial.reports.size(), size_t{6}); // before each of the five scenarios and after the last
     for (int jobs : {2, 4, 0}) CheckSameMaps(serial, ConvertMapsWithJobs(files, jobs));
+    for (int shards : {1, 2, 3, 7}) CheckSameMaps(serial, ConvertMapsSharded(files, shards));
 }
 
 OBL_TEST_CASE("convert.parallel_maps_report_the_first_error_of_a_serial_run")
@@ -309,6 +423,7 @@ OBL_TEST_CASE("convert.parallel_maps_report_the_first_error_of_a_serial_run")
     OBL_CHECK(serial.files.contains("maps/isle3/terrain.png"));
     OBL_CHECK(!serial.files.contains("maps/isle3/color.png"));
     for (int jobs : {2, 4, 0}) CheckSameMaps(serial, ConvertMapsWithJobs(files, jobs));
+    for (int shards : {2, 3, 7}) CheckSameMaps(serial, ConvertMapsSharded(files, shards));
 
     // A source that is missing and a scenario the cheap steps refuse come in their serial positions too.
     Files missing = MapInstallation(4);
@@ -316,12 +431,14 @@ OBL_TEST_CASE("convert.parallel_maps_report_the_first_error_of_a_serial_run")
     const MapRun noWater = ConvertMapsWithJobs(missing, 1);
     OBL_CHECK(!noWater.ok);
     for (int jobs : {3, 0}) CheckSameMaps(noWater, ConvertMapsWithJobs(missing, jobs));
+    for (int shards : {2, 5}) CheckSameMaps(noWater, ConvertMapsSharded(missing, shards));
     Files badName = MapInstallation(4);
     badName["Data/Scenario/Scenario4/Scenario4.pis"] = Text("'WORLD_MAPFILENAME' \"\"\r\n");
     const MapRun noKey = ConvertMapsWithJobs(badName, 1);
     OBL_CHECK(!noKey.ok);
     OBL_CHECK(noKey.files.contains("maps/isle3/depth.png"));
     for (int jobs : {3, 0}) CheckSameMaps(noKey, ConvertMapsWithJobs(badName, jobs));
+    for (int shards : {2, 5}) CheckSameMaps(noKey, ConvertMapsSharded(badName, shards));
 }
 
 OBL_TEST_CASE("convert.parallel_maps_keep_the_conversion_stamp")

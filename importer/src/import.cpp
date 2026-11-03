@@ -57,9 +57,12 @@ bool ImportPack(
             error = "a CD import needs a spool";
             return false;
         }
-        cd = OpenCdSource(picked, *options.spool, error);
+        CdSourceLimits limits;
+        limits.keepSpooled = options.prepareSpool;
+        cd = OpenCdSource(picked, *options.spool, error, limits);
         if (!cd) return false;
     }
+    if (options.prepareSpool) return PrepareSpriteData(cd ? *cd : picked, error);
     const ByteSource& source = cd ? *cd : picked;
     // The language decides the pack's identity and how saves decode text, so the source or the caller names it. Only a caller
     // that asks for it (the browser, whose player chooses among the pack's tables afterwards) gets a pick among the copy's tables.
@@ -81,6 +84,7 @@ bool ImportPack(
     int files = 0;
     SpriteConversionStats sprites;
     sprites.jobs = options.jobs;
+    sprites.exchange = &options.exchange;
     Source identity;
     // The counting callback of a step, or none when the caller does not count.
     const auto countOf = [&](std::string_view step) -> std::function<void(int, int)> {
@@ -93,13 +97,22 @@ bool ImportPack(
             {"gui-tables", [&] { return WriteExeGuiTables(source, pack, error); }},
             {"game-parameters", [&] { return ConvertGameParameters(source, pack, schemas, error); }},
             {"scripts", [&] { return ConvertScripts(source, pack, files, error); }},
-            {"maps", [&] { return ConvertMaps(source, pack, schemas, files, error, countOf("maps"), nullptr, options.jobs); }},
+            {"maps",
+                    [&] {
+                        return ConvertMaps(source, pack, schemas, files, error, countOf("maps"), nullptr, options.jobs, &options.exchange);
+                    }},
             {"gui-layouts", [&] { return ConvertGuiLayouts(source, pack, schemas, files, error); }},
             {"sounds",
                     [&] { return ConvertSamples(source, pack, files, error) && ConvertSoundScript(source, pack, schemas, files, error); }},
             {"images", [&] { return ConvertImages(source, pack, schemas, files, error); }},
             {"media", [&] { return ConvertMedia(source, pack, files, error); }},
-            {"sprites", [&] { return ConvertSprites(source, pack, schemas, {}, sprites, error); }},
+            {"sprites",
+                    [&] {
+                        if (!options.exchange.shard) return ConvertSprites(source, pack, schemas, {}, sprites, error);
+                        // A shard leaves the stamp and the pack alone: it only fills the exchange.
+                        SpriteArchive archive;
+                        return SpriteArchive::Open(source, archive, error) && archive.Convert(pack, schemas, {}, sprites, error);
+                    }},
             {"fonts", [&] { return ConvertFonts(source, pack, schemas, files, error); }},
             {"catalog", [&] { return ConvertCatalog(source, pack, schemas, files, error); }},
             {"guests", [&] { return ConvertGuestSets(source, pack, schemas, files, error); }},
@@ -112,8 +125,11 @@ bool ImportPack(
                                 WritePackManifest(pack, identity, language, schemas, files, error, countOf("pack"));
                     }},
     };
+    const bool shardRun = options.exchange.shard != nullptr;
     for (const auto& [name, run] : steps) {
-        if (options.progress) options.progress(name);
+        // A shard converts units and nothing else; the instance that takes them over runs every step.
+        if (shardRun && name != "maps" && name != "sprites") continue;
+        if (options.progress && !shardRun) options.progress(name);
         if (!run()) {
             error = std::string(name) + ": " + error;
             return false;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "importer/src/writers/sprite_convert.h"
+#include "openbeach/importer/shard.h"
 
 #include <functional>
 
@@ -29,6 +30,10 @@ inline constexpr const char* kMapStampName = "conversion.stamp";
 // A conversion writes maps/conversion.stamp last (revision, SHA-256 of every input, the files written). When the stamp
 // matches the source and all those files are present nothing is read or written, no worker starts, `files` is 0 and
 // `*upToDate` is set.
+// `exchange` (shard.h) shares the images between instances: its units are the image steps in the order a serial run does
+// them. A shard run converts its share into the sink and writes nothing, not even the stamp; a run with a source takes each
+// image's files from it (the stamp is still written by this run, once).
 bool ConvertMaps(const ByteSource& source, PackSink& out, const json_schema::Registry& schemas, int& files, std::string& error,
-        const std::function<void(int done, int total)>& report = {}, bool* upToDate = nullptr, int jobs = 1);
+        const std::function<void(int done, int total)>& report = {}, bool* upToDate = nullptr, int jobs = 1,
+        const UnitExchange* exchange = nullptr);
 } // namespace obl::convert

@@ -16,6 +16,9 @@ struct CdSourceLimits {
     // A file up to this size is extracted into memory when first read; a larger one into the spool. Extracted files stay
     // cached while they fit this budget together, so repeated ranged reads of one file extract it once.
     uint64_t memory = 64u << 20;
+    // Leave the spool files in place when the source is destroyed, for a later source (or another instance sharing the spool)
+    // to adopt.
+    bool keepSpooled = false;
 };
 
 // The installed tree of the CD in `cd`. The source keeps references to `cd` and `spool`, so the caller keeps both alive

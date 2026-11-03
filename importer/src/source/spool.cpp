@@ -107,6 +107,8 @@ public:
         if (const auto it = files_.find(name); it != files_.end()) files_.erase(it);
     }
 
+    bool Has(std::string_view name) const override { return files_.contains(name); }
+
 private:
     std::map<std::string, std::vector<uint8_t>, std::less<>> files_;
 };

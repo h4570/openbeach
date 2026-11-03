@@ -22,7 +22,8 @@ public:
 
     ~CdSource() override
     {
-        for (const uint32_t index : spooled_) spool_.Remove(SpoolName(index));
+        if (!limits_.keepSpooled)
+            for (const uint32_t index : spooled_) spool_.Remove(SpoolName(index));
     }
 
     // Presents `file` (an index into the cabinet's files) at its installed path.
@@ -121,6 +122,9 @@ private:
     {
         if (spooled_.contains(file.index)) return true;
         const std::string name = SpoolName(file.index);
+        // Already extracted by an earlier source of this spool (the browser's workers hand each other the sprite archive): it
+        // stays that source's file, so this one does not remove it.
+        if (spool_.Has(name)) return true;
         std::string error;
         const bool ok = spool_.Create(name) &&
                 cabinet_.Extract(file, [&](std::span<const uint8_t> bytes) { return spool_.Append(name, bytes); }, error);

@@ -19,7 +19,7 @@ backend has its own video and audio drivers. The target links with `-sENVIRONMEN
 ## Site
 One static directory, our code only (no game data), assembled by `tools/web_site.sh <browser bin> <importer bin> <out>`:
 `index.html`, `site.js`, `site_text.js`, `robots.txt` and `sitemap.xml` from `web/`, the logo and the icons from `assets/logo/` (the mark as `favicon.svg`, `favicon.ico` and `apple-touch-icon.png` rendered from it), the screenshots from `assets/screenshots/`, `OpenBeach.js/.wasm` (the pre-js is compiled in), `obl-import-web.js/.wasm`
-and `import_worker.js` from the importer build, and `.nojekyll`. `tools/wasm_linux.sh` assembles it in `$build/site`
+`import_worker.js`, `language_ini.js` and `shard.js` from the importer build, and `.nojekyll`. `tools/wasm_linux.sh` assembles it in `$build/site`
 and the CI job `wasm` uploads it as the artifact `browser-site` after a green run. To try it, unpack it and serve it on
 localhost (`python3 -m http.server`): OPFS and Web Locks need a secure context, and the worker does not load from `file:`.
 
@@ -35,7 +35,8 @@ again" on the ready layer), it shows the drop zone. A folder or a disc image, dr
 the zone while it runs: the main one counts the whole import (`kStepWeights` in `site.js`, the order of `kStepNames` in
 `site_text.js`, which must follow `importer/src/import.cpp`), `done` adds the game script, an error brings the zone back. An import never starts once
 the game script is in (the worker replaces the pack the game reads). Long steps report counts (`{step, done, total}`;
-the sprites step, from `ImportOptions::count`), which fill the second bar. The page asks for no language before the import, because only the copy knows its tables. The
+the sprites step, from `ImportOptions::count`), which fill the second bar. With enough cores the sprites and maps go to helper workers
+([converter](data-formats/converter/index.md), "Sharded conversion"); the bar counts their units under `maps`. The page asks for no language before the import, because only the copy knows its tables. The
 worker sends `navigator.language` as `preferredLanguage`, and the importer picks the pack's language among the copy's
 `Data/text_*.ble` (`ChooseLanguage`): the copy's `BeachLife.ini` language, else the preferred one, else the first table in
 the game's order. Only a copy with no table is refused; the CLI, which has no `preferredLanguage`, still refuses a language
