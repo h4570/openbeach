@@ -59,7 +59,7 @@ file) count like `sprites`; "storing" is the worker writing the pack to OPFS (`p
 
 ## Local probe
 `tools/browser_probe.cjs` runs the built site in a headless Edge or Chrome on a developer PC and records what a tab
-shows: the game's console log, canvas screenshots at given times, the `AudioContext` state, and scripted left clicks and
+shows: the game's console log, canvas screenshots at given times, the `AudioContext` state, and scripted left clicks, touch taps and
 right drags on the canvas. It serves the site and a converted `packs/base`, copies the pack once into the probe
 profile's OPFS (`run/tmp/probe-profile`; about 4 minutes for the full pack), then clicks "Click to start" with a trusted
 CDP event. `--game-script` runs a game test script in the tab (as `--script` natively, e.g. `boot-gameplay`), and

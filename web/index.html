@@ -160,6 +160,12 @@
         h1 { font-size: 32px; }
         header img { height: 56px; }
         .screen { aspect-ratio: auto; min-height: 400px; }
+        /* On a phone the layers take the room their text needs (the box grows with them) instead of being clipped to 400px. */
+        .layer { position: relative; inset: auto; min-height: 400px; }
+        #drop { height: auto; }
+        body.playing .screen { min-height: 0; }
+        .gamebar { flex-wrap: wrap; justify-content: center; }
+        .gamebar span { border-radius: 14px; padding: 6px 12px; }
     }
     @media (prefers-reduced-motion: reduce) { .spinner i { animation: none; } #drop { transition: none; } }
 </style>
