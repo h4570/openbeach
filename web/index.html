@@ -130,6 +130,8 @@
     @media (pointer: coarse) {
         body.playing { --chrome: 152px; }
         body.playing .touch-keys { display: flex; justify-content: center; gap: 12px; margin-top: 8px; }
+        body.playing .gamebar button { background: #ffffffa8; border-radius: 999px; padding: 8px 16px; margin: 0 4px; }
+        body.playing .gamebar button:active { background: #ffffff; }
     }
     /* A phone on its side has no height to spare: the game takes the whole height and the keys and the bar stand beside it. */
     @media (pointer: coarse) and (orientation: landscape) and (max-height: 560px) {
@@ -141,7 +143,8 @@
         body.playing .touch-keys .key { height: 44px; }
         body.playing .gamebar { flex-direction: column; align-self: start; gap: 6px; }
         body.playing .gamebar span { border-radius: 14px; padding: 6px 12px; text-align: center; }
-        body.playing .gamebar button { margin: 0 8px; }
+        body.playing .gamebar > div { display: flex; flex-direction: column; gap: 6px; }
+        body.playing .gamebar button { margin: 0; }
     }
     /* The keys are drawn as keycaps: a long one for Space and a square one for Esc. A press sinks the top of the cap. */
     .touch-keys button { padding: 0; border: 0; background: none; line-height: 0; touch-action: manipulation; user-select: none;
