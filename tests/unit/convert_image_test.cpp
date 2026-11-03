@@ -21,6 +21,11 @@
 #pragma GCC diagnostic ignored "-Wunused-function"
 #endif
 #include "../../third_party/stb/stb_image.h"
+// The reference encoder: stb's own, with its own deflate. static, so it does not meet the private copies in the libraries.
+#define STB_IMAGE_WRITE_STATIC
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#define STBI_WRITE_NO_STDIO
+#include "../../third_party/stb/stb_image_write.h"
 #include "temp_dir.h"
 #if defined(_MSC_VER)
 #pragma warning(pop)
@@ -749,4 +754,36 @@ OBL_TEST_CASE("image.png_bytes_match_stb")
     for (size_t i = 0; i < palette.size(); ++i) palette[i] = uint8_t(i * 11);
     OBL_CHECK_EQ(obl::sha256::Hex(EncodeIndexedPng(64, 64, indices, palette)),
             std::string("c64447a0ad11f57e66c402949f3af0579e64e502a907a75276d2f1918f55329d"));
+}
+
+// EncodePng chooses the row filters itself instead of going through stbi_write_png_to_mem; the choice (estimate, tie-break,
+// the first row's own filters, the first pixel of a row) must stay stb's, down to the byte. The images make every filter win
+// somewhere: flat ones (ties), gradients (Sub, Up, Paeth) and noise (None), at widths around the pixel-by-pixel and the
+// vectorized parts of the loops.
+OBL_TEST_CASE("image.png_filters_match_stb")
+{
+    for (int channels = 1; channels <= 4; ++channels)
+        for (const int width : {1, 2, 3, 7, 4096})
+            for (const int height : {1, 2, 5})
+                for (int kind = 0; kind < 4; ++kind) {
+                    std::vector<uint8_t> pixels;
+                    if (kind == 3) {
+                        // A smooth gradient with no noise: Paeth and Average beat the others row after row.
+                        pixels.resize(size_t(width) * height * channels);
+                        for (int y = 0; y < height; ++y)
+                            for (int x = 0; x < width; ++x)
+                                for (int c = 0; c < channels; ++c)
+                                    pixels[(size_t(y) * width + x) * channels + c] = uint8_t(x * 3 + y * 5 + c * 11);
+                    } else {
+                        pixels = SamplePixels(width, height, channels, kind); // 0 flat, 1 random, 2 gradient with noise
+                    }
+                    int length = 0;
+                    unsigned char* reference = stbi_write_png_to_mem(pixels.data(), 0, width, height, channels, &length);
+                    OBL_CHECK(reference != nullptr);
+                    if (!reference) continue;
+                    const auto png = EncodePng(width, height, channels, pixels);
+                    OBL_CHECK_EQ(png.size(), size_t(length));
+                    OBL_CHECK(png.size() == size_t(length) && std::memcmp(png.data(), reference, png.size()) == 0);
+                    STBIW_FREE(reference);
+                }
 }
