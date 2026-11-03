@@ -17,12 +17,14 @@ SUBJECT = re.compile(rf"^(?:{TYPES})(?:\((?:{SCOPES})\))?!?: [a-z0-9`].*[^.]$")
 MAX_LENGTH = 72
 # Written by git or by the release tool.
 EXEMPT = re.compile(r"^(Merge |Revert \"|chore\(main\): release )")
+# A squash merge appends the pull request number to the title that was checked, so it does not count.
+PR_SUFFIX = re.compile(r" \(#\d+\)$")
 
 
 def subject_problem(subject: str) -> str | None:
     if EXEMPT.match(subject):
         return None
-    if len(subject) > MAX_LENGTH:
+    if len(PR_SUFFIX.sub("", subject)) > MAX_LENGTH:
         return f"longer than {MAX_LENGTH} characters"
     if not SUBJECT.match(subject):
         return "not `type(scope): subject` in lowercase, without a trailing period"

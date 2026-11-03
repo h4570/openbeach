@@ -17,6 +17,11 @@ class SubjectTests(unittest.TestCase):
                         "wip: add a thing", "feat: " + "a" * 70):
             self.assertIsNotNone(subject_problem(subject), subject)
 
+    def test_the_pull_request_number_of_a_squash_merge_does_not_count(self):
+        title = "feat: " + "a" * 66
+        self.assertIsNone(subject_problem(title + " (#19)"))
+        self.assertIsNotNone(subject_problem(title + "a (#19)"))
+
     def test_reads_only_the_subject_of_a_message(self):
         self.assertIsNone(message_problem("feat: add a thing\n\nA body of Any Form."))
         self.assertIsNone(message_problem("feat: add a thing\n\nWhy."))
