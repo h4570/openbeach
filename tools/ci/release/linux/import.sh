@@ -8,6 +8,8 @@ set -uo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 userdata="$here/userdata"
 pack="$userdata/packs/base"
+# The import writes beside the pack and replaces it only when it succeeded, so a failed one keeps the game playable.
+fresh="$userdata/packs/base.new"
 source_dir="${1:-}"
 language="${2:-}"
 # The game numbers its languages like BeachLife.ini's [Language] Language=<index>; the converter names them by these codes.
@@ -23,6 +25,8 @@ fail() {
 }
 cleanup() {
     rm -f "$output"
+    # Gone after a successful import (it became the pack); a failed one leaves no half-written pack behind.
+    rm -rf "$fresh"
     if [[ -n "$mountpoint" ]]; then udisksctl unmount -b "$loop" >/dev/null 2>&1 || true; fi
     if [[ -n "$loop" ]]; then udisksctl loop-delete -b "$loop" >/dev/null 2>&1 || true; fi
 }
@@ -86,9 +90,9 @@ echo "Importing $source_dir into $userdata"
 echo "This takes about 15 minutes and happens only once. Your copy is only read, never changed."
 echo
 # A new import replaces the old pack whole, so no file of another copy stays behind; saves and settings stay.
-rm -rf "$pack"
-mkdir -p "$pack" "$userdata/remaster"
-if [[ -n "$language" ]]; then convert import "$source_dir" "$pack" --language "$language"; else convert import "$source_dir" "$pack"; fi
+rm -rf "$fresh"
+mkdir -p "$fresh" "$userdata/remaster"
+if [[ -n "$language" ]]; then convert import "$source_dir" "$fresh" --language "$language"; else convert import "$source_dir" "$fresh"; fi
 code=$?
 # A CD names no language (an installation does, in its BeachLife.ini): ask which of the copy's languages to play.
 if [[ $code -ne 0 && -z "$language" ]] && grep -q "Language" "$output"; then
@@ -99,12 +103,17 @@ if [[ $code -ne 0 && -z "$language" ]] && grep -q "Language" "$output"; then
     read -r -p "Language: " language
     language="${language,,}"
     [[ " ${languages[*]} " == *" $language "* ]] || fail "Unknown language: $language"
-    rm -rf "$pack"
-    mkdir -p "$pack"
-    convert import "$source_dir" "$pack" --language "$language"
+    rm -rf "$fresh"
+    mkdir -p "$fresh"
+    convert import "$source_dir" "$fresh" --language "$language"
     code=$?
 fi
-[[ $code -eq 0 ]] || fail "The import failed (the message is above). Nothing of your copy was changed."
+if [[ $code -ne 0 ]]; then
+    rm -rf "$fresh"
+    fail "The import failed (the message is above). Nothing of your copy was changed."
+fi
+rm -rf "$pack"
+mv "$fresh" "$pack"
 convert resources "$source_dir" "$userdata/remaster" || fail "Reading the window icon and the cursors failed (the message is above)."
 
 # The pack's own language, so the game starts in a language the copy has.

@@ -3,12 +3,13 @@
 #   import.ps1 [-Source <installation, CD drive, extracted CD or .iso>] [-Language en|fr|it|de|es|pl]
 # Asks for the copy when none is given, and for the language when the copy does not name one (a CD). Exit code 1 on failure.
 param([string]$Source = '', [string]$Language = '')
-# Native error output must not stop the script: obl-convert's message is shown and checked below.
-$ErrorActionPreference = 'Continue'
+$ErrorActionPreference = 'Stop'
 $game = Split-Path $PSScriptRoot
 $convert = Join-Path $game 'obl-convert.exe'
 $userdata = Join-Path $game 'userdata'
 $pack = Join-Path $userdata 'packs\base'
+# The import writes beside the pack and replaces it only when it succeeded, so a failed one keeps the game playable.
+$fresh = Join-Path $userdata 'packs\base.new'
 # The game numbers its languages like BeachLife.ini's [Language] Language=<index>; the converter names them by these codes.
 $languages = @('en', 'fr', 'it', 'de', 'es', 'pl')
 
@@ -20,6 +21,9 @@ function Stop-Import([string]$message) {
 
 # Runs obl-convert, shows its output and keeps it for the error check.
 function Invoke-Convert([string[]]$arguments) {
+    # Its error output must not stop the script (Windows PowerShell turns redirected native stderr into errors): the
+    # message is shown and the exit code checked by the caller.
+    $ErrorActionPreference = 'Continue'
     $script:convertOutput = @()
     & $convert @arguments 2>&1 | ForEach-Object {
         $line = "$_"
@@ -58,7 +62,7 @@ Write-Host 'OpenBeach: import your own copy of Beach Life'
 Write-Host ''
 if (-not $Source) {
     Write-Host 'Drag your Beach Life folder, your CD drive or your .iso file into this window, then press Enter.'
-    $Source = Read-Host 'Copy'
+    $Source = "$(Read-Host 'Copy')"
 }
 # A dragged path comes in quotes; a drive root ("E:\") loses its backslash in Import.cmd and gets it back here.
 $Source = $Source.Trim().Trim('"').Trim()
@@ -89,9 +93,9 @@ try {
     Write-Host 'This takes about 15 minutes and happens only once. Your copy is only read, never changed.'
     Write-Host ''
     # A new import replaces the old pack whole, so no file of another copy stays behind; saves and settings stay.
-    if (Test-Path -LiteralPath $pack) { Remove-Item -LiteralPath $pack -Recurse -Force }
-    New-Item -ItemType Directory -Force -Path $pack, (Join-Path $userdata 'remaster') | Out-Null
-    $arguments = @('import', $Source, $pack)
+    if (Test-Path -LiteralPath $fresh) { Remove-Item -LiteralPath $fresh -Recurse -Force }
+    New-Item -ItemType Directory -Force -Path $fresh, (Join-Path $userdata 'remaster') | Out-Null
+    $arguments = @('import', $Source, $fresh)
     if ($Language) { $arguments += @('--language', $Language) }
     $exit = Invoke-Convert $arguments
     # A CD names no language (an installation does, in its BeachLife.ini): ask which of the copy's languages to play.
@@ -100,16 +104,23 @@ try {
         Write-Host 'Your copy does not say which language to use. Type one your copy has:'
         Write-Host '  en English (UK/US and the later English CD)'
         Write-Host '  fr French, de German, it Italian, pl Polish, es Spanish (European and French/German CD)'
-        $Language = (Read-Host 'Language').Trim().ToLowerInvariant()
+        # Without a console (stdin closed) Read-Host returns nothing: the check below reports it.
+        $Language = "$(Read-Host 'Language')".Trim().ToLowerInvariant()
         if ($languages -notcontains $Language) { Stop-Import "Unknown language: $Language" }
-        if (Test-Path -LiteralPath $pack) { Remove-Item -LiteralPath $pack -Recurse -Force }
-        New-Item -ItemType Directory -Force -Path $pack | Out-Null
-        $exit = Invoke-Convert @('import', $Source, $pack, '--language', $Language)
+        Remove-Item -LiteralPath $fresh -Recurse -Force
+        New-Item -ItemType Directory -Force -Path $fresh | Out-Null
+        $exit = Invoke-Convert @('import', $Source, $fresh, '--language', $Language)
     }
     if ($exit -ne 0) { Stop-Import 'The import failed (the message is above). Nothing of your copy was changed.' }
+    if (Test-Path -LiteralPath $pack) { Remove-Item -LiteralPath $pack -Recurse -Force }
+    Rename-Item -LiteralPath $fresh -NewName 'base'
     $exit = Invoke-Convert @('resources', $Source, (Join-Path $userdata 'remaster'))
     if ($exit -ne 0) { Stop-Import 'Reading the window icon and the cursors failed (the message is above).' }
+} catch {
+    Stop-Import "$($_.Exception.Message) Nothing of your copy was changed."
 } finally {
+    # exit runs this too: a failed import leaves no half-written pack behind, the old one stays as it was.
+    if (Test-Path -LiteralPath $fresh) { Remove-Item -LiteralPath $fresh -Recurse -Force -ErrorAction SilentlyContinue }
     if ($mounted) { Dismount-DiskImage -ImagePath $mounted -ErrorAction SilentlyContinue | Out-Null }
 }
 
