@@ -425,8 +425,11 @@ element("start-button").addEventListener("click", () => {
     Module.startGame(); // main runs inside this click, so SDL's AudioContext starts unsuspended
 });
 
+// The page goes fullscreen, not the canvas: SDL takes a fullscreen element that is its canvas for a fullscreen window and
+// sizes the canvas to the screen, so the game would be resampled again and keep the wrong size after leaving. The CSS fits
+// the canvas into the bigger tab as into any other, and the touch keys and the bar stay beside it.
 element("fullscreen").addEventListener("click", () => {
-    const request = element("canvas").requestFullscreen();
+    const request = document.documentElement.requestFullscreen();
     if (request && request.catch) request.catch(() => {}); // refused: the game stays in its frame
 });
 

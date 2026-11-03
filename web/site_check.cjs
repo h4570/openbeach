@@ -151,7 +151,9 @@ async function loadPage({opfs = {}, search = "", languages = ["pl-PL"], stored =
             getElementById: (id) => elements[id],
             createElement: (tag) => fakeElement(tag),
             body,
-            documentElement: {lang: ""},
+            documentElement: {lang: "", requestFullscreen() {
+                page.fullscreenRequests = (page.fullscreenRequests || 0) + 1;
+            }},
             querySelectorAll: () => [translated],
             pointerLockElement: null,
             exitPointerLock() {
@@ -369,7 +371,8 @@ async function main() {
     check(started === 1 && page.visible().length === 0 && page.elements.canvas.focused && page.body.classList.contains("playing") &&
         !page.elements["game-bar"].hidden, "click: main starts, the layers hide, the frame takes the tab and the canvas has focus");
     await page.elements.fullscreen.fire("click");
-    check(page.elements.canvas.fullscreenRequests === 1, "click: the bar's button asks for fullscreen");
+    check(page.fullscreenRequests === 1 && page.elements.canvas.fullscreenRequests === undefined,
+        "click: the bar's button asks for fullscreen of the page, not of the canvas (SDL would size the canvas to the screen)");
     page.context.Module.onGameEnded();
     check(page.visible().join() === "ended" && page.elements.canvas.hidden && !page.body.classList.contains("playing"),
         "game ended: the ended layer replaces the canvas");
