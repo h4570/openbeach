@@ -36,7 +36,7 @@ the zone while it runs: the main one counts the whole import (`kStepWeights` in 
 `site_text.js`, which must follow `importer/src/import.cpp`), `done` adds the game script, an error brings the zone back. An import never starts once
 the game script is in (the worker replaces the pack the game reads). Long steps report counts (`{step, done, total}`;
 the sprites step, from `ImportOptions::count`), which fill the second bar. With enough cores the sprites and maps go to helper workers
-([converter](data-formats/converter/index.md), "Sharded conversion"); the bar counts their units under `maps`. The page asks for no language before the import, because only the copy knows its tables. The
+([converter](data-formats/converter/index.md), "Sharded conversion"); the bar counts their maps and then their sprites. The page asks for no language before the import, because only the copy knows its tables. The
 worker sends `navigator.language` as `preferredLanguage`, and the importer picks the pack's language among the copy's
 `Data/text_*.ble` (`ChooseLanguage`): the copy's `BeachLife.ini` language, else the preferred one, else the first table in
 the game's order. Only a copy with no table is refused; the CLI, which has no `preferredLanguage`, still refuses a language

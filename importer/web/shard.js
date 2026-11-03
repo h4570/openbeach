@@ -9,27 +9,21 @@
 // node_check.cjs with require, with Web Workers and with worker_threads as the helpers.
 "use strict";
 
-// Few helpers cost more in copies than they save; more than this stops paying (the coordinator, the page and the disk share
-// the machine) and each one holds a wasm heap of its own.
+// Fewer than two helpers cost more in copies than they save. More than two do not pay either: the sprite step ends with a few
+// very large banks that one helper converts alone, so a Polish disc in Edge finished its conversion in 74 s with 2 helpers,
+// 63 s with 3 and 82 s with 4, while each helper holds a wasm heap of its own (hundreds of MB, and wasm memory never shrinks).
+// The whole browser peaked at 3.2 GB with 2 helpers, below the 3.4 GB of an import by one worker, and at 4.4 GB with 4, which
+// an Android phone that reports 8 GB did not survive: the system killed the tab, not the worker, so the serial fallback
+// cannot save the import.
 const kMinHelpers = 2;
-const kMaxHelpers = 8;
+const kMaxHelpers = 2;
 
-// How many helpers to start: one per core but the page's (the coordinator mostly waits), fewer on a device that reports little
-// memory (`deviceMemory` in GB, rounded down to a power of two by the browser). Safari (every iPhone and iPad) and Firefox do not
-// report it, and those are the devices that run out first: each helper holds a wasm heap of its own (hundreds of MB at the map
-// step, and wasm memory never shrinks), and iOS kills the whole tab, not the worker, so the serial fallback cannot save the
-// import. Without a known memory the helpers are therefore capped at kUnknownMemoryHelpers. 1 means no helpers: the worker
-// imports alone, exactly as before.
-const kUnknownMemoryHelpers = 3;
-
+// How many helpers to start: one per core but the page's (the coordinator mostly waits), up to kMaxHelpers, and none on a
+// device that reports 2 GB or less (`deviceMemory` in GB, rounded down to a power of two; Safari and Firefox do not report
+// it). 1 means no helpers: the worker imports alone, exactly as before.
 function chooseHelperCount({hardwareConcurrency, deviceMemory}) {
-    let helpers = Math.min(Math.floor(hardwareConcurrency || 1) - 1, kMaxHelpers);
-    if (deviceMemory > 0) {
-        const byMemory = deviceMemory <= 2 ? 1 : deviceMemory <= 4 ? 2 : deviceMemory <= 8 ? 4 : kMaxHelpers;
-        helpers = Math.min(helpers, byMemory);
-    } else {
-        helpers = Math.min(helpers, kUnknownMemoryHelpers);
-    }
+    const helpers = Math.min(Math.floor(hardwareConcurrency || 1) - 1, kMaxHelpers);
+    if (deviceMemory > 0 && deviceMemory <= 2) return 1;
     return helpers >= kMinHelpers ? helpers : 1;
 }
 
@@ -80,24 +74,29 @@ function makeUnitStore(codec) {
     };
 }
 
-// The page's progress while the shards run: their counts, added, as one stream of units under the step "maps" (the first of
-// the two). A shard reports each of its steps from 0 of its share, so the total grows when the sprites start.
-function makeShardProgress(report) {
-    const shares = new Map(); // "shard/step" -> {done, total}
+// The page's progress while the `count` shards run: the step they are on, with their counts added. A shard does its maps first
+// and then its sprites, each counted from 0 of its share, so the bar shows "maps" until every shard has begun its sprites and
+// "sprites" from then on: the bar and the step's name follow the work as an import by one worker shows them.
+function makeShardProgress(report, count) {
+    const shares = new Map(); // step -> Map(shard -> {done, total})
     return (shard, step, done, total) => {
-        shares.set(`${shard}/${step}`, {done, total});
+        if (!shares.has(step)) shares.set(step, new Map());
+        shares.get(step).set(shard, {done, total});
+        const sprites = shares.get("sprites");
+        const shown = sprites && sprites.size === count ? "sprites" : "maps";
         let sumDone = 0, sumTotal = 0;
-        for (const share of shares.values()) {
+        for (const share of (shares.get(shown) || new Map()).values()) {
             sumDone += share.done;
             sumTotal += share.total;
         }
-        report({type: "progress", step: "maps", done: sumDone, total: sumTotal, at: Date.now()});
+        report({type: "progress", step: shown, done: sumDone, total: sumTotal, at: Date.now()});
     };
 }
 
-// What the coordinator's progress shows of the replay that takes the units over: the steps the shards did are not shown
-// again (their bar already ran), so the bar never goes back.
-const kQuietSteps = new Set(["gui-tables", "game-parameters", "scripts", "maps"]);
+// What the coordinator's progress shows of the replay that takes the units over: the steps up to the sprites are not shown
+// again (the helpers' bar already passed them, and those between the maps and the sprites take seconds), so the bar never
+// goes back.
+const kQuietSteps = new Set(["gui-tables", "game-parameters", "scripts", "maps", "gui-layouts", "sounds", "images", "media", "sprites"]);
 const kQuietCounts = new Set(["maps", "sprites"]);
 
 // Starts `count` helpers, hands each `jobFor(index)` and gathers their units into `store`. `spawn()` makes a helper: an object
@@ -108,7 +107,7 @@ const kQuietCounts = new Set(["maps", "sprites"]);
 function runHelpers({count, spawn, jobFor, store, report}) {
     return new Promise((resolve) => {
         const helpers = [];
-        const progress = makeShardProgress(report);
+        const progress = makeShardProgress(report, count);
         let waiting = count;
         let finished = false;
         const finish = (result) => {
@@ -162,4 +161,4 @@ async function runShardJob(job, env, post) {
     }
 }
 
-if (typeof module !== "undefined") module.exports = {chooseHelperCount, makeUnitStore, makeShardProgress, runHelpers, runShardJob, kQuietSteps, kQuietCounts, kMinHelpers, kMaxHelpers, kUnknownMemoryHelpers};
+if (typeof module !== "undefined") module.exports = {chooseHelperCount, makeUnitStore, makeShardProgress, runHelpers, runShardJob, kQuietSteps, kQuietCounts, kMinHelpers, kMaxHelpers};

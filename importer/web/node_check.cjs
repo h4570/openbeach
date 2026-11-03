@@ -169,10 +169,11 @@ async function shardLogic() {
     const choose = (hardwareConcurrency, deviceMemory) => shard.chooseHelperCount({hardwareConcurrency, deviceMemory});
     check(choose(undefined, undefined) === 1 && choose(1, undefined) === 1 && choose(2, undefined) === 1,
         "helpers: a machine with two cores or fewer imports alone");
-    check(choose(4, 16) === 3 && choose(8, 16) === 7 && choose(64, 16) === shard.kMaxHelpers, "helpers: one per core but the page's, up to a cap");
-    check(choose(16, 2) === 1 && choose(16, 4) === 2 && choose(16, 8) === 4, "helpers: fewer on a device with little memory");
-    check(choose(8, undefined) === 3 && choose(64, 0) === 3 && choose(8, NaN) === 3 && choose(4, undefined) === 3 && choose(2, undefined) === 1,
-        "helpers: at most 3 where the browser does not report its memory (Safari, Firefox)");
+    check(choose(3, 16) === 2 && choose(4, 16) === 2 && choose(64, 8) === 2 && shard.kMaxHelpers === 2,
+        "helpers: two at most, more only add memory");
+    check(choose(16, 2) === 1 && choose(16, 1) === 1 && choose(16, 4) === 2, "helpers: none on a device with 2 GB or less");
+    check(choose(8, undefined) === 2 && choose(64, 0) === 2 && choose(8, NaN) === 2 && choose(2, undefined) === 1,
+        "helpers: two where the browser does not report its memory (Safari, Firefox)");
 
     const filled = shard.makeUnitStore(bytesCodec);
     filled.bridge.unitPut("sprites", 7, "a.png", Uint8Array.of(1, 2));
@@ -225,6 +226,15 @@ async function shardLogic() {
     check(result.ok && run1.store.records.size === 3 && run1.fake.ended.every((h) => h.terminated), "helpers: every helper's units are gathered and the helpers end");
     const last = run1.reports[run1.reports.length - 1];
     check(last.step === "maps" && last.done === 6 && last.total === 6, `helpers: their counts are added into one progress (${last.done} of ${last.total})`);
+    const progress = [];
+    const shardProgress = shard.makeShardProgress((m) => progress.push(`${m.step} ${m.done}/${m.total}`), 2);
+    shardProgress(0, "maps", 1, 2);
+    shardProgress(1, "maps", 3, 3);
+    shardProgress(0, "sprites", 4, 10);
+    shardProgress(0, "sprites", 6, 10);
+    shardProgress(1, "sprites", 1, 5);
+    check(progress.join() === "maps 1/2,maps 4/5,maps 4/5,maps 4/5,sprites 7/15",
+        `helpers: their maps until every one has begun its sprites, then their sprites (${progress.join()})`);
     run1 = start((index) => (index === 1 ? "fail" : "ok"));
     result = await run1.done;
     check(!result.ok && result.reason === "no archive" && run1.fake.ended.every((h) => h.terminated), "helpers: one that fails ends them all and the import goes on alone");
