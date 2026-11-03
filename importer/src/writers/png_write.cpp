@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <memory>
 #include <vector>
 
 // The deflate of every PNG the converter writes. It is stb_image_write's own algorithm (fixed Huffman codes, hash buckets
@@ -275,13 +276,47 @@ void Big32(std::vector<uint8_t>& out, uint32_t value)
 {
     for (int shift : {24, 16, 8, 0}) out.push_back(static_cast<uint8_t>(value >> shift));
 }
+
+// CRC-32 of PNG chunks, eight bytes per step: the value of stb's byte-wise loop, which is a large share of the time for a
+// compressed map. Row k of the table is row 0 advanced over k more zero bytes.
+struct CrcTables {
+    uint32_t row[8][256];
+    CrcTables()
+    {
+        for (uint32_t n = 0; n < 256; ++n) {
+            uint32_t c = n;
+            for (int bit = 0; bit < 8; ++bit) c = (c & 1) ? 0xedb88320u ^ (c >> 1) : c >> 1;
+            row[0][n] = c;
+        }
+        for (uint32_t n = 0; n < 256; ++n)
+            for (int k = 1; k < 8; ++k) row[k][n] = (row[k - 1][n] >> 8) ^ row[0][row[k - 1][n] & 0xff];
+    }
+};
+
+uint32_t Crc32(const uint8_t* data, size_t size)
+{
+    static const CrcTables tables;
+    uint32_t crc = ~0u;
+    for (; size >= 8; size -= 8, data += 8) {
+        uint32_t low, high;
+        std::memcpy(&low, data, 4); // little endian on every host (x64, wasm), as in Common() above
+        std::memcpy(&high, data + 4, 4);
+        low ^= crc;
+        crc = tables.row[7][low & 0xff] ^ tables.row[6][(low >> 8) & 0xff] ^ tables.row[5][(low >> 16) & 0xff] ^ tables.row[4][low >> 24] ^
+                tables.row[3][high & 0xff] ^ tables.row[2][(high >> 8) & 0xff] ^ tables.row[1][(high >> 16) & 0xff] ^
+                tables.row[0][high >> 24];
+    }
+    for (; size > 0; --size, ++data) crc = tables.row[0][(crc ^ *data) & 0xff] ^ (crc >> 8);
+    return ~crc;
+}
+
 void Chunk(std::vector<uint8_t>& out, const char* type, std::span<const uint8_t> bytes)
 {
     Big32(out, static_cast<uint32_t>(bytes.size()));
     const size_t start = out.size();
     out.insert(out.end(), type, type + 4);
     out.insert(out.end(), bytes.begin(), bytes.end());
-    Big32(out, stbiw__crc32(out.data() + start, static_cast<int>(bytes.size() + 4)));
+    Big32(out, Crc32(out.data() + start, bytes.size() + 4));
 }
 std::vector<uint8_t> PlanePng(
         int width, int height, int bits, int type, std::span<const uint8_t> rows, std::span<const uint8_t> palette = {})
@@ -335,18 +370,95 @@ std::vector<uint8_t> EncodeGray16Png(int width, int height, std::span<const uint
     return PlanePng(width, height, 16, 0, rows);
 }
 
+namespace {
+
+// The filters of PNG, by the number written in front of a row. The predictor of a byte is built from `left` (the same
+// channel of the pixel before), `above` and `aboveLeft`; the filtered byte is the byte minus it, modulo 256.
+constexpr int kFilterCount = 5;
+
+// stbiw__paeth gives `left` on a tie with either, then `above`; written without branches so that the loops vectorize.
+inline int Paeth(int left, int above, int aboveLeft)
+{
+    const int distLeft = std::abs(above - aboveLeft), distAbove = std::abs(left - aboveLeft),
+              distAboveLeft = std::abs(left + above - 2 * aboveLeft);
+    const bool useLeft = distLeft <= distAbove && distLeft <= distAboveLeft;
+    const bool useAbove = distAbove <= distAboveLeft;
+    return useLeft ? left : (useAbove ? above : aboveLeft);
+}
+
+template<int Filter> inline uint8_t Predict(int left, int above, int aboveLeft)
+{
+    if constexpr (Filter == 0) return 0;
+    if constexpr (Filter == 1) return static_cast<uint8_t>(left);
+    if constexpr (Filter == 2) return static_cast<uint8_t>(above);
+    if constexpr (Filter == 3) return static_cast<uint8_t>((left + above) >> 1);
+    if constexpr (Filter == 4) return static_cast<uint8_t>(Paeth(left, above, aboveLeft));
+}
+
+// stb's size estimate of a filtered row: the sum of the filtered bytes taken as signed (-128 counts 128).
+template<int Filter> int Estimate(const uint8_t* row, const uint8_t* above, int channels, int size)
+{
+    int sum = 0;
+    // The first pixel has no neighbour on the left: stb's first `channels` bytes use 0 for it (and for aboveLeft).
+    const int head = size < channels ? size : channels;
+    for (int i = 0; i < head; ++i) sum += std::abs(static_cast<int8_t>(static_cast<uint8_t>(row[i] - Predict<Filter>(0, above[i], 0))));
+    for (int i = head; i < size; ++i)
+        sum += std::abs(
+                static_cast<int8_t>(static_cast<uint8_t>(row[i] - Predict<Filter>(row[i - channels], above[i], above[i - channels]))));
+    return sum;
+}
+
+template<int Filter> void Apply(const uint8_t* row, const uint8_t* above, int channels, int size, uint8_t* out)
+{
+    const int head = size < channels ? size : channels;
+    for (int i = 0; i < head; ++i) out[i] = static_cast<uint8_t>(row[i] - Predict<Filter>(0, above[i], 0));
+    for (int i = head; i < size; ++i)
+        out[i] = static_cast<uint8_t>(row[i] - Predict<Filter>(row[i - channels], above[i], above[i - channels]));
+}
+
+// Rows of filtered bytes with their filter byte in front, as stbi_write_png_to_mem chooses them: the filter with the smallest
+// estimate, the lowest number on a tie. The first row has no row above, which stb handles with other filter functions
+// (up is none, average halves the left byte, Paeth is Sub); a row of zeros above gives exactly those bytes. The estimates
+// run first and the winner is then written straight into the deflate input, so no row is filtered more than twice.
+std::unique_ptr<uint8_t[]> FilterRows(int width, int height, int channels, const uint8_t* pixels)
+{
+    const size_t size = static_cast<size_t>(width) * channels;
+    const size_t stride = size + 1;
+    auto filtered = std::make_unique_for_overwrite<uint8_t[]>(stride * height);
+    if (!filtered) return nullptr;
+    const std::vector<uint8_t> zeros(size);
+    for (int y = 0; y < height; ++y) {
+        const uint8_t* row = pixels + size * y;
+        const uint8_t* above = y ? row - size : zeros.data();
+        const int n = static_cast<int>(size);
+        const int estimates[kFilterCount] = {Estimate<0>(row, above, channels, n), Estimate<1>(row, above, channels, n),
+                Estimate<2>(row, above, channels, n), Estimate<3>(row, above, channels, n), Estimate<4>(row, above, channels, n)};
+        int best = 0;
+        for (int filter = 1; filter < kFilterCount; ++filter)
+            if (estimates[filter] < estimates[best]) best = filter;
+        uint8_t* out = filtered.get() + stride * y;
+        *out++ = static_cast<uint8_t>(best);
+        switch (best) {
+        case 0: std::memcpy(out, row, size); break;
+        case 1: Apply<1>(row, above, channels, n, out); break;
+        case 2: Apply<2>(row, above, channels, n, out); break;
+        case 3: Apply<3>(row, above, channels, n, out); break;
+        default: Apply<4>(row, above, channels, n, out); break;
+        }
+    }
+    return filtered;
+}
+} // namespace
+
 std::vector<uint8_t> EncodePng(int width, int height, int channels, std::span<const uint8_t> pixels)
 {
-    std::vector<uint8_t> out;
     if (width <= 0 || height <= 0 || channels < 1 || channels > 4 ||
             pixels.size() != static_cast<size_t>(width) * static_cast<size_t>(height) * static_cast<size_t>(channels))
-        return out;
-    auto append = [](void* context, void* data, int size) {
-        auto* bytes = static_cast<const uint8_t*>(data);
-        static_cast<std::vector<uint8_t>*>(context)->insert(static_cast<std::vector<uint8_t>*>(context)->end(), bytes, bytes + size);
-    };
-    if (!stbi_write_png_to_func(append, &out, width, height, channels, pixels.data(), width * channels)) out.clear();
-    return out;
+        return {};
+    const auto filtered = FilterRows(width, height, channels, pixels.data());
+    if (!filtered) return {};
+    constexpr int kColorType[] = {0, 0, 4, 2, 6}; // gray, gray + alpha, RGB, RGBA
+    return PlanePng(width, height, 8, kColorType[channels], std::span(filtered.get(), (size_t(width) * channels + 1) * height));
 }
 
 } // namespace obl::convert
