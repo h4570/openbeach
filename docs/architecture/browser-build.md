@@ -52,8 +52,10 @@ for all of this and, with `--site <dir>`, checks that every file the page and th
 
 The page's canvas box takes its aspect from the canvas's pixel size (`fitCanvas` in `site.js` keeps the CSS variable `--aspect`
 at width / height through a `MutationObserver`; `index.html` sizes the box by it, letterboxed), so 1280x720 is not forced
-into 4:3. The worker writes `BeachLife.ini` with `[Beach Life Options] Version=1` (`withLanguage`): the game's loader
-ignores an INI without it and would start in English. Progress: `maps` (one item per scenario) and `pack` (one per hashed
+into 4:3. The bar's Fullscreen button puts the whole page in fullscreen, not the canvas: SDL takes a fullscreened canvas
+for a fullscreen window and sizes it to the screen, so the game would be resampled again. The worker writes
+`BeachLife.ini` with `[Beach Life Options] Version=1` (`withLanguage`): the game's loader ignores an INI without it and
+would start in English. Progress: `maps` (one item per scenario) and `pack` (one per hashed
 file) count like `sprites`; "storing" is the worker writing the pack to OPFS (`persist`, counted by file) and shows as
 "Saving to browser storage (n of m)".
 
