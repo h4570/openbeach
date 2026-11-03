@@ -1,6 +1,7 @@
 #include "importer/src/writers/map_convert.h"
 
 #include "core/ascii_case.h"
+#include "core/sha256.h"
 #include "importer/src/readers/pis.h"
 #include "importer/src/readers/building_list.h"
 #include "importer/src/writers/catalog_writer.h"
@@ -22,6 +23,12 @@ using Json = nlohmann::ordered_json;
 uint32_t U32(std::span<const uint8_t> b, size_t at)
 {
     return b[at] | (uint32_t(b[at + 1]) << 8) | (uint32_t(b[at + 2]) << 16) | (uint32_t(b[at + 3]) << 24);
+}
+// Source paths in a .pis use either slash and any case.
+std::string NormalizeSourcePath(std::string path)
+{
+    std::replace(path.begin(), path.end(), '\\', '/');
+    return LowerAscii(path);
 }
 class Writer {
 public:
@@ -150,12 +157,11 @@ public:
         return Document("maps/props.json", {{"format", "obl.map_props"}, {"version", 1}, {"props", props}});
     }
 
+    // Every file Run has written, for the stamp.
+    const std::set<std::string>& Written() const { return m_written; }
+
 private:
-    static std::string NormalizePath(std::string path)
-    {
-        std::replace(path.begin(), path.end(), '\\', '/');
-        return LowerAscii(path);
-    }
+    static std::string NormalizePath(std::string path) { return NormalizeSourcePath(std::move(path)); }
     bool Fail(const std::string& message)
     {
         m_error = message;
@@ -173,6 +179,7 @@ private:
         if (bytes.empty()) return Fail("empty map output: " + name);
         if (!m_out.Write(name, bytes, m_error)) return false;
         ++m_files;
+        m_written.insert(name);
         return true;
     }
     bool Document(const std::string& name, const Json& doc)
@@ -231,17 +238,119 @@ private:
     std::string& m_error;
     const std::function<void(int done, int total)>& m_report;
     std::map<std::string, std::string> m_maps;
-    std::set<std::string> m_water, m_definitions;
+    std::set<std::string> m_water, m_definitions, m_written;
     std::map<std::string, std::vector<std::string>> m_props;
 };
+
+// SHA-256 over everything Writer::Run reads, in a fixed order: the building list, every scenario .pis and the files those
+// name (map, grid, height map, water animation, script), each by lowercase path, size and digest. It mirrors Run's lookups
+// on purpose: a file Run starts to read must be added here too (the unit test flips a byte in every source file). False
+// when a name does not resolve; the conversion then runs and reports that error itself.
+bool HashInputs(const ByteSource& source, std::string& digest)
+{
+    // Lowercase path -> the path as the source spells it; empty for a height map the .pis names but the source lacks.
+    std::map<std::string, std::string> inputs;
+    std::string error;
+    const auto building = FindFile(source, "Data/Script/BuildingList.ble");
+    const auto scenarios = FindFile(source, "Data/Scenario");
+    const auto directories = scenarios ? source.List(*scenarios) : std::nullopt;
+    if (!building || !directories) return false;
+    inputs.emplace(LowerAscii(*building), *building);
+    for (const SourceEntry& directory : *directories) {
+        if (!directory.directory) continue;
+        const std::string folder = *scenarios + "/" + directory.name;
+        const auto files = source.List(folder);
+        if (!files) return false;
+        for (const SourceEntry& file : *files) {
+            const size_t dot = file.name.rfind('.');
+            if (dot == std::string::npos || dot == 0 || LowerAscii(file.name.substr(dot)) != ".pis") continue;
+            const std::string path = folder + "/" + file.name;
+            std::vector<uint8_t> bytes;
+            if (!ReadBoundedFile(source, path, 1 << 20, bytes, error)) return false;
+            inputs.emplace(LowerAscii(path), path);
+            const auto entries = pis::ParseEntries(reinterpret_cast<const char*>(bytes.data()), static_cast<int>(bytes.size()));
+            auto named = [&](const char* name) {
+                for (auto it = entries.rbegin(); it != entries.rend(); ++it)
+                    if (ascii::EqualsNoCase(it->key.c_str(), name))
+                        return NormalizeSourcePath(it->type == pis::String && it->hasString ? it->string : std::string());
+                return std::string();
+            };
+            auto add = [&](const std::string& name, bool optional) {
+                if (name.empty()) return !optional;
+                const auto found = FindFile(source, name);
+                if (!found && !optional) return false;
+                inputs.emplace(name, found.value_or(""));
+                return true;
+            };
+            auto script = named("WORLD_SCRIPT");
+            if (script.size() < 4) return false;
+            script.replace(script.size() - 4, 4, ".ble");
+            if (!add(named("WORLD_MAPFILENAME"), false) || !add(named("WORLD_MAPGRID"), false) || !add(named("WORLD_MAPHEIGHTMAP"), true) ||
+                    !add(named("WORLD_WATERANIM"), true) || !add(script, false))
+                return false;
+        }
+    }
+    sha256::Hasher total;
+    auto feed = [&](std::string_view text) { total.Update(std::span(reinterpret_cast<const uint8_t*>(text.data()), text.size())); };
+    for (const auto& [name, path] : inputs) {
+        if (path.empty()) {
+            feed(name + " absent\n");
+            continue;
+        }
+        std::vector<uint8_t> bytes;
+        if (!ReadBoundedFile(source, path, 64 << 20, bytes, error)) return false;
+        feed(name + ' ' + std::to_string(bytes.size()) + ' ' + sha256::Hex(bytes) + '\n');
+    }
+    digest = total.HexDigest();
+    return true;
+}
+
+// The stamp holds the revision and inputs (`header`), then every file that conversion wrote; "end" shows it was written whole.
+bool StampIsCurrent(const std::string& stamp, const std::string& header, const PackSink& out)
+{
+    if (!stamp.starts_with(header) || !stamp.ends_with("\nend\n")) return false;
+    const auto present = out.Files();
+    const std::set<std::string> have(present.begin(), present.end());
+    const size_t last = stamp.size() - 4; // the "end\n" line
+    for (size_t at = header.size(); at < last;) {
+        const size_t end = stamp.find('\n', at);
+        if (!std::string_view(stamp).substr(at, end - at).starts_with("file ") || !have.contains(stamp.substr(at + 5, end - at - 5)))
+            return false;
+        at = end + 1;
+    }
+    return true;
+}
 } // namespace
 
 bool ConvertMaps(const ByteSource& source, PackSink& out, const json_schema::Registry& schemas, int& files, std::string& error,
-        const std::function<void(int done, int total)>& report)
+        const std::function<void(int done, int total)>& report, bool* upToDate)
 {
     files = 0;
+    if (upToDate) *upToDate = false;
     try {
-        return Writer(source, out, schemas, files, error, report).Run();
+        // Every build's post-build step asks for the maps and the PNGs take seconds per island: skip when the stamp of the last
+        // conversion names these inputs, this revision and outputs that are all still there. The stamp is removed first,
+        // so an interrupted run is redone, and written last.
+        const std::string stamp = "maps/" + std::string(kMapStampName);
+        std::string header;
+        if (std::string digest; HashInputs(source, digest))
+            header = "obl.map output " + std::to_string(kMapOutputRevision) + "\ninputs " + digest + "\n";
+        if (!header.empty()) {
+            if (const auto bytes = out.Read(stamp)) {
+                const std::string previous(bytes->begin(), bytes->end());
+                if (StampIsCurrent(previous, header, out)) {
+                    if (upToDate) *upToDate = true;
+                    return true;
+                }
+            }
+        }
+        out.Remove(stamp);
+        Writer writer(source, out, schemas, files, error, report);
+        if (!writer.Run()) return false;
+        if (header.empty()) return true;
+        std::string text = header;
+        for (const auto& path : writer.Written()) text += "file " + path + "\n";
+        return out.WriteText(stamp, text + "end\n", error);
     } catch (const std::exception& e) {
         error = e.what();
         return false;

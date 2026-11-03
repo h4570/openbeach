@@ -24,6 +24,7 @@ execute_process(COMMAND "${CONVERT}" scripts "${GAME_DIR}" "${GAME_DIR}/packs/ba
 if(NOT result STREQUAL "0")
     message(WARNING "obl-convert scripts failed (${result}): ${error}")
 endif()
+# Seconds per island on a fresh run/, nothing when maps/conversion.stamp matches the installation.
 execute_process(COMMAND "${CONVERT}" maps "${GAME_DIR}" "${GAME_DIR}/packs/base"
     RESULT_VARIABLE result OUTPUT_QUIET ERROR_VARIABLE error)
 if(NOT result STREQUAL "0")

@@ -18,8 +18,15 @@ struct MapPropAlias {
 // Decoded script names only; no placements or scenario logic are emitted.
 bool ParseMapPropAliases(std::string_view script, std::vector<MapPropAlias>& aliases, std::string& error);
 
+// Bumped whenever the converter writes other map files from the same sources, so existing run/ packs are redone.
+inline constexpr int kMapOutputRevision = 1;
+// maps/<this>: what the last conversion was made from and wrote (see ConvertMaps); not a JSON, so no loader lists it.
+inline constexpr const char* kMapStampName = "conversion.stamp";
+
 // Installation maps (all campaign islands, shared by sandboxes), water sheets and save-name -> catalog prop lookup.
 // Scenario scripts are read only for prop aliases; placements and scenario logic remain there.
+// A conversion writes maps/conversion.stamp last (revision, SHA-256 of every input, the files written). When the stamp
+// matches the source and all those files are present nothing is read or written, `files` is 0 and `*upToDate` is set.
 bool ConvertMaps(const ByteSource& source, PackSink& out, const json_schema::Registry& schemas, int& files, std::string& error,
-        const std::function<void(int done, int total)>& report = {});
+        const std::function<void(int done, int total)>& report = {}, bool* upToDate = nullptr);
 } // namespace obl::convert
