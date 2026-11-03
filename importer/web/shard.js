@@ -15,13 +15,20 @@ const kMinHelpers = 2;
 const kMaxHelpers = 8;
 
 // How many helpers to start: one per core but the page's (the coordinator mostly waits), fewer on a device that reports little
-// memory (`deviceMemory` in GB, rounded down to a power of two by the browser and absent in some). 1 means no helpers: the
-// worker imports alone, exactly as before.
+// memory (`deviceMemory` in GB, rounded down to a power of two by the browser). Safari (every iPhone and iPad) and Firefox do not
+// report it, and those are the devices that run out first: each helper holds a wasm heap of its own (hundreds of MB at the map
+// step, and wasm memory never shrinks), and iOS kills the whole tab, not the worker, so the serial fallback cannot save the
+// import. Without a known memory the helpers are therefore capped at kUnknownMemoryHelpers. 1 means no helpers: the worker
+// imports alone, exactly as before.
+const kUnknownMemoryHelpers = 3;
+
 function chooseHelperCount({hardwareConcurrency, deviceMemory}) {
     let helpers = Math.min(Math.floor(hardwareConcurrency || 1) - 1, kMaxHelpers);
     if (deviceMemory > 0) {
         const byMemory = deviceMemory <= 2 ? 1 : deviceMemory <= 4 ? 2 : deviceMemory <= 8 ? 4 : kMaxHelpers;
         helpers = Math.min(helpers, byMemory);
+    } else {
+        helpers = Math.min(helpers, kUnknownMemoryHelpers);
     }
     return helpers >= kMinHelpers ? helpers : 1;
 }
@@ -155,6 +162,6 @@ async function runShardJob(job, env, post) {
     }
 }
 
-const exported = {chooseHelperCount, makeUnitStore, makeShardProgress, runHelpers, runShardJob, kQuietSteps, kQuietCounts, kMinHelpers, kMaxHelpers};
+const exported = {chooseHelperCount, makeUnitStore, makeShardProgress, runHelpers, runShardJob, kQuietSteps, kQuietCounts, kMinHelpers, kMaxHelpers, kUnknownMemoryHelpers};
 if (typeof module !== "undefined") module.exports = exported;
 else self.oblShard = exported;

@@ -121,7 +121,8 @@ heaviest first to the least loaded, from the same cost estimates the pool uses, 
   error of the lowest-index failing unit.
 
 `shard.js` picks the helpers (`navigator.hardwareConcurrency` minus one core for the page, at most 8; at most 4, 2 or 1 when
-`navigator.deviceMemory` is at most 8, 4 or 2 GB; fewer than 2 means no helpers), runs them (`runHelpers`) and holds the
+`navigator.deviceMemory` is at most 8, 4 or 2 GB; at most 3 when the browser does not report it, as Safari and Firefox do not,
+because iOS kills the whole tab when the heaps of the helpers run it out of memory; fewer than 2 means no helpers), runs them (`runHelpers`) and holds the
 units (`makeUnitStore`, Blobs in the page, bytes under Node). The coordinator mostly waits and adds the helpers' counts into one
 `maps` progress over all units; the replay in `units` does not report the steps the helpers showed, so the bar never goes back.
 With one helper, or when a helper fails, dies or cannot start (no nested workers), the coordinator discards the helpers and
