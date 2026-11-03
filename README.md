@@ -68,7 +68,6 @@ New-Item -ItemType Directory -Force run/packs/base, run/remaster | Out-Null
 
 ### Linux
 x86-64 Linux needs Clang, CMake, Ninja, Python 3 and Git, plus SDL's X11 or Wayland development packages for a real window.
-The Linux game is built and started in testing without a display, so a window, sound and input there are not yet proven.
 
 ```bash
 OBL_SIM_SKIP_CONVERSION=1 bash tools/obl_sim_linux.sh -DOBL_LINUX_WINDOWED=ON   # Debug build
