@@ -161,6 +161,8 @@ jobs:
           key: ccache-wasm-${{ github.sha }}
           restore-keys: ccache-wasm-
       - name: WebAssembly unit tests and obl-sim
+        env:
+          OBL_IMPORT_O3: ${{ inputs.deploy && '1' || '' }}
         run: bash tools/wasm_linux.sh $CCACHE_ARGS
       - name: Browser site
         uses: actions/upload-artifact@v6

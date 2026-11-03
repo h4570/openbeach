@@ -120,6 +120,8 @@ How each piece of the windowed host runs in a tab.
 6. **Site and deploy.** The static page joining importer and game ("Site" above), built by the `wasm` job with the pinned
    Emscripten and uploaded as the artifact `browser-site`. A release, or a CI run by hand with `deploy`, publishes it to GitHub Pages
    with `actions/upload-pages-artifact` and `actions/deploy-pages` (`pages: write`, `id-token: write`).
+   A run with `deploy` builds the importer with `-O3` (`OBL_IMPORT_O3=1`, otherwise `-O2`): a phone imports faster, and the float flags
+   stay the same, so the converted bytes do not move.
    The site lives at `https://openbeach.app`, because OPFS is bound to the origin: moving the address would strand every
    player's import and saves. DNS records for GitHub Pages are DNS only (not proxied, so GitHub can issue the certificate),
    HTTPS is enforced (`.app` requires it in every browser), and an Actions deploy takes the domain from the repository

@@ -38,7 +38,12 @@ obl_embedded_schemas(obl-import-web)
 include(${REPO}/cmake/gui_content.cmake)
 obl_gui_content_schemas(obl-import-web)
 # The converters' float contract (as obl-convert): converted packs keep their bytes.
-target_compile_options(obl-import-web PRIVATE -O2 -ffp-contract=off -fno-fast-math -fwasm-exceptions)
+# -O3 is for the published site only (OBL_IMPORT_O3=1, set by CI on a deploy): it imports faster on a phone, but costs CI time.
+set(OBL_IMPORT_OPT -O2)
+if("$ENV{OBL_IMPORT_O3}" STREQUAL "1")
+    set(OBL_IMPORT_OPT -O3)
+endif()
+target_compile_options(obl-import-web PRIVATE ${OBL_IMPORT_OPT} -ffp-contract=off -fno-fast-math -fwasm-exceptions)
 # A CD's sprite archive is spooled into memory (worker_main.cpp), so the heap may grow to wasm32's limit.
 target_link_options(obl-import-web PRIVATE -fwasm-exceptions -sMODULARIZE=1 -sEXPORT_NAME=createOblImport
     -sENVIRONMENT=worker,node -sALLOW_MEMORY_GROWTH=1 -sMAXIMUM_MEMORY=4GB -sSTACK_SIZE=1MB
