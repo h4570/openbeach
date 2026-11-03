@@ -73,8 +73,8 @@
     body.playing .frame { width: fit-content; margin: 0 auto; }
     body.playing .screen { aspect-ratio: auto; }
     body.playing #canvas { position: static; visibility: visible;
-        width: min(calc(100vw - 56px), calc((100vh - var(--chrome, 86px)) * var(--aspect, 1.3333))) !important;
-        height: min(calc(100vh - var(--chrome, 86px)), calc((100vw - 56px) / var(--aspect, 1.3333))) !important; }
+        width: min(calc(100vw - 56px - var(--side, 0px)), calc((100vh - var(--chrome, 86px)) * var(--aspect, 1.3333))) !important;
+        height: min(calc(100vh - var(--chrome, 86px)), calc((100vw - 56px - var(--side, 0px)) / var(--aspect, 1.3333))) !important; }
     .layer { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
         gap: 12px; padding: 20px; text-align: center; }
     .layer[hidden], .gamebar[hidden] { display: none; }
@@ -130,6 +130,24 @@
     @media (pointer: coarse) {
         body.playing { --chrome: 152px; }
         body.playing .touch-keys { display: flex; justify-content: center; gap: 12px; margin-top: 8px; }
+        /* The note is plain text and the links are buttons: only the buttons have a fill and an outline. */
+        body.playing .gamebar span { background: none; padding: 0 8px; border-radius: 0; font-size: 13px; opacity: .75; }
+        body.playing .gamebar button { background: #ffffffc4; border-radius: 999px; padding: 8px 16px; margin: 0 4px;
+            box-shadow: 0 0 0 1.5px #0a1f3c59, 0 2px 0 #0a1f3c40; }
+        body.playing .gamebar button:active { background: #ffffff; }
+    }
+    /* A phone on its side has no height to spare: the game takes the whole height and the keys and the bar stand beside it. */
+    @media (pointer: coarse) and (orientation: landscape) and (max-height: 560px) {
+        body.playing { --chrome: 44px; --side: 200px; }
+        body.playing .page { padding: 4px 8px; }
+        body.playing .frame { display: grid; grid-template-columns: auto 190px; column-gap: 10px; align-content: center; padding: 8px; }
+        body.playing .screen { grid-row: 1 / 3; }
+        body.playing .touch-keys { align-self: end; margin-top: 0; gap: 6px; flex-direction: column; align-items: center; }
+        body.playing .touch-keys .key { height: 44px; }
+        body.playing .gamebar { flex-direction: column; align-self: start; gap: 6px; }
+        body.playing .gamebar span { text-align: center; }
+        body.playing .gamebar > div { display: flex; flex-direction: column; gap: 6px; }
+        body.playing .gamebar button { margin: 0; }
     }
     /* The keys are drawn as keycaps: a long one for Space and a square one for Esc. A press sinks the top of the cap. */
     .touch-keys button { padding: 0; border: 0; background: none; line-height: 0; touch-action: manipulation; user-select: none;

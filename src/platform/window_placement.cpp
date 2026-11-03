@@ -67,6 +67,12 @@ void PlaceGameWindow(void* window, int width, int height)
 {
     SDL_Window* sdl = SdlGameWindow(window);
     if (!sdl) return;
+#ifdef __EMSCRIPTEN__
+    // The canvas is the window and the page fits it into the tab (web/index.html); the "monitor" is the phone's screen, which
+    // would shrink the back buffer below the game's size.
+    SDL_SetWindowSize(sdl, width, height);
+    return;
+#endif
     SDL_DisplayID display = SDL_GetDisplayForWindow(sdl);
     if (!display) display = SDL_GetPrimaryDisplay();
     SDL_Rect monitor{}, work{};
