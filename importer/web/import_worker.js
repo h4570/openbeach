@@ -23,10 +23,11 @@
 // way: spoolCreate/spoolAppend build a Blob piece by piece, spoolRead reads ranges of it, spoolRemove drops it.
 "use strict";
 
+// Classic scripts share one global scope: the loaded files' top-level names (createOblImport, withLanguage, runHelpers,
+// kQuietSteps, ...) are used as they are, and declaring one of them again here fails the whole worker with a SyntaxError.
 importScripts("obl-import-web.js", "language_ini.js", "shard.js");
 
 const reader = new FileReaderSync();
-const {chooseHelperCount, runHelpers, runShardJob, kQuietSteps, kQuietCounts} = self.oblShard;
 
 // Unit bytes are kept as Blobs (the browser may keep them on disk), and a Blob goes to another worker without being copied.
 const kBlobCodec = {
@@ -246,7 +247,7 @@ async function importPack(request) {
     const root = request.root || "packs/base";
     const pending = new Map();
     const module = await createOblImport();
-    const units = self.oblShard.makeUnitStore(kBlobCodec);
+    const units = makeUnitStore(kBlobCodec);
     const bridge = makeBridge(request, pending, (message) => self.postMessage(message));
     module.oblImport = Object.assign(bridge, units.bridge);
     const plan = planOf(request, root);
