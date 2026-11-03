@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.4.0](https://github.com/h4570/openbeach/compare/v1.3.0...v1.4.0) (2026-11-03)
+
+
+### Features
+
+* **platform:** add touch controls to the browser build ([#16](https://github.com/h4570/openbeach/issues/16)) ([63fd714](https://github.com/h4570/openbeach/commit/63fd714b8ea86349834de7a1b140b17686b2af2f))
+* **site:** iso faq, android, simpler drop box and a stargazers list ([#19](https://github.com/h4570/openbeach/issues/19)) ([1330568](https://github.com/h4570/openbeach/commit/1330568004944c2517e0e5c6184886c4a2bedf95))
+
+
+### Bug Fixes
+
+* **site:** keep the canvas at game size, fix phone landscape ([#20](https://github.com/h4570/openbeach/issues/20)) ([72d5e11](https://github.com/h4570/openbeach/commit/72d5e1127dea79bdd2cb3de58c7c5585541dd7bf))
+* **site:** open the github and discord links in a new tab ([#13](https://github.com/h4570/openbeach/issues/13)) ([7144419](https://github.com/h4570/openbeach/commit/7144419e5a3616e4c010420d0ec32715b6c38b37))
+* **tools:** do not count the pull request number in the subject length ([#21](https://github.com/h4570/openbeach/issues/21)) ([fdc6535](https://github.com/h4570/openbeach/commit/fdc653573491ffa7f13ffe3d276de85b1e499212))
+
+
+### Performance Improvements
+
+* **importer:** build the published browser importer with -O3 ([#18](https://github.com/h4570/openbeach/issues/18)) ([8f68545](https://github.com/h4570/openbeach/commit/8f68545f3b78ecf0519e46e8893be38a5d899812))
+* **importer:** speed up the browser import of maps and sprites ([#17](https://github.com/h4570/openbeach/issues/17)) ([d26196d](https://github.com/h4570/openbeach/commit/d26196d67a8dd0ae040c3253a85923dd288e0611))
+
 ## [1.3.0](https://github.com/h4570/openbeach/compare/v1.2.0...v1.3.0) (2026-11-02)
 
 
