@@ -162,6 +162,4 @@ async function runShardJob(job, env, post) {
     }
 }
 
-const exported = {chooseHelperCount, makeUnitStore, makeShardProgress, runHelpers, runShardJob, kQuietSteps, kQuietCounts, kMinHelpers, kMaxHelpers, kUnknownMemoryHelpers};
-if (typeof module !== "undefined") module.exports = exported;
-else self.oblShard = exported;
+if (typeof module !== "undefined") module.exports = {chooseHelperCount, makeUnitStore, makeShardProgress, runHelpers, runShardJob, kQuietSteps, kQuietCounts, kMinHelpers, kMaxHelpers, kUnknownMemoryHelpers};

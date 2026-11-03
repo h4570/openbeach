@@ -14,6 +14,7 @@
 
 const fs = require("fs");
 const path = require("path");
+const vm = require("vm");
 const {Worker, isMainThread, parentPort, workerData} = require("worker_threads");
 const shard = require("./shard.js");
 
@@ -234,7 +235,28 @@ async function shardLogic() {
     check(!result.ok, "helpers: a browser that cannot start a worker imports alone");
 }
 
+// import_worker.js started the way a browser starts it: importScripts runs each file as a classic script in the worker's one
+// global scope, where a top-level name declared by two files is a SyntaxError that fails every import. require gives each file
+// a scope of its own, so the other checks cannot see it.
+function workerScripts() {
+    const context = vm.createContext({FileReaderSync: class {}});
+    context.self = context;
+    context.importScripts = (...names) => {
+        for (const name of names) {
+            const file = name === "obl-import-web.js" ? wasmPath : path.join(__dirname, name);
+            vm.runInContext(fs.readFileSync(file, "utf8"), context, {filename: name});
+        }
+    };
+    try {
+        vm.runInContext(fs.readFileSync(path.join(__dirname, "import_worker.js"), "utf8"), context, {filename: "import_worker.js"});
+        check(typeof context.onmessage === "function", "worker: import_worker.js and the scripts it imports load together");
+    } catch (error) {
+        check(false, `worker: import_worker.js and the scripts it imports load together: ${error}`);
+    }
+}
+
 async function synthetic(createOblImport) {
+    workerScripts();
     await shardLogic();
     const dir = fs.mkdtempSync(path.join(require("os").tmpdir(), "obl-import-web-"));
     try {
