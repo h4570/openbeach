@@ -3,3 +3,5 @@
 data/packs/** -text
 # Binary references: a line-ending rewrite must never touch them.
 *.png binary
+# cmd.exe misreads labels and blocks of a batch file with bare LF endings.
+*.cmd text eol=crlf

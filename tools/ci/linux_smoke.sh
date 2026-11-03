@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Smoke test of the windowed Linux OpenBeach on a virtual X server (docs/build/linux-release.md): never a real display.
+# Smoke test of the windowed Linux OpenBeach on a virtual X server (docs/build/releases.md): never a real display.
 # Starts the game on the L0 pack under Xvfb with SDL's X11 driver, waits until the main loop presents frames, asks it
 # to quit with SIGTERM (SDL turns it into its quit event) and expects a clean exit with code 0.
 #   tools/ci/linux_smoke.sh <unpacked release directory> [screenshot.png]
@@ -19,7 +19,7 @@ cleanup() {
 trap cleanup EXIT
 
 # The game writes its ini, log and saves into the game directory: a copy keeps the unpacked release untouched.
-cp -R "$dir/l0" "$work/game"
+cp -R "$dir/game/l0" "$work/game"
 log="$work/game/openbeach.log"
 
 Xvfb -displayfd 3 -screen 0 1280x1024x24 -nolisten tcp 3>"$work/display" 2>"$work/xvfb.log" &
@@ -29,7 +29,7 @@ for _ in $(seq 100); do [[ -s "$work/display" ]] && break; sleep 0.1; done
 display=":$(cat "$work/display")"
 
 env -u WAYLAND_DISPLAY DISPLAY="$display" SDL_VIDEO_DRIVER=x11 SDL_AUDIO_DRIVER=dummy OBL_PACK=l0 \
-    XDG_RUNTIME_DIR="$work" "$dir/OpenBeach" --game-dir "$work/game" >"$work/stdout.log" 2>&1 &
+    XDG_RUNTIME_DIR="$work" "$dir/game/OpenBeach" --game-dir "$work/game" >"$work/stdout.log" 2>&1 &
 game=$!
 
 # The intro movie, then the first frame of the menu: the presenter's texture is made by the first presented frame.

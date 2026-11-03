@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# The Linux release tarball (docs/build/linux-release.md): builds the windowed OpenBeach and obl-convert optimized,
-# checks the glibc floor, runs the L0 references on the same build, strips the binaries and packs them.
+# The Linux release tarball (docs/build/releases.md): builds the windowed OpenBeach and obl-convert optimized, checks
+# the glibc floor, runs the L0 references on the same build, strips the binaries, lays out the release with
+# tools/ci/release/stage.py and packs it.
 #   tools/ci/linux_release.sh [extra cmake -D options...]
 # Writes build/dist/openbeach-<version>-linux-x86_64.tar.gz and build/dist/openbeach-<version>-linux-x86_64-debug.tar.gz (the
 # separate debug info). OBL_RELEASE_VERSION overrides version.txt; OBL_SIM_BUILD the build tree (build/linux-release).
@@ -32,8 +33,9 @@ OBL_SOURCE_ROOT="$root" python3 "$root/tools/obl_sim_tests.py" --no-build --buil
     "golden_hash_l0_*"
 
 stage="$dist/$name"
-rm -rf "$stage" "$dist/$name.tar.gz" "$dist/$name-debug.tar.gz"
-mkdir -p "$stage/l0/packs/l0" "$dist/$name-debug"
+stripped="$dist/$name-bin"
+rm -rf "$stage" "$stripped" "$dist/$name-debug" "$dist/$name.tar.gz" "$dist/$name-debug.tar.gz"
+mkdir -p "$stripped" "$dist/$name-debug"
 for bin in OpenBeach obl-convert; do
     # Every needed glibc symbol must exist in the oldest supported glibc.
     newest=$(objdump -T "$build/bin/$bin" | grep -oE 'GLIBC_[0-9]+(\.[0-9]+)+' | sed 's/GLIBC_//' | sort -Vu | tail -1)
@@ -48,12 +50,12 @@ for bin in OpenBeach obl-convert; do
     echo "$bin: glibc $newest, needs $(readelf -d "$build/bin/$bin" 2>/dev/null | grep -oE '\[[^]]+\]' | tr -d '[]' | tr '\n' ' ')"
     objcopy --only-keep-debug "$build/bin/$bin" "$dist/$name-debug/$bin.debug"
     # --strip-all keeps .dynsym: the crash report still names the exported functions (-rdynamic).
-    strip --strip-all -o "$stage/$bin" "$build/bin/$bin"
-    objcopy --add-gnu-debuglink="$dist/$name-debug/$bin.debug" "$stage/$bin"
+    strip --strip-all -o "$stripped/$bin" "$build/bin/$bin"
+    objcopy --add-gnu-debuglink="$dist/$name-debug/$bin.debug" "$stripped/$bin"
 done
-cp "$root/LICENSE" "$root/THIRD_PARTY_NOTICES.md" "$stage/"
-sed "s/@VERSION@/$version/g" "$root/tools/ci/linux_release_readme.txt" > "$stage/README.txt"
-cp -R "$root/data/packs/l0/." "$stage/l0/packs/l0/"
+python3 "$root/tools/ci/release/stage.py" --platform linux --version "$version" --out "$stage" \
+    --bin "$stripped/OpenBeach" "$stripped/obl-convert"
+rm -rf "$stripped"
 tar_opts=(--sort=name --owner=0 --group=0 --numeric-owner --mtime="@${SOURCE_DATE_EPOCH:-$(git -C "$root" log -1 --format=%ct)}")
 tar "${tar_opts[@]}" -C "$dist" -czf "$dist/$name.tar.gz" "$name"
 tar "${tar_opts[@]}" -C "$dist" -czf "$dist/$name-debug.tar.gz" "$name-debug"

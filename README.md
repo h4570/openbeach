@@ -51,6 +51,12 @@ The game also ships a small scenario of its own, the **L0 pack**: a minimal map 
 data. It is what the automated tests use, and it runs on the same mechanics as the full scenarios
 ([L0 tests](docs/build/ci-l0.md)).
 
+## Download
+Every [release](https://github.com/h4570/openbeach/releases) has a Windows x64 zip and a Linux x86-64 tarball (glibc
+2.35+: Debian 12, Ubuntu 22.04 and later). Unpack it and follow `README.txt` (in the six languages of the game): drag
+your copy onto `Import.cmd` (`import.sh` on Linux) once, then start `Play.cmd`. `AGENTS.md` beside it tells an AI agent
+how to do it for you ([release archives](docs/build/releases.md)).
+
 ## Building and running
 Details and the WebAssembly build: [building](docs/build/building.md).
 
@@ -68,7 +74,6 @@ New-Item -ItemType Directory -Force run/packs/base, run/remaster | Out-Null
 
 ### Linux
 x86-64 Linux needs Clang, CMake, Ninja, Python 3 and Git, plus SDL's X11 or Wayland development packages for a real window.
-Each release has a Linux x86-64 tarball (glibc 2.35+: Debian 12, Ubuntu 22.04 and later), see [Linux release](docs/build/linux-release.md).
 
 ```bash
 OBL_SIM_SKIP_CONVERSION=1 bash tools/obl_sim_linux.sh -DOBL_LINUX_WINDOWED=ON   # Debug build

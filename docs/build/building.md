@@ -38,7 +38,7 @@ bash tools/unit_linux.sh clang                                                  
 `OBL_SIM_BUILD_TYPE` sets the CMake build type (default `Debug`); the game targets are `-O2` in every type. The windowed
 build needs SDL's X11 or Wayland development packages for a real window (`tools/ci/linux_release_packages.sh` lists them).
 It starts, presents frames under Xvfb and quits cleanly; the release tarball is built with
-`bash tools/ci/linux_release.sh` ([linux-release.md](linux-release.md)).
+`bash tools/ci/linux_release.sh` ([releases.md](releases.md)).
 
 ## WebAssembly
 `bash tools/wasm_linux.sh` builds the unit tests, the simulation and the importer adapter with Emscripten (`EMSDK` names the SDK).

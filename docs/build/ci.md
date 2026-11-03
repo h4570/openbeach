@@ -19,9 +19,12 @@ request open, and merging it makes the tag and the GitHub release. Events of `gi
 whatever a release needs runs in this file, after `release` and on its outputs `release_created` and `tag_name`:
 - the site: `release` starts the CI run with `deploy` (below);
 - `linux`: builds the Linux tarball on Ubuntu 22.04, runs the L0 references on the optimized build, smoke-tests it under
-  Xvfb (also in `debian:12` and `ubuntu:24.04` containers) and attaches it to the release ([linux-release.md](linux-release.md)).
+  Xvfb (also in `debian:12` and `ubuntu:24.04` containers) and attaches it to the release ([releases.md](releases.md));
+- `windows`: builds the Windows zip on `windows-2025`, runs the same L0 references, starts the packed game hidden and
+  attaches the zip.
 
-By hand (`workflow_dispatch`) only `linux` runs and keeps the tarballs as the workflow artifact `linux-release`.
+By hand (`workflow_dispatch`) only `linux` and `windows` run and keep the archives as the workflow artifacts
+`linux-release` and `windows-release`.
 
 The CI run started after a release replaces the push run of the same commit, so a merged release pull request publishes
 the site; a newer push would cancel it too, and the site then needs the run by hand.
