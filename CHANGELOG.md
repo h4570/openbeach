@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.6.2](https://github.com/h4570/openbeach/compare/v1.6.1...v1.6.2) (2026-11-03)
+
+
+### Performance Improvements
+
+* **importer:** choose the PNG row filter in one pass ([#37](https://github.com/h4570/openbeach/issues/37)) ([2866bc3](https://github.com/h4570/openbeach/commit/2866bc3af4f0a91ade31c31bbdfc6d5e7c30e17d))
+* **importer:** encode sprite and map PNGs on a worker pool ([#38](https://github.com/h4570/openbeach/issues/38)) ([30b280b](https://github.com/h4570/openbeach/commit/30b280bc09512bab4d67015fd113258dcbc3d7d4))
+* **importer:** skip the map conversion when its inputs have not changed ([#36](https://github.com/h4570/openbeach/issues/36)) ([d0e358d](https://github.com/h4570/openbeach/commit/d0e358dca3a3fe326db2d3384d3473dd1ff9c6fb))
+* **site:** split the browser import across web workers ([#41](https://github.com/h4570/openbeach/issues/41)) ([3d9a99f](https://github.com/h4570/openbeach/commit/3d9a99f86a2580eb42c051e09a5ca9983bb4be65)), closes [#39](https://github.com/h4570/openbeach/issues/39)
+
 ## [1.6.1](https://github.com/h4570/openbeach/compare/v1.6.0...v1.6.1) (2026-11-03)
 
 
