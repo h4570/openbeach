@@ -129,9 +129,12 @@ unsigned char* ZlibCompress(unsigned char* data, int length, int* outLength, int
     const int capacity = 2 * quality;
     const size_t bound = (static_cast<size_t>(length) * 9 + 7) / 8 + 64;
     uint8_t* out = static_cast<uint8_t*>(std::malloc(bound));
-    // Positions per bucket, oldest first; `used` counts them.
-    std::vector<int32_t> table(static_cast<size_t>(kHashSize) * capacity);
-    std::vector<uint8_t> used(kHashSize, 0);
+    // Positions per bucket, oldest first; `used` counts them, so the table itself is never cleared. Kept between calls: a
+    // sprite import encodes thousands of small images, and a fresh megabyte for each would cost more than the encoding.
+    thread_local std::vector<int32_t> table;
+    thread_local std::vector<uint8_t> used;
+    if (table.size() != static_cast<size_t>(kHashSize) * capacity) table.resize(static_cast<size_t>(kHashSize) * capacity);
+    used.assign(kHashSize, 0);
     if (!out) return nullptr;
 
     BitWriter writer(out);
