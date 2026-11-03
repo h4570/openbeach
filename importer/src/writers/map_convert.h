@@ -24,9 +24,11 @@ inline constexpr int kMapOutputRevision = 1;
 inline constexpr const char* kMapStampName = "conversion.stamp";
 
 // Installation maps (all campaign islands, shared by sandboxes), water sheets and save-name -> catalog prop lookup.
-// Scenario scripts are read only for prop aliases; placements and scenario logic remain there.
+// `jobs` worker threads read, decode and encode the images (0: one per hardware thread; the output, the first error and
+// the progress are those of one job). Scenario scripts are read only for prop aliases; placements and scenario logic remain there.
 // A conversion writes maps/conversion.stamp last (revision, SHA-256 of every input, the files written). When the stamp
-// matches the source and all those files are present nothing is read or written, `files` is 0 and `*upToDate` is set.
+// matches the source and all those files are present nothing is read or written, no worker starts, `files` is 0 and
+// `*upToDate` is set.
 bool ConvertMaps(const ByteSource& source, PackSink& out, const json_schema::Registry& schemas, int& files, std::string& error,
-        const std::function<void(int done, int total)>& report = {}, bool* upToDate = nullptr);
+        const std::function<void(int done, int total)>& report = {}, bool* upToDate = nullptr, int jobs = 1);
 } // namespace obl::convert

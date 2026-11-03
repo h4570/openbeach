@@ -55,7 +55,7 @@ CLI commands (one line each, so parallel converter work adds its own line):
 - `obl-convert gui-tables <BeachLife.exe>` prints the GUI tables
 - `obl-convert identify <installation or CD root>` prints the executable build, the data revision and the identifying hashes
 - `obl-convert cabinet list|verify <data1.hdr>` lists the cabinet's files or checks every stored one, `obl-convert cabinet extract <data1.hdr> <group> <dir>` writes one file group out
-- `obl-convert sprites <installation or CD root> <out> [--filter <text>] [--schemas <dir>]` writes `<out>/sprites/`
+- `obl-convert sprites <installation or CD root> <out> [--filter <text>] [--jobs <n>] [--schemas <dir>]` writes `<out>/sprites/`
 - `obl-convert texts <installation> <out> [--schemas <dir>]` writes `<out>/text/`
 - `obl-convert gui-layouts <installation> <out> [--schemas <dir>]` writes `<out>/gui/`
 - `obl-convert scripts <installation> <out>` writes `<out>/scripts/object/` and `<out>/scenarios/<id>/world.wsc`, the decoded object and world scripts
@@ -65,9 +65,9 @@ CLI commands (one line each, so parallel converter work adds its own line):
 - `obl-convert guests <installation> <out> [--schemas <dir>]` writes `<out>/guests/` (the 12 campaign and 3 sandbox guest sets)
 - `obl-convert catalog <installation> <out> [--schemas <dir>]` writes `<out>/catalog/`
 - `obl-convert scenarios <installation> <out> [--schemas <dir>]` writes 24 scenario documents and campaign order; reports ignored PIS entries
-- `obl-convert maps <installation> <out> [--schemas <dir>]` writes `<out>/maps/` (islands, water masks and prop key lookup; placements stay in scripts)
+- `obl-convert maps <installation> <out> [--jobs <n>] [--schemas <dir>]` writes `<out>/maps/` (islands, water masks and prop key lookup; placements stay in scripts)
 - `obl-convert pack <installation> <pack> [--language <lang>] [--schemas <dir>]` writes `<pack>/pack.json`
-- `obl-convert import <installation or CD root> <pack> [--language <lang>]` runs `ImportPack`: every pack command above in
+- `obl-convert import <installation or CD root> <pack> [--language <lang>] [--jobs <n>]` runs `ImportPack`: every pack command above in
   the producers' order, `pack.json` last; the browser import runs the same function
 - `obl-convert save-info <save<N>.dat>` reads an old slot to its end and prints the header (floats as value and bits, the title as escaped raw bytes) and record counts per type, with `--objects` the typed sections, objects per class and consistency problems
 - `obl-convert save <save<N>.dat> <pack> <out.json> [--schemas <dir>]` writes the converted save
@@ -86,6 +86,18 @@ of a `PackStorage`). The Emscripten part: `worker_main.cpp` (`obl_import`, bindi
 `import_worker.js` (the Web Worker: `FileReaderSync` reads, Blobs while converting, OPFS after success) and
 `node_check.cjs` (the same adapter under Node); `web/CMakeLists.txt` builds `obl-import-web.js/.wasm` in the `wasm` job
 (see the browser adapter below).
+
+**Parallel conversion.** The two heaviest steps, `sprites` and `maps`, decode and encode their independent images on worker
+threads (`writers/ordered_pool.h`, `std::thread` only). `--jobs <n>` sets the workers; the default is one per hardware
+thread and `--jobs 1` converts on the calling thread. The output does not depend on `n`: workers only decode and encode into
+memory, and the calling thread commits the results in bank order (sprites) or in the order a serial run does the steps
+(maps), so the sink gets the same files in the same order, the first error is the one a serial run reports (the files made
+before it are written), and the progress reports are the same sequence. Schema validation, JSON, the file counters and
+`PackSink::Write` stay on the calling thread. The memory in flight is bounded: a task is given an estimate of the bytes it holds
+(a sprite's biggest animation page and its encoder copies, 256 MB for the planes of an island) and starts only while the
+estimates of the tasks held stay within 768 MB (sprites) or 1 GB (maps); a task bigger than that runs alone. The API takes
+the count too (`SpriteConversionStats::jobs`, `ConvertMaps(..., jobs)`, `ImportOptions::jobs`; 0 means one per hardware
+thread) and defaults to 1. The browser build (Emscripten, no pthreads) always runs serially.
 
 **Schemas.** Every JSON is validated against its schema before it is written; an invalid document stops the
 conversion with the schema errors (exit 1). The CLI uses its embedded `data/schemas/` bundle by default, so a standalone converter needs no schema files

@@ -339,6 +339,7 @@ add_executable(obl_unit_tests
     convert_map_test.cpp
     convert_map_decode_test.cpp
     convert_pack_test.cpp
+    convert_parallel_test.cpp
     convert_sprite_test.cpp
     convert_text_test.cpp
     convert_gui_layout_test.cpp

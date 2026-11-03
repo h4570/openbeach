@@ -1,6 +1,7 @@
 #include "importer/src/writers/sprite_convert.h"
 
 #include "importer/src/writers/guest_set_convert.h"
+#include "importer/src/writers/ordered_pool.h"
 #include "importer/src/writers/png_write.h"
 #include "core/ascii_case.h"
 #include "formats/schemas.h"
@@ -258,6 +259,28 @@ bool ConvertSprite(const SpriteRecord& sprite, const SpriteBlockReader& readBloc
 
 namespace {
 
+// The memory a sprite holds while it converts on a worker: its biggest animation (block, one sheet page, the filtered copy
+// and the compressed page the encoder makes) plus the PNGs kept until the sprite is committed, estimated at a quarter of
+// the pixels. Some animations (gail's d_cabaret) decode to hundreds of megabytes.
+uint64_t SpriteMemory(const SpriteRecord& sprite)
+{
+    uint64_t largest = 0, kept = 0;
+    for (const SpriteAnimRecord& anim : sprite.anims) {
+        if (anim.width == 0 || anim.height == 0 || anim.uniqueFrames == 0) continue;
+        const uint64_t w = anim.width, h = anim.height, unique = anim.uniqueFrames;
+        const uint64_t columns = std::clamp<uint64_t>(kMaxSheetSize / w, 1, unique);
+        const uint64_t rows = std::clamp<uint64_t>(kMaxSheetSize / h, 1, (unique + columns - 1) / columns);
+        const uint64_t onPage = std::min(columns * rows, unique);
+        const uint64_t page = columns * w * ((onPage + columns - 1) / columns) * h * 2;
+        largest = std::max(largest, anim.BlockSize() + 3 * page);
+        kept += unique * w * h * 2 / 4;
+    }
+    return largest + kept;
+}
+
+// Converted sprites in flight at once never hold more than this, except one that needs more alone.
+constexpr uint64_t kSpriteMemoryBudget = 768ull << 20;
+
 constexpr std::string_view kSpriteDataPath = "Data/Sprites/BLSprite.dat";
 
 } // namespace
@@ -353,31 +376,85 @@ bool SpriteArchive::Convert(PackSink& out, const json_schema::Registry& schemas,
         ++stats.files;
         return true;
     };
-    std::set<std::string> keys;
+    // The part of a sprite that needs the calling thread: schema validation, the JSON file and the counters.
     const int total = static_cast<int>(bank.sprites.size());
-    for (const SpriteRecord& sprite : bank.sprites) {
-        const std::string key = LowerAscii(sprite.name);
-        if (!filter.empty() && key.find(LowerAscii(filter)) == std::string::npos) continue;
-        // The game takes the first sprite of a name regardless of case; a second one would never be drawn.
-        if (!keys.insert(key).second) {
-            error = "sprite " + key + " occurs twice (names differ only in case)";
-            return false;
-        }
-        nlohmann::ordered_json json;
-        const auto tone = toneGroups_.find(key);
-        if (!ConvertSprite(sprite, readBlock, write, json, error, tone == toneGroups_.end() ? 0 : tone->second)) return false;
+    const auto finish = [&](const SpriteRecord& sprite, const std::string& key, nlohmann::ordered_json& json, std::string& err) {
         if (key.starts_with("pathtile_") && !autotile_.is_null()) json["autotile"] = autotile_;
-        if (!formats::ValidateDocument(schemas, "obl.sprite", json, error)) {
-            error = "sprites/" + key + ".json: " + error;
+        if (!formats::ValidateDocument(schemas, "obl.sprite", json, err)) {
+            err = "sprites/" + key + ".json: " + err;
             return false;
         }
         const std::string text = json.dump(2) + "\n";
-        if (!write(key + ".json", std::span(reinterpret_cast<const uint8_t*>(text.data()), text.size()), error)) return false;
+        if (!write(key + ".json", std::span(reinterpret_cast<const uint8_t*>(text.data()), text.size()), err)) return false;
         ++stats.sprites;
         stats.animations += static_cast<int>(sprite.anims.size());
         for (const auto& anim : sprite.anims) stats.frames += anim.uniqueFrames;
         // Every sprite: the big ones take seconds each, so a coarser count looks like a hang.
         if (stats.report) stats.report(stats.sprites, total);
+        return true;
+    };
+    const auto toneOf = [&](const std::string& key) {
+        const auto tone = toneGroups_.find(key);
+        return tone == toneGroups_.end() ? 0 : tone->second;
+    };
+
+    // The sprites to convert, in bank order, up to the first name that repeats: the game takes the first sprite of a name
+    // regardless of case; a second one would never be drawn. Its error comes after the sprites before it, as in a serial run.
+    std::vector<const SpriteRecord*> todo;
+    std::string repeated;
+    {
+        std::set<std::string> keys;
+        for (const SpriteRecord& sprite : bank.sprites) {
+            const std::string key = LowerAscii(sprite.name);
+            if (!filter.empty() && key.find(LowerAscii(filter)) == std::string::npos) continue;
+            if (!keys.insert(key).second) {
+                repeated = "sprite " + key + " occurs twice (names differ only in case)";
+                break;
+            }
+            todo.push_back(&sprite);
+        }
+    }
+
+    if (EffectiveJobs(stats.jobs, todo.size()) <= 1) {
+        for (const SpriteRecord* sprite : todo) {
+            const std::string key = LowerAscii(sprite->name);
+            nlohmann::ordered_json json;
+            if (!ConvertSprite(*sprite, readBlock, write, json, error, toneOf(key)) || !finish(*sprite, key, json, error)) return false;
+        }
+    } else {
+        // Workers decode and encode into memory; the files of a sprite reach the sink here, in bank order, followed by the
+        // error that stopped it, so the sink holds what a serial run leaves.
+        struct Converted {
+            std::vector<std::pair<std::string, std::vector<uint8_t>>> files;
+            nlohmann::ordered_json json;
+            std::string error;
+            bool ok = false;
+        };
+        const auto convert = [&](size_t index) {
+            Converted converted;
+            const ConvertedFileSink keep = [&](const std::string& relative, std::span<const uint8_t> bytes, std::string&) {
+                converted.files.emplace_back(relative, std::vector<uint8_t>(bytes.begin(), bytes.end()));
+                return true;
+            };
+            const SpriteRecord& sprite = *todo[index];
+            converted.ok = ConvertSprite(sprite, readBlock, keep, converted.json, converted.error, toneOf(LowerAscii(sprite.name)));
+            return converted;
+        };
+        const auto commit = [&](size_t index, Converted& converted) {
+            for (const auto& [relative, bytes] : converted.files)
+                if (!write(relative, bytes, error)) return false;
+            if (!converted.ok) {
+                error = converted.error;
+                return false;
+            }
+            return finish(*todo[index], LowerAscii(todo[index]->name), converted.json, error);
+        };
+        const std::function<uint64_t(size_t)> cost = [&](size_t index) { return SpriteMemory(*todo[index]); };
+        if (!RunOrdered<Converted>(todo.size(), stats.jobs, kSpriteMemoryBudget, cost, convert, commit)) return false;
+    }
+    if (!repeated.empty()) {
+        error = repeated;
+        return false;
     }
     return true;
 }
