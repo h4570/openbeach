@@ -282,3 +282,136 @@ OBL_TEST_CASE("convert.maps_refuse_conflicts_and_unlisted_scenery")
         OBL_CHECK_EQ(error, "missing Data/Scenario");
     }
 }
+
+namespace {
+bool ConvertTo(const ByteSource& source, MemorySink& out, int& files, bool& upToDate)
+{
+    std::string error;
+    obl::json_schema::Registry schemas;
+    OBL_REQUIRE(obl::formats::LoadEmbeddedSchemas(schemas, error));
+    const bool done = ConvertMaps(source, out, schemas, files, error, {}, &upToDate);
+    if (!done) obl::unit::ReportFailure(__FILE__, __LINE__, error);
+    return done;
+}
+} // namespace
+
+OBL_TEST_CASE("convert.maps_skip_when_inputs_are_unchanged")
+{
+    const auto source = MapSource();
+    MemorySink out;
+    int files = 0;
+    bool upToDate = true;
+    OBL_REQUIRE(ConvertTo(source, out, files, upToDate));
+    OBL_CHECK(!upToDate);
+    OBL_CHECK_EQ(files, 8);
+    const auto stamp = out.Read("maps/conversion.stamp");
+    OBL_REQUIRE(stamp.has_value());
+    const std::string text(stamp->begin(), stamp->end());
+    OBL_CHECK(text.starts_with("obl.map output 1\ninputs "));
+    OBL_CHECK(text.ends_with("\nend\n"));
+    OBL_CHECK(text.find("\nfile maps/isle/color.png\n") != std::string::npos);
+    OBL_CHECK(text.find("conversion.stamp") == std::string::npos); // the stamp does not list itself
+
+    // A marker in a converted file survives a run that is up to date: nothing was written, not even equal bytes.
+    const std::vector<uint8_t> marker{1, 2, 3};
+    std::string error;
+    OBL_REQUIRE(out.Write("maps/isle/color.png", marker, error));
+    OBL_REQUIRE(ConvertTo(source, out, files, upToDate));
+    OBL_CHECK(upToDate);
+    OBL_CHECK_EQ(files, 0);
+    OBL_CHECK(out.Read("maps/isle/color.png") == marker);
+    OBL_CHECK(out.Read("maps/conversion.stamp") == stamp);
+
+    // An output that went missing is converted again, and the stamp comes back.
+    OBL_REQUIRE(out.Remove("maps/isle/depth.png"));
+    OBL_REQUIRE(ConvertTo(source, out, files, upToDate));
+    OBL_CHECK(!upToDate);
+    OBL_CHECK_EQ(files, 8);
+    OBL_CHECK(out.Read("maps/isle/depth.png").has_value());
+    OBL_CHECK(out.Read("maps/isle/color.png") != marker);
+    OBL_CHECK(out.Read("maps/conversion.stamp") == stamp);
+
+    // An interrupted run leaves no stamp, and a truncated one is no stamp either.
+    OBL_REQUIRE(out.Write("maps/conversion.stamp", std::span<const uint8_t>(stamp->data(), stamp->size() - 4), error));
+    OBL_REQUIRE(ConvertTo(source, out, files, upToDate));
+    OBL_CHECK(!upToDate);
+    OBL_CHECK(out.Read("maps/conversion.stamp") == stamp);
+}
+
+OBL_TEST_CASE("convert.maps_reconvert_when_any_input_changes")
+{
+    const auto original = MapSource();
+    MemorySink out;
+    int files = 0;
+    bool upToDate = false;
+    OBL_REQUIRE(ConvertTo(original, out, files, upToDate));
+    std::string previous;
+    {
+        const auto stamp = *out.Read("maps/conversion.stamp");
+        previous.assign(stamp.begin(), stamp.end());
+    }
+    const std::string pis = "'WORLD_MAPFILENAME' \"Data\\Isle\\Isle.biz\"\r\n'WORLD_MAPGRID' \"Data/Isle/isle.dat\"\r\n"
+                            "'WORLD_MAPHEIGHTMAP' \"Data/Isle/height.tga\"\r\n'WORLD_HEIGHTMAPSCALE' 2.5\r\n"
+                            "'WORLD_WATERANIM' \"Data/Water/WaterAnim3.wat\"\r\n'WORLD_DEPTH_PLANE_OFFSET' -7\r\n";
+    // Each change keeps the source valid, so the run must convert, and touches exactly one input file.
+    struct Change {
+        const char* what;
+        std::function<void(MemorySource&)> apply;
+    };
+    const Change changes[] = {
+            {"building list",
+                    [](MemorySource& s) {
+                        s.Add("Data/Script/BuildingList.ble",
+                                Bytes("\"SCENERY_ROCK\" \"ROCK_NAME\" \"Stune\" \"ROCK_SPRITE\" \"ROCK\" \"ROCK_GRIDWIDTH\" \"1\" "
+                                      "\"ROCK_GRIDHEIGHT\" \"1\" \"ROCK_BUILDON\" \"LAND\"\n",
+                                        true));
+                    }},
+            {"pis of the campaign scenario",
+                    [&](MemorySource& s) {
+                        s.Add("Data/Scenario/Scenario1/Scenario1.pis",
+                                Bytes(pis + "'WORLD_SCRIPT' \"Data/Scenario/Scenario1/Scenario1.lgc\"\r\n'UNUSED_KEY' 1\r\n"));
+                    }},
+            {"pis of the sandbox",
+                    [&](MemorySource& s) {
+                        s.Add("Data/Scenario/SandScenario1/SandScenario1.pis",
+                                Bytes(pis + "'WORLD_SCRIPT' \"Data/Scenario/SandScenario1/SandScenario1.lgc\"\r\n'UNUSED_KEY' 1\r\n"));
+                    }},
+            {"script alias",
+                    [](MemorySource& s) {
+                        s.Add("Data/Scenario/Scenario1/Scenario1.ble", Bytes("Create Scenery Rock 1 2 3 BigRack;\n", true));
+                    }},
+            {"other script alias",
+                    [](MemorySource& s) {
+                        s.Add("Data/Scenario/SandScenario1/SandScenario1.ble", Bytes("Create Scenery rock -1 0 Pebbly;\n", true));
+                    }},
+            {"biz block", [](MemorySource& s) { s.Add("Data/Isle/Isle.biz", Biz(RepeatedBlock(0x35, 0x12, 0xcd, 0xab))); }},
+            {"grid",
+                    [](MemorySource& s) {
+                        s.Add("Data/Isle/isle.dat", Grid([](size_t x, size_t) { return obl::map_pack::kTerrainFlags[x % 6]; }));
+                    }},
+            {"height map", [](MemorySource& s) { s.Add("Data/Isle/height.tga", HeightTga(4, 4)); }},
+            {"water animation", [](MemorySource& s) { s.Add("Data/Water/WaterAnim3.wat", WaterFile(32)); }},
+    };
+    for (const Change& change : changes) {
+        auto source = MapSource();
+        change.apply(source);
+        MemorySink changed;
+        for (const auto& [path, bytes] : out.files()) {
+            std::string error;
+            OBL_REQUIRE(changed.Write(path, bytes, error));
+        }
+        upToDate = true;
+        OBL_REQUIRE(ConvertTo(source, changed, files, upToDate));
+        if (upToDate || files != 8) obl::unit::ReportFailure(__FILE__, __LINE__, std::string("not reconverted after: ") + change.what);
+        OBL_CHECK(!upToDate);
+        const auto stamp = *changed.Read("maps/conversion.stamp");
+        OBL_CHECK(std::string(stamp.begin(), stamp.end()) != previous);
+    }
+
+    // A source file that is no input of the conversion leaves the stamp valid.
+    auto unrelated = MapSource();
+    unrelated.Add("Data/Isle/readme.txt", Bytes("x"));
+    upToDate = false;
+    OBL_REQUIRE(ConvertTo(unrelated, out, files, upToDate));
+    OBL_CHECK(upToDate);
+}

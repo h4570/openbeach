@@ -6,6 +6,19 @@ without converting scenarios, campaign order, scripts or placements. It accepts 
 no executable addresses or build-specific tables are needed. CD roots must first be extracted to an installation directory.
 Converted content stays outside git.
 
+## Up to date
+
+Every build's post-build step runs this command and the island PNGs take seconds each, so a run that has nothing new to
+convert does nothing. A conversion writes `maps/conversion.stamp` last (output revision `kMapOutputRevision`, the SHA-256
+of every input: `Data/Script/BuildingList.ble`, each scenario `.pis` and the map, grid, height map, water animation and
+script file those name, each by lowercase path, size and digest, in path order; then one `file` line per output and a
+closing `end` line). The next run reads the inputs, and when the stamp names the same revision and inputs and every listed
+file is still in the pack, it writes nothing and prints `maps up to date (maps/conversion.stamp)`. The stamp is removed
+before a conversion starts, so an interrupted run is redone, and a stamp without its `end` line counts as none. Bump the
+revision when the converter writes other map files from the same sources. A file the conversion starts to read must also be
+added to the input hash (`HashInputs`). The stamp is not a JSON, so no loader lists it; `pack` lists it in `pack.json` like
+`sprites/conversion.stamp`.
+
 ## Effective map data
 
 The converter follows the engine's PIS parser: ASCII case-insensitive keys, last entry wins, wrong-type entries hide
@@ -61,7 +74,9 @@ script converter must use this lookup and retain command order and placements in
 
 ## Verification
 
-`convert_map.*` covers grid transposition, unknown flags, palette-independent height samples, exact indexed/16-bit
+`convert.maps_skip_when_inputs_are_unchanged` and `convert.maps_reconvert_when_any_input_changes` (synthetic sources) cover
+the stamp: an unchanged source writes nothing, a missing output or a truncated stamp converts again, and a changed byte in
+any one of the input files converts again. `convert_map.*` covers grid transposition, unknown flags, palette-independent height samples, exact indexed/16-bit
 PNG output, RefPack command bounds, water sheet axes and malformed ranges, and prop aliases against the engine's
 Create parser. `data.convert_maps_match_engine_loaders` converts all installed references in a unique
 temporary directory and checks all twelve islands: terrain against `ConstructGrid`, heights against `DecodeTga`, every

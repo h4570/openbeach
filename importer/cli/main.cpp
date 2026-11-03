@@ -365,9 +365,14 @@ int Assets(const std::vector<std::string>& args)
     if (args[0] == "maps") {
         if (!filter.empty()) return Usage();
         int files = 0;
-        if (!obl::convert::ConvertMaps(*installation, *output, schemas, files, error)) {
+        bool upToDate = false;
+        if (!obl::convert::ConvertMaps(*installation, *output, schemas, files, error, {}, &upToDate)) {
             std::fprintf(stderr, "error: %s\n", error.c_str());
             return 1;
+        }
+        if (upToDate) {
+            std::printf("maps up to date (maps/conversion.stamp)\n");
+            return 0;
         }
         std::printf("%d map files written\n", files);
         return 0;
