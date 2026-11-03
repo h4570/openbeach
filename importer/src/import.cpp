@@ -80,6 +80,7 @@ bool ImportPack(
     if (options.chosenLanguage) *options.chosenLanguage = language;
     int files = 0;
     SpriteConversionStats sprites;
+    sprites.jobs = options.jobs;
     Source identity;
     // The counting callback of a step, or none when the caller does not count.
     const auto countOf = [&](std::string_view step) -> std::function<void(int, int)> {
@@ -92,7 +93,7 @@ bool ImportPack(
             {"gui-tables", [&] { return WriteExeGuiTables(source, pack, error); }},
             {"game-parameters", [&] { return ConvertGameParameters(source, pack, schemas, error); }},
             {"scripts", [&] { return ConvertScripts(source, pack, files, error); }},
-            {"maps", [&] { return ConvertMaps(source, pack, schemas, files, error, countOf("maps")); }},
+            {"maps", [&] { return ConvertMaps(source, pack, schemas, files, error, countOf("maps"), nullptr, options.jobs); }},
             {"gui-layouts", [&] { return ConvertGuiLayouts(source, pack, schemas, files, error); }},
             {"sounds",
                     [&] { return ConvertSamples(source, pack, files, error) && ConvertSoundScript(source, pack, schemas, files, error); }},

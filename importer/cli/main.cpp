@@ -35,10 +35,12 @@
 
 #include "core/json_schema.h"
 
+#include <algorithm>
 #include <cstdio>
 #include <filesystem>
 #include <fstream>
 #include <set>
+#include <thread>
 #include <iterator>
 #include <optional>
 #include <string>
@@ -105,13 +107,13 @@ int Usage()
             "  writes gui/<name>.gui for the installed GUI scripts and gui/layouts.json with validated JSON\n"
             "       obl-convert scenarios <installation or CD root> <output directory> [--schemas <dir>]\n"
             "  writes scenarios/<id>/scenario.json and scenarios/campaign.json; reports unused PIS entries\n"
-            "       obl-convert maps <installation or CD root> <output directory> [--schemas <dir>]\n"
+            "       obl-convert maps <installation or CD root> <output directory> [--jobs <n>] [--schemas <dir>]\n"
             "  writes maps/ (terrain, heights, color, depth, water masks and the prop key lookup)\n"
             "       obl-convert scripts <installation or CD root> <output directory>\n"
             "  writes scripts/object/<name>.obs and scenarios/<id>/world.wsc, the decoded object and world scripts\n"
             "       obl-convert catalog <installation or CD root> <output directory> [--schemas <dir>]\n"
             "  writes catalog/ (index.json and one validated JSON per building, scenery, staff, vehicle, ...) from BuildingList.ble\n"
-            "       obl-convert sprites <installation or CD root> <output directory> [--filter <text>] [--schemas <dir>]\n"
+            "       obl-convert sprites <installation or CD root> <output directory> [--filter <text>] [--jobs <n>] [--schemas <dir>]\n"
             "  writes sprites/ (obl.sprite JSON, PNG palettes and sheets), every JSON checked against data/schemas/\n"
             "       obl-convert game-parameters <installation or CD root> <output directory> [--schemas <dir>]\n"
             "  writes rules/game_parameters.json from GameParameters.pis with validated JSON\n"
@@ -122,8 +124,10 @@ int Usage()
             "       obl-convert pack <installation directory> <pack directory> [--language <lang>] [--schemas <dir>]\n"
             "  writes <pack directory>/pack.json last: identity, import reference, default language (without --language: the\n"
             "  BeachLife.ini language when the pack has its table), hash and tier of every file\n"
-            "       obl-convert import <installation or CD root> <pack directory> [--language <lang>]\n"
+            "       obl-convert import <installation or CD root> <pack directory> [--language <lang>] [--jobs <n>]\n"
             "  runs every pack command above, pack.json last (what the browser import runs)\n"
+            "  --jobs <n>: worker threads for the sprite and map images (default: one per hardware thread; 1 converts serially);\n"
+            "  the files, errors and progress are the same for every n\n"
             "       obl-convert save-info <save<N>.dat> [--objects]\n"
             "  checks an old save slot to its end and prints the header and record counts per type; --objects reads\n"
             "  every section and object by its emitter's field table and checks counts and object references\n"
@@ -145,6 +149,20 @@ std::optional<obl::convert::PeFile> LoadExe(const std::filesystem::path& path)
     auto exe = obl::convert::PeFile::Parse(std::move(bytes), error);
     if (!exe) std::fprintf(stderr, "error: %s: %s\n", path.string().c_str(), error.c_str());
     return exe;
+}
+
+// A positive thread count for --jobs; nullopt for anything else.
+std::optional<int> ParseJobs(const std::string& text)
+{
+    if (text.empty() || text.size() > 4 || text.find_first_not_of("0123456789") != std::string::npos) return std::nullopt;
+    const int jobs = std::stoi(text);
+    if (jobs < 1) return std::nullopt;
+    return jobs;
+}
+
+int DefaultJobs()
+{
+    return std::max(1, static_cast<int>(std::thread::hardware_concurrency()));
 }
 
 int Footprints(const std::filesystem::path& installation)
@@ -325,11 +343,16 @@ int Assets(const std::vector<std::string>& args)
 {
     std::string filter, error;
     std::optional<std::filesystem::path> schemaDir;
+    int jobs = DefaultJobs();
     for (size_t i = 3; i < args.size(); i += 2) {
         if (i + 1 >= args.size()) return Usage();
         if (args[i] == "--filter" && args[0] == "sprites")
             filter = args[i + 1];
-        else if (args[i] == "--schemas")
+        else if (args[i] == "--jobs" && (args[0] == "sprites" || args[0] == "maps")) {
+            const auto parsed = ParseJobs(args[i + 1]);
+            if (!parsed) return Usage();
+            jobs = *parsed;
+        } else if (args[i] == "--schemas")
             schemaDir = std::filesystem::path(args[i + 1]);
         else
             return Usage();
@@ -366,7 +389,7 @@ int Assets(const std::vector<std::string>& args)
         if (!filter.empty()) return Usage();
         int files = 0;
         bool upToDate = false;
-        if (!obl::convert::ConvertMaps(*installation, *output, schemas, files, error, {}, &upToDate)) {
+        if (!obl::convert::ConvertMaps(*installation, *output, schemas, files, error, {}, &upToDate, jobs)) {
             std::fprintf(stderr, "error: %s\n", error.c_str());
             return 1;
         }
@@ -462,6 +485,7 @@ int Assets(const std::vector<std::string>& args)
         return 0;
     }
     obl::convert::SpriteConversionStats stats;
+    stats.jobs = jobs;
     if (!obl::convert::ConvertSprites(*installation, *output, schemas, filter, stats, error)) {
         std::fprintf(stderr, "error: %s\n", error.c_str());
         return 1;
@@ -555,10 +579,18 @@ int Pack(const std::vector<std::string>& args)
 int Import(const std::vector<std::string>& args)
 {
     obl::convert::ImportOptions options;
-    if (args.size() == 5 && args[3] == "--language")
-        options.language = args[4];
-    else if (args.size() != 3)
-        return Usage();
+    options.jobs = DefaultJobs();
+    for (size_t i = 3; i < args.size(); i += 2) {
+        if (i + 1 >= args.size()) return Usage();
+        if (args[i] == "--language")
+            options.language = args[i + 1];
+        else if (args[i] == "--jobs") {
+            const auto parsed = ParseJobs(args[i + 1]);
+            if (!parsed) return Usage();
+            options.jobs = *parsed;
+        } else
+            return Usage();
+    }
     const SpoolBeside spool{std::filesystem::path(args[2])};
     options.spool = spool.get();
     options.progress = [](std::string_view step) { std::printf("%.*s\n", static_cast<int>(step.size()), step.data()); };

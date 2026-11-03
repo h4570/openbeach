@@ -38,6 +38,9 @@ struct ImportOptions {
     std::function<void(std::string_view step)> progress;
     // Called while a long step runs ("maps", "sprites", "pack") with how many of its items are done out of the total.
     std::function<void(std::string_view step, uint64_t done, uint64_t total)> count;
+    // Worker threads for the sprite and map images (0: one per hardware thread). The pack is the same for every value; the
+    // default, one, converts on the calling thread, which is all the browser build (no threads) ever does.
+    int jobs = 1;
     // The executables the source may hold (KnownExe, importer/src/source/source.h); empty means the supported builds.
     // Tests pass their own table so a synthetic copy imports end to end.
     std::span<const KnownExe> knownExes;

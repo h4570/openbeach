@@ -49,6 +49,9 @@ bool ToneGroupsOfGuestSets(const std::vector<std::vector<uint8_t>>& installedSet
 struct SpriteConversionStats {
     int sprites = 0, animations = 0, frames = 0, files = 0;
     bool upToDate = false; // nothing written: the stamp says the output is of this archive and revision
+    // Worker threads that decode and encode sprites (0: one per hardware thread). The output is the same for every value;
+    // 1 converts one sprite at a time on the calling thread, and the browser build always does.
+    int jobs = 1;
     // Called every few sprites and after the last one with the sprites done and the total of the conversion.
     std::function<void(int done, int total)> report;
 };

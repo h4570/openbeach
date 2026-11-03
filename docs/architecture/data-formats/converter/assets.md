@@ -35,6 +35,8 @@ is another revision and gives its own sprites. It writes the format of
   revision when the output changes. Revision 4 can upgrade a matching revision-3 pack by updating only path-tile JSONs,
   keeping its PNGs; changes to `pathtiles.ble` likewise refresh only these JSONs. An interrupted refresh removes the
   stamp, so the next run rebuilds fully.
+- Jobs: `--jobs <n>` converts sprites on `n` workers with a bounded memory budget and the same output, errors and progress
+  as one job ([index.md](index.md), "Parallel conversion").
 - Memory: frames are decoded one at a time into the current page, which is encoded and written when full, so the 32-bit
   converter never holds a decoded animation (4000 frames of 320 x 240 for `gail` `d_cabaret`).
 
