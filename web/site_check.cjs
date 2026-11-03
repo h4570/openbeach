@@ -82,7 +82,7 @@ const flush = () => new Promise((resolve) => setImmediate(resolve));
 async function loadPage({opfs = {}, search = "", languages = ["pl-PL"], stored = {}} = {}) {
     const ids = ["canvas", "import", "import-folder", "import-iso", "import-status", "loading", "loading-text", "start", "start-button",
         "import-saves", "start-status", "ended", "import-progress", "import-main", "import-step", "import-percent", "import-sub",
-        "import-count", "import-bars", "drop", "drop-status", "game-bar", "fullscreen", "site-language",
+        "import-count", "import-bars", "drop", "drop-status", "game-bar", "fullscreen", "exit-fullscreen", "site-language",
         "start-language", "start-language-row", "key-space", "key-escape"];
     const elements = Object.fromEntries(ids.map((id) => [id, fakeElement(id)]));
     elements["loading-text"].textContent = "Loading...";
@@ -156,6 +156,9 @@ async function loadPage({opfs = {}, search = "", languages = ["pl-PL"], stored =
             }},
             querySelectorAll: () => [translated],
             pointerLockElement: null,
+            exitFullscreen() {
+                page.fullscreenExits = (page.fullscreenExits || 0) + 1;
+            },
             exitPointerLock() {
                 this.pointerLockElement = null;
                 page.lockExits = (page.lockExits || 0) + 1;
@@ -373,6 +376,15 @@ async function main() {
     await page.elements.fullscreen.fire("click");
     check(page.fullscreenRequests === 1 && page.elements.canvas.fullscreenRequests === undefined,
         "click: the bar's button asks for fullscreen of the page, not of the canvas (SDL would size the canvas to the screen)");
+    const documentMock = page.context.document;
+    documentMock.fullscreenElement = {};
+    page.documentListeners.fullscreenchange();
+    check(page.body.classList.contains("fs"), "fullscreen: entering it gives the page the fs class");
+    await page.elements["exit-fullscreen"].fire("click");
+    check(page.fullscreenExits === 1, "fullscreen: the corner button leaves it");
+    documentMock.fullscreenElement = null;
+    page.documentListeners.fullscreenchange();
+    check(!page.body.classList.contains("fs"), "fullscreen: leaving it (the browser's own gesture) takes the class away");
     page.context.Module.onGameEnded();
     check(page.visible().join() === "ended" && page.elements.canvas.hidden && !page.body.classList.contains("playing"),
         "game ended: the ended layer replaces the canvas");

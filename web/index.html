@@ -8,7 +8,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>OpenBeach: play Beach Life in your browser</title>
 <meta name="description" content="Play Beach Life in your browser on Windows 11, Mac or Linux. OpenBeach is an open-source engine for your own copy of the 2002 resort tycoon. No install.">
 <link rel="canonical" href="https://openbeach.app/">
@@ -150,6 +150,49 @@
         body.playing .gamebar > div { display: flex; flex-direction: column; gap: 6px; }
         body.playing .gamebar button { margin: 0; }
     }
+    /* The address bar of a phone comes and goes, and 100vh is the tall viewport: the dynamic one follows the bar, so the game
+       is never cut off or left with a gap. Browsers without it keep the 100vh above. */
+    @supports (height: 100dvh) {
+        body.playing { height: 100dvh; }
+        body.playing #canvas {
+            width: min(calc(100vw - 56px - var(--side, 0px)), calc((100dvh - var(--chrome, 86px)) * var(--aspect, 1.3333))) !important;
+            height: min(calc(100dvh - var(--chrome, 86px)), calc((100vw - 56px - var(--side, 0px)) / var(--aspect, 1.3333))) !important; }
+    }
+    /* Fullscreen (site.js sets `fs`): only the game, black around it, inside the notch's safe area; the touch keys float over it. */
+    body.playing.fs { --inset-x: calc(env(safe-area-inset-left, 0px) + env(safe-area-inset-right, 0px));
+        --inset-y: calc(env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px)); background: #000; }
+    body.playing.fs .page { padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px)
+        env(safe-area-inset-left, 0px); }
+    body.playing.fs .frame { display: block; padding: 0; border-radius: 0; background: none; box-shadow: none; }
+    body.playing.fs .screen { border-radius: 0; }
+    body.playing.fs .gamebar { display: none; }
+    body.playing.fs #canvas {
+        width: min(calc(100vw - var(--inset-x)), calc((100vh - var(--inset-y)) * var(--aspect, 1.3333))) !important;
+        height: min(calc(100vh - var(--inset-y)), calc((100vw - var(--inset-x)) / var(--aspect, 1.3333))) !important; }
+    @supports (height: 100dvh) {
+        body.playing.fs #canvas {
+            width: min(calc(100vw - var(--inset-x)), calc((100dvh - var(--inset-y)) * var(--aspect, 1.3333))) !important;
+            height: min(calc(100dvh - var(--inset-y)), calc((100vw - var(--inset-x)) / var(--aspect, 1.3333))) !important; }
+    }
+    body.playing.fs .touch-keys { position: fixed; right: calc(10px + env(safe-area-inset-right, 0px)); bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+        flex-direction: row; margin: 0; gap: 8px; opacity: .55; pointer-events: none; }
+    body.playing.fs .touch-keys button { pointer-events: auto; }
+    body.playing.fs .touch-keys .key { height: 44px; }
+    /* Leaving fullscreen is a swipe on a phone that few know, so a small button stays in the corner, faint until pressed. */
+    .exit-fs { display: none; }
+    body.playing.fs .exit-fs { display: block; position: fixed; top: calc(8px + env(safe-area-inset-top, 0px));
+        right: calc(10px + env(safe-area-inset-right, 0px)); font: inherit; font-size: 13px; font-weight: 600; color: #fff;
+        background: #06152c99; border: 0; border-radius: 999px; padding: 6px 12px; opacity: .6; cursor: pointer; }
+    body.playing.fs .exit-fs::before { content: "\2715\00a0"; }
+    body.playing.fs .exit-fs:active { opacity: 1; }
+    /* On its side Esc over Space stand in a black strip beside the game, off the picture. A wide game (16:9) leaves less than
+       4:3 does, so each side keeps 108px for the keys and the Exit button whatever the game's shape: the game shrinks to
+       fit rather than hide the spots under them (a 4:3 game on a phone is narrower than that anyway and loses nothing). */
+    @media (orientation: landscape) {
+        body.playing.fs { --inset-x: calc(env(safe-area-inset-left, 0px) + env(safe-area-inset-right, 0px) + 216px); }
+        body.playing.fs .touch-keys { flex-direction: column-reverse; align-items: flex-end; opacity: 1; }
+        body.playing.fs .touch-keys .key { height: 36px; }
+    }
     /* The keys are drawn as keycaps: a long one for Space and a square one for Esc. A press sinks the top of the cap. */
     .touch-keys button { padding: 0; border: 0; background: none; line-height: 0; touch-action: manipulation; user-select: none;
         -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
@@ -290,12 +333,13 @@
         </div>
         <div class="touch-keys">
             <button id="key-space" data-code="Space" data-key=" " aria-label="Space">
-                <svg class="key" viewBox="0 0 176 60" aria-hidden="true"><rect class="base" x="2" y="6" width="172" height="52" rx="12"/>
-                    <g class="top"><rect x="2" y="2" width="172" height="48" rx="12"/><path d="M56 20v10h64V20"/></g></svg></button>
+                <svg class="key" viewBox="0 0 152 60" aria-hidden="true"><rect class="base" x="2" y="6" width="148" height="52" rx="12"/>
+                    <g class="top"><rect x="2" y="2" width="148" height="48" rx="12"/><path d="M44 20v10h64V20"/></g></svg></button>
             <button id="key-escape" data-code="Escape" data-key="Escape" aria-label="Esc">
                 <svg class="key" viewBox="0 0 60 60" aria-hidden="true"><rect class="base" x="2" y="6" width="56" height="52" rx="12"/>
                     <g class="top"><rect x="2" y="2" width="56" height="48" rx="12"/><text x="30" y="33" text-anchor="middle">esc</text></g></svg></button>
         </div>
+        <button id="exit-fullscreen" class="exit-fs" data-t="exitFullscreen">Exit</button>
         <div id="game-bar" class="gamebar" hidden>
             <span data-t="savedHere">Saves live only in this browser: download a copy</span>
             <div><button onclick="Module.downloadSaves()" data-t="downloadSaves">Download saves</button>
