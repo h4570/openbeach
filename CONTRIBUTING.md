@@ -36,5 +36,5 @@ The project uses [Conventional Commits](https://www.conventionalcommits.org): `f
 in lowercase and the imperative, at most 72 characters, without a trailing period. The body says why. The commits on `main`
 compute the next version: `feat` raises the minor one, `fix` the patch. Types and scopes are in [CLAUDE.md](CLAUDE.md).
 Keep a pull request to one change: it is squash-merged, so its title is what counts. A pull request with several changes is
-merged with a merge commit instead, so give each change one clean commit; CI checks the title and every commit.
+rebased onto `main` instead, so give each change one clean commit; CI checks the title and every commit.
 By contributing you agree that your work is licensed under GPL-3.0-or-later, the licence of this project.
