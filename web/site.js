@@ -433,6 +433,19 @@ element("fullscreen").addEventListener("click", () => {
     if (request && request.catch) request.catch(() => {}); // refused: the game stays in its frame
 });
 
+element("exit-fullscreen").addEventListener("click", () => {
+    const exit = document.exitFullscreen ? document.exitFullscreen() : document.webkitExitFullscreen && document.webkitExitFullscreen();
+    if (exit && exit.catch) exit.catch(() => {});
+});
+
+// In fullscreen the frame, its bar and the page's padding are only in the way: `fs` lets the CSS give the canvas the whole
+// screen and float the touch keys over it. The browser leaves fullscreen itself (back gesture, Esc), so the class follows it.
+function syncFullscreen() {
+    document.body.classList.toggle("fs", Boolean(document.fullscreenElement || document.webkitFullscreenElement));
+}
+document.addEventListener("fullscreenchange", syncFullscreen);
+document.addEventListener("webkitfullscreenchange", syncFullscreen);
+
 var Module = {
     canvas: element("canvas"),
     onGameFilesReady() {
