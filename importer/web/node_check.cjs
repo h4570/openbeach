@@ -169,10 +169,11 @@ async function shardLogic() {
     const choose = (hardwareConcurrency, deviceMemory) => shard.chooseHelperCount({hardwareConcurrency, deviceMemory});
     check(choose(undefined, undefined) === 1 && choose(1, undefined) === 1 && choose(2, undefined) === 1,
         "helpers: a machine with two cores or fewer imports alone");
-    check(choose(4, 16) === 3 && choose(8, 16) === 7 && choose(64, 16) === shard.kMaxHelpers, "helpers: one per core but the page's, up to a cap");
-    check(choose(16, 2) === 1 && choose(16, 4) === 2 && choose(16, 8) === 4, "helpers: fewer on a device with little memory");
-    check(choose(8, undefined) === 3 && choose(64, 0) === 3 && choose(8, NaN) === 3 && choose(4, undefined) === 3 && choose(2, undefined) === 1,
-        "helpers: at most 3 where the browser does not report its memory (Safari, Firefox)");
+    check(choose(3, 16) === 2 && choose(4, 16) === 2 && choose(64, 8) === 2 && shard.kMaxHelpers === 2,
+        "helpers: two at most, more only add memory");
+    check(choose(16, 2) === 1 && choose(16, 1) === 1 && choose(16, 4) === 2, "helpers: none on a device with 2 GB or less");
+    check(choose(8, undefined) === 2 && choose(64, 0) === 2 && choose(8, NaN) === 2 && choose(2, undefined) === 1,
+        "helpers: two where the browser does not report its memory (Safari, Firefox)");
 
     const filled = shard.makeUnitStore(bytesCodec);
     filled.bridge.unitPut("sprites", 7, "a.png", Uint8Array.of(1, 2));
