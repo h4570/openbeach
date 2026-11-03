@@ -124,8 +124,9 @@ heaviest first to the least loaded, from the same cost estimates the pool uses, 
 `navigator.deviceMemory` is at most 2 GB; fewer than 2 means none). More do not pay: the sprite step ends with a few large banks
 that one helper converts alone, and each helper adds a wasm heap, so 4 helpers took the browser from 3.2 to 4.4 GB and an
 Android phone killed the tab. It runs them (`runHelpers`) and holds the
-units (`makeUnitStore`, Blobs in the page, bytes under Node). The coordinator mostly waits and adds the helpers' counts into one
-`maps` progress over all units; the replay in `units` does not report the steps the helpers showed, so the bar never goes back.
+units (`makeUnitStore`, Blobs in the page, bytes under Node). The coordinator mostly waits and adds the helpers' counts, shown
+under `maps` until every helper has begun its sprites and under `sprites` after that; the replay in `units` does not report the
+steps up to the sprites (`kQuietSteps`), so the bar never goes back.
 With one helper, or when a helper fails, dies or cannot start (no nested workers), the coordinator discards the helpers and
 imports alone along today's path, so a damaged copy gives a single worker's message. The page cancels by terminating the
 coordinator, which ends its helpers. Memory is one wasm heap per helper plus the coordinator's.

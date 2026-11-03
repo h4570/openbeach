@@ -226,6 +226,15 @@ async function shardLogic() {
     check(result.ok && run1.store.records.size === 3 && run1.fake.ended.every((h) => h.terminated), "helpers: every helper's units are gathered and the helpers end");
     const last = run1.reports[run1.reports.length - 1];
     check(last.step === "maps" && last.done === 6 && last.total === 6, `helpers: their counts are added into one progress (${last.done} of ${last.total})`);
+    const progress = [];
+    const shardProgress = shard.makeShardProgress((m) => progress.push(`${m.step} ${m.done}/${m.total}`), 2);
+    shardProgress(0, "maps", 1, 2);
+    shardProgress(1, "maps", 3, 3);
+    shardProgress(0, "sprites", 4, 10);
+    shardProgress(0, "sprites", 6, 10);
+    shardProgress(1, "sprites", 1, 5);
+    check(progress.join() === "maps 1/2,maps 4/5,maps 4/5,maps 4/5,sprites 7/15",
+        `helpers: their maps until every one has begun its sprites, then their sprites (${progress.join()})`);
     run1 = start((index) => (index === 1 ? "fail" : "ok"));
     result = await run1.done;
     check(!result.ok && result.reason === "no archive" && run1.fake.ended.every((h) => h.terminated), "helpers: one that fails ends them all and the import goes on alone");
