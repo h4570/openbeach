@@ -130,7 +130,10 @@
     @media (pointer: coarse) {
         body.playing { --chrome: 152px; }
         body.playing .touch-keys { display: flex; justify-content: center; gap: 12px; margin-top: 8px; }
-        body.playing .gamebar button { background: #ffffffa8; border-radius: 999px; padding: 8px 16px; margin: 0 4px; }
+        /* The note is plain text and the links are buttons: only the buttons have a fill and an outline. */
+        body.playing .gamebar span { background: none; padding: 0 8px; border-radius: 0; font-size: 13px; opacity: .75; }
+        body.playing .gamebar button { background: #ffffffc4; border-radius: 999px; padding: 8px 16px; margin: 0 4px;
+            box-shadow: 0 0 0 1.5px #0a1f3c59, 0 2px 0 #0a1f3c40; }
         body.playing .gamebar button:active { background: #ffffff; }
     }
     /* A phone on its side has no height to spare: the game takes the whole height and the keys and the bar stand beside it. */
@@ -142,7 +145,7 @@
         body.playing .touch-keys { align-self: end; margin-top: 0; gap: 6px; flex-direction: column; align-items: center; }
         body.playing .touch-keys .key { height: 44px; }
         body.playing .gamebar { flex-direction: column; align-self: start; gap: 6px; }
-        body.playing .gamebar span { border-radius: 14px; padding: 6px 12px; text-align: center; }
+        body.playing .gamebar span { text-align: center; }
         body.playing .gamebar > div { display: flex; flex-direction: column; gap: 6px; }
         body.playing .gamebar button { margin: 0; }
     }
