@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.7.0](https://github.com/h4570/openbeach/compare/v1.6.2...v1.7.0) (2026-11-03)
+
+
+### Features
+
+* **site:** immersive fullscreen on phones ([4028a4d](https://github.com/h4570/openbeach/commit/4028a4dca50d56a41797c29ecab229e127c90977))
+* **site:** immersive fullscreen on phones ([10df22b](https://github.com/h4570/openbeach/commit/10df22b44524d0c0be1ebd4ffed31b26f90f11a1))
+
+
+### Bug Fixes
+
+* **site:** fewer import helpers and a truthful progress bar ([7b0528e](https://github.com/h4570/openbeach/commit/7b0528e3c8e6069fd6baafe3cff83fb7fec1f9ac))
+* **site:** show the helpers' sprites as the sprites step ([6bef155](https://github.com/h4570/openbeach/commit/6bef155bde4fd0790e0794fa23188d43482f5596))
+* **site:** start at most two import helpers ([f7c7683](https://github.com/h4570/openbeach/commit/f7c7683143f2f880e5e136904fbb56336c9570f5))
+* **site:** start the browser import worker again ([#42](https://github.com/h4570/openbeach/issues/42)) ([fd79922](https://github.com/h4570/openbeach/commit/fd799221dd3b4883c2884b5bbc0bb3ed746a52e9))
+
 ## [1.6.2](https://github.com/h4570/openbeach/compare/v1.6.1...v1.6.2) (2026-11-03)
 
 
