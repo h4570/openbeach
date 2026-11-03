@@ -205,6 +205,10 @@ async function main() {
         });
         await cdp.send("Runtime.enable");
         await cdp.send("Page.enable");
+        if (args.metrics) { // "412,915,2.6": a phone's CSS size and pixel ratio
+            const [width, height, deviceScaleFactor] = args.metrics.split(",").map(Number);
+            await cdp.send("Emulation.setDeviceMetricsOverride", {width, height, deviceScaleFactor, mobile: true});
+        }
         // Before the page has loaded, the tab's document may not yet be the secure origin (no navigator.storage).
         for (let i = 0; i < 100; ++i) {
             const ready = await cdp.send("Runtime.evaluate", {expression: 'document.readyState === "complete" && !!navigator.storage', returnByValue: true});

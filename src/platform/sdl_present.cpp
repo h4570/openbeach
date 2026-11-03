@@ -296,7 +296,13 @@ SDL_Window* CreateSdlGameWindow(void* instance, int clientWidth, int clientHeigh
     SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_WIDTH_NUMBER, clientWidth);
     SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER, clientHeight);
     SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_HIDDEN_BOOLEAN, true);
+#ifdef __EMSCRIPTEN__
+    // A resizable window follows the canvas's CSS size, which the page changes with the tab: the back buffer would then
+    // be stretched by the presenter (nearest, at a fractional factor) instead of by the browser.
+    SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_RESIZABLE_BOOLEAN, false);
+#else
     SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_RESIZABLE_BOOLEAN, true);
+#endif
     SDL_Window* window = SDL_CreateWindowWithProperties(props);
     SDL_DestroyProperties(props);
     if (!window) {

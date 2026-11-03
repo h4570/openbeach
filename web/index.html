@@ -73,8 +73,8 @@
     body.playing .frame { width: fit-content; margin: 0 auto; }
     body.playing .screen { aspect-ratio: auto; }
     body.playing #canvas { position: static; visibility: visible;
-        width: min(calc(100vw - 56px), calc((100vh - var(--chrome, 86px)) * var(--aspect, 1.3333))) !important;
-        height: min(calc(100vh - var(--chrome, 86px)), calc((100vw - 56px) / var(--aspect, 1.3333))) !important; }
+        width: min(calc(100vw - 56px - var(--side, 0px)), calc((100vh - var(--chrome, 86px)) * var(--aspect, 1.3333))) !important;
+        height: min(calc(100vh - var(--chrome, 86px)), calc((100vw - 56px - var(--side, 0px)) / var(--aspect, 1.3333))) !important; }
     .layer { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
         gap: 12px; padding: 20px; text-align: center; }
     .layer[hidden], .gamebar[hidden] { display: none; }
@@ -130,6 +130,16 @@
     @media (pointer: coarse) {
         body.playing { --chrome: 152px; }
         body.playing .touch-keys { display: flex; justify-content: center; gap: 12px; margin-top: 8px; }
+    }
+    /* A phone on its side has no height to spare: the game takes the whole height and the keys and the bar stand beside it. */
+    @media (pointer: coarse) and (orientation: landscape) and (max-height: 560px) {
+        body.playing { --chrome: 44px; --side: 200px; }
+        body.playing .page { padding: 4px 8px; }
+        body.playing .frame { display: grid; grid-template-columns: auto 190px; column-gap: 10px; align-content: center; padding: 8px; }
+        body.playing .screen { grid-row: 1 / 3; }
+        body.playing .touch-keys { align-self: end; margin-top: 0; gap: 8px; }
+        body.playing .touch-keys .key { height: 44px; }
+        body.playing .gamebar { flex-direction: column; align-self: start; }
     }
     /* The keys are drawn as keycaps: a long one for Space and a square one for Esc. A press sinks the top of the cap. */
     .touch-keys button { padding: 0; border: 0; background: none; line-height: 0; touch-action: manipulation; user-select: none;
