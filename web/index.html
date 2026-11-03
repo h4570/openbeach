@@ -128,12 +128,19 @@
     /* The keys the game reads, for a touch screen (site.js sends them to the canvas); the bar takes room below the game. */
     .touch-keys { display: none; }
     @media (pointer: coarse) {
-        body.playing { --chrome: 144px; }
+        body.playing { --chrome: 152px; }
         body.playing .touch-keys { display: flex; justify-content: center; gap: 12px; margin-top: 8px; }
     }
-    .touch-keys button { font: inherit; font-weight: 600; font-size: 15px; color: #fff; background: #0a1f3cd9; border: 0; border-radius: 999px;
-        min-width: 112px; min-height: 44px; padding: 8px 22px; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
-    .touch-keys button:active { background: var(--coral); }
+    /* The keys are drawn as keycaps: a long one for Space and a square one for Esc. A press sinks the top of the cap. */
+    .touch-keys button { padding: 0; border: 0; background: none; line-height: 0; touch-action: manipulation; user-select: none;
+        -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+    .touch-keys .key { display: block; height: 52px; width: auto; overflow: visible; }
+    .touch-keys .base { fill: #06152c; }
+    .touch-keys .top rect { fill: #24406a; }
+    .touch-keys .top path { fill: none; stroke: #fff; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+    .touch-keys .top text { fill: #fff; font-weight: 700; font-size: 19px; font-family: inherit; }
+    .touch-keys button:active .top { transform: translateY(4px); }
+    .touch-keys button:active .top rect { fill: var(--coral); }
     .gamebar { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 8px; font-size: 14px; }
     .gamebar span { background: #ffffffa8; border-radius: 999px; padding: 2px 11px; }
     .gamebar button { font: inherit; font-weight: 600; color: var(--navy); background: none; border: 0; cursor: pointer; margin-left: 14px; }
@@ -260,8 +267,12 @@
             </div>
         </div>
         <div class="touch-keys">
-            <button id="key-space" data-code="Space" data-key=" ">&#8635; Space</button>
-            <button id="key-escape" data-code="Escape" data-key="Escape">&#10005; Esc</button>
+            <button id="key-space" data-code="Space" data-key=" " aria-label="Space">
+                <svg class="key" viewBox="0 0 176 60" aria-hidden="true"><rect class="base" x="2" y="6" width="172" height="52" rx="12"/>
+                    <g class="top"><rect x="2" y="2" width="172" height="48" rx="12"/><path d="M56 20v10h64V20"/></g></svg></button>
+            <button id="key-escape" data-code="Escape" data-key="Escape" aria-label="Esc">
+                <svg class="key" viewBox="0 0 60 60" aria-hidden="true"><rect class="base" x="2" y="6" width="56" height="52" rx="12"/>
+                    <g class="top"><rect x="2" y="2" width="56" height="48" rx="12"/><text x="30" y="33" text-anchor="middle">esc</text></g></svg></button>
         </div>
         <div id="game-bar" class="gamebar" hidden>
             <span data-t="savedHere">Saves live only in this browser: download a copy</span>
