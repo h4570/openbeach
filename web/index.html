@@ -169,7 +169,9 @@
         .screen { aspect-ratio: auto; min-height: 400px; }
         /* On a phone the layers take the room their text needs (the box grows with them) instead of being clipped to 400px. */
         .layer { position: relative; inset: auto; min-height: 400px; }
-        #drop { height: auto; }
+        #drop { height: auto; padding: 14px; }
+        #import:not([hidden]) { padding: 12px; }
+        .layer h2 { font-size: 20px; }
         body.playing .screen { min-height: 0; }
         .gamebar { flex-wrap: wrap; justify-content: center; }
         .gamebar span { border-radius: 14px; padding: 6px 12px; }

@@ -6,6 +6,8 @@ name: Release
 on:
   push:
     branches: [main]
+  # By hand: builds, tests and packs the Linux release as a workflow artifact only (no release, no upload to one).
+  workflow_dispatch:
 
 permissions:
   actions: write
@@ -14,8 +16,12 @@ permissions:
 
 jobs:
   release:
+    if: github.event_name == 'push'
     runs-on: ubuntu-24.04
     timeout-minutes: 5
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
     steps:
       - id: release
         uses: googleapis/release-please-action@v4
@@ -27,3 +33,42 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh workflow run ci.yml --repo "$GITHUB_REPOSITORY" --ref main -f deploy=true
+
+  # The Linux tarball (docs/build/linux-release.md). Ubuntu 22.04 keeps the glibc floor at 2.35 (Debian 12 has 2.36).
+  linux:
+    needs: release
+    if: ${{ !cancelled() && (github.event_name == 'workflow_dispatch' || needs.release.outputs.release_created == 'true') }}
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    env:
+      TAG: ${{ needs.release.outputs.tag_name }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Packages
+        run: bash tools/ci/linux_release_packages.sh
+      - name: Build, L0 references and package
+        run: |
+          version="${TAG:-$(cat version.txt)-dev.$(git rev-parse --short HEAD)}"
+          OBL_RELEASE_VERSION="$version" bash tools/ci/linux_release.sh -DCMAKE_C_COMPILER=clang-18 -DCMAKE_CXX_COMPILER=clang++-18
+      - name: Smoke test under Xvfb
+        run: |
+          mkdir -p build/smoke && tar -xzf build/dist/openbeach-*-linux-x86_64.tar.gz -C build/smoke --strip-components=1
+          bash tools/ci/linux_smoke.sh build/smoke build/dist/linux-smoke.png
+          bash tools/ci/linux_smoke_distros.sh build/smoke debian:12 ubuntu:24.04
+      - name: Workflow artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: linux-release
+          path: |
+            build/dist/*.tar.gz
+            build/dist/linux-smoke.png
+          if-no-files-found: error
+          retention-days: 14
+      - name: Attach to the release
+        if: needs.release.outputs.release_created == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$TAG" build/dist/openbeach-*.tar.gz --repo "$GITHUB_REPOSITORY" --clobber
