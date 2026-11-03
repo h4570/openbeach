@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.6.0](https://github.com/h4570/openbeach/compare/v1.5.0...v1.6.0) (2026-11-03)
+
+
+### Features
+
+* **site:** caption the phone screenshot "the game on a phone" ([50dbdc2](https://github.com/h4570/openbeach/commit/50dbdc2ecdda9a753875fe3a144b76d508ef2a3b))
+* **site:** fade the phone out at the bottom and make it larger ([02641b7](https://github.com/h4570/openbeach/commit/02641b72c6ba41a0a11449c3d7b210f9911e17fc))
+* **site:** move the phone screenshot next to the others ([36898c0](https://github.com/h4570/openbeach/commit/36898c0928c89448cf59744e283a2d9c839d8670))
+* **site:** show the game on a phone and list phones and computers ([7055f9d](https://github.com/h4570/openbeach/commit/7055f9d5eec95b9f346eaa1ead142022eef4c472))
+* **site:** show the game on a phone and list phones and computers ([#28](https://github.com/h4570/openbeach/issues/28)) ([d7f01a4](https://github.com/h4570/openbeach/commit/d7f01a4a7a8231e8a6daa85f67b14b93455ea798))
+
+
+### Bug Fixes
+
+* **site:** align the screenshot captions ([cd6f50f](https://github.com/h4570/openbeach/commit/cd6f50f1f80e605414ca92266ec7f429848198dc))
+
 ## [1.5.0](https://github.com/h4570/openbeach/compare/v1.4.0...v1.5.0) (2026-11-03)
 
 
