@@ -3,7 +3,11 @@
 <p align="center"><b><a href="https://openbeach.app">Play in your browser: openbeach.app</a></b></p>
 
 <p align="center">Open the page and drop your own Beach Life disc image (.iso).<br>
-It works on Windows, macOS and Linux, in any modern browser.</p>
+It works on Windows, macOS, Linux and Android, in any modern browser.</p>
+
+<!-- stargazers:start -->
+<p align="center">No stars yet: <a href="https://github.com/h4570/openbeach/stargazers">be the first to star OpenBeach</a>.</p>
+<!-- stargazers:end -->
 
 <p align="center">
   <a href="https://github.com/h4570/openbeach/actions/workflows/ci.yml"><img src="https://github.com/h4570/openbeach/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"></a>
@@ -18,8 +22,9 @@ It works on Windows, macOS and Linux, in any modern browser.</p>
   <img src="https://img.shields.io/badge/WebAssembly-wasm32-654FF0?logo=webassembly&logoColor=white" alt="WebAssembly: wasm32">
   <img src="https://img.shields.io/badge/x86--64-64--bit-555555" alt="x86-64">
   <img src="https://img.shields.io/badge/Windows-supported-0078D4" alt="Windows">
-  <img src="https://img.shields.io/badge/Linux-experimental-FCC624?logo=linux&logoColor=black" alt="Linux: experimental">
+  <img src="https://img.shields.io/badge/Linux-supported-FCC624?logo=linux&logoColor=black" alt="Linux: supported">
   <img src="https://img.shields.io/badge/Browser-supported-37B3B0" alt="Browser">
+  <img src="https://img.shields.io/badge/Mobile-experimental-FF7A59?logo=android&logoColor=white" alt="Mobile: experimental">
 </p>
 
 # OpenBeach

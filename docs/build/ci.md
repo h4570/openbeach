@@ -16,6 +16,9 @@ check runs on the project's own L0 pack. A newer push or pull-request update can
 The release workflow starts that run after it makes a release, so a merged release pull request publishes the site. The run
 replaces the push run of the same commit; a newer push would cancel it too, and the site then needs the run by hand.
 
+The stargazers workflow (`.github/workflows/stargazers.yml`) runs `tools/update_stargazers.py` when someone stars the repository and once a day, and
+commits the list in the README only when it changed. A push with `github.token` starts no other workflow, so it does not run CI.
+
 The unit, `sim` and `wasm` jobs compile through ccache, kept in the Actions cache per job and compiler. Package installs
 skip recommended packages. The windowed game and anything that needs the player's own copy of the game are not part of
 CI; they run locally ([running-the-game.md](running-the-game.md)).
