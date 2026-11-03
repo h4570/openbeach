@@ -28,7 +28,9 @@ The game builds for x64 Windows, Linux and WebAssembly; the browser site lives i
 - Scopes: `game`, `importer`, `site`, `platform`, `saves`, `tools`, or none.
 - `feat` raises the minor version and `fix` the patch. `!` or `BREAKING CHANGE:` raises the major one, only when saves or an
   imported pack stop working. A refactor is never breaking.
-- Pull requests are squash-merged, so the title is what counts. `tools/check_commits.py` checks it in CI.
+- A pull request with one change is squash-merged, so its title is the commit on `main`. One with several changes is merged
+  with a merge commit, so each of its commits reaches `main` and the changelog: give each change one clean commit (no
+  "review fixes"). `tools/check_commits.py` checks the title and every commit of a pull request in CI.
 
 ## Building and testing
 ```powershell
