@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.6.1](https://github.com/h4570/openbeach/compare/v1.6.0...v1.6.1) (2026-11-03)
+
+
+### Bug Fixes
+
+* **site:** center the game vertically on a phone ([24431b4](https://github.com/h4570/openbeach/commit/24431b4bb0d9d1c372476e361930fb163d8d41cb))
+* **site:** center the game vertically on a phone ([0b8d3c6](https://github.com/h4570/openbeach/commit/0b8d3c6c42e3e3704a97c9fa9f606d05d784cbca))
+
 ## [1.6.0](https://github.com/h4570/openbeach/compare/v1.5.0...v1.6.0) (2026-11-03)
 
 
