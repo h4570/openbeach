@@ -64,7 +64,8 @@
         background: linear-gradient(180deg, #0e3050, #14506f); }
     /* SDL sets the canvas's pixel size (the game's 800x600 and up) and an inline CSS size; the page scales it to the largest
        box of the canvas's own aspect left beside the frame and its bar (site.js keeps --aspect at width / height). */
-    #canvas { position: absolute; inset: 0; visibility: hidden; display: block; outline: none; background: #000; }
+    #canvas { position: absolute; inset: 0; visibility: hidden; display: block; outline: none; background: #000;
+        touch-action: none; -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; }
     body.playing { height: 100vh; overflow: hidden; }
     body.playing .page { max-width: none; padding: 8px 16px; }
     body.playing .hide-playing, body.playing .hero > div:first-child, body.playing .waves { display: none; }
@@ -72,8 +73,8 @@
     body.playing .frame { width: fit-content; margin: 0 auto; }
     body.playing .screen { aspect-ratio: auto; }
     body.playing #canvas { position: static; visibility: visible;
-        width: min(calc(100vw - 56px), calc((100vh - 86px) * var(--aspect, 1.3333))) !important;
-        height: min(calc(100vh - 86px), calc((100vw - 56px) / var(--aspect, 1.3333))) !important; }
+        width: min(calc(100vw - 56px), calc((100vh - var(--chrome, 86px)) * var(--aspect, 1.3333))) !important;
+        height: min(calc(100vh - var(--chrome, 86px)), calc((100vw - 56px) / var(--aspect, 1.3333))) !important; }
     .layer { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
         gap: 12px; padding: 20px; text-align: center; }
     .layer[hidden], .gamebar[hidden] { display: none; }
@@ -124,6 +125,22 @@
     .secondary a, .secondary label, .secondary button { font: inherit; font-size: 14px; color: #fff; background: #ffffff1f; border: 1px solid #ffffff59; border-radius: 999px;
         padding: 7px 16px; cursor: pointer; text-decoration: none; }
     .secondary a:hover, .secondary label:hover, .secondary button:hover { background: #ffffff33; }
+    /* The keys the game reads, for a touch screen (site.js sends them to the canvas); the bar takes room below the game. */
+    .touch-keys { display: none; }
+    @media (pointer: coarse) {
+        body.playing { --chrome: 152px; }
+        body.playing .touch-keys { display: flex; justify-content: center; gap: 12px; margin-top: 8px; }
+    }
+    /* The keys are drawn as keycaps: a long one for Space and a square one for Esc. A press sinks the top of the cap. */
+    .touch-keys button { padding: 0; border: 0; background: none; line-height: 0; touch-action: manipulation; user-select: none;
+        -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+    .touch-keys .key { display: block; height: 52px; width: auto; overflow: visible; }
+    .touch-keys .base { fill: #06152c; }
+    .touch-keys .top rect { fill: #24406a; }
+    .touch-keys .top path { fill: none; stroke: #fff; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+    .touch-keys .top text { fill: #fff; font-weight: 700; font-size: 19px; font-family: inherit; }
+    .touch-keys button:active .top { transform: translateY(4px); }
+    .touch-keys button:active .top rect { fill: var(--coral); }
     .gamebar { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 8px; font-size: 14px; }
     .gamebar span { background: #ffffffa8; border-radius: 999px; padding: 2px 11px; }
     .gamebar button { font: inherit; font-weight: 600; color: var(--navy); background: none; border: 0; cursor: pointer; margin-left: 14px; }
@@ -150,11 +167,14 @@
         h1 { font-size: 32px; }
         header img { height: 56px; }
         .screen { aspect-ratio: auto; min-height: 400px; }
-        /* The import layer is taller than the screen on a phone (title, three boxes, the picks and two notes), so as an overlay
-           it spilled over both edges of the clipped screen. In the flow it gives the screen its height instead. */
-        #import:not([hidden]) { position: relative; inset: auto; min-height: 400px; padding: 12px; }
+        /* On a phone the layers take the room their text needs (the box grows with them) instead of being clipped to 400px. */
+        .layer { position: relative; inset: auto; min-height: 400px; }
         #drop { height: auto; padding: 14px; }
+        #import:not([hidden]) { padding: 12px; }
         .layer h2 { font-size: 20px; }
+        body.playing .screen { min-height: 0; }
+        .gamebar { flex-wrap: wrap; justify-content: center; }
+        .gamebar span { border-radius: 14px; padding: 6px 12px; }
     }
     @media (prefers-reduced-motion: reduce) { .spinner i { animation: none; } #drop { transition: none; } }
 </style>
@@ -165,8 +185,8 @@
 <header class="hide-playing">
     <img src="openbeach-logo.svg" alt="OpenBeach">
     <nav>
-        <a href="https://github.com/h4570/openbeach" aria-label="GitHub" title="GitHub"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg></a>
-        <a href="https://discord.gg/PtJqgwGtZm" aria-label="Discord" title="Discord"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/></svg></a>
+        <a href="https://github.com/h4570/openbeach" target="_blank" rel="noopener" aria-label="GitHub" title="GitHub"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg></a>
+        <a href="https://discord.gg/PtJqgwGtZm" target="_blank" rel="noopener" aria-label="Discord" title="Discord"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/></svg></a>
         <div class="switch"><svg viewBox="2 2 20 20" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 3.8 5.5 3.8 9s-1.300 6.500-3.800 9c-2.500-2.500-3.800-5.500-3.800-9S9.500 5.500 12 3z"/></svg>
             <select id="site-language" aria-label="Language"></select></div>
     </nav>
@@ -248,6 +268,14 @@
                     <button onclick="Module.downloadLog()" data-t="downloadLog">Download log</button></div>
             </div>
         </div>
+        <div class="touch-keys">
+            <button id="key-space" data-code="Space" data-key=" " aria-label="Space">
+                <svg class="key" viewBox="0 0 176 60" aria-hidden="true"><rect class="base" x="2" y="6" width="172" height="52" rx="12"/>
+                    <g class="top"><rect x="2" y="2" width="172" height="48" rx="12"/><path d="M56 20v10h64V20"/></g></svg></button>
+            <button id="key-escape" data-code="Escape" data-key="Escape" aria-label="Esc">
+                <svg class="key" viewBox="0 0 60 60" aria-hidden="true"><rect class="base" x="2" y="6" width="56" height="52" rx="12"/>
+                    <g class="top"><rect x="2" y="2" width="56" height="48" rx="12"/><text x="30" y="33" text-anchor="middle">esc</text></g></svg></button>
+        </div>
         <div id="game-bar" class="gamebar" hidden>
             <span data-t="savedHere">Saves live only in this browser: download a copy</span>
             <div><button onclick="Module.downloadSaves()" data-t="downloadSaves">Download saves</button>
@@ -278,7 +306,7 @@
     <details><summary data-t="faq2q">Can I play Beach Life on a Mac or on Linux?</summary>
         <p data-t="faq2a">OpenBeach runs on the web page, not on your operating system, so a current desktop browser on a Mac or a Linux PC should run it as well. Chrome and Edge are the best tested; if something breaks in another browser, please report it on GitHub.</p></details>
     <details><summary data-t="faq3q">Does it work on a phone or tablet?</summary>
-        <p data-t="faq3a">Not at the moment. The game is controlled with a mouse (the right button drags the map), and it keeps about 1 GB of data in the browser, so use a desktop or laptop.</p></details>
+        <p data-t="faq3a">Experimentally. Touch controls are new and still rough: tap to click, drag with one finger to move the map, press and hold to keep the left button down, tap with two fingers to right-click and drag with two fingers to scroll. While placing a building, drag a finger to aim and lift it to place; the Space and Esc buttons below the game turn the building and leave the mode. The game keeps about 1 GB of data in the browser, so a desktop or laptop is still the better choice.</p></details>
     <details><summary data-t="faq4q">Do I need the original game?</summary>
         <p data-t="faq4a">Yes. OpenBeach contains no graphics, music or other data of the game. Drop your own copy on the page: a disc image (.iso), the folder of an installation, or the disc itself if your browser can read the drive.</p></details>
     <details><summary data-t="faq5q">Which copies of the game work?</summary>

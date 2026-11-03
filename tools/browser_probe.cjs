@@ -10,7 +10,7 @@
 // <dir> holds index.html, site.js and OpenBeach.js/.wasm (tools/web_site.sh, or the browser build's bin/). The pack is
 // served next to the site and copied into the profile's OPFS once (as the importer would write it), so later runs
 // start at "Click to start". The probe clicks it like a player (a trusted CDP mouse event, so audio may start), then
-// follows the steps: {"at": seconds, "click": [x, y]} (canvas pixels, left button), {"at": s, "drag": [x, y, dx, dy]}
+// follows the steps: {"at": seconds, "click": [x, y], "hold": ms} (canvas pixels, left button; the press lasts "hold" ms, 400 by default), {"at": s, "tap": [x, y]} (a touch tap), {"at": s, "drag": [x, y, dx, dy]}
 // (right button), {"at": s, "shot": "name"}, {"at": s, "eval": "js"}, {"at": s, "memory": "label"}. Without --script it
 // takes a screenshot every 2 s. --game-script runs a game test script (tests/*.txt) in the tab as --script does natively,
 // e.g. one that boots a scenario. Memory samples (one after the file copy, one per "memory" step) go to console.log and
@@ -270,9 +270,17 @@ async function main() {
                 await mouse("mouseMoved", x, y);
                 await sleep(400); // the hover first, as a player's pointer arrives before the press
                 await mouse("mousePressed", x, y);
-                await sleep(400); // the game must see the press and the release in different frames (headless frames are slow)
+                if (step.hold !== 0) await sleep(step.hold ?? 400); // the game must see the press and the release in different frames (headless frames are slow)
                 await mouse("mouseReleased", x, y);
                 log.write(`${stamp()} PROBE click ${step.click} audio=${audio}\n`);
+            } else if (step.tap) {
+                const [x, y] = await canvasPoint(step.tap[0], step.tap[1]);
+                await cdp.send("Emulation.setTouchEmulationEnabled", {enabled: true, maxTouchPoints: 5});
+                await cdp.send("Input.dispatchTouchEvent", {type: "touchStart", touchPoints: [{x, y, id: 1}]});
+                await sleep(120);
+                await cdp.send("Input.dispatchTouchEvent", {type: "touchEnd", touchPoints: []});
+                log.write(`${stamp()} PROBE tap ${step.tap}
+`);
             } else if (step.drag) {
                 const [x, y] = await canvasPoint(step.drag[0], step.drag[1]);
                 const [dx, dy] = [step.drag[2], step.drag[3]];

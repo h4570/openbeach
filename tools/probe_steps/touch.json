@@ -1,0 +1,5 @@
+[
+  {"at": 3, "tap": [200, 100]},
+  {"at": 8, "shot": "after-skip"},
+  {"at": 12, "eval": "document.getElementById('canvas').getBoundingClientRect().height > 0"}
+]

@@ -57,6 +57,7 @@ void PushEscape()
 bool IsSkipEvent(const SDL_Event& event)
 {
     if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN) return event.button.button == SDL_BUTTON_LEFT;
+    if (event.type == SDL_EVENT_FINGER_DOWN) return true; // the browser build turns fingers into gestures, not mouse buttons
     if (event.type != SDL_EVENT_KEY_DOWN || event.key.repeat) return false;
     SDL_Scancode s = event.key.scancode;
     return s == SDL_SCANCODE_ESCAPE || s == SDL_SCANCODE_SPACE || s == SDL_SCANCODE_RETURN || s == SDL_SCANCODE_KP_ENTER;
@@ -257,6 +258,7 @@ void EndMpeg(const char* reason)
     MovieSession& m = *g_session;
     // The rest of the skip key/click must not reach the logo screen.
     SDL_FlushEvents(SDL_EVENT_KEY_DOWN, SDL_EVENT_MOUSE_WHEEL);
+    SDL_FlushEvents(SDL_EVENT_FINGER_DOWN, SDL_EVENT_FINGER_CANCELED);
     // A quit request stays pending in PumpSdlEvents: the game loop sees it next.
     g_stats.player = IntroMoviePlayer::MpegSdl;
     g_stats.frames = m.player.Frames();
@@ -282,6 +284,12 @@ const char* AdvanceMpeg(MovieSession& m)
     SDL_Event event;
     // Input events only; focus/window events stay queued for the game's input adapter.
     while (SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_EVENT_KEY_DOWN, SDL_EVENT_MOUSE_WHEEL) > 0) {
+        if (!reason && IsSkipEvent(event)) {
+            OBL_LOG("intro movie: skip event %04X", event.type);
+            reason = "skipped by user";
+        }
+    }
+    while (SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_EVENT_FINGER_DOWN, SDL_EVENT_FINGER_CANCELED) > 0) {
         if (!reason && IsSkipEvent(event)) {
             OBL_LOG("intro movie: skip event %04X", event.type);
             reason = "skipped by user";

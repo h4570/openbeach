@@ -6,12 +6,14 @@
 #include "game/ui/input_backend.h"
 
 #include "game/game/game_accessors.h"
+#include "game/ui/gui_manager_types.h"
 #include "core/config.h"
 #include "platform/cursor.h"
 #include "platform/display_window.h"
 #include "input_mapping.h"
 #include "core/log.h"
 #include "platform/sdl_present.h"
+#include "platform/touch_gestures.h"
 
 #include <windows.h>
 #include <SDL3/SDL.h>
@@ -39,6 +41,13 @@ UnitAccumulator g_sdlRelativeX, g_sdlRelativeY;
 AbsoluteDrag g_absoluteDrag; // kAbsoluteDrag: the pointer position the drag measures from
 ui::SdlRelativeDragState g_sdlRelativeState;
 KeyLatch g_keys;
+// Fingers (touch_gestures.h): SDL's touch-to-mouse events are off then, and the gestures fill the same records the mouse does.
+TouchGestures g_touch;
+// The cursor is where a finger put it, not where a mouse is. It goes away once the finger is up and the game has read it, so
+// that the last tap does not leave a cursor at the screen edge, which scrolls the map.
+bool g_touchCursor;
+UnitAccumulator g_touchDragX, g_touchDragY;
+double g_touchPendingX, g_touchPendingY; // finger motion the game's camera drag has not started to take yet (client pixels)
 
 // The page locks the pointer for a right drag (web/site.js); SDL then reports motion as deltas.
 bool PagePointerLocked()
@@ -60,6 +69,7 @@ void ResetSdlKeyboard()
 }
 
 void ReadSdlInputEvents(ui::Input* input);
+void ReadSdlTouchEvents();
 void EnsureEventWatch();
 
 // ---------------------------------------------------------------------------------------------
@@ -141,10 +151,12 @@ void ReadSdlInputEvents(ui::Input* input)
                 continue;
             }
             g_sdlMouseClient = {static_cast<LONG>(std::floor(event.motion.x)), static_cast<LONG>(std::floor(event.motion.y))};
+            g_touchCursor = false;
         } else if ((event.type == SDL_EVENT_MOUSE_BUTTON_DOWN || event.type == SDL_EVENT_MOUSE_BUTTON_UP) &&
                 event.button.windowID == SdlGameWindowId()) {
             if (event.button.button != SDL_BUTTON_LEFT && event.button.button != SDL_BUTTON_RIGHT) continue;
             g_sdlMouseClient = {static_cast<LONG>(std::floor(event.button.x)), static_cast<LONG>(std::floor(event.button.y))};
+            g_touchCursor = false;
             PushEvent(event.button.button == SDL_BUTTON_LEFT ? input_state::kRecordLeft : input_state::kRecordRight,
                     event.type == SDL_EVENT_MOUSE_BUTTON_DOWN ? 0x80 : 0);
         } else if (event.type == SDL_EVENT_MOUSE_WHEEL && event.wheel.windowID == SdlGameWindowId()) {
@@ -154,6 +166,7 @@ void ReadSdlInputEvents(ui::Input* input)
             if (whole) PushEvent(input_state::kRecordWheel, static_cast<uint32_t>(whole));
         }
     }
+    ReadSdlTouchEvents();
 }
 
 // Focus changes act when SDL queues them: the drag ends and queued keys and buttons are dropped at once (a focus loss must not
@@ -217,6 +230,110 @@ POINT ClientToGame(void* window, POINT client)
     return MapClientToGame(client, game, image);
 }
 
+// The camera drag motion is the finger's, in game pixels: the page shows the 800x600 game smaller on a phone, and the world should
+// follow the finger rather than lag behind it.
+double TouchDragScale()
+{
+    void* window = GameWindow();
+    const SIZE game = GameSize();
+    if (!window) return 1.0;
+    const RECT image = ClientImageRect(window, game);
+    const LONG width = image.right - image.left;
+    return width > 0 ? static_cast<double>(game.cx) / static_cast<double>(width) : 1.0;
+}
+
+// GuiManager::m_mode of the modes that place things (the factory in gui_modes_place.cpp): where a press has to be chosen first.
+constexpr int kGuiModePlaceScenery = 1, kGuiModePlaceBuilding = 5, kGuiModePlacePavement = 7, kGuiModePlaceGrass = 8;
+
+TouchAim CurrentTouchAim()
+{
+    const ui::GuiManager* manager = game::GetGuiManager();
+    if (!manager) return TouchAim::None;
+    switch (manager->m_mode) {
+    case kGuiModePlaceScenery:
+    case kGuiModePlaceBuilding: return TouchAim::Confirm;
+    case kGuiModePlacePavement:
+    case kGuiModePlaceGrass: return TouchAim::Paint;
+    default: return TouchAim::None;
+    }
+}
+
+void PlaceTouchCursor(float x, float y)
+{
+    g_sdlMouseClient = {static_cast<LONG>(std::floor(x)), static_cast<LONG>(std::floor(y))};
+    g_touchCursor = true;
+}
+
+void ApplyTouchActions()
+{
+    using Kind = TouchAction::Kind;
+    for (const TouchAction& action : g_touch.Take()) {
+        switch (action.kind) {
+        case Kind::Move: PlaceTouchCursor(action.x, action.y); break;
+        case Kind::LeftDown:
+        case Kind::LeftUp:
+            PlaceTouchCursor(action.x, action.y);
+            PushEvent(input_state::kRecordLeft, action.kind == Kind::LeftDown ? 0x80 : 0);
+            break;
+        case Kind::RightDown:
+            PlaceTouchCursor(action.x, action.y);
+            g_touchDragX.Reset();
+            g_touchDragY.Reset();
+            g_touchPendingX = g_touchPendingY = 0;
+            PushEvent(input_state::kRecordRight, 0x80);
+            break;
+        case Kind::RightUp: PushEvent(input_state::kRecordRight, 0); break;
+        case Kind::Drag:
+            g_touchPendingX += action.x;
+            g_touchPendingY += action.y;
+            break;
+        case Kind::Wheel: {
+            int whole = g_sdlWheel.Add(SdlWheelUnits(action.y, false));
+            if (whole) PushEvent(input_state::kRecordWheel, static_cast<uint32_t>(whole));
+            break;
+        }
+        }
+    }
+    // The game starts the camera drag a frame after the button; motion before that waits instead of being lost.
+    if (Dragging() && g_touchCursor && (g_touchPendingX != 0 || g_touchPendingY != 0)) {
+        const double scale = TouchDragScale();
+        const int dx = g_touchDragX.Add(g_touchPendingX * scale), dy = g_touchDragY.Add(g_touchPendingY * scale);
+        g_touchPendingX = g_touchPendingY = 0;
+        platform::InjectRelativeMotion(dx, dy);
+    }
+}
+
+// SDL queues finger events with positions normalized to the window; the gestures work in client pixels, like the mouse.
+void ReadSdlTouchEvents()
+{
+    SDL_Event event;
+    SDL_Window* window = SDL_GetWindowFromID(SdlGameWindowId());
+    int width = 0, height = 0;
+    if (window) SDL_GetWindowSize(window, &width, &height);
+    g_touch.SetAim(CurrentTouchAim());
+    // Drained even when unused (native hosts), so that the queue does not fill up.
+    while (SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_EVENT_FINGER_DOWN, SDL_EVENT_FINGER_CANCELED) > 0) {
+        if (!kTouchGestures || !g_queueFocused || width <= 0 || height <= 0) continue;
+        if (event.type == SDL_EVENT_FINGER_CANCELED) {
+            g_touch.Cancel();
+            continue;
+        }
+        if (event.tfinger.windowID != SdlGameWindowId()) continue;
+        const auto id = static_cast<int64_t>(event.tfinger.fingerID);
+        const float x = event.tfinger.x * static_cast<float>(width), y = event.tfinger.y * static_cast<float>(height);
+        const auto ms = static_cast<uint32_t>(event.common.timestamp / 1000000);
+        if (event.type == SDL_EVENT_FINGER_DOWN)
+            g_touch.FingerDown(id, x, y, ms);
+        else if (event.type == SDL_EVENT_FINGER_MOTION)
+            g_touch.FingerMove(id, x, y, ms);
+        else if (event.type == SDL_EVENT_FINGER_UP)
+            g_touch.FingerUp(id, x, y, ms);
+    }
+    if (!kTouchGestures) return;
+    g_touch.Tick(static_cast<uint32_t>(SDL_GetTicks()));
+    ApplyTouchActions();
+}
+
 // SDL relative drag (docs/build/settings.md): SDL's standard relative mode hides and confines the cursor
 // only during a drag and delivers device-unit deltas, as confining the cursor to the anchor would. On release
 // the cursor reappears at the grab point. Hidden runs only record the request: SDL would hide, confine and
@@ -250,7 +367,9 @@ void EndSdlRelativeDrag()
     // After focus loss the physical cursor belongs to another window and stays where the user left it.
     // A page cannot move the pointer: an absolute drag leaves the cursor where the pointer is.
     bool returnCursor = !kAbsoluteDrag && g_inputFocused && anchor.x >= 0 && anchor.y >= 0 && gameWindow;
-    if (kAbsoluteDrag && g_inputFocused)
+    // A finger's drag has no mouse position to leave the cursor at (the absolute drag's is the mouse's, stale).
+    const bool byFinger = g_touchCursor;
+    if (kAbsoluteDrag && g_inputFocused && !byFinger)
         g_sdlMouseClient = {static_cast<LONG>(std::floor(g_absoluteDrag.X())), static_cast<LONG>(std::floor(g_absoluteDrag.Y()))};
     SDL_Window* window = SDL_GetWindowFromID(SdlGameWindowId());
     if (!g_hidden && !kAbsoluteDrag && window) {
@@ -273,6 +392,11 @@ void EndSdlRelativeDrag()
         g_sdlRelativeState.returnY = grab.y;
     }
     SetLocalCursorDragHidden(false);
+    if (byFinger && !g_touch.AnyFingerDown()) {
+        g_sdlMouseClient = {-300, -300};
+        g_touchCursor = false;
+    }
+    g_touchPendingX = g_touchPendingY = 0;
 }
 
 // The SDL/Win32 side of the Input object (input_backend.h).
@@ -286,6 +410,8 @@ public:
         SDL_SetHint(SDL_HINT_MOUSE_RELATIVE_SYSTEM_SCALE, "0");
         SDL_SetHint(SDL_HINT_MOUSE_RELATIVE_CURSOR_VISIBLE, "0");
         SDL_SetHint(SDL_HINT_MOUSE_RELATIVE_WARP_MOTION, "0");
+        // Fingers are the gestures' (touch_gestures.h); SDL must not also turn them into mouse events.
+        if (kTouchGestures) SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
         return true;
     }
 
@@ -326,6 +452,12 @@ public:
             pos = g_syntheticClient ? ClientToGame(GameWindow(), g_synthetic) : g_synthetic;
         else
             pos = ClientToGame(GameWindow(), g_sdlMouseClient);
+        // The records above were read at the finger's position; with the finger gone the cursor leaves, unless a camera drag is
+        // still ending (its release is the game's to process first).
+        if (g_touchCursor && !g_touch.AnyFingerDown() && !Dragging()) {
+            g_sdlMouseClient = {-300, -300};
+            g_touchCursor = false;
+        }
         MouseRead read;
         read.count = static_cast<int>(count);
         read.ok = true;
@@ -345,6 +477,10 @@ public:
         g_sdlMouseClient = {-300, -300}; // After the drag ends: a reset never returns the cursor position.
         g_sdlWheel.Reset();
         g_events.clear();
+        g_touch.Cancel();
+        g_touch.Take();
+        g_touchCursor = false;
+        g_touchPendingX = g_touchPendingY = 0;
     }
 
     bool Focused() override { return g_inputFocused; }
