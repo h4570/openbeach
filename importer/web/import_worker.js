@@ -23,9 +23,36 @@ const reader = new FileReaderSync();
 // Appended bytes are folded into the spool's Blob in pieces of this size, so few small arrays stay in memory.
 const kSpoolPiece = 16 << 20;
 
+// The converters read in small steps (a cabinet chunk is a 2-byte length and then up to 64 KB, a sprite block a few KB),
+// and each FileReaderSync call has a fixed cost that dominates on a phone, where a picked file is served by the system's
+// storage provider. A miss therefore reads this much ahead, and the following reads are answered from memory.
+const kReadAhead = 4 << 20;
+
+// One window of `blob`; a different blob (another file, or a spool that was folded) simply misses.
+function makeWindowReader() {
+    let blob = null, start = 0, bytes = null;
+    return (source, offset, target) => {
+        const end = offset + target.length;
+        if (end > source.size) return false;
+        if (target.length >= kReadAhead) {
+            target.set(new Uint8Array(reader.readAsArrayBuffer(source.slice(offset, end))));
+            return true;
+        }
+        if (source !== blob || offset < start || end > start + bytes.length) {
+            blob = source;
+            start = offset;
+            bytes = new Uint8Array(reader.readAsArrayBuffer(source.slice(offset, Math.min(source.size, offset + kReadAhead))));
+        }
+        target.set(bytes.subarray(offset - start, end - start));
+        return true;
+    };
+}
+
 // The calls of worker_main.cpp; `pending` holds the written files by storage key.
 function makeBridge(inputs, pending, report) {
     const spools = new Map(); // name -> {blob, parts, size of parts}
+    const readInput = makeWindowReader();
+    const readSpool = makeWindowReader();
     const fold = (spool) => {
         if (spool.parts.length === 0) return;
         spool.blob = new Blob([spool.blob, ...spool.parts]);
@@ -35,9 +62,7 @@ function makeBridge(inputs, pending, report) {
     return {
         read(index, offset, target) {
             const file = index < 0 ? inputs.image : inputs.files[index];
-            if (!file || offset + target.length > file.size) return false;
-            target.set(new Uint8Array(reader.readAsArrayBuffer(file.slice(offset, offset + target.length))));
-            return true;
+            return !!file && readInput(file, offset, target);
         },
         put(key, bytes) {
             pending.set(key, new Blob([bytes]));
@@ -70,9 +95,7 @@ function makeBridge(inputs, pending, report) {
             const spool = spools.get(name);
             if (!spool) return false;
             fold(spool);
-            if (offset + target.length > spool.blob.size) return false;
-            target.set(new Uint8Array(reader.readAsArrayBuffer(spool.blob.slice(offset, offset + target.length))));
-            return true;
+            return readSpool(spool.blob, offset, target);
         },
         spoolRemove(name) {
             spools.delete(name);
@@ -103,9 +126,20 @@ async function persist(root, pending, report) {
     await parent.removeEntry(rootParts[rootParts.length - 1], {recursive: true}).catch(() => {});
     let done = 0;
     report(0, pending.size);
+    // A pack has a few hundred directories for thousands of files, so each directory is looked up once.
+    const directories = new Map();
+    const directoryFor = async (parts) => {
+        const name = parts.join("/");
+        let dir = directories.get(name);
+        if (!dir) {
+            dir = parts.length === 0 ? opfs : await (await directoryFor(parts.slice(0, -1))).getDirectoryHandle(parts[parts.length - 1], {create: true});
+            directories.set(name, dir);
+        }
+        return dir;
+    };
     for (const [key, blob] of pending) {
         const parts = key.split("/");
-        const dir = await directoryOf(opfs, parts.slice(0, -1), true);
+        const dir = await directoryFor(parts.slice(0, -1));
         const handle = await (await dir.getFileHandle(parts[parts.length - 1], {create: true})).createSyncAccessHandle();
         try {
             handle.truncate(0);
