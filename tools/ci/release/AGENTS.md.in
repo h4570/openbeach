@@ -1,0 +1,106 @@
+# OpenBeach @VERSION@ (@PLATFORM@): instructions for an AI agent
+
+The user downloaded this archive and wants to play Beach Life (2002) with OpenBeach. Your job: import their own copy of
+the game once, then start the game. Talk to the user in their language; `README.txt` has the same steps for people, in
+six languages. Source and documentation: https://github.com/h4570/openbeach
+
+## Layout
+```
+README.txt          for the user
+AGENTS.md           this file
+game/
+[win]  OpenBeach.exe     the game (also started by Play.cmd and Demo.cmd)
+[win]  obl-convert.exe   the converter that reads the user's copy (started by Import.cmd)
+[win]  Import.cmd        scripts\import.ps1: the import with prompts
+[linux]  OpenBeach         the game (also started by play.sh and demo.sh)
+[linux]  obl-convert       the converter that reads the user's copy (started by import.sh)
+[linux]  import.sh         the import with prompts
+  userdata/         the game directory: converted pack, settings, saves, log (empty until the import)
+  l0/               the game directory of the demo (the project's own L0 pack, no original data)
+```
+
+## Rules
+- **Never modify the user's copy.** The converter only reads it; never write, move or delete anything in it.
+- **Never download the game or an .iso for the user.** OpenBeach needs the user's own legal copy. If they have none, say
+  so and offer the demo.
+- Ask before deleting `game/userdata/`: it holds the user's saves (`SaveGames/`) and settings.
+- Do not move the binaries out of `game/`: the scripts and the game find each other by that folder.
+
+## 1. Check the system
+[win]- Windows 10 or 11, x64. PowerShell 5.1 or newer is part of Windows.
+[linux]- x86-64 Linux with glibc 2.35 or newer: `ldd --version`. The game needs an X11 or Wayland session.
+[linux]- Run-time libraries: `README.txt`, section EN, "LIBRARIES" (Debian/Ubuntu package list). Without them SDL falls
+[linux]  back (no OpenGL: software rendering, no sound server: silence); a missing X11/Wayland library stops the window.
+
+## 2. Find the user's copy
+Ask the user where it is; do not search their whole disk without asking. Any of these works:
+- an installed game: a folder with `BeachLife.exe` and `Data/`;
+- the CD in a drive, or its contents copied to a folder (InstallShield `data1.hdr`, `data1.cab`, ...);
+- a disc image `.iso` of the CD.
+
+Supported copies: the European CD, the French/German CD, the UK/US CD (*Virtual Resort: Spring Break*), the later
+English CD, and installations of these (also the digital release over a CD installation). The converter identifies the
+copy by hashes and refuses an unknown one with a message, without writing anything of it.
+
+## 3. Import (once, about 15 minutes)
+[win]```powershell
+[win]powershell -NoProfile -ExecutionPolicy Bypass -File game\scripts\import.ps1 -Source "<copy>" [-Language <code>]
+[win]```
+[win]`<copy>` is the folder, the drive (`E:\`) or the `.iso` file: the script mounts an image with `Mount-DiskImage` and
+[win]unmounts it afterwards. If mounting fails, ask the user to double-click the `.iso` and use the new drive letter.
+[linux]```sh
+[linux]game/import.sh "<copy>" [<code>]
+[linux]```
+[linux]`<copy>` is the folder or the `.iso` file: the script mounts an image with `udisksctl` (no sudo) and unmounts it
+[linux]afterwards. If that fails, mount it yourself (`sudo mount -o loop,ro <file.iso> <dir>`, with the user's consent) and
+[linux]pass the directory.
+
+The script imports into `game/userdata/packs/base.new/` and replaces `game/userdata/packs/base/` with it only on success
+(a failed import keeps the old pack), writes `game/userdata/remaster/` (cursors) and sets `[Language] Language=<index>`
+in `game/userdata/BeachLife.ini`, keeping other settings.
+[linux]It also adds `~/.local/share/applications/openbeach.desktop` with the OpenBeach icon (the applications menu).
+Run it with a long timeout or in the background: it prints one line per step and ends with `Done.` and exit code 0.
+
+**Language.** The pack gets the language of the installation's `BeachLife.ini`. A CD names none: the converter stops with
+an error about the language, and the script then asks on standard input. Pass the language up front instead when you
+run it without a terminal: `en` (UK/US and later English CD) or one of `fr de it pl es` (European and French/German CD);
+the copy must have that table. The game's index order is `en fr it de es pl` (0 to 5). To switch later to another
+language the pack has (`game/userdata/packs/base/text/<code>.json`), change `Language=` in `game/userdata/BeachLife.ini`.
+
+Manual equivalent of the script (the converter alone):
+[win]```powershell
+[win]game\obl-convert.exe import "<copy>" game\userdata\packs\base [--language <code>]
+[win]game\obl-convert.exe resources "<copy>" game\userdata\remaster
+[win]```
+[linux]```sh
+[linux]game/obl-convert import "<copy>" game/userdata/packs/base [--language <code>]
+[linux]game/obl-convert resources "<copy>" game/userdata/remaster
+[linux]```
+Both target directories must exist. Then write the INI as above: without `[Beach Life Options]` and `Version=1` the
+game ignores the file and starts in English, which a European copy does not have.
+
+## 4. Start the game
+[win]Double-click `game\Play.cmd`, or `game\OpenBeach.exe --game-dir game\userdata`. `game\OpenBeach.exe` without
+[win]arguments also uses `game\userdata\`.
+[linux]`game/play.sh` (= `game/OpenBeach --game-dir game/userdata`). `game/OpenBeach` without arguments also uses
+[linux]`game/userdata/`.
+
+The game opens a window: intro movie, two logo screens, then the main menu. Tell the user it is ready; do not leave it
+running for them to find unless they asked you to start it.
+
+Success check without looking at the screen: `game/userdata/openbeach.log` gets `init done` shortly after the start.
+A missing or broken pack stops the start with a message naming the file and "Import the game data again": run step 3.
+
+## Demo without the original game
+[win]`game\Demo.cmd` (= `OBL_PACK=l0`, `OpenBeach.exe --game-dir game\l0`).
+[linux]`game/demo.sh` (= `OBL_PACK=l0 game/OpenBeach --game-dir game/l0`).
+
+## Troubleshooting
+- Converter errors are printed with `error:`; an unknown executable or sprite stamp means an unsupported copy.
+[win]- SmartScreen ("Windows protected your PC") blocks unsigned files downloaded from the internet: the user clicks
+[win]  "More info", "Run anyway", or unblocks the .zip (Properties, Unblock) before unpacking.
+- Log: `game/userdata/openbeach.log` (the demo: `game/l0/openbeach.log`). Bugs go to
+  https://github.com/h4570/openbeach/issues with that log.
+- Saves of the original game: copy them into `game/userdata/SaveGames/`; the game converts them when it starts.
+- Updating: unpack the new version and copy the old `game/userdata/` into it. If the new version asks to import the game
+  data again, run step 3.

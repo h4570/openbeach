@@ -26,16 +26,25 @@ void PrintUsage()
 {
     std::fprintf(stderr,
             "Usage: OpenBeach %s [--no-entry]\n"
-            "  default game dir: this program's directory when it holds the game's Data, else %s\n",
+            "  default game dir: this program's directory when it holds the game's Data, else its userdata/ directory\n"
+            "  (a release archive), else %s\n",
             launcher::kSharedUsage, OBL_DEFAULT_GAME_DIR);
 }
 
-// Started by a double click inside an installed game, the game is right here; a development build in build/ plays run/.
+// Started by a double click inside an installed game, the game is right here; in a release archive it is userdata/ beside
+// the program (docs/build/releases.md), and a development build in build/ plays run/. The release name is not "data": on
+// Windows that is the same directory as the installed game's Data.
 std::string DefaultGameDir()
 {
     const char* base = SDL_GetBasePath();
+    if (!base) return OBL_DEFAULT_GAME_DIR;
+    const std::filesystem::path dir(reinterpret_cast<const char8_t*>(base));
     std::error_code error;
-    if (base && std::filesystem::is_directory(std::filesystem::path(reinterpret_cast<const char8_t*>(base)) / "Data", error)) return base;
+    if (std::filesystem::is_directory(dir / "Data", error)) return base;
+    if (std::filesystem::is_directory(dir / "userdata", error)) {
+        const std::u8string text = (dir / "userdata").u8string();
+        return std::string(text.begin(), text.end());
+    }
     return OBL_DEFAULT_GAME_DIR;
 }
 

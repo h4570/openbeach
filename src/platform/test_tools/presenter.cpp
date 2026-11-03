@@ -672,7 +672,7 @@ bool ReadPresenterProbe(const std::string& name, double& out)
             else
                 GetWindowTextW(hwnd, text, 64);
             out = std::wcscmp(text, L"Beach Life") == 0;
-        } else if (name == "window-icon-game") { // SDL set remaster/icon.ico as the window's big and small icon
+        } else if (name == "window-icon-game") { // SDL set the OpenBeach icon as the window's big and small icon
             const bool big = SendMessageW(hwnd, WM_GETICON, ICON_BIG, 0) != 0;
             const bool compactIcon = SendMessageW(hwnd, WM_GETICON, ICON_SMALL, 0) != 0;
             out = platform::GetSdlPresenterStats().icon && big && compactIcon;

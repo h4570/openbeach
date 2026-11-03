@@ -1,0 +1,3 @@
+// The icon of OpenBeach.exe in Explorer, the Start menu and a shortcut: the first icon resource. Configured by
+// src/launcher/CMakeLists.txt with the absolute path of assets/logo/openbeach.ico (tools/make_icons.py).
+1 ICON "@OBL_ICON_PATH@"

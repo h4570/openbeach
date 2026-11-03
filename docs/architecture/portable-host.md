@@ -16,7 +16,7 @@ windowed `OpenBeach`. This topic lists each piece of the windowed path and what 
 | Main loop | `platform_main.cpp` | `PumpSdlEvents`; quit, close and focus are SDL events | - |
 | Quit request | `platform/runtime.cpp` (`RequestQuit`) | `RequestSdlQuit` sets the pump's sticky quit flag | - |
 | Window procedure | `sdl_present.cpp` | no subclass, SDL's class procedure is the only one (`window-proc-sdl`) | - |
-| Window | `sdl_present.cpp` (`CreateSdlGameWindow`) | the game stores the `SDL_Window*` as its opaque window handle (`SdlGameWindow`, `GetWin32Window` for the Windows-only callers); icon by `SDL_SetWindowIcon` from `remaster/icon.ico` (`core/cursor_file.h` `DecodeIcon`) | `SDL_RegisterApp` class name "Beach Life" (tools find the window by it) |
+| Window | `sdl_present.cpp` (`CreateSdlGameWindow`) | the game stores the `SDL_Window*` as its opaque window handle (`SdlGameWindow`, `GetWin32Window` for the Windows-only callers); icon by `SDL_SetWindowIcon` from the built-in OpenBeach icon (`core/cursor_file.h` `DecodeIcon`, [../build/releases.md](../build/releases.md#icons)); SDL app id `openbeach` off Windows | `SDL_RegisterApp` class name "Beach Life" (tools find the window by it) |
 | Input | `input.cpp` | the image mapping takes the opaque window and SDL's client size (`ClientImageRect`, `GameWindowClientSize`); `POINT`/`SIZE`/`RECT` stay as plain types (`host_linux/win_types`) | - |
 | Cursor | `cursor.cpp`, `core/cursor_file.cpp` | SDL colour cursors decoded from the `.cur` files, applied on SDL mouse motion | - |
 | Presentation | `sdl_present.cpp`, `renderer_display.cpp` | `PresentBackBuffer(bits, pitch, width, height, rgb555)`; without a GPU renderer SDL's software renderer presents, a failure drops frames | - |
