@@ -16,6 +16,7 @@
 #include "platform/hidden_window.h"
 #include "core/log.h"
 #include "core/platform_main.h"
+#include "openbeach_icon.gen.h"
 
 #include <SDL3/SDL.h>
 #ifdef _WIN32
@@ -27,8 +28,6 @@
 #include <algorithm>
 #include <cstdlib>
 #include <cstring>
-#include <fstream>
-#include <iterator>
 #include <vector>
 
 namespace obl::platform {
@@ -256,13 +255,12 @@ bool Present(const uint16_t* bits, int pitch, int width, int height, SDL_PixelFo
     return true;
 }
 
-// remaster/icon.ico as the window icon; a missing or unreadable file keeps SDL's.
+// The OpenBeach icon, built into the program (assets/logo/openbeach.ico): the same with an imported copy and with the L0
+// pack, and the same file the Windows executable shows in Explorer (src/launcher/openbeach.rc.in).
 bool SetGameIcon(SDL_Window* window)
 {
-    std::ifstream file("remaster/icon.ico", std::ios::binary);
-    const std::vector<uint8_t> data((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
     cursor_file::Image image;
-    if (data.empty() || !cursor_file::DecodeIcon(data.data(), data.size(), image)) return false;
+    if (!cursor_file::DecodeIcon(kOpenBeachIcon, sizeof(kOpenBeachIcon), image)) return false;
     SDL_Surface* surface = SDL_CreateSurfaceFrom(image.width, image.height, SDL_PIXELFORMAT_ARGB8888, image.argb.data(), image.width * 4);
     const bool ok = surface && SDL_SetWindowIcon(window, surface);
     SDL_DestroySurface(surface);
@@ -283,6 +281,11 @@ SDL_Window* CreateSdlGameWindow(void* instance, int clientWidth, int clientHeigh
     }
 #else
     (void)instance;
+#endif
+#ifndef _WIN32
+    // The desktop matches the window to the release's openbeach.desktop by this id (Wayland app_id, X11 WM_CLASS), which
+    // gives the dock and the task switcher the OpenBeach icon too.
+    SDL_SetHint(SDL_HINT_APP_ID, "openbeach");
 #endif
     if (!EnsureVideo()) {
         OBL_LOG("sdl window: SDL_InitSubSystem(VIDEO) failed: %s", SDL_GetError());
@@ -313,7 +316,7 @@ SDL_Window* CreateSdlGameWindow(void* instance, int clientWidth, int clientHeigh
     g_created = true;
     g_stats.created = true;
     g_stats.icon = SetGameIcon(window);
-    if (!g_stats.icon) OBL_LOG("sdl window: remaster/icon.ico missing or unreadable, import the game data again");
+    if (!g_stats.icon) OBL_LOG("sdl window: the OpenBeach icon was not set: %s", SDL_GetError());
     // SDL's own window procedure stays: close, focus and input reach the game as SDL events (PumpSdlEvents, input.cpp) and the
     // local cursor is an SDL cursor (cursor.cpp).
 #ifdef _WIN32

@@ -40,6 +40,7 @@ STEP 2: IMPORT YOUR COPY (once, about 15 minutes)
 STEP 3: PLAY
 [win]  Double-click Play.cmd in the "game" folder.
 [linux]  ./play.sh   (in the "game" folder)
+[linux]  The import also puts OpenBeach with its icon into your applications menu.
 
 LANGUAGE
   The game is available only in the languages of your copy: English for the UK/US and the later English CDs, and
@@ -112,6 +113,7 @@ CE QU'IL VOUS FAUT
 ÉTAPE 3 : JOUER
 [win]  Double-cliquez sur Play.cmd dans le dossier « game ».
 [linux]  ./play.sh   (dans le dossier « game »)
+[linux]  L'import ajoute aussi OpenBeach, avec son icône, au menu des applications.
 
 LANGUE
   Le jeu n'est disponible que dans les langues de votre copie : l'anglais pour les CD UK/US et anglais tardif, et le
@@ -183,6 +185,7 @@ PASSO 2: IMPORTA LA TUA COPIA (una volta sola, circa 15 minuti)
 PASSO 3: GIOCA
 [win]  Fai doppio clic su Play.cmd nella cartella "game".
 [linux]  ./play.sh   (nella cartella "game")
+[linux]  L'importazione aggiunge anche OpenBeach, con la sua icona, al menu delle applicazioni.
 
 LINGUA
   Il gioco è disponibile solo nelle lingue della tua copia: inglese per il CD UK/US e il CD inglese più recente, e
@@ -254,6 +257,7 @@ SCHRITT 2: DEINE KOPIE IMPORTIEREN (einmalig, etwa 15 Minuten)
 SCHRITT 3: SPIELEN
 [win]  Doppelklicke Play.cmd im Ordner "game".
 [linux]  ./play.sh   (im Ordner "game")
+[linux]  Der Import legt OpenBeach mit seinem Symbol auch ins Anwendungsmenü.
 
 SPRACHE
   Das Spiel gibt es nur in den Sprachen deiner Kopie: Englisch bei der UK/US-CD und der späteren englischen CD, und
@@ -324,6 +328,7 @@ PASO 2: IMPORTA TU COPIA (una sola vez, unos 15 minutos)
 PASO 3: JUEGA
 [win]  Haz doble clic en Play.cmd en la carpeta "game".
 [linux]  ./play.sh   (en la carpeta "game")
+[linux]  La importación también añade OpenBeach, con su icono, al menú de aplicaciones.
 
 IDIOMA
   El juego solo está disponible en los idiomas de tu copia: inglés para el CD UK/US y el CD inglés posterior, y francés,
@@ -395,6 +400,7 @@ KROK 2: ZAIMPORTUJ SWOJĄ KOPIĘ (raz, około 15 minut)
 KROK 3: GRAJ
 [win]  Kliknij dwa razy Play.cmd w folderze „game”.
 [linux]  ./play.sh   (w folderze „game”)
+[linux]  Import dodaje też OpenBeach z jego ikoną do menu aplikacji.
 
 JĘZYK
   Gra jest dostępna tylko w językach Twojej kopii: po angielsku z płyty UK/US i późniejszej płyty angielskiej, a po

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Imports the player's own copy of Beach Life into userdata/ of a Linux release (docs/build/releases.md): the converted
-# pack, the window icon and cursors, and the game language in BeachLife.ini.
+# pack, the cursors, the game language in BeachLife.ini and a menu entry with the OpenBeach icon.
 #   ./import.sh [<installation, CD, extracted CD or .iso>] [en|fr|it|de|es|pl]
 # Asks for the copy when none is given, and for the language when the copy does not name one (a CD). Exit code 1 on failure.
 set -uo pipefail
@@ -54,6 +54,29 @@ set_language() {
         section && tolower($0) ~ /^[ \t]*language[ \t]*=/ { if (!done) print "Language=" n; done = 1; next }
         { print }
         END { if (!done) { if (!section) print "[Language]"; print "Language=" n } }' "$ini" > "$ini.new" && mv "$ini.new" "$ini"
+}
+
+# A menu entry with the OpenBeach icon in the user's applications: the desktop starts the game from it and matches the
+# game's window to it by the app id "openbeach" (the dock and the task switcher show the icon too). An ELF file has no
+# icon of its own in a file manager.
+install_desktop_entry() {
+    local data="${XDG_DATA_HOME:-$HOME/.local/share}"
+    local apps="$data/applications" icons="$data/icons/hicolor/256x256/apps"
+    mkdir -p "$apps" "$icons" && cp "$here/openbeach.png" "$icons/openbeach.png" || return 0
+    cat > "$apps/openbeach.desktop" <<EOF
+[Desktop Entry]
+Type=Application
+Name=OpenBeach
+Comment=Beach Life on your own copy of the game
+Exec="$here/play.sh"
+Path=$here
+Icon=openbeach
+Terminal=false
+Categories=Game;Simulation;
+StartupWMClass=openbeach
+EOF
+    if command -v update-desktop-database >/dev/null; then update-desktop-database "$apps" >/dev/null 2>&1 || true; fi
+    echo "OpenBeach is in your applications menu now ($apps/openbeach.desktop)."
 }
 
 echo "OpenBeach: import your own copy of Beach Life"
@@ -114,10 +137,11 @@ if [[ $code -ne 0 ]]; then
 fi
 rm -rf "$pack"
 mv "$fresh" "$pack"
-convert resources "$source_dir" "$userdata/remaster" || fail "Reading the window icon and the cursors failed (the message is above)."
+convert resources "$source_dir" "$userdata/remaster" || fail "Reading the cursors failed (the message is above)."
 
 # The pack's own language, so the game starts in a language the copy has.
 chosen=$(sed -n 's/^  "language": *"\([a-z]*\)".*/\1/p' "$pack/pack.json" | head -1)
 set_language "$chosen"
+install_desktop_entry
 echo
 echo "Done. Start the game with ./play.sh (language: $chosen)."

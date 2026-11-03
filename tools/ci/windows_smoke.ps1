@@ -42,6 +42,7 @@ try {
     Start-Sleep -Seconds 3 # a few seconds of frames in the menu
     if ($launcher.HasExited) { throw "the game stopped in the menu (exit code $($launcher.ExitCode))" }
     Select-String -LiteralPath $log -Pattern 'sdl window|sdl presenter|init done' | ForEach-Object { $_.Line }
+    if (Select-String -LiteralPath $log -Pattern 'OpenBeach icon was not set' -Quiet) { throw 'the window has no OpenBeach icon' }
 } finally {
     Stop-Host $work
     if (-not $launcher.HasExited) { Stop-Process -InputObject $launcher -Force -ErrorAction SilentlyContinue }

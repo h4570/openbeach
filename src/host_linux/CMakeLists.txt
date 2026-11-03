@@ -168,6 +168,7 @@ endif()
 
 include(${REPO}/cmake/gui_content.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../../cmake/catalog_schemas.cmake)
+include(${REPO}/cmake/embedded_icon.cmake)
 foreach(target ${GAME_TARGETS})
     target_include_directories(${target} PRIVATE ${REPO}/src ${REPO} ${REPO}/importer/include ${REPO}/tests/unit/linux
         ${pl_mpeg_SOURCE_DIR} ${dr_mp3_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/win_types)
@@ -175,6 +176,7 @@ foreach(target ${GAME_TARGETS})
     # The convert-save test command calls the converter in process (native saves do not, obl_formats serves them): its
     # portable sources compile into the game with the simulation's flags, since they share json_schema and nlohmann types.
     obl_embedded_schemas(${target})
+    obl_embedded_icon(${target})
     obl_gui_content_schemas(${target})
     obl_catalog_schemas(${target})
     target_compile_definitions(${target} PRIVATE NOMINMAX OBL_LINUX_HOST=1)

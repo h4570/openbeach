@@ -20,13 +20,14 @@ Three entries at the top, so a player sees where to start:
 | `game/userdata/` | the game directory of the player's copy, empty until the import |
 | `game/l0/packs/l0/` | the demo's game directory with the L0 pack (`OBL_PACK=l0`) |
 | `game/LICENSE`, `game/THIRD_PARTY_NOTICES.md` | the licences |
+| `game/openbeach.png` (Linux) | the icon of the applications menu entry `import.sh` adds |
 
 `tools/ci/release/stage.py` lays this out for both systems: a template line starting with `[win]` or `[linux]` is kept
 only on that system, and the Windows README gets backslash paths and CRLF line endings. Batch files are checked out with
 CRLF (`.gitattributes`): `cmd.exe` misreads labels in LF files.
 
 **The import script** runs `obl-convert import <copy> userdata/packs/base` (replacing an older pack whole) and
-`obl-convert resources <copy> userdata/remaster`, then sets `[Language] Language=<index>` in `userdata/BeachLife.ini` to
+`obl-convert resources <copy> userdata/remaster` (the cursors), then sets `[Language] Language=<index>` in `userdata/BeachLife.ini` to
 the pack's language (`pack.json`), adding `[Beach Life Options] Version=1` to a new file: the game reads nothing from an
 INI without it and would start in English. A CD names no language, so on the converter's language error the script asks
 for one and imports again. An `.iso` is mounted for the import (`Mount-DiskImage`, `udisksctl loop-setup`) and unmounted
@@ -37,6 +38,18 @@ the quote, and `import.ps1` puts it back.
 game), else `userdata/` beside the program (a release), else `OBL_GAME_DIR` (`run/` of the build tree)
 (`DefaultGameDir`, `src/launcher/remaster_main.cpp`). The release name is not `data`: on Windows that is the same
 directory as `Data`.
+
+## Icons
+The OpenBeach mark (`assets/logo/openbeach-mark.svg`) is the program's icon everywhere: `tools/make_icons.py` renders
+`assets/logo/openbeach.ico` (16 to 256 px, uncompressed 32-bit entries) and `openbeach-256.png`, both committed.
+- **Window:** `cmake/embedded_icon.cmake` builds the .ico into the game (`openbeach_icon.gen.h`) and `SetGameIcon`
+  (`src/platform/sdl_present.cpp`) sets it with `core/cursor_file.h` `DecodeIcon`, on every system and with every pack.
+  The icon of the player's copy (`remaster/icon.ico` of `obl-convert resources`) is no longer used.
+- **Windows file:** `src/launcher/openbeach.rc.in` makes the same .ico the first icon resource of `OpenBeach.exe`
+  (Explorer, the taskbar, shortcuts).
+- **Linux desktop:** an ELF file has no icon of its own, so `import.sh` adds `~/.local/share/applications/openbeach.desktop`
+  with `game/openbeach.png` in the icon theme directory. The game sets the SDL app id `openbeach` (Wayland `app_id`, X11
+  `WM_CLASS`), which ties its window to that entry for the dock and the task switcher.
 
 ## Build
 **Windows** (`tools/ci/windows_release.ps1`): the `x64` preset with `-DOBL_CONVERT_ON_BUILD=OFF`, RelWithDebInfo, the

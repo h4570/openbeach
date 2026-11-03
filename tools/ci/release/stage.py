@@ -5,7 +5,7 @@
 
 The directory gets README.txt and AGENTS.md (rendered from the templates beside this script: a line starting with
 "[win]" or "[linux]" is kept only on that platform), and game/ with the binaries, the platform's scripts, the L0 pack in
-game/l0/packs/l0/, an empty game/userdata/ and the licences. Paths in README.txt use the platform's separator.
+game/l0/packs/l0/, an empty game/userdata/, the licences and (Linux) the icon of the menu entry. Paths in README.txt use the platform's separator.
 """
 
 import argparse
@@ -72,6 +72,9 @@ def stage(platform, version, out, binaries):
     shutil.copytree(ROOT / "data" / "packs" / "l0", game / "l0" / "packs" / "l0")
     for name in ("LICENSE", "THIRD_PARTY_NOTICES.md"):
         shutil.copyfile(ROOT / name, game / name)
+    if platform == "linux":
+        # The menu entry's icon (import.sh); on Windows the executable carries it.
+        shutil.copyfile(ROOT / "assets" / "logo" / "openbeach-256.png", game / "openbeach.png")
 
 
 def pack_zip(out, archive, epoch):

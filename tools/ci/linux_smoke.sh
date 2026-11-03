@@ -63,6 +63,10 @@ fi
 wait "$game" || code=$?
 game=""
 grep -E "sdl window|sdl presenter|platform-main|process exit" "$log"
+if grep -q "OpenBeach icon was not set" "$log"; then
+    echo "error: the window has no OpenBeach icon" >&2
+    exit 1
+fi
 if [[ "$code" != 0 ]] || ! grep -q "platform-main: WinMain returned 0" "$log" || ! grep -q "process exit" "$log"; then
     echo "error: unclean exit (code $code)" >&2
     cat "$work/stdout.log" "$log" >&2

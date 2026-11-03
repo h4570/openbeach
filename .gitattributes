@@ -5,3 +5,4 @@ data/packs/** -text
 *.png binary
 # cmd.exe misreads labels and blocks of a batch file with bare LF endings.
 *.cmd text eol=crlf
+*.ico binary

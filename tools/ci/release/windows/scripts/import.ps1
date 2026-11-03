@@ -1,5 +1,5 @@
 # Imports the player's own copy of Beach Life into userdata\ of a Windows release (docs/build/releases.md): the converted
-# pack, the window icon and cursors, and the game language in BeachLife.ini. Started by Import.cmd.
+# pack, the cursors and the game language in BeachLife.ini. Started by Import.cmd.
 #   import.ps1 [-Source <installation, CD drive, extracted CD or .iso>] [-Language en|fr|it|de|es|pl]
 # Asks for the copy when none is given, and for the language when the copy does not name one (a CD). Exit code 1 on failure.
 param([string]$Source = '', [string]$Language = '')
@@ -115,7 +115,7 @@ try {
     if (Test-Path -LiteralPath $pack) { Remove-Item -LiteralPath $pack -Recurse -Force }
     Rename-Item -LiteralPath $fresh -NewName 'base'
     $exit = Invoke-Convert @('resources', $Source, (Join-Path $userdata 'remaster'))
-    if ($exit -ne 0) { Stop-Import 'Reading the window icon and the cursors failed (the message is above).' }
+    if ($exit -ne 0) { Stop-Import 'Reading the cursors failed (the message is above).' }
 } catch {
     Stop-Import "$($_.Exception.Message) Nothing of your copy was changed."
 } finally {

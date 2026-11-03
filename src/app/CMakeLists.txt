@@ -466,3 +466,5 @@ target_include_directories(openbeach PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${pl_mp
 set_source_files_properties(../platform/pl_mpeg_impl.c PROPERTIES COMPILE_OPTIONS "/W0")
 set_source_files_properties(../platform/dr_mp3_impl.c PROPERTIES COMPILE_OPTIONS "/W0")
 target_link_libraries(openbeach PUBLIC obl_common obl_convert nlohmann_json::nlohmann_json SDL3::SDL3-static dbghelp)
+include(${CMAKE_SOURCE_DIR}/cmake/embedded_icon.cmake)
+obl_embedded_icon(openbeach)

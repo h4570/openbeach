@@ -55,9 +55,11 @@ copy by hashes and refuses an unknown one with a message, without writing anythi
 [linux]afterwards. If that fails, mount it yourself (`sudo mount -o loop,ro <file.iso> <dir>`, with the user's consent) and
 [linux]pass the directory.
 
-The script replaces `game/userdata/packs/base/` (the converted pack), writes `game/userdata/remaster/` (window icon and
-cursors) and sets `[Language] Language=<index>` in `game/userdata/BeachLife.ini`, keeping other settings. Run it with a
-long timeout or in the background: it prints one line per step and ends with `Done.` and exit code 0.
+The script imports into `game/userdata/packs/base.new/` and replaces `game/userdata/packs/base/` with it only on success
+(a failed import keeps the old pack), writes `game/userdata/remaster/` (cursors) and sets `[Language] Language=<index>`
+in `game/userdata/BeachLife.ini`, keeping other settings.
+[linux]It also adds `~/.local/share/applications/openbeach.desktop` with the OpenBeach icon (the applications menu).
+Run it with a long timeout or in the background: it prints one line per step and ends with `Done.` and exit code 0.
 
 **Language.** The pack gets the language of the installation's `BeachLife.ini`. A CD names none: the converter stops with
 an error about the language, and the script then asks on standard input. Pass the language up front instead when you

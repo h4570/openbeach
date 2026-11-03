@@ -12,7 +12,7 @@ struct HWND__;
 namespace obl::platform {
 
 // The game window of the C++ WinMain, created by SDL (docs/build/settings.md): `clientWidth` x `clientHeight` with a frame,
-// hidden, with the icon from remaster/icon.ico. On Windows its class is "Beach Life" (SDL_RegisterApp with `instance` before
+// hidden, with the OpenBeach icon (built in). On Windows its class is "Beach Life" (SDL_RegisterApp with `instance` before
 // SDL video starts; tools find the window by it) and SDL's window procedure is the only one. The game stores the returned
 // window as its opaque window handle (GetGameWindow). Null on failure (logged).
 SDL_Window* CreateSdlGameWindow(void* instance, int clientWidth, int clientHeight, const char* title);
@@ -37,7 +37,7 @@ struct SdlPresenterStats {
     bool active = false; // SDL renderer attached to the game window
     bool created = false; // SDL created the game window
     bool wrapped = false; // the game's window handle (GetGameWindow) is that SDL window
-    bool icon = false; // the window icon was set from remaster/icon.ico
+    bool icon = false; // the window shows the OpenBeach icon
     bool software = false; // the presenter fell back to SDL's software renderer
     int windowWidth = 0, windowHeight = 0; // SDL's idea of the window client size (0 while inactive)
     unsigned long long presents = 0; // frames presented through SDL
