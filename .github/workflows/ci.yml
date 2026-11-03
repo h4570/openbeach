@@ -46,7 +46,7 @@ jobs:
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_BASE: ${{ github.event.pull_request.base.sha }}
           PR_HEAD: ${{ github.event.pull_request.head.sha }}
-        # A pull request is squashed (its title counts) or merged with a merge commit (its commits count), so both are checked.
+        # A pull request is squashed (its title counts) or rebased onto main (its commits count), so both are checked.
         run: |
           if [ -n "$PR_TITLE" ]; then python tools/check_commits.py "$PR_TITLE" --range "$PR_BASE..$PR_HEAD"
           else python tools/check_commits.py --range -1; fi
