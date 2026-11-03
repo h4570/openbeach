@@ -3,6 +3,7 @@
 #include "unit_test.h"
 #include "core/json_schema.h"
 #include "core/image_decode.h"
+#include "core/sha256.h"
 #include "importer/src/writers/image_convert.h"
 #include "importer/src/writers/png_write.h"
 #include "importer/src/writers/font_convert.h"
@@ -684,4 +685,68 @@ OBL_TEST_CASE("convert.font_installation_missing_inputs")
     OBL_CHECK(
             !ConvertFonts(*obl::convert::OpenDirectorySource(root), *obl::convert::OpenDirectorySink(root / "out"), schemas, count, error));
     OBL_CHECK(error.find("companion") != std::string::npos);
+}
+
+// The deflate in png_write.cpp is stb_image_write's algorithm with other data structures, so its bytes must stay those stb
+// wrote: converted packs are named by the hashes of their files and converted saves by the hash of the pack. The expected
+// hashes come from stb's own compressor. The cases cover literals, long matches, noise (stored blocks), runs past the
+// 32 KB window, the 16-bit and indexed encoders.
+namespace {
+uint32_t g_lcg = 1;
+uint32_t NextNoise()
+{
+    g_lcg = g_lcg * 1664525u + 1013904223u;
+    return g_lcg >> 16;
+}
+std::vector<uint8_t> SamplePixels(int width, int height, int channels, int kind)
+{
+    g_lcg = 1;
+    std::vector<uint8_t> pixels(size_t(width) * height * channels);
+    for (int y = 0; y < height; ++y)
+        for (int x = 0; x < width; ++x)
+            for (int c = 0; c < channels; ++c) {
+                int value = 0;
+                switch (kind) {
+                case 0: value = 9; break;
+                case 1: value = int(NextNoise()); break;
+                case 2: value = x / 4 + y / 3 + c * 7 + (NextNoise() % 4 == 0 ? int(NextNoise() % 8) : 0); break;
+                default: value = ((x / 16 + y / 16) % 2) * 200 + (x % 64 == 0 ? 30 : 0); break;
+                }
+                pixels[(size_t(y) * width + x) * channels + c] = uint8_t(value);
+            }
+    return pixels;
+}
+} // namespace
+
+OBL_TEST_CASE("image.png_bytes_match_stb")
+{
+    struct Case {
+        int width, height, channels, kind;
+        size_t size;
+        const char* sha256;
+    };
+    const Case cases[] = {
+            {1, 1, 1, 0, 67, "e508d8a56365b2669f606e421980a08b701f6cae0f5bf869311627c84992a41a"},
+            {200, 150, 3, 2, 52127, "cd551360a549dc6bf94e9965fcdf96e265b6b31a54465eafe4f37d2a84277042"},
+            {300, 40, 2, 3, 372, "74ddfa173a46d819eb8b55f02cd536ceb5663e76d772b38a5eb0ca8ac99288d7"},
+            {64, 64, 4, 1, 16516, "3fc7ff9e66564b1ebf8d4176a8e217ea2fa2680dc3eead615b9477207a18b9a4"},
+            {300, 300, 1, 0, 1051, "9fecf6857f42d78715e7b415307e50c6097422ff565b698e6f7c9ba46611ac7d"},
+            {257, 129, 3, 2, 56979, "10b55b34588fbca9671d7ce205a308d250a44313bd14e4621ded0d291ed45760"},
+    };
+    for (const Case& c : cases) {
+        const auto png = EncodePng(c.width, c.height, c.channels, SamplePixels(c.width, c.height, c.channels, c.kind));
+        OBL_CHECK_EQ(png.size(), c.size);
+        OBL_CHECK_EQ(obl::sha256::Hex(png), std::string(c.sha256));
+    }
+    const auto base = SamplePixels(100, 100, 1, 2);
+    std::vector<uint16_t> deep(base.size());
+    for (size_t i = 0; i < deep.size(); ++i) deep[i] = uint16_t(base[i] * 257 + i / 100);
+    OBL_CHECK_EQ(obl::sha256::Hex(EncodeGray16Png(100, 100, deep)),
+            std::string("3f64c9003bfc347d2907b56440e5d30a49736fe1822cb0b6f931ae61dfafcc8e"));
+    auto indices = SamplePixels(64, 64, 1, 2);
+    for (auto& index : indices) index %= 7;
+    std::vector<uint8_t> palette(21);
+    for (size_t i = 0; i < palette.size(); ++i) palette[i] = uint8_t(i * 11);
+    OBL_CHECK_EQ(obl::sha256::Hex(EncodeIndexedPng(64, 64, indices, palette)),
+            std::string("c64447a0ad11f57e66c402949f3af0579e64e502a907a75276d2f1918f55329d"));
 }
