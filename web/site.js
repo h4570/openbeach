@@ -334,6 +334,31 @@ function lockPointerForRightDrag() {
 
 lockPointerForRightDrag();
 
+// Space turns what is being placed and Esc leaves the mode, but a touch screen has no keyboard: the page's two buttons send the
+// keys to the canvas as typed (SDL listens on the window, which the event reaches). A key is down while the button is.
+function wireTouchKeys() {
+    const canvas = element("canvas");
+    for (const id of ["key-space", "key-escape"]) {
+        const button = element(id);
+        let down = false;
+        const send = (type) => canvas.dispatchEvent(new KeyboardEvent(type, {
+            code: button.dataset.code, key: button.dataset.key, bubbles: true, cancelable: true,
+        }));
+        button.addEventListener("pointerdown", (event) => {
+            event.preventDefault(); // no focus, no click, no text selection
+            if (!down) send("keydown");
+            down = true;
+        });
+        const release = () => {
+            if (down) send("keyup");
+            down = false;
+        };
+        for (const type of ["pointerup", "pointercancel", "pointerleave"]) button.addEventListener(type, release);
+    }
+}
+
+wireTouchKeys();
+
 // The sizes the options list offers in the browser (src/game/ui/resolutions.cpp), smallest first. 640x480 is left out: it
 // has the small bottom bar.
 const kResolutions = [[800, 600], [1024, 768], [1280, 720], [1280, 960], [1600, 900], [1920, 1080]];

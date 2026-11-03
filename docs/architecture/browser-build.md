@@ -59,7 +59,7 @@ file) count like `sprites`; "storing" is the worker writing the pack to OPFS (`p
 
 ## Local probe
 `tools/browser_probe.cjs` runs the built site in a headless Edge or Chrome on a developer PC and records what a tab
-shows: the game's console log, canvas screenshots at given times, the `AudioContext` state, and scripted left clicks and
+shows: the game's console log, canvas screenshots at given times, the `AudioContext` state, and scripted left clicks, touch taps and
 right drags on the canvas. It serves the site and a converted `packs/base`, copies the pack once into the probe
 profile's OPFS (`run/tmp/probe-profile`; about 4 minutes for the full pack), then clicks "Click to start" with a trusted
 CDP event. `--game-script` runs a game test script in the tab (as `--script` natively, e.g. `boot-gameplay`), and
@@ -153,6 +153,22 @@ How each piece of the windowed host runs in a tab.
   another window opens. Without the lock (refused, or left with Esc) the drag follows the visible pointer
   (`AbsoluteDrag`, unit test `input.absolute_drag_deltas`) and stops at the canvas edge. A right click on a menu locks
   for its short press too: the page cannot know yet whether a drag follows.
+- **Touch.** The game only knows a mouse, so in the browser build (`kTouchGestures`) SDL's touch-to-mouse events are off
+  (`SDL_HINT_TOUCH_MOUSE_EVENTS`) and `input.cpp` feeds SDL's finger events to `TouchGestures` (`touch_gestures.h`, no SDL,
+  unit tests `touch.*`), which turns them into the mouse's records: a tap is a left click, a drag with one finger the camera
+  drag (the right button and the motion, scaled from client to game pixels so the map follows the finger), a press and
+  hold keeps the left button down until the finger lifts, a tap with two fingers is a right click and a drag with two
+  fingers the wheel. The cursor is where the finger is and leaves once it is up and the game has read it, so a tap near the
+  edge does not scroll the map. The canvas has `touch-action: none`.
+  While the GUI places things (`GuiManager::m_mode` 1 and 5, building and scenery; `CurrentTouchAim`) one finger is the
+  cursor instead, because the game places on the press and a tap would place blindly: the finger moves the preview and
+  lifting it is the press (`TouchAim::Confirm`); a second finger then turns the preview with the wheel and lifts without
+  placing. Painting grass and paving (modes 8 and 7) holds the left button while the finger drags (`TouchAim::Paint`). The
+  map moves with the edge scroll there. The keys the game reads cannot be typed, so the page has two buttons below the game
+  on touch screens (`pointer: coarse`, `wireTouchKeys` in `site.js`): Space (turns the preview) and Esc (leaves a mode,
+  opens the menu), sent to the canvas as keyboard events. Rough by design: the thresholds (`kSlop`, `kTapMs`, `kHoldMs`,
+  `kPixelsPerNotch`) are guesses that need a real device, and other keys are not reachable. Native hosts keep SDL's
+  touch-to-mouse events.
 - **First resolution and sampling.** The GUI has a fixed pixel size, so the page picks the size for the tab: on the first
   start `seedResolution` (`site.js`) writes `[Video]` into the INI, the listed size that fills the tab best at 1.15 screen
   pixels per game pixel or more (`resolutionForTab`); later starts keep the INI's. The canvas keeps the game's pixels and
