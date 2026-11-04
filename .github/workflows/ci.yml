@@ -5,6 +5,12 @@ name: CI
 on:
   push:
     branches: [main]
+    # A merged release pull request changes only these. Release dispatches this workflow with `deploy` for that commit right
+    # after, and that run would cancel the push run, leaving a red cross on main. The pull request itself is still checked.
+    paths-ignore:
+      - .release-please-manifest.json
+      - CHANGELOG.md
+      - version.txt
   pull_request:
     branches: [main]
   workflow_dispatch:
