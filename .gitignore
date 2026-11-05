@@ -9,8 +9,8 @@
 /.ccache/
 .vs/
 *.user
-# An agent's local pointers
-/CLAUDE.local.md
+# Local documentation
+/*.local.md
 # Python
 __pycache__/
 *.pyc
