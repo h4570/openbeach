@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.1](https://github.com/h4570/openbeach/compare/v1.7.0...v1.7.1) (2026-11-05)
+
+
+### Bug Fixes
+
+* **.gitignore:** update local documentation entry for clarity ([71bb1a0](https://github.com/h4570/openbeach/commit/71bb1a08bed1548b6e7def03ab5b694416d38388))
+
 ## [1.7.0](https://github.com/h4570/openbeach/compare/v1.6.2...v1.7.0) (2026-11-03)
 
 
