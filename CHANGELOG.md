@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.8.0](https://github.com/h4570/openbeach/compare/v1.7.0...v1.8.0) (2026-11-08)
+
+
+### Features
+
+* **site:** add pages for each language and a Windows 11 guide ([48f0166](https://github.com/h4570/openbeach/commit/48f0166c4a6acce69d36c62aa3970247c2564a3a))
+* **site:** language pages, Windows 11 guide and Beach Life headline ([#48](https://github.com/h4570/openbeach/issues/48)) ([6cf33ac](https://github.com/h4570/openbeach/commit/6cf33ac9405249cb8d6cb6f5cf352fd76c1eed9e))
+* **site:** name Beach Life in the headline and the description ([6aaa667](https://github.com/h4570/openbeach/commit/6aaa667fb45681b9793fbae182d4c28cb0d555b0))
+* **site:** use a link preview image per language ([8d51a91](https://github.com/h4570/openbeach/commit/8d51a919bfab3faddfc8e7b9e7465608e149511f))
+
 ## [1.7.0](https://github.com/h4570/openbeach/compare/v1.6.2...v1.7.0) (2026-11-03)
 
 
