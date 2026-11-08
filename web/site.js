@@ -320,6 +320,24 @@ if (typeof MutationObserver !== "undefined") {
     new MutationObserver(fitCanvas).observe(element("canvas"), {attributes: true, attributeFilter: ["width", "height"]});
 }
 
+// The CSS keeps a fixed height beside the game for the frame and its bar, enough for a bar of one line. Beside a narrow
+// game the bar's notes wrap and need more, so the page measures what really stands beside the canvas and the CSS takes
+// the larger of the two. A taller bar only narrows the game, which keeps the notes wrapped, so this settles at once. A
+// touch screen keeps its CSS heights: on a phone on its side the keys stand beside the game, and a smaller game would
+// only measure more room beside it and shrink again.
+function fitChrome() {
+    const canvas = element("canvas");
+    if (matchMedia("(pointer: coarse)").matches) {
+        canvas.style.removeProperty("--chrome-fit");
+        return;
+    }
+    if (!document.body.classList.contains("playing") || document.body.classList.contains("fs")) return;
+    const room = document.querySelector(".page").offsetHeight - canvas.offsetHeight;
+    canvas.style.setProperty("--chrome-fit", `${Math.ceil(room)}px`);
+}
+
+if (typeof ResizeObserver !== "undefined") new ResizeObserver(fitChrome).observe(document.querySelector(".page"));
+
 // A right drag locks the pointer, so the map keeps moving past the tab's edge and the release stays in the page, where the
 // canvas swallows the context menu; outside the tab it would open the menu of whatever is under the pointer. A browser
 // grants the lock only inside the press's own event and the game starts a drag a frame later, so the page asks for it.

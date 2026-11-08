@@ -65,7 +65,8 @@
     .screen { position: relative; aspect-ratio: 4 / 3; border-radius: 9px; overflow: hidden; color: #fff;
         background: linear-gradient(180deg, #0e3050, #14506f); }
     /* SDL sets the canvas's pixel size (the game's 800x600 and up) and an inline CSS size; the page scales it to the largest
-       box of the canvas's own aspect left beside the frame and its bar (site.js keeps --aspect at width / height). */
+       box of the canvas's own aspect left beside the frame and its bar (site.js keeps --aspect at width / height, and
+       --chrome-fit at the height the frame and a wrapped bar really take). */
     #canvas { position: absolute; inset: 0; visibility: hidden; display: block; outline: none; background: #000;
         touch-action: none; -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; }
     body.playing { height: 100vh; overflow: hidden; }
@@ -74,9 +75,13 @@
     body.playing .hero { display: block; }
     body.playing .frame { width: fit-content; margin: 0 auto; }
     body.playing .screen { aspect-ratio: auto; }
+    /* The frame fits the game alone: a bar with no width of its own takes the frame's and wraps its notes, so a long note
+       never widens the frame past a narrow game and leaves a strip beside it. */
+    body.playing .gamebar { width: 0; min-width: 100%; }
+    body.playing .gamebar > div:last-child { flex: none; }
     body.playing #canvas { position: static; visibility: visible;
-        width: min(calc(100vw - 56px - var(--side, 0px)), calc((100vh - var(--chrome, 86px)) * var(--aspect, 1.3333))) !important;
-        height: min(calc(100vh - var(--chrome, 86px)), calc((100vw - 56px - var(--side, 0px)) / var(--aspect, 1.3333))) !important; }
+        width: min(calc(100vw - 56px - var(--side, 0px)), calc((100vh - max(var(--chrome, 86px), var(--chrome-fit, 0px))) * var(--aspect, 1.3333))) !important;
+        height: min(calc(100vh - max(var(--chrome, 86px), var(--chrome-fit, 0px))), calc((100vw - 56px - var(--side, 0px)) / var(--aspect, 1.3333))) !important; }
     .layer { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
         gap: 12px; padding: 20px; text-align: center; }
     .layer[hidden], .gamebar[hidden] { display: none; }
@@ -157,8 +162,8 @@
     @supports (height: 100dvh) {
         body.playing { height: 100dvh; }
         body.playing #canvas {
-            width: min(calc(100vw - 56px - var(--side, 0px)), calc((100dvh - var(--chrome, 86px)) * var(--aspect, 1.3333))) !important;
-            height: min(calc(100dvh - var(--chrome, 86px)), calc((100vw - 56px - var(--side, 0px)) / var(--aspect, 1.3333))) !important; }
+            width: min(calc(100vw - 56px - var(--side, 0px)), calc((100dvh - max(var(--chrome, 86px), var(--chrome-fit, 0px))) * var(--aspect, 1.3333))) !important;
+            height: min(calc(100dvh - max(var(--chrome, 86px), var(--chrome-fit, 0px))), calc((100vw - 56px - var(--side, 0px)) / var(--aspect, 1.3333))) !important; }
     }
     /* Fullscreen (site.js sets `fs`): only the game, black around it, inside the notch's safe area; the touch keys float over it. */
     body.playing.fs { --inset-x: calc(env(safe-area-inset-left, 0px) + env(safe-area-inset-right, 0px));
