@@ -47,6 +47,8 @@ The OpenBeach mark (`assets/logo/openbeach-mark.svg`) is the program's icon ever
   The icon of the player's copy (`remaster/icon.ico` of `obl-convert resources`) is no longer used.
 - **Windows file:** `src/launcher/openbeach.rc.in` makes the same .ico the first icon resource of `OpenBeach.exe`
   (Explorer, the taskbar, shortcuts).
+- **Version resource:** `obl_version_resource` (`cmake/version_resource.cmake`, `cmake/version.rc.in`) gives `OpenBeach.exe`
+  and `obl-convert.exe` the version of `version.txt` (Properties > Details); a bump of `version.txt` reconfigures.
 - **Linux desktop:** an ELF file has no icon of its own, so `import.sh` adds `~/.local/share/applications/openbeach.desktop`
   with `game/openbeach.png` in the icon theme directory. The game sets the SDL app id `openbeach` (Wayland `app_id`, X11
   `WM_CLASS`), which ties its window to that entry for the dock and the task switcher.
