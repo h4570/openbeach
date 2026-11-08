@@ -1,4 +1,5 @@
-# Alt+Enter switches the game window to fullscreen (borderless on the monitor) and back, and the game never sees that Enter.
+# The mouse stays in the game window in gameplay only. Alt+Enter switches the game window to fullscreen (borderless on
+# the monitor) and back, and the game never sees that Enter.
 # In fullscreen an 800x600 game is letterboxed: the monitor's outermost columns still reach the game's edge pixels, so the
 # screen edge scrolls the map through the bars. A plain Enter still reaches the game.
 # @linux-windowed-skip Win32 test tool or probe (display-contract, window-popup, client-is-monitor; windowed_display.cpp)
@@ -7,6 +8,10 @@
 # @timeout 90
 # @gameini Language.Language=5
 # @gameini Sound.PlayListCount=0
+# The main menu leaves the mouse free: there is no map to scroll.
+await state == 1
+await frames 20
+expect mouse-confine 0
 boot-gameplay scenario 1
 await gameplay
 res 800 600
@@ -14,7 +19,7 @@ await frames 30
 display-contract
 expect window-popup 0
 expect client-is-monitor 0
-# The pointer stays in the game (L0 has no in-game options, which let it go; unit test input.confine_mouse).
+# Gameplay holds the pointer in the game (L0 has no in-game options, which let it go; unit test input.confine_mouse).
 expect mouse-confine 1
 # SDL_SCANCODE_RETURN = 40, SDL_KMOD_LALT = 0x100; key-0x1c is the game's Enter slot.
 sdl-key 40 1 0x100

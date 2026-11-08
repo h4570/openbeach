@@ -41,7 +41,7 @@ STEP 3: PLAY
 [win]  Double-click Play.cmd in the "game" folder.
 [linux]  ./play.sh   (in the "game" folder)
 [linux]  The import also puts OpenBeach with its icon into your applications menu.
-  Alt+Enter switches between a window and fullscreen. While the game is active the mouse stays in its window, so the
+  Alt+Enter switches between a window and fullscreen. While you play a map the mouse stays in the game window, so the
   screen edge scrolls the map; Esc (the options) or Alt+Tab lets it go.
 
 LANGUAGE
@@ -116,8 +116,8 @@ CE QU'IL VOUS FAUT
 [win]  Double-cliquez sur Play.cmd dans le dossier « game ».
 [linux]  ./play.sh   (dans le dossier « game »)
 [linux]  L'import ajoute aussi OpenBeach, avec son icône, au menu des applications.
-  Alt+Entrée passe de la fenêtre au plein écran et inversement. Tant que le jeu est actif, la souris reste dans sa
-  fenêtre, pour que le bord de l'écran fasse défiler la carte ; Échap (les options) ou Alt+Tab la libère.
+  Alt+Entrée passe de la fenêtre au plein écran et inversement. Pendant une partie, la souris reste dans la fenêtre
+  du jeu, pour que le bord de l'écran fasse défiler la carte ; Échap (les options) ou Alt+Tab la libère.
 
 LANGUE
   Le jeu n'est disponible que dans les langues de votre copie : l'anglais pour les CD UK/US et anglais tardif, et le
@@ -190,8 +190,8 @@ PASSO 3: GIOCA
 [win]  Fai doppio clic su Play.cmd nella cartella "game".
 [linux]  ./play.sh   (nella cartella "game")
 [linux]  L'importazione aggiunge anche OpenBeach, con la sua icona, al menu delle applicazioni.
-  Alt+Invio passa dalla finestra allo schermo intero e viceversa. Finché il gioco è attivo il mouse resta nella sua
-  finestra, così il bordo dello schermo fa scorrere la mappa; Esc (le opzioni) o Alt+Tab lo liberano.
+  Alt+Invio passa dalla finestra allo schermo intero e viceversa. Durante una partita il mouse resta nella finestra
+  del gioco, così il bordo dello schermo fa scorrere la mappa; Esc (le opzioni) o Alt+Tab lo liberano.
 
 LINGUA
   Il gioco è disponibile solo nelle lingue della tua copia: inglese per il CD UK/US e il CD inglese più recente, e
@@ -264,7 +264,7 @@ SCHRITT 3: SPIELEN
 [win]  Doppelklicke Play.cmd im Ordner "game".
 [linux]  ./play.sh   (im Ordner "game")
 [linux]  Der Import legt OpenBeach mit seinem Symbol auch ins Anwendungsmenü.
-  Alt+Eingabe wechselt zwischen Fenster und Vollbild. Solange das Spiel aktiv ist, bleibt die Maus in seinem Fenster,
+  Alt+Eingabe wechselt zwischen Fenster und Vollbild. Während einer Partie bleibt die Maus im Spielfenster,
   damit der Bildschirmrand die Karte scrollt; Esc (die Optionen) oder Alt+Tab gibt sie frei.
 
 SPRACHE
@@ -337,7 +337,7 @@ PASO 3: JUEGA
 [win]  Haz doble clic en Play.cmd en la carpeta "game".
 [linux]  ./play.sh   (en la carpeta "game")
 [linux]  La importación también añade OpenBeach, con su icono, al menú de aplicaciones.
-  Alt+Intro cambia entre ventana y pantalla completa. Mientras el juego está activo, el ratón se queda en su ventana,
+  Alt+Intro cambia entre ventana y pantalla completa. Durante una partida, el ratón se queda en la ventana del juego,
   para que el borde de la pantalla desplace el mapa; Esc (las opciones) o Alt+Tab lo liberan.
 
 IDIOMA
@@ -411,7 +411,7 @@ KROK 3: GRAJ
 [win]  Kliknij dwa razy Play.cmd w folderze „game”.
 [linux]  ./play.sh   (w folderze „game”)
 [linux]  Import dodaje też OpenBeach z jego ikoną do menu aplikacji.
-  Alt+Enter przełącza między oknem a pełnym ekranem. Gdy gra jest aktywna, mysz zostaje w jej oknie, żeby krawędź
+  Alt+Enter przełącza między oknem a pełnym ekranem. W trakcie rozgrywki mysz zostaje w oknie gry, żeby krawędź
   ekranu przewijała mapę; Esc (opcje) albo Alt+Tab ją uwalnia.
 
 JĘZYK

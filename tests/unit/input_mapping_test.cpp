@@ -196,9 +196,11 @@ OBL_TEST_CASE("input.accumulator_keeps_fractions")
 
 OBL_TEST_CASE("input.confine_mouse")
 {
-    // The pointer stays in the game window with the setting on, and goes free in the in-game options (Esc) and in a hidden run.
-    OBL_CHECK(obl::platform::WantMouseConfined(true, false, false));
-    OBL_CHECK(!obl::platform::WantMouseConfined(true, false, true));
-    OBL_CHECK(!obl::platform::WantMouseConfined(true, true, false));
-    OBL_CHECK(!obl::platform::WantMouseConfined(false, false, false));
+    // The pointer stays in the game window in gameplay with the setting on, and goes free in the menus, in the in-game options
+    // (Esc) and in a hidden run.
+    OBL_CHECK(obl::platform::WantMouseConfined(true, false, true, false));
+    OBL_CHECK(!obl::platform::WantMouseConfined(true, false, false, false));
+    OBL_CHECK(!obl::platform::WantMouseConfined(true, false, true, true));
+    OBL_CHECK(!obl::platform::WantMouseConfined(true, true, true, false));
+    OBL_CHECK(!obl::platform::WantMouseConfined(false, false, true, false));
 }

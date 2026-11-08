@@ -155,7 +155,14 @@ void ApplyFullscreenToggle()
 }
 
 // [Display] ConfineMouse (input_mapping.h). SDL holds the pointer only while the window has the keyboard focus, so
-// Alt+Tab still leaves; the grab follows the in-game options as they open and close.
+// Alt+Tab still leaves; the grab follows gameplay and the in-game options as they start and end.
+bool InGameplay()
+{
+    const game::Game* game = game::GetGame();
+    return game && game::CurrentStateIndex(*game) == static_cast<int>(game::GameStateId::WorldTest) && game::GetWorld() &&
+            game->m_loadSlot == -1;
+}
+
 bool InGameOptionsOpen()
 {
     ui::GuiManager* manager = game::GetGuiManager();
@@ -169,7 +176,7 @@ void UpdateMouseConfinement()
 #ifndef __EMSCRIPTEN__
     SDL_Window* window = SDL_GetWindowFromID(SdlGameWindowId());
     if (!window) return;
-    const bool want = WantMouseConfined(config::Get().confineMouse, g_hidden, InGameOptionsOpen());
+    const bool want = WantMouseConfined(config::Get().confineMouse, g_hidden, InGameplay(), InGameOptionsOpen());
     if (want == g_mouseConfined) return;
     if (SDL_SetWindowMouseGrab(window, want))
         g_mouseConfined = want;
@@ -626,7 +633,7 @@ void ClearSyntheticCursor()
 
 bool MouseConfineWanted()
 {
-    return WantMouseConfined(config::Get().confineMouse, false, InGameOptionsOpen());
+    return WantMouseConfined(config::Get().confineMouse, false, InGameplay(), InGameOptionsOpen());
 }
 
 ui::InputBackend* PlatformInputBackend()

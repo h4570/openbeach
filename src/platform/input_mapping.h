@@ -9,11 +9,12 @@
 
 namespace obl::platform {
 
-// [Display] ConfineMouse holds the pointer in the game window so that the screen edge scrolls the map. The in-game options
-// (Esc) let it go, so the player reaches other windows without Alt+Tab, and a hidden run never takes the user's mouse.
-inline bool WantMouseConfined(bool setting, bool hidden, bool optionsOpen)
+// [Display] ConfineMouse holds the pointer in the game window so that the screen edge scrolls the map, so only in gameplay,
+// where there is a map to scroll: the menus, the intro and the loading screens leave it free. The in-game options (Esc)
+// let it go too, so the player reaches other windows without Alt+Tab, and a hidden run never takes the user's mouse.
+inline bool WantMouseConfined(bool setting, bool hidden, bool inGameplay, bool optionsOpen)
 {
-    return setting && !hidden && !optionsOpen;
+    return setting && !hidden && inGameplay && !optionsOpen;
 }
 
 // Unmapped SDL scancodes return KeyCode::None.
