@@ -128,6 +128,12 @@ async function loadPage({opfs = {}, search = "", languages = ["pl-PL"], stored =
                 Object.assign(this, init);
             }
         },
+        PointerEvent: class {
+            constructor(type, init) {
+                this.type = type;
+                Object.assign(this, init);
+            }
+        },
         Worker: FakeWorker,
         location: {search, pathname: fixed ? `/${fixed}/` : "/", reload() {
             page.reloads++;
@@ -414,6 +420,32 @@ async function main() {
     documentMock.fullscreenElement = {};
     page.documentListeners.fullscreenchange();
     check(page.body.classList.contains("fs"), "fullscreen: entering it gives the page the fs class");
+    // A 4:3 game on a 16:9 screen: a mouse against the screen's side edge lies in a bar, off the canvas; SDL is told it is on
+    // the canvas's edge, so the map scrolls. Inside the bar it is off the game again, and on the canvas nothing is added.
+    const gameCanvas = page.elements.canvas;
+    gameCanvas.getBoundingClientRect = () => ({left: 320, top: 0, right: 2240, bottom: 1440, width: 1920, height: 1440});
+    page.context.innerWidth = 2560;
+    page.context.innerHeight = 1440;
+    const edgeMove = (clientX, clientY, target = documentMock.body) =>
+        page.documentListeners.pointermove({pointerType: "mouse", pointerId: 1, buttons: 0, clientX, clientY, target});
+    gameCanvas.dispatched = [];
+    edgeMove(2559.5, 700);
+    let sent = gameCanvas.dispatched.at(-1);
+    check(sent && sent.type === "pointermove" && sent.clientX === 2239.5 && sent.clientY === 700 && sent.pointerType === "mouse",
+        "screen edge: the right edge in a bar moves onto the canvas's last column");
+    edgeMove(0, 300);
+    sent = gameCanvas.dispatched.at(-1);
+    check(sent.type === "pointermove" && sent.clientX === 320 && sent.clientY === 300, "screen edge: the left edge onto its first column");
+    edgeMove(100, 300);
+    check(gameCanvas.dispatched.at(-1).type === "pointerleave" && gameCanvas.dispatched.length === 3,
+        "screen edge: back inside the bar the cursor leaves the game");
+    edgeMove(150, 300);
+    edgeMove(1200, 0, gameCanvas);
+    check(gameCanvas.dispatched.length === 3, "screen edge: elsewhere in the bar and on the canvas nothing is sent");
+    documentMock.fullscreenElement = null;
+    edgeMove(2559.5, 700);
+    check(gameCanvas.dispatched.length === 3, "screen edge: outside fullscreen the tab's edge is not the screen's");
+    documentMock.fullscreenElement = {};
     await page.elements["exit-fullscreen"].fire("click");
     check(page.fullscreenExits === 1, "fullscreen: the corner button leaves it");
     documentMock.fullscreenElement = null;

@@ -59,7 +59,9 @@ The page's canvas box takes its aspect from the canvas's pixel size (`fitCanvas`
 at width / height through a `MutationObserver`; `index.html` sizes the box by it, letterboxed), so 1280x720 is not forced
 into 4:3. The bar's Fullscreen button puts the whole page in fullscreen, not the canvas: SDL takes a fullscreened canvas
 for a fullscreen window and sizes it to the screen, so the game would be resampled again. In fullscreen the box stands in
-the middle of the screen; only a touch screen on its side keeps 108 pixels on each side for its keys. The worker writes
+the middle of the screen; only a touch screen on its side keeps 108 pixels on each side for its keys. A game of another
+shape than the screen leaves bars beside the canvas, where the pointer is off it: `forwardScreenEdge` (`site.js`) moves a
+mouse pressed against the screen's edge onto the canvas's matching edge for SDL, so the map still scrolls there. The worker writes
 `BeachLife.ini` with `[Beach Life Options] Version=1` (`withLanguage`): the game's loader ignores an INI without it and
 would start in English. Progress: `maps` (one item per scenario) and `pack` (one per hashed
 file) count like `sprites`; "storing" is the worker writing the pack to OPFS (`persist`, counted by file) and shows as
