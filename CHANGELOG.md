@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.10.0](https://github.com/h4570/openbeach/compare/v1.9.0...v1.10.0) (2026-11-08)
+
+
+### Features
+
+* **site:** show how to move the map with a mouse ([3a3ce09](https://github.com/h4570/openbeach/commit/3a3ce0920d046f496cf4160e2798508f11355f84))
+* **site:** show how to move the map with a mouse ([8af764f](https://github.com/h4570/openbeach/commit/8af764fa28beecd3bb3e76e707dde4636bc0ad34))
+
 ## [1.9.0](https://github.com/h4570/openbeach/compare/v1.8.0...v1.9.0) (2026-11-08)
 
 
