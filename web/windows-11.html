@@ -1,0 +1,68 @@
+<!doctype html>
+<!-- The Windows 11 page: what players meet when they run the original game on Windows 10/11 and why OpenBeach avoids it. Its
+     texts are in guide_text.js; site_pages.cjs renders it in every language and puts the style block of index.html in place of the marker line inside the head's style element. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>@TITLE@</title>
+<meta name="description" content="@DESCRIPTION@">
+<link rel="canonical" href="@URL@">
+<link rel="icon" href="favicon.ico" sizes="48x48">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#176b87">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="OpenBeach">
+<meta property="og:title" content="@TITLE@">
+<meta property="og:description" content="@DESCRIPTION@">
+<meta property="og:url" content="@URL@">
+<meta property="og:image" content="https://openbeach.app/screenshots/browser.jpg">
+<meta property="og:image:width" content="1193">
+<meta property="og:image:height" content="1002">
+<meta property="og:image:alt" content="OpenBeach running the game in a browser tab">
+<meta name="twitter:card" content="summary_large_image">
+<style>
+@STYLE@
+    .guide { max-width: 820px; margin: 0 auto; }
+    .guide h1 { font-size: 34px; }
+    .guide h2 { font-size: 22px; margin: 28px 0 12px; }
+    .guide h3 { font-size: 17px; margin: 0 0 6px; }
+    .guide .problem { margin: 0 0 12px; padding: 14px 18px; border-radius: 12px; background: #ffffffd9; }
+    .guide .problem p { margin: 0; }
+    .guide .steps { margin: 12px 0 20px; }
+    .guide a.play { display: inline-block; text-decoration: none; font-size: 22px; padding: 14px 40px; }
+    .guide .langs { margin-top: 22px; font-size: 14px; display: flex; flex-wrap: wrap; gap: 6px 14px; }
+    .guide .langs a { text-decoration: underline; }
+    header a { display: block; }
+</style>
+</head>
+<body>
+<div class="page">
+<header>
+    <a href="@HOME@"><img src="openbeach-logo.svg" alt="OpenBeach"></a>
+</header>
+<main class="guide">
+    <h1 data-t="heading">@HEADING@</h1>
+    <p class="lead" data-t="intro">@INTRO@</p>
+    <h2 data-t="problemsTitle">@PROBLEMSTITLE@</h2>
+    <div class="problem"><h3 data-t="p1h">@P1H@</h3><p data-t="p1p">@P1P@</p></div>
+    <div class="problem"><h3 data-t="p2h">@P2H@</h3><p data-t="p2p">@P2P@</p></div>
+    <div class="problem"><h3 data-t="p3h">@P3H@</h3><p data-t="p3p">@P3P@</p></div>
+    <h2 data-t="fixTitle">@FIXTITLE@</h2>
+    <p data-t="fixP1">@FIXP1@</p>
+    <p data-t="fixP2">@FIXP2@</p>
+    <h2 data-t="stepsTitle">@STEPSTITLE@</h2>
+    <ol class="steps how">
+        <li data-t="st1">@ST1@</li>
+        <li data-t="st2">@ST2@</li>
+        <li data-t="st3">@ST3@</li>
+        <li data-t="st4">@ST4@</li>
+    </ol>
+    <p><a class="play" href="@HOME@" data-t="cta">@CTA@</a></p>
+    <p class="soft" data-t="limits">@LIMITS@</p>
+    <nav class="langs" aria-label="@LANGUAGES@">@LANGLINKS@</nav>
+</main>
+</div>
+</body>
+</html>

@@ -6,8 +6,9 @@
 // packs/base, which the game reads. web/site_check.cjs runs this file under Node against a fake DOM, OPFS and Worker.
 "use strict";
 
-const kGameScript = "OpenBeach.js";
-const kImportWorker = "import_worker.js";
+// Absolute paths: the page is also served at /pl/, /de/ and so on.
+const kGameScript = "/OpenBeach.js";
+const kImportWorker = "/import_worker.js";
 const kLanguageNames = {en: "English", fr: "Français", it: "Italiano", de: "Deutsch", es: "Español", pl: "Polski"};
 const kLayers = ["import", "loading", "start", "ended"];
 
@@ -26,7 +27,9 @@ function show(id) {
 const kPageLanguageKey = "openbeach-page-language";
 let pageLanguage = "en";
 
-// A stored choice, else the browser's first language the page has, else English. Storage can be blocked: the page then only forgets.
+// A language page (<html data-fixed-language>) is in its own language whatever the browser or an earlier choice says: the
+// address, the text a search engine indexes and what the player sees must agree. The root page takes a stored choice, else the
+// browser's first language the page has, else English. Storage can be blocked: the page then only forgets.
 function readStoredLanguage() {
     try {
         return localStorage.getItem(kPageLanguageKey);
@@ -36,6 +39,8 @@ function readStoredLanguage() {
 }
 
 function choosePageLanguage() {
+    const root = document.documentElement;
+    if (root.dataset && root.dataset.fixedLanguage !== undefined && kLanguages.includes(root.lang)) return root.lang;
     const stored = readStoredLanguage();
     if (kLanguages.includes(stored)) return stored;
     const wanted = navigator.languages && navigator.languages.length > 0 ? navigator.languages : [navigator.language];
@@ -72,9 +77,14 @@ function setRichText(node, value) {
     }));
 }
 
+// Where the site keeps a language's page.
+const languagePath = (code) => (code === "en" ? "/" : `/${code}/`);
+
 function applyPageLanguage(code) {
     pageLanguage = code;
     document.documentElement.lang = code;
+    document.title = kSiteTexts[code].title;
+    for (const link of document.querySelectorAll("a[data-guide]")) link.href = languagePath(code) + "windows-11/";
     for (const node of document.querySelectorAll("[data-t]")) setRichText(node, text(node.dataset.t));
     for (const [id, {key, slots}] of shownLines) element(id).textContent = text(key, slots);
     if (lastProgress) showProgress(lastProgress);
@@ -91,6 +101,8 @@ function fillPageLanguages() {
     select.value = pageLanguage;
     select.addEventListener("change", (event) => {
         applyPageLanguage(event.target.value);
+        // The address follows the text, on the site's own pages (not on a dev server's).
+        if (/^\/(?:[a-z]{2}\/)?$/.test(location.pathname)) history.replaceState(null, "", languagePath(event.target.value) + location.search);
         try {
             localStorage.setItem(kPageLanguageKey, event.target.value);
         } catch (error) {

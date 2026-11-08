@@ -54,6 +54,8 @@
     .facts { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; font-size: 15px; }
     .facts li { padding-left: 22px; position: relative; }
     .facts li::before { content: ""; position: absolute; left: 2px; top: .5em; width: 10px; height: 10px; border-radius: 50%; background: var(--sea); }
+    .guide-link { margin: 14px 0 0; font-size: 14px; }
+    .guide-link a { color: var(--red); font-weight: 600; }
     .flags-title { margin: 14px 0 6px; font-size: 14px; font-weight: 600; }
     .flags { display: flex; flex-wrap: wrap; gap: 6px; }
     .flag { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 6px; border-radius: 999px; background: #ffffffc4; font-size: 13px; }
@@ -266,6 +268,7 @@
             <li data-t="fact3">Saves live in this browser, and you can export them</li>
             <li data-t="fact4">Open source on GitHub</li>
         </ul>
+        <p class="guide-link"><a href="windows-11/" data-guide data-t="guideLink">Beach Life not working on Windows 10 or 11?</a></p>
         <p class="flags-title" data-t="flagsTitle">Game languages</p>
         <div class="flags">
             <span class="flag"><svg viewBox="0 0 30 20" aria-hidden="true"><path fill="#012169" d="M0 0h30v20H0z"/><path stroke="#fff" stroke-width="4" d="M0 0l30 20M30 0L0 20"/><path stroke="#c8102e" stroke-width="1.6" d="M0 0l30 20M30 0L0 20"/><path stroke="#fff" stroke-width="6.6" d="M15 0v20M0 10h30"/><path stroke="#c8102e" stroke-width="4" d="M15 0v20M0 10h30"/></svg>English</span>
