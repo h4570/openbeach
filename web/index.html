@@ -165,6 +165,8 @@
         --inset-y: calc(env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px)); background: #000; }
     body.playing.fs .page { padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px)
         env(safe-area-inset-left, 0px); }
+    /* The game stands in the middle of the screen: a game of another shape leaves bars on both sides, not one strip below. */
+    body.playing.fs .page { height: 100%; display: flex; flex-direction: column; justify-content: center; }
     body.playing.fs .frame { display: block; padding: 0; border-radius: 0; background: none; box-shadow: none; }
     body.playing.fs .screen { border-radius: 0; }
     body.playing.fs .gamebar { display: none; }
@@ -187,10 +189,14 @@
         background: #06152c99; border: 0; border-radius: 999px; padding: 6px 12px; opacity: .6; cursor: pointer; }
     body.playing.fs .exit-fs::before { content: "\2715\00a0"; }
     body.playing.fs .exit-fs:active { opacity: 1; }
-    /* On its side Esc over Space stand in a black strip beside the game, off the picture. A wide game (16:9) leaves less than
-       4:3 does, so each side keeps 108px for the keys and the Exit button whatever the game's shape: the game shrinks to
-       fit rather than hide the spots under them (a 4:3 game on a phone is narrower than that anyway and loses nothing). */
-    @media (orientation: landscape) {
+    /* With a mouse the browser leaves fullscreen on Esc and says so, and the button would cover the game's own corner. */
+    @media (hover: hover) and (pointer: fine) {
+        body.playing.fs .exit-fs { display: none; }
+    }
+    /* A touch screen on its side: Esc over Space stand in a black strip beside the game, off the picture. A wide game (16:9)
+       leaves less than 4:3 does, so each side keeps 108px for the keys and the Exit button whatever the game's shape: the
+       game shrinks to fit rather than hide the spots under them (a 4:3 game on a phone is narrower and loses nothing). */
+    @media (orientation: landscape) and (pointer: coarse) {
         body.playing.fs { --inset-x: calc(env(safe-area-inset-left, 0px) + env(safe-area-inset-right, 0px) + 216px); }
         body.playing.fs .touch-keys { flex-direction: column-reverse; align-items: flex-end; opacity: 1; }
         body.playing.fs .touch-keys .key { height: 36px; }
