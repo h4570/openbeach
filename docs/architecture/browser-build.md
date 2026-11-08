@@ -18,14 +18,18 @@ backend has its own video and audio drivers. The target links with `-sENVIRONMEN
 
 ## Site
 One static directory, our code only (no game data), assembled by `tools/web_site.sh <browser bin> <importer bin> <out>`:
-`index.html`, `site.js`, `site_text.js`, `robots.txt` and `sitemap.xml` from `web/`, the logo and the icons from `assets/logo/` (the mark as `favicon.svg`, `favicon.ico` and `apple-touch-icon.png` rendered from it), the screenshots from `assets/screenshots/`, `OpenBeach.js/.wasm` (the pre-js is compiled in), `obl-import-web.js/.wasm`
+`site.js`, `site_text.js` and `robots.txt` from `web/`, the pages and the sitemap rendered by `web/site_pages.cjs`, the logo and the icons from `assets/logo/` (the mark as `favicon.svg`, `favicon.ico` and `apple-touch-icon.png` rendered from it), the screenshots from `assets/screenshots/`, the link previews from `assets/social/` (`tools/og_image.mjs` draws them: one per language, named in each page's `og:image`), `OpenBeach.js/.wasm` (the pre-js is compiled in), `obl-import-web.js/.wasm`
 `import_worker.js`, `language_ini.js` and `shard.js` from the importer build, and `.nojekyll`. `tools/wasm_linux.sh` assembles it in `$build/site`
 and the CI job `wasm` uploads it as the artifact `browser-site` after a green run. To try it, unpack it and serve it on
 localhost (`python3 -m http.server`): OPFS and Web Locks need a secure context, and the worker does not load from `file:`.
 
-The head carries what a search result and a shared link show: the title, the description, the canonical address (which also covers `?import`), Open Graph tags and a schema.org `WebSite` block, where Google takes the site name from. They stay in English, because Google reads the one URL with an English browser, and `web/site_check.cjs` checks them.
+The head carries what a search result and a shared link show: the title, the description, the canonical address (which also covers `?import`), Open Graph tags, hreflang links and a schema.org `WebSite` block, where Google takes the site name from. The title and the description name the game as "Beach Life" and give its UK/US title, "Virtual Resort: Spring Break", the name many searches use. `web/site_check.cjs` checks them on every page.
 
-The page comes in the game's six languages (`site_text.js`), picked from `navigator.languages` with English as the fallback; the
+Google reads the HTML, not the text `site.js` swaps in, so each language is a static page. `web/site_pages.cjs` (run by `web_site.sh`) renders `web/index.html` into `/` (English) and `/pl/`, `/de/`, `/fr/`, `/it/`, `/es/`, and `web/windows-11.html` into the guide "Beach Life on Windows 11" at `/windows-11/` and `/<code>/windows-11/`. Every `data-t` element gets its text from `site_text.js` (the guide's from `guide_text.js`), and the head gets the language, the title and description of that language, its own canonical address and the same set of hreflang links on every page (the six languages and `x-default` = English). `sitemap.xml` is rendered with all of them. Pages load their files by absolute path (`/site.js`, `/OpenBeach.js`, `/import_worker.js`), because the same file sits at several depths; OPFS belongs to the origin, so every language shares one import and the saves. `web/index.html` itself stays a working page (the dev loop copies it).
+
+A language page has `<html data-fixed-language>`: `site.js` keeps its language whatever the browser (a crawler's is English) or a stored choice says, and the switch changes the text and the address (`history.replaceState`) without a reload. The root page still picks the language from the stored choice or `navigator.languages`. The guide lists what players report on Windows 10/11 (1 FPS from DirectDraw, a crash on the intro movie) and why OpenBeach is not hit by it, and it names no download or patch; the main page links to it (`data-guide`).
+
+The page comes in the game's six languages (`site_text.js`), the root picked from `navigator.languages` with English as the fallback; the
 switch in the header is remembered in `localStorage`. Right after an import the game takes the page's language if the copy has it.
 
 `web/site.js` is the page's logic. It adds the game script only once OPFS holds `packs/base`, because the pre-js takes

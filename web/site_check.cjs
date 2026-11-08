@@ -79,7 +79,7 @@ function fakeElement(id) {
 const flush = () => new Promise((resolve) => setImmediate(resolve));
 
 // One page load: `opfs` is the OPFS tree (null: no OPFS), `search` the URL's query.
-async function loadPage({opfs = {}, search = "", languages = ["pl-PL"], stored = {}} = {}) {
+async function loadPage({opfs = {}, search = "", languages = ["pl-PL"], stored = {}, fixed = ""} = {}) {
     const ids = ["canvas", "import", "import-folder", "import-iso", "import-status", "loading", "loading-text", "start", "start-button",
         "import-saves", "start-status", "ended", "import-progress", "import-main", "import-step", "import-percent", "import-sub",
         "import-count", "import-bars", "drop", "drop-status", "game-bar", "fullscreen", "exit-fullscreen", "site-language",
@@ -129,7 +129,7 @@ async function loadPage({opfs = {}, search = "", languages = ["pl-PL"], stored =
             }
         },
         Worker: FakeWorker,
-        location: {search, pathname: "/", reload() {
+        location: {search, pathname: fixed ? `/${fixed}/` : "/", reload() {
             page.reloads++;
         }},
         history: {replaceState(state, title, url) {
@@ -151,7 +151,7 @@ async function loadPage({opfs = {}, search = "", languages = ["pl-PL"], stored =
             getElementById: (id) => elements[id],
             createElement: (tag) => fakeElement(tag),
             body,
-            documentElement: {lang: "", requestFullscreen() {
+            documentElement: {lang: fixed, dataset: fixed ? {fixedLanguage: ""} : {}, requestFullscreen() {
                 page.fullscreenRequests = (page.fullscreenRequests || 0) + 1;
             }},
             querySelectorAll: () => [translated],
@@ -180,6 +180,35 @@ async function loadPage({opfs = {}, search = "", languages = ["pl-PL"], stored =
 
 const loaded = []; // every script and worker URL a page asked for, for the site directory check
 
+// site_pages.cjs's output: each language has the page and the Windows 11 guide, in its own language, with its own canonical
+// address, the full hreflang set and a description that fits a search result; the sitemap lists them all.
+function checkLanguagePages(siteDir) {
+    const {kSiteTexts} = require("./site_text.js");
+    const codes = Object.keys(kSiteTexts);
+    const sitemap = fs.readFileSync(path.join(siteDir, "sitemap.xml"), "utf8");
+    for (const slug of ["", "windows-11/"]) {
+        for (const code of codes) {
+            const url = `https://openbeach.app/${code === "en" ? "" : code + "/"}${slug}`;
+            const name = `${code === "en" ? "" : code + "/"}${slug}index.html`;
+            check(fs.existsSync(path.join(siteDir, name)), `pages: ${name} exists`);
+            if (!fs.existsSync(path.join(siteDir, name))) continue;
+            const html = fs.readFileSync(path.join(siteDir, name), "utf8");
+            check(html.includes(`<html lang="${code}"`), `pages: ${name} is in ${code}`);
+            check(html.includes(`<link rel="canonical" href="${url}">`), `pages: ${name} names its own address`);
+            const alternates = [...html.matchAll(/<link rel="alternate" hreflang="([^"]+)" href="([^"]+)">/g)].map((m) => m[1]);
+            check(alternates.join() === [...codes, "x-default"].join(), `pages: ${name} lists every language and the default`);
+            const description = html.match(/<meta name="description" content="([^"]+)"/);
+            check(description !== null && description[1].length <= 160, `pages: the description of ${name} fits a search result`);
+            check(!/@[A-Z0-9]+@/.test(html), `pages: ${name} has no unfilled marker`);
+            check(!/(?:src|href)="(?![a-z]+:|\/|#|\?)/.test(html), `pages: ${name} loads its files by absolute path`);
+            check(sitemap.includes(`<loc>${url}</loc>`), `pages: the sitemap lists ${url}`);
+        }
+    }
+    const english = fs.readFileSync(path.join(siteDir, "index.html"), "utf8");
+    check(/<h1><span data-t="heroTitle">Beach Life,<\/span>/.test(english), "pages: the headline names the game");
+    check(english.includes("Virtual Resort: Spring Break"), "pages: the page names the UK/US title");
+}
+
 async function main() {
     const packTree = () => ({packs: {base: {"pack.json": new Uint8Array([1])}}});
 
@@ -201,6 +230,11 @@ async function main() {
     check(remembered.translated.textContent === "Jouer", "page language: a stored choice wins over the browser");
     const unknown = await loadPage({languages: ["ja-JP", "it-IT"]});
     check(unknown.translated.textContent === "Gioca", "page language: the first language the page has is taken");
+    // A language page keeps its own language against the browser's (a crawler's is English) and a stored choice.
+    const fixedPage = await loadPage({languages: ["en-US"], stored: {"openbeach-page-language": "fr"}, fixed: "pl"});
+    check(fixedPage.translated.textContent === "Graj" && fixedPage.context.document.documentElement.lang === "pl",
+        "page language: a language page keeps its language");
+    check(fixedPage.context.document.title === "OpenBeach: zagraj w Beach Life w przeglądarce", "page language: the title is in the language");
     const none = await loadPage({languages: ["ja-JP"]});
     check(none.translated.textContent === "Play", "page language: English is the fallback");
     page.elements["site-language"].value = "pl";
@@ -212,7 +246,7 @@ async function main() {
     check(page.persistCalls === 1, "import: persistent storage is requested");
     let worker = page.workers[0];
     loaded.push(worker.url);
-    check(worker && worker.url === "import_worker.js", "folder: the import worker starts");
+    check(worker && worker.url === "/import_worker.js", "folder: the import worker starts");
     check(worker.sent.length === 1 && worker.sent[0].source === "files" && worker.sent[0].files[0] === folderFiles[0],
         "folder: the worker gets the picked files");
     check(page.elements["import-folder"].disabled && page.elements["import-iso"].disabled && page.elements.drop.hidden &&
@@ -302,7 +336,7 @@ async function main() {
 
     worker.onmessage({data: {type: "done", files: 42}});
     check(worker.terminated, "folder: the worker ends after done");
-    check(page.scripts.length === 1 && page.scripts[0].src === "OpenBeach.js", "folder: done adds the game script");
+    check(page.scripts.length === 1 && page.scripts[0].src === "/OpenBeach.js", "folder: done adds the game script");
     check(page.visible().join() === "loading" && page.elements["loading-text"].textContent === "Ładowanie plików gry...",
         "folder: the loading line shows while the game copies its files");
     loaded.push(page.scripts[0].src);
@@ -513,6 +547,7 @@ async function main() {
         const siteName = html.match(/<script type="application\/ld\+json">(.+)<\/script>/);
         check(siteName !== null && JSON.parse(siteName[1]).name === "OpenBeach", "site: the structured data carries the site name");
         for (const name of wanted) check(fs.existsSync(path.join(siteDir, name)), `site: ${name} is in ${siteDir}`);
+        checkLanguagePages(siteDir);
     }
 
     console.log(failures === 0 ? "site checks passed" : `${failures} site checks failed`);
