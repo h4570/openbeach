@@ -213,6 +213,12 @@
     .touch-keys button:active .top rect { fill: var(--coral); }
     .gamebar { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 8px; font-size: 14px; }
     .gamebar span { background: #ffffffa8; border-radius: 999px; padding: 2px 11px; }
+    .gamebar .notes { display: flex; flex-wrap: wrap; gap: 6px; }
+    /* Only a mouse has a right button to drag the map with; a finger drags it anyway. */
+    .gamebar .mouse-hint { display: none; }
+    @media (hover: hover) and (pointer: fine) {
+        .gamebar .mouse-hint { display: inline; }
+    }
     .gamebar button { font: inherit; font-weight: 600; color: var(--navy); background: none; border: 0; cursor: pointer; margin-left: 14px; }
     section h2 { font-size: 22px; margin: 28px 0 12px; }
     .how { margin-top: 28px; padding: 18px 24px 22px; border-radius: 16px; background: #0a1f3cd9; color: #fff; }
@@ -350,7 +356,8 @@
         </div>
         <button id="exit-fullscreen" class="exit-fs" data-t="exitFullscreen">Exit</button>
         <div id="game-bar" class="gamebar" hidden>
-            <span data-t="savedHere">Saves live only in this browser: download a copy</span>
+            <div class="notes"><span data-t="savedHere">Saves live only in this browser: download a copy</span>
+                <span class="mouse-hint" data-t="mouseHint">Move the map with the right mouse button or the arrow keys; in fullscreen, at the screen edge too</span></div>
             <div><button onclick="Module.downloadSaves()" data-t="downloadSaves">Download saves</button>
                 <button id="fullscreen" data-t="fullscreen">Fullscreen</button></div>
         </div>
