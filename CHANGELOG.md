@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.10.1](https://github.com/h4570/openbeach/compare/v1.10.0...v1.10.1) (2026-11-08)
+
+
+### Bug Fixes
+
+* **site:** keep the game filling the frame beside the map hint ([9f352a2](https://github.com/h4570/openbeach/commit/9f352a276463a4efa9a50e9e9280e6dba999e058))
+* **site:** keep the game filling the frame beside the map hint ([fa12bf8](https://github.com/h4570/openbeach/commit/fa12bf8ea5655b2e0bf7bd9cafdbed1b78ba4315))
+
 ## [1.10.0](https://github.com/h4570/openbeach/compare/v1.9.0...v1.10.0) (2026-11-08)
 
 
