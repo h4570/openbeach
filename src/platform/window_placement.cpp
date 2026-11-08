@@ -6,7 +6,6 @@
 #include "platform/window_placement.h"
 
 #include "core/config.h"
-#include "core/os.h"
 #include "game/ui/display_geometry.h"
 #include "game/ui/resolutions.h"
 #include "core/log.h"
@@ -89,10 +88,6 @@ void PlaceGameWindow(void* window, int width, int height)
     SDL_SetWindowSize(sdl, width, height);
     return;
 #endif
-    // [Display] ConfineMouse: the map scrolls at the screen edge only if the pointer cannot pass it. SDL holds the pointer
-    // only while the window has the keyboard focus, so Alt+Tab still leaves. A hidden run must not take the user's mouse.
-    const bool confine = config::Get().confineMouse && !os::HasEnv("OBL_HIDDEN");
-    if (!SDL_SetWindowMouseGrab(sdl, confine)) OBL_LOG("sdl window: mouse confinement failed (%s)", SDL_GetError());
     SDL_DisplayID display = SDL_GetDisplayForWindow(sdl);
     if (!display) display = SDL_GetPrimaryDisplay();
     SDL_Rect monitor{}, work{};

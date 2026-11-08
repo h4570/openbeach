@@ -554,6 +554,8 @@ bool ReadPresenterProbe(const std::string& name, double& out)
         out = platform::GetAudioOutputStats().suspends;
     else if (name == "audio-suspended")
         out = platform::GetAudioOutputStats().suspended ? 1 : 0;
+    else if (name == "mouse-confine") // [Display] ConfineMouse holds the pointer now (a hidden run never does)
+        out = platform::MouseConfineWanted() ? 1 : 0;
     else if (name == "keyboard-device") {
         auto input = reinterpret_cast<uint8_t*>(game::GetInput());
         out = input && *reinterpret_cast<void**>(input + 4) != nullptr;

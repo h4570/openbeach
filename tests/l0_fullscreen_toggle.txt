@@ -14,6 +14,8 @@ await frames 30
 display-contract
 expect window-popup 0
 expect client-is-monitor 0
+# The pointer stays in the game (L0 has no in-game options, which let it go; unit test input.confine_mouse).
+expect mouse-confine 1
 # SDL_SCANCODE_RETURN = 40, SDL_KMOD_LALT = 0x100; key-0x1c is the game's Enter slot.
 sdl-key 40 1 0x100
 await frames 10

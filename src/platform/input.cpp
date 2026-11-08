@@ -6,6 +6,7 @@
 #include "game/ui/input_backend.h"
 
 #include "game/game/game_accessors.h"
+#include "game/ui/gui_manager_dialogs.h"
 #include "game/ui/gui_manager_types.h"
 #include "core/config.h"
 #include "platform/cursor.h"
@@ -153,6 +154,30 @@ void ApplyFullscreenToggle()
 #endif
 }
 
+// [Display] ConfineMouse (input_mapping.h). SDL holds the pointer only while the window has the keyboard focus, so
+// Alt+Tab still leaves; the grab follows the in-game options as they open and close.
+bool InGameOptionsOpen()
+{
+    ui::GuiManager* manager = game::GetGuiManager();
+    return manager && gui_manager_dialogs::IsDialogOpen(manager, "InGameOptions");
+}
+
+bool g_mouseConfined; // what SDL was last asked for
+
+void UpdateMouseConfinement()
+{
+#ifndef __EMSCRIPTEN__
+    SDL_Window* window = SDL_GetWindowFromID(SdlGameWindowId());
+    if (!window) return;
+    const bool want = WantMouseConfined(config::Get().confineMouse, g_hidden, InGameOptionsOpen());
+    if (want == g_mouseConfined) return;
+    if (SDL_SetWindowMouseGrab(window, want))
+        g_mouseConfined = want;
+    else
+        OBL_LOG("input: mouse confinement failed (%s)", SDL_GetError());
+#endif
+}
+
 void ReadSdlInputEvents(ui::Input* input)
 {
     EnsureEventWatch();
@@ -211,6 +236,7 @@ void ReadSdlInputEvents(ui::Input* input)
     }
     ReadSdlTouchEvents();
     ApplyFullscreenToggle();
+    UpdateMouseConfinement();
 }
 
 // Focus changes act when SDL queues them: the drag ends and queued keys and buttons are dropped at once (a focus loss must not
@@ -596,6 +622,11 @@ void InjectMouseButton(int button, bool down)
 void ClearSyntheticCursor()
 {
     g_syntheticCursor = false;
+}
+
+bool MouseConfineWanted()
+{
+    return WantMouseConfined(config::Get().confineMouse, false, InGameOptionsOpen());
 }
 
 ui::InputBackend* PlatformInputBackend()
