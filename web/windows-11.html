@@ -30,8 +30,10 @@
     .guide h3 { font-size: 17px; margin: 0 0 6px; }
     .guide .problem { margin: 0 0 12px; padding: 14px 18px; border-radius: 12px; background: #ffffffd9; }
     .guide .problem p { margin: 0; }
-    .guide .steps { margin: 12px 0 20px; }
-    .guide a.play { display: inline-block; text-decoration: none; font-size: 22px; padding: 14px 40px; }
+    /* .steps comes after .how in the shared style and zeroes its padding, so the box gets it back here. */
+    .guide .steps { margin: 12px 0 20px; padding: 18px 24px 22px; }
+    .guide .cta { text-align: center; }
+    .guide a.play { display: inline-block; text-decoration: none; font-size: 18px; padding: 10px 28px; }
     .guide .langs { margin-top: 22px; font-size: 14px; display: flex; flex-wrap: wrap; gap: 6px 14px; }
     .guide .langs a { text-decoration: underline; }
     header a { display: block; }
@@ -59,7 +61,7 @@
         <li data-t="st3">@ST3@</li>
         <li data-t="st4">@ST4@</li>
     </ol>
-    <p><a class="play" href="@HOME@" data-t="cta">@CTA@</a></p>
+    <p class="cta"><a class="play" href="@HOME@" data-t="cta">@CTA@</a></p>
     <p class="soft" data-t="limits">@LIMITS@</p>
     <nav class="langs" aria-label="@LANGUAGES@">@LANGLINKS@</nav>
 </main>
