@@ -19,12 +19,17 @@ namespace obl::config {
 namespace {
 
 Settings g_settings;
+std::filesystem::path g_path;
 
 constexpr char kDefaultIni[] = "; OpenBeach settings (read at start-up)\r\n"
                                "\r\n"
                                "[Display]\r\n"
                                "; 1 = window 800x600 (movable, alt-tab friendly), 0 = borderless fullscreen on the monitor\r\n"
+                               "; Alt+Enter switches between the two and stores the choice here\r\n"
                                "Windowed=1\r\n"
+                               "; 1 = keep the mouse inside the game while it is active, so the screen edge scrolls the map;\r\n"
+                               "; Alt+Tab leaves it, 0 = the mouse leaves the window freely\r\n"
+                               "ConfineMouse=1\r\n"
                                "; window size multiplier (1..4, decimals allowed), capped at the monitor size\r\n"
                                "Scale=1\r\n"
                                "; frame rate cap, 0 = unlimited (render as fast as possible)\r\n"
@@ -44,6 +49,7 @@ bool ReadBool(const std::filesystem::path& path, const char* section, const char
 void Load(const Text16& gameDirectory)
 {
     const std::filesystem::path path = WidePath(gameDirectory) / "openbeach.ini";
+    g_path = path;
     std::error_code ec;
     if (!std::filesystem::exists(path, ec) && !ec) {
         std::ofstream out(path, std::ios::binary);
@@ -51,6 +57,7 @@ void Load(const Text16& gameDirectory)
     }
 
     g_settings.windowed = ReadBool(path, "Display", "Windowed", g_settings.windowed);
+    g_settings.confineMouse = ReadBool(path, "Display", "ConfineMouse", g_settings.confineMouse);
     g_settings.maxFps = ini::ReadInt(path, "Display", "MaxFps", g_settings.maxFps);
     g_settings.playIntroMovie = ReadBool(path, "Intro", "PlayMovie", g_settings.playIntroMovie);
 
@@ -81,13 +88,22 @@ void Load(const Text16& gameDirectory)
     if (const auto value = os::GetEnv("OBL_WINDOWED")) g_settings.windowed = std::atoi(value->c_str()) != 0;
     if (const auto value = os::GetEnv("OBL_MAXFPS")) g_settings.maxFps = std::atoi(value->c_str());
     if (const auto value = os::GetEnv("OBL_PLAYMOVIE")) g_settings.playIntroMovie = std::atoi(value->c_str()) != 0;
-    OBL_LOG("config: Windowed=%d Scale=%g MaxFps=%d PlayMovie=%d", g_settings.windowed, g_settings.scale, g_settings.maxFps,
-            g_settings.playIntroMovie);
+    if (const auto value = os::GetEnv("OBL_CONFINEMOUSE")) g_settings.confineMouse = std::atoi(value->c_str()) != 0;
+    OBL_LOG("config: Windowed=%d ConfineMouse=%d Scale=%g MaxFps=%d PlayMovie=%d", g_settings.windowed, g_settings.confineMouse,
+            g_settings.scale, g_settings.maxFps, g_settings.playIntroMovie);
 }
 
 const Settings& Get()
 {
     return g_settings;
+}
+
+void SetWindowed(bool windowed)
+{
+    g_settings.windowed = windowed;
+    // A scripted run leaves the player's file alone.
+    if (g_path.empty() || os::HasEnv("OBL_SCRIPT")) return;
+    if (!ini::WriteString(g_path, "Display", "Windowed", windowed ? "1" : "0")) OBL_LOG("config: could not store Windowed");
 }
 
 } // namespace obl::config

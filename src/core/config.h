@@ -7,6 +7,7 @@ namespace obl::config {
 
 struct Settings {
     bool windowed = true; // [Display] Windowed
+    bool confineMouse = true; // [Display] ConfineMouse
     bool playIntroMovie = true; // [Intro] PlayMovie
     int maxFps = 60; // [Display] MaxFps (0 = unlimited)
     double scale = 1.0; // [Display] Scale (1..4, window size only)
@@ -22,5 +23,8 @@ struct Settings {
 void Load(const Text16& gameDirectory);
 
 const Settings& Get();
+
+// Alt+Enter: switches between the window and fullscreen and stores the choice in openbeach.ini for the next start.
+void SetWindowed(bool windowed);
 
 } // namespace obl::config

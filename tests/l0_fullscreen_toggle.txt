@@ -1,0 +1,50 @@
+# Alt+Enter switches the game window to fullscreen (borderless on the monitor) and back, and the game never sees that Enter.
+# In fullscreen an 800x600 game is letterboxed: the monitor's outermost columns still reach the game's edge pixels, so the
+# screen edge scrolls the map through the bars. A plain Enter still reaches the game.
+# @linux-windowed-skip Win32 test tool or probe (display-contract, window-popup, client-is-monitor; windowed_display.cpp)
+# @env OBL_PACK=l0
+# @env OBL_WINDOWED=1
+# @timeout 90
+# @gameini Language.Language=5
+# @gameini Sound.PlayListCount=0
+boot-gameplay scenario 1
+await gameplay
+res 800 600
+await frames 30
+display-contract
+expect window-popup 0
+expect client-is-monitor 0
+# SDL_SCANCODE_RETURN = 40, SDL_KMOD_LALT = 0x100; key-0x1c is the game's Enter slot.
+sdl-key 40 1 0x100
+await frames 10
+expect key-0x1c 0
+sdl-key 40 0
+await frames 5
+expect key-0x1c 0
+display-contract
+expect window-popup 1
+expect client-is-monitor 1
+move-client 0 center
+await frames 2
+expect mouse-x 0
+expect mouse-y 300
+move-client max center
+await frames 2
+expect mouse-x 799
+move-client center center
+await frames 2
+expect mouse-x 400
+sdl-key 40 1 0x100
+await frames 10
+sdl-key 40 0
+await frames 5
+display-contract
+expect window-popup 0
+expect client-is-monitor 0
+sdl-key 40 1
+await frames 2
+expect-range key-0x1c 1 2
+sdl-key 40 0
+await frames 2
+expect key-0x1c 0
+quit

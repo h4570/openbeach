@@ -14,6 +14,7 @@
 #include "core/log.h"
 #include "platform/sdl_present.h"
 #include "platform/touch_gestures.h"
+#include "platform/window_placement.h"
 
 #include <windows.h>
 #include <SDL3/SDL.h>
@@ -111,6 +112,47 @@ void RestoreSdlMousePosition()
     g_sdlMouseClient = {static_cast<LONG>(std::floor(x)), static_cast<LONG>(std::floor(y))};
 }
 
+// Alt+Enter switches between the window and fullscreen; the game sees neither the Enter press nor its release.
+#ifndef __EMSCRIPTEN__
+bool g_fullscreenToggle; // asked for in this drain
+bool g_toggleEnterDown;
+#endif
+
+bool TakeFullscreenToggle(const SDL_KeyboardEvent& key)
+{
+#ifdef __EMSCRIPTEN__
+    (void)key;
+    return false; // the page has its own button, and the browser leaves fullscreen on Esc
+#else
+    if (key.scancode != SDL_SCANCODE_RETURN && key.scancode != SDL_SCANCODE_KP_ENTER) return false;
+    if (key.down && (key.mod & SDL_KMOD_ALT)) {
+        if (!key.repeat) g_fullscreenToggle = true;
+        g_toggleEnterDown = true;
+        return true;
+    }
+    if (!key.down && g_toggleEnterDown) {
+        g_toggleEnterDown = false;
+        return true;
+    }
+    return false;
+#endif
+}
+
+// Placed after the drain: the placement waits for the window manager, which pumps SDL's queue.
+void ApplyFullscreenToggle()
+{
+#ifndef __EMSCRIPTEN__
+    if (!g_fullscreenToggle) return;
+    g_fullscreenToggle = false;
+    const ui::Renderer* renderer = game::GetRenderer();
+    void* window = game::GetGameWindow();
+    if (!renderer || !window) return;
+    config::SetWindowed(!config::Get().windowed);
+    OBL_LOG("input: Alt+Enter, %s", config::Get().windowed ? "window" : "fullscreen");
+    PlaceGameWindow(window, renderer->m_width, renderer->m_height);
+#endif
+}
+
 void ReadSdlInputEvents(ui::Input* input)
 {
     EnsureEventWatch();
@@ -135,6 +177,7 @@ void ReadSdlInputEvents(ui::Input* input)
         if (event.type == SDL_EVENT_KEY_DOWN || event.type == SDL_EVENT_KEY_UP) {
             // Hidden posted keys have no physical keyboard focus and may carry windowID=0.
             if ((event.key.windowID != SdlGameWindowId() && !(g_hidden && event.key.windowID == 0)) || !g_queueFocused) continue;
+            if (TakeFullscreenToggle(event.key)) continue;
             g_keys.OnKey(SdlScancodeToKeyCode(event.key.scancode), event.type == SDL_EVENT_KEY_DOWN, event.key.repeat);
             continue;
         }
@@ -167,6 +210,7 @@ void ReadSdlInputEvents(ui::Input* input)
         }
     }
     ReadSdlTouchEvents();
+    ApplyFullscreenToggle();
 }
 
 // Focus changes act when SDL queues them: the drag ends and queued keys and buttons are dropped at once (a focus loss must not
