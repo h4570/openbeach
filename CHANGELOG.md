@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.9.0](https://github.com/h4570/openbeach/compare/v1.8.0...v1.9.0) (2026-11-08)
+
+
+### Features
+
+* **platform:** add Alt+Enter fullscreen and keep the mouse in the game ([1b6444b](https://github.com/h4570/openbeach/commit/1b6444b3e571bd38c384848b85579165c610e583))
+* **platform:** hold the mouse in gameplay only ([abb9a47](https://github.com/h4570/openbeach/commit/abb9a47685f5867dd43909cebc36d6e9054da415))
+* **platform:** let the mouse go while the in-game options are open ([233577a](https://github.com/h4570/openbeach/commit/233577a1d7f84085d00dc22255ee8e34d15709d6))
+* **site:** add pages for each language and a Windows 11 guide ([db47db2](https://github.com/h4570/openbeach/commit/db47db21537e7e8ef5d85adf5ecd7d1f1c8a7a0a))
+* **site:** offer the screen's own resolution in the browser ([ae26a06](https://github.com/h4570/openbeach/commit/ae26a062562a6d758f4a2f6ffe93acb86638b29b))
+
+
+### Bug Fixes
+
+* **platform:** scroll the map at the screen edge through the bars ([cfdfaf8](https://github.com/h4570/openbeach/commit/cfdfaf88266bd1f2957d2d3fce070f8a8219d5d7))
+* scroll at the screen edge and fill the screen in fullscreen ([623bfa6](https://github.com/h4570/openbeach/commit/623bfa6a244d10de41eeaf7ce98a20fccb5cfa36))
+* **site:** fill the screen with the game in fullscreen ([cc4ce10](https://github.com/h4570/openbeach/commit/cc4ce10a07965bb55d1d9373ebc7a8a2a34051fe))
+* **site:** pad the steps box and center a smaller button on the guide ([1c24a37](https://github.com/h4570/openbeach/commit/1c24a3749c4fcd46088297df0e9dfdb843c88d6d))
+* **site:** scroll the map at the screen edge in fullscreen ([f0041e5](https://github.com/h4570/openbeach/commit/f0041e51837ed2178cbf11ed0da3f14747ca0733))
+
 ## [1.8.0](https://github.com/h4570/openbeach/compare/v1.7.0...v1.8.0) (2026-11-08)
 
 
