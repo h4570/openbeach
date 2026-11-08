@@ -409,7 +409,7 @@ wireTouchKeys();
 
 // The sizes the options list offers in the browser (src/game/ui/resolutions.cpp), smallest first. 640x480 is left out: it
 // has the small bottom bar.
-const kResolutions = [[800, 600], [1024, 768], [1280, 720], [1280, 960], [1600, 900], [1920, 1080]];
+const kResolutions = [[800, 600], [1024, 768], [1280, 720], [1280, 960], [1600, 900], [1920, 1080], [2560, 1440], [3840, 2160]];
 // The GUI has a fixed pixel size, so a resolution near the tab's own size leaves its text small.
 const kMinResolutionScale = 1.15;
 

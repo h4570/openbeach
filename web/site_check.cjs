@@ -382,6 +382,7 @@ async function main() {
     check(await firstResolution(1300, 1000, 1, iniBase) === "1024x768", "first resolution: a 4:3 tab keeps 4:3");
     check(await firstResolution(2560, 1300, 1.5, iniBase) === "1920x1080", "first resolution: a scaled 4K screen");
     check(await firstResolution(1440, 800, 2, iniBase) === "1280x720", "first resolution: a high-density laptop");
+    check(await firstResolution(3000, 1700, 1, iniBase) === "2560x1440", "first resolution: a big tab on a 4K screen goes past 1080p");
     const chosen = iniBase + "[Video]\r\nResWidth=1600\r\nResHeight=900\r\n";
     check(await firstResolution(1920, 950, 1, chosen) === "1600x900" && ini === chosen, "first resolution: the player's stays");
     page.context.innerWidth = 0;
