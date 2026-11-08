@@ -42,6 +42,9 @@ function setHead(html, code, slug, title, description) {
     html = html.replace(/(<meta property="og:title" content=")[^"]*/, `$1${escapeHtml(title)}`);
     html = html.replace(/(<meta property="og:description" content=")[^"]*/, `$1${escapeHtml(description)}`);
     html = html.replace(/(<meta property="og:url" content=")[^"]*/, `$1${url}`);
+    // The preview image says its text in the page's language; its alt text is the page's title.
+    html = html.replace(/(<meta property="og:image" content=")[^"]*/, `$1${kOrigin}/social/openbeach-featured-${code}.jpg`);
+    html = html.replace(/(<meta property="og:image:alt" content=")[^"]*/, `$1${escapeHtml(title)}`);
     html = html.replace(/<link rel="canonical" href="[^"]*">/, `<link rel="canonical" href="${url}">\n${hreflangLinks(slug)}`);
     return html;
 }

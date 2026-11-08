@@ -18,7 +18,7 @@ cp "$importer/obl-import-web.js" "$importer/obl-import-web.wasm" "$importer/impo
 cp "$root/web/site.js" "$root/web/site_text.js" "$root/assets/logo/openbeach-logo.svg" "$site/"
 cp "$root/web/robots.txt" "$root/assets/logo/favicon.ico" "$root/assets/logo/apple-touch-icon.png" "$site/"
 cp "$root/assets/logo/openbeach-mark.svg" "$site/favicon.svg"
-cp -r "$root/assets/screenshots" "$site/"
+cp -r "$root/assets/screenshots" "$root/assets/social" "$site/"
 # The pages (every language, the Windows 11 guide) and the sitemap are rendered from web/index.html and the text files.
 node "$root/web/site_pages.cjs" "$site"
 # GitHub Pages serves the files as they are, without a Jekyll pass.

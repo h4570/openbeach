@@ -18,7 +18,7 @@ backend has its own video and audio drivers. The target links with `-sENVIRONMEN
 
 ## Site
 One static directory, our code only (no game data), assembled by `tools/web_site.sh <browser bin> <importer bin> <out>`:
-`site.js`, `site_text.js` and `robots.txt` from `web/`, the pages and the sitemap rendered by `web/site_pages.cjs`, the logo and the icons from `assets/logo/` (the mark as `favicon.svg`, `favicon.ico` and `apple-touch-icon.png` rendered from it), the screenshots from `assets/screenshots/`, `OpenBeach.js/.wasm` (the pre-js is compiled in), `obl-import-web.js/.wasm`
+`site.js`, `site_text.js` and `robots.txt` from `web/`, the pages and the sitemap rendered by `web/site_pages.cjs`, the logo and the icons from `assets/logo/` (the mark as `favicon.svg`, `favicon.ico` and `apple-touch-icon.png` rendered from it), the screenshots from `assets/screenshots/`, the link previews from `assets/social/` (`tools/og_image.mjs` draws them: one per language, named in each page's `og:image`), `OpenBeach.js/.wasm` (the pre-js is compiled in), `obl-import-web.js/.wasm`
 `import_worker.js`, `language_ini.js` and `shard.js` from the importer build, and `.nojekyll`. `tools/wasm_linux.sh` assembles it in `$build/site`
 and the CI job `wasm` uploads it as the artifact `browser-site` after a green run. To try it, unpack it and serve it on
 localhost (`python3 -m http.server`): OPFS and Web Locks need a secure context, and the worker does not load from `file:`.
