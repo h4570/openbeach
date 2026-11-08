@@ -5,9 +5,9 @@
 <p align="center">Open the page and drop your own Beach Life disc image (.iso).<br>
 It works on Windows, macOS, Linux and Android, in any modern browser.</p>
 
-<!-- stargazers:start -->
-<p align="center">No stars yet: <a href="https://github.com/h4570/openbeach/stargazers">be the first to star OpenBeach</a>.</p>
-<!-- stargazers:end -->
+<p align="center">
+  <a href="https://github.com/h4570/openbeach/stargazers"><img src="https://raw.githubusercontent.com/h4570/openbeach/stargazers-data/stargazers.svg" alt="Stargazers of OpenBeach"></a>
+</p>
 
 <p align="center">
   <a href="https://github.com/h4570/openbeach/actions/workflows/ci.yml"><img src="https://github.com/h4570/openbeach/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"></a>

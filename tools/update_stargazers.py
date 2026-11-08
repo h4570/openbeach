@@ -1,44 +1,57 @@
 #!/usr/bin/env python3
-"""Keeps the list of people who starred the repository in README.md between two marker comments.
+"""Draws the list of people who starred the repository as an SVG for the README.
 
-    python tools/update_stargazers.py [--readme README.md] [--repo owner/name]
+    python tools/update_stargazers.py [--out stargazers.svg] [--repo owner/name]
 
 The stargazers come from the GitHub API (GITHUB_TOKEN in the environment lifts the rate limit); the newest are shown by name,
-the rest as a count. The README is written only when the block changed, so a run with no new star changes nothing. The
-.github/workflows/stargazers.yml workflow runs it when someone stars the repository and once a day (an unstar sends no event).
+the rest as a count. The file is written only when its content changed. The .github/workflows/stargazers.yml workflow runs
+it when someone stars the repository and once a day (an unstar sends no event), and publishes the file on the unprotected
+`stargazers-data` branch, so `main` gets no commit per star. The README embeds the file from that branch.
 """
 import argparse
 import html
 import json
 import os
-import re
 import sys
 import urllib.request
 from pathlib import Path
 
-START = "<!-- stargazers:start -->"
-END = "<!-- stargazers:end -->"
-SHOWN = 60  # names listed; GitHub shows every star on the repository page anyway
+SHOWN = 10  # names listed; GitHub shows every star on the repository page anyway
+WIDTH = 880  # px; the README column is about this wide
+LINE_CHARS = 100  # a line of text at 14px fits this many characters in WIDTH
+LINE_HEIGHT = 22
 
 
-def render(logins: list[str], repo: str) -> str:
-    """The block's text for the stargazers, oldest first as GitHub lists them; the newest `SHOWN` are named."""
-    star = f"https://github.com/{repo}/stargazers"
+def lines_for(logins: list[str]) -> list[str]:
+    """The text lines of the picture, newest star first; the newest `SHOWN` are named."""
     if not logins:
-        return f'<p align="center">No stars yet: <a href="{star}">be the first to star OpenBeach</a>.</p>'
+        return ["No stars yet: be the first to star OpenBeach."]
     newest = logins[::-1][:SHOWN]
-    names = ", ".join(f'<a href="https://github.com/{html.escape(name)}">{html.escape(name)}</a>' for name in newest)
     more = len(logins) - len(newest)
-    tail = f' and <a href="{star}">{more} more</a>' if more > 0 else ""
-    return f'<p align="center">&#11088; Starred by {names}{tail}. <a href="{star}">Add yours</a>.</p>'
+    text = "★ Starred by " + ", ".join(newest) + (f" and {more} more" if more > 0 else "") + "."
+    lines: list[str] = []
+    current = ""
+    for word in text.split(" "):
+        if current and len(current) + 1 + len(word) > LINE_CHARS:
+            lines.append(current)
+            current = word
+        else:
+            current = f"{current} {word}" if current else word
+    lines.append(current)
+    return lines
 
 
-def replace_block(text: str, block: str) -> str:
-    """`text` with what stands between the markers replaced; the markers must exist."""
-    pattern = re.compile(re.escape(START) + r".*?" + re.escape(END), re.S)
-    if not pattern.search(text):
-        raise ValueError(f"README.md has no {START} ... {END} block")
-    return pattern.sub(lambda _: f"{START}\n{block}\n{END}", text, count=1)
+def render(logins: list[str]) -> str:
+    """The SVG for the stargazers; it follows the reader's light or dark theme."""
+    lines = lines_for(logins)
+    height = LINE_HEIGHT * len(lines) + 12
+    rows = "".join(f'<text x="{WIDTH // 2}" y="{22 + i * LINE_HEIGHT}" text-anchor="middle">{html.escape(line)}</text>'
+                   for i, line in enumerate(lines))
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{WIDTH}" height="{height}" viewBox="0 0 {WIDTH} {height}" '
+            f'role="img" aria-label="Stargazers">'
+            "<style>text{font:14px -apple-system,Segoe UI,Helvetica,Arial,sans-serif;fill:#57606a}"
+            "@media (prefers-color-scheme:dark){text{fill:#8b949e}}</style>"
+            f"{rows}</svg>\n")
 
 
 def fetch_logins(repo: str, token: str | None) -> list[str]:
@@ -59,17 +72,16 @@ def fetch_logins(repo: str, token: str | None) -> list[str]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--readme", default="README.md")
+    parser.add_argument("--out", default="stargazers.svg")
     parser.add_argument("--repo", default=os.environ.get("GITHUB_REPOSITORY", "h4570/openbeach"))
     args = parser.parse_args()
-    path = Path(args.readme)
-    old = path.read_text(encoding="utf-8")
-    new = replace_block(old, render(fetch_logins(args.repo, os.environ.get("GITHUB_TOKEN")), args.repo))
-    if new == old:
+    path = Path(args.out)
+    new = render(fetch_logins(args.repo, os.environ.get("GITHUB_TOKEN")))
+    if path.exists() and path.read_text(encoding="utf-8") == new:
         print("stargazers: unchanged")
         return 0
     path.write_text(new, encoding="utf-8", newline="")
-    print("stargazers: README.md updated")
+    print(f"stargazers: {path} written")
     return 0
 
 

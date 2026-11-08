@@ -1,6 +1,6 @@
-# Keeps the list of stargazers in the README up to date (tools/update_stargazers.py). A new star starts it; the daily run
-# catches an unstar, which sends no event. Pushes made with github.token start no other workflow, so this commit does not
-# run CI or the release workflow. It commits only when the list changed.
+# Keeps the picture of the stargazers up to date (tools/update_stargazers.py). A new star starts it; the daily run catches
+# an unstar, which sends no event. The picture lives on the `stargazers-data` branch, which no ruleset protects, so `main`
+# gets no commit per star and its pull request rule stays whole. The README embeds the file from that branch.
 name: Stargazers
 
 on:
@@ -21,22 +21,30 @@ jobs:
   update:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
-    # A star event carries the default branch; a dispatch on another branch would write there.
+    # A star event carries the default branch; a dispatch on another branch would run another copy of the script.
     if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-      - name: Update the README
+      - name: Draw the picture
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: python tools/update_stargazers.py
-      - name: Commit
+        run: python tools/update_stargazers.py --out "$RUNNER_TEMP/stargazers.svg"
+      - name: Publish on the data branch
         run: |
-          if git diff --quiet -- README.md; then exit 0; fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "docs: update the stargazers list" -- README.md
-          git pull --rebase origin main
-          git push origin HEAD:main
+          if git ls-remote --exit-code --heads origin stargazers-data >/dev/null; then
+            git fetch --depth=1 origin stargazers-data
+            git checkout --force -B stargazers-data FETCH_HEAD
+          else
+            git checkout --orphan stargazers-data
+            git rm -rf --quiet .
+          fi
+          cp "$RUNNER_TEMP/stargazers.svg" stargazers.svg
+          git add stargazers.svg
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "chore: update the stargazers picture"
+          git push origin HEAD:stargazers-data
