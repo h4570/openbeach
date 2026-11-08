@@ -224,7 +224,13 @@ SIZE GameSize()
 POINT ClientToGame(void* window, POINT client)
 {
     SIZE game = GameSize();
+    int clientWidth = 0, clientHeight = 0;
+    GameWindowClientSize(window, clientWidth, clientHeight);
     RECT image = ClientImageRect(window, game);
+    // The screen edge scrolls the map through a bar too (display_geometry.h).
+    const ui::DisplayPoint snapped = ui::SnapClientEdgeToImage(
+            {static_cast<int>(client.x), static_cast<int>(client.y)}, {clientWidth, clientHeight}, FromWinRect(image));
+    client = {snapped.x, snapped.y};
     // The mouse update accepts x == width / y == height, so the bars are rejected explicitly before its bounds check.
     if (client.x < image.left || client.x >= image.right || client.y < image.top || client.y >= image.bottom) return {-300, -300};
     return MapClientToGame(client, game, image);

@@ -27,6 +27,10 @@ request resets the object, as the SDL backend does when it cannot start a drag. 
 - **Reset** (`ResetInput`): the camera drag ends first (the SDL backend returns the cursor to the grab point), then the
   backend drops queued events and its last cursor position, then the fields (`input_state::Reset`): a reset never leaves a
   cursor position. The cursor shape id survives.
+- **Cursor position:** the SDL backend maps the client position into the letterboxed image (`ClientToGame`); a bar is no
+  position (`-300, -300`), except the client's outermost column or row, which moves onto the image's edge
+  (`SnapClientEdgeToImage`, `display_geometry.h`): there the screen edge stops the pointer, and the map scrolls only at the
+  game's edge pixel.
 - **Mouse update:** the backend reads up to 60 records into `m_records` and the cursor position in game coordinates; while the
   drag runs the object uses the drag anchor as the position and the X/Y records as deltas. A press and release in the same
   update are seen as a click: the release is deferred to the next update.

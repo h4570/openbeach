@@ -78,6 +78,33 @@ OBL_TEST_CASE("geometry.client_outside_image_stays_outside")
     OBL_CHECK_EQ(MapClientToGame({image.right - 1, 1079}, game, image).y, 599);
 }
 
+OBL_TEST_CASE("geometry.client_screen_edge_reaches_game_edge")
+{
+    // An 800x600 game on a 1920x1080 monitor: the pointer stops on the monitor's outermost columns, in the bars, where the
+    // map would never scroll. Those columns move onto the game's edge pixels; one column further in stays a bar.
+    DisplaySize game{800, 600}, client{1920, 1080};
+    obl::screen::Rect wide = ImageRect(800, 600, 1920, 1080);
+    DisplayPoint left = MapClientToGame(SnapClientEdgeToImage({0, 540}, client, wide), game, wide);
+    OBL_CHECK_EQ(left.x, 0);
+    OBL_CHECK_EQ(left.y, 300);
+    OBL_CHECK_EQ(MapClientToGame(SnapClientEdgeToImage({1919, 540}, client, wide), game, wide).x, 799);
+    OBL_CHECK(MapClientToGame(SnapClientEdgeToImage({1, 540}, client, wide), game, wide).x < 0);
+    OBL_CHECK(MapClientToGame(SnapClientEdgeToImage({1918, 540}, client, wide), game, wide).x >= game.cx);
+
+    // Bars above and below (a 16:9 game on a 16:10 monitor) move the outermost rows the same way.
+    DisplaySize wideGame{1600, 900}, tallClient{2560, 1600};
+    obl::screen::Rect tall = ImageRect(1600, 900, 2560, 1600);
+    OBL_CHECK_EQ(MapClientToGame(SnapClientEdgeToImage({1280, 0}, tallClient, tall), wideGame, tall).y, 0);
+    OBL_CHECK_EQ(MapClientToGame(SnapClientEdgeToImage({1280, 1599}, tallClient, tall), wideGame, tall).y, 899);
+    OBL_CHECK(MapClientToGame(SnapClientEdgeToImage({1280, 1}, tallClient, tall), wideGame, tall).y < 0);
+
+    // Without bars nothing moves, and a pointer outside the window (the -300 sentinel) stays outside.
+    obl::screen::Rect full = ImageRect(800, 600, 800, 600);
+    OBL_CHECK_EQ(SnapClientEdgeToImage({0, 0}, game, full).x, 0);
+    OBL_CHECK_EQ(SnapClientEdgeToImage({799, 599}, game, full).y, 599);
+    OBL_CHECK_EQ(SnapClientEdgeToImage({-300, -300}, client, wide).x, -300);
+}
+
 OBL_TEST_CASE("geometry.client_to_game_integer_scales")
 {
     // At 1x and 2x every client pixel maps to the game pixel that contains it.

@@ -64,6 +64,18 @@ inline DisplayPoint MapClientToGame(DisplayPoint client, DisplaySize game, const
             static_cast<int>(std::floor((client.y - image.top + 0.5) * game.cy / (image.bottom - image.top)))};
 }
 
+// A pointer on the client's outermost column or row is pressed against the screen edge when the window covers the monitor,
+// and the map scrolls only when the cursor reaches the game's edge pixel. With bars between the two it would never get
+// there, so that one client column or row moves onto the image's edge. Every other bar pixel stays outside the image.
+inline DisplayPoint SnapClientEdgeToImage(DisplayPoint client, DisplaySize clientSize, const screen::Rect& image)
+{
+    if (client.x == 0 && client.x < image.left) client.x = image.left;
+    if (client.x == clientSize.cx - 1 && client.x >= image.right) client.x = image.right - 1;
+    if (client.y == 0 && client.y < image.top) client.y = image.top;
+    if (client.y == clientSize.cy - 1 && client.y >= image.bottom) client.y = image.bottom - 1;
+    return client;
+}
+
 inline DisplayPoint MapGameToClient(DisplayPoint point, DisplaySize game, const screen::Rect& image)
 {
     // Aim at the centre of the source pixel so enlargement also round-trips at fractional scales.
