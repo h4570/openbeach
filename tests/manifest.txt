@@ -24,6 +24,7 @@ l0_menu_transition.txt @l0
 m6_gui_golden_l0.txt @l0
 l0_media.txt @hidden @l0
 l0_menu_actions.txt @hidden @l0
+l0_fullscreen_toggle.txt @hidden @l0
 l0_guests.txt @headless @l0
 golden_hash_l0_s1.golden @l0
 gui_image_bar_l0.txt @hidden @l0

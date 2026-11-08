@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.28)
 file(STRINGS version.txt OBL_VERSION LIMIT_COUNT 1)
 project(OpenBeach VERSION ${OBL_VERSION} LANGUAGES C CXX)
+# A release bump of version.txt reconfigures, so the executables' version resources follow it.
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS version.txt)
 
 # The game builds as x64 Windows (docs/build/building.md). A 64-bit configure off Windows builds only the portable
 # part (cmake/portable_only.cmake); the Linux obl-sim and unit builds have their own CMakeLists (src/host_linux, tests/unit/linux).

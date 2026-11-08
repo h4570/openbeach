@@ -444,9 +444,11 @@ bool ExecutePresenterCommand(const std::string& name, const std::vector<std::str
     }
     if (name == "sdl-key") {
         // An SDL key event for the game window (a modifier cannot be posted: SDL asks the OS for its state), e.g. `sdl-key 225 1` = left Shift down.
+        // An optional third number is the event's own modifier field (SDL_Keymod), e.g. `sdl-key 40 1 0x100` = Alt+Enter.
         int scancode = args.size() > 0 ? std::strtol(args[0].c_str(), nullptr, 0) : 0;
-        if (scancode <= 0 || scancode >= SDL_SCANCODE_COUNT || args.size() != 2 || (args[1] != "0" && args[1] != "1")) {
-            OBL_LOG("autotest: FAILED sdl-key needs an SDL scancode and down=0|1");
+        if (scancode <= 0 || scancode >= SDL_SCANCODE_COUNT || (args.size() != 2 && args.size() != 3) ||
+                (args[1] != "0" && args[1] != "1")) {
+            OBL_LOG("autotest: FAILED sdl-key needs an SDL scancode, down=0|1 and optionally a modifier");
             return true;
         }
         SDL_Event e{};
@@ -454,6 +456,7 @@ bool ExecutePresenterCommand(const std::string& name, const std::vector<std::str
         e.key.windowID = platform::SdlGameWindowId();
         e.key.scancode = static_cast<SDL_Scancode>(scancode);
         e.key.down = args[1] == "1";
+        if (args.size() == 3) e.key.mod = static_cast<SDL_Keymod>(std::strtol(args[2].c_str(), nullptr, 0));
         if (!SDL_PushEvent(&e)) OBL_LOG("autotest: FAILED sdl-key SDL_PushEvent error");
         return true;
     }
@@ -551,6 +554,8 @@ bool ReadPresenterProbe(const std::string& name, double& out)
         out = platform::GetAudioOutputStats().suspends;
     else if (name == "audio-suspended")
         out = platform::GetAudioOutputStats().suspended ? 1 : 0;
+    else if (name == "mouse-confine") // [Display] ConfineMouse holds the pointer now (a hidden run never does)
+        out = platform::MouseConfineWanted() ? 1 : 0;
     else if (name == "keyboard-device") {
         auto input = reinterpret_cast<uint8_t*>(game::GetInput());
         out = input && *reinterpret_cast<void**>(input + 4) != nullptr;

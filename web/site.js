@@ -346,6 +346,42 @@ function lockPointerForRightDrag() {
 
 lockPointerForRightDrag();
 
+// The map scrolls when the game's cursor reaches the picture's edge. In fullscreen the screen edge stops the mouse, but a
+// game of another shape than the screen leaves a black bar between the two, the pointer is off the canvas there and SDL
+// has no position. A mouse pressed against the screen's edge is moved onto the canvas's matching edge for SDL, as the
+// desktop game does with its own bars (display_geometry.h); anywhere else in a bar it stays off the game.
+function forwardScreenEdge() {
+    const canvas = element("canvas");
+    let forwarded = false; // SDL holds a moved position; leaving the edge takes it away again
+    const send = (type, event, x, y) => canvas.dispatchEvent(new PointerEvent(type, {
+        clientX: x, clientY: y, pointerType: "mouse", pointerId: event.pointerId, isPrimary: true, buttons: event.buttons,
+    }));
+    document.addEventListener("pointermove", (event) => {
+        if (event.pointerType !== "mouse" || event.target === canvas || document.pointerLockElement) {
+            forwarded = false;
+            return;
+        }
+        const rect = canvas.getBoundingClientRect();
+        const fullscreen = Boolean(document.fullscreenElement || document.webkitFullscreenElement);
+        // Fractional pixels: with a scaled screen the last device pixel is less than one CSS pixel from the edge.
+        const atLeft = event.clientX < 1, atRight = event.clientX > globalThis.innerWidth - 2;
+        const atTop = event.clientY < 1, atBottom = event.clientY > globalThis.innerHeight - 2;
+        const x = atLeft ? rect.left : atRight ? rect.right - 0.5 : event.clientX;
+        const y = atTop ? rect.top : atBottom ? rect.bottom - 0.5 : event.clientY;
+        // Only the edge of a bar moves: the other coordinate has to lie on the picture already.
+        const onPicture = x >= rect.left && x < rect.right && y >= rect.top && y < rect.bottom;
+        if (fullscreen && rect.width > 0 && rect.height > 0 && (atLeft || atRight || atTop || atBottom) && onPicture) {
+            send("pointermove", event, x, y);
+            forwarded = true;
+        } else if (forwarded) {
+            send("pointerleave", event, event.clientX, event.clientY);
+            forwarded = false;
+        }
+    });
+}
+
+forwardScreenEdge();
+
 // Space turns what is being placed and Esc leaves the mode, but a touch screen has no keyboard: the page's two buttons send the
 // keys to the canvas as typed (SDL listens on the window, which the event reaches). A key is down while the button is.
 function wireTouchKeys() {
@@ -373,7 +409,7 @@ wireTouchKeys();
 
 // The sizes the options list offers in the browser (src/game/ui/resolutions.cpp), smallest first. 640x480 is left out: it
 // has the small bottom bar.
-const kResolutions = [[800, 600], [1024, 768], [1280, 720], [1280, 960], [1600, 900], [1920, 1080]];
+const kResolutions = [[800, 600], [1024, 768], [1280, 720], [1280, 960], [1600, 900], [1920, 1080], [2560, 1440], [3840, 2160]];
 // The GUI has a fixed pixel size, so a resolution near the tab's own size leaves its text small.
 const kMinResolutionScale = 1.15;
 

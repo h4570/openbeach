@@ -93,6 +93,8 @@ target_link_libraries(obl_import_web PUBLIC obl_convert)
 
 add_executable(obl-convert cli/main.cpp)
 target_link_libraries(obl-convert PRIVATE obl_convert)
+include(${CMAKE_CURRENT_LIST_DIR}/../cmake/version_resource.cmake)
+obl_version_resource(obl-convert "OpenBeach importer for a copy of Beach Life")
 
 # Only the Windows game build refreshes the game directory; cmake/portable_only.cmake turns this off.
 option(OBL_CONVERT_ON_BUILD "Convert the game directory's packs/base after building obl-convert" ON)

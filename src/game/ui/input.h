@@ -59,4 +59,7 @@ void SetSyntheticClientCursor(int x, int y);
 // Restores the selected real position source after a synthetic cursor fixture.
 void ClearSyntheticCursor();
 
+// Whether [Display] ConfineMouse holds the pointer now, leaving out the hidden run (which never takes the mouse).
+bool MouseConfineWanted();
+
 } // namespace obl::platform

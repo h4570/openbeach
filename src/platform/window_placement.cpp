@@ -15,19 +15,34 @@
 #ifdef _WIN32
 #include <windows.h>
 #endif
+#ifdef __EMSCRIPTEN__
+#include <emscripten/em_js.h>
+#endif
 
 #include <algorithm>
 #include <cstring>
+
+#ifdef __EMSCRIPTEN__
+// The screen in CSS pixels, the size fullscreen gives the page: the GUI keeps the size it has elsewhere on that screen.
+EM_JS(int, BrowserScreenWidth, (), { return (globalThis.screen && screen.width) | 0; });
+EM_JS(int, BrowserScreenHeight, (), { return (globalThis.screen && screen.height) | 0; });
+#endif
 
 namespace obl::platform {
 
 namespace {
 
 // The resolution list is built at start-up, before SDL video runs (and a headless run never starts it), so the primary
-// monitor comes from the system. The Linux obl-sim has no monitor: the list of a 1080p desktop.
+// monitor comes from the system. The Linux obl-sim has no monitor: the list of a 1080p desktop. The browser offers that
+// list too, and a screen taller than 1080 adds its own size (what the fullscreen page has). A smaller screen keeps the
+// 1080p list, since the list replaces the entry of the screen's height and a saved 1920x1080 must stay valid.
 ui::DisplaySize PrimaryMonitorSize()
 {
-#ifdef _WIN32
+#if defined(__EMSCRIPTEN__)
+    const int width = BrowserScreenWidth(), height = BrowserScreenHeight();
+    if (width >= 1920 && height > 1080) return {width, height};
+    return {1920, 1080};
+#elif defined(_WIN32)
     MONITORINFO mi{sizeof(mi)};
     GetMonitorInfoW(MonitorFromPoint({0, 0}, MONITOR_DEFAULTTOPRIMARY), &mi);
     return {static_cast<int>(mi.rcMonitor.right - mi.rcMonitor.left), static_cast<int>(mi.rcMonitor.bottom - mi.rcMonitor.top)};
