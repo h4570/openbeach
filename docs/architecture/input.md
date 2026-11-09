@@ -31,7 +31,7 @@ request resets the object, as the SDL backend does when it cannot start a drag. 
   position (`-300, -300`), except the client's outermost column or row, which moves onto the image's edge
   (`SnapClientEdgeToImage`, `display_geometry.h`): there the screen edge stops the pointer, and the map scrolls only at the
   game's edge pixel. `[Display] ConfineMouse` keeps the pointer in the window while it has the keyboard focus, in gameplay
-  only and not while the in-game options (Esc) are open (`UpdateMouseConfinement`, `WantMouseConfined`; never in a hidden run), and Alt+Enter switches between the window and
+  only and not while the in-game options (Esc) are open or the player has paused with P (a forced pause keeps it) (`UpdateMouseConfinement`, `WantMouseConfined`; never in a hidden run), and Alt+Enter switches between the window and
   fullscreen (`TakeFullscreenToggle`; the game never sees that Enter).
 - **Mouse update:** the backend reads up to 60 records into `m_records` and the cursor position in game coordinates; while the
   drag runs the object uses the drag anchor as the position and the X/Y records as deltas. A press and release in the same

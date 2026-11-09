@@ -7,7 +7,7 @@ with defaults and comments when it is missing. Environment variables override th
 | Key | Default | Env | Meaning |
 |---|---|---|---|
 | `[Display] Windowed` | 1 | `OBL_WINDOWED` | 1 = window, 0 = borderless fullscreen on the monitor; Alt+Enter switches and stores it (not in scripted runs) |
-| `[Display] ConfineMouse` | 1 | `OBL_CONFINEMOUSE` | 1 = in gameplay the pointer stays in the game window while it is active, so the screen edge scrolls the map (the menus, the in-game options and Alt+Tab let it go; never in hidden runs) |
+| `[Display] ConfineMouse` | 1 | `OBL_CONFINEMOUSE` | 1 = in gameplay the pointer stays in the game window while it is active, so the screen edge scrolls the map (the menus, the in-game options, a pause with P and Alt+Tab let it go; never in hidden runs) |
 | `[Display] Scale` | 1 | `OBL_SCALE` | window size multiplier 1-4 (decimals allowed), capped at the monitor size |
 | `[Display] MaxFps` | 60 | `OBL_MAXFPS` | frame cap, 0 = unlimited (scripted runs: 0) |
 | `[Intro] PlayMovie` | 1 | `OBL_PLAYMOVIE` | Eidos intro movie (scripted runs: 0) |
