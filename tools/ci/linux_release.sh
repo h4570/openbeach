@@ -3,8 +3,8 @@
 # the glibc floor, runs the L0 references on the same build, strips the binaries, lays out the release with
 # tools/ci/release/stage.py and packs it.
 #   tools/ci/linux_release.sh [extra cmake -D options...]
-# Writes build/dist/openbeach-<version>-linux-x86_64.tar.gz and build/dist/openbeach-<version>-linux-x86_64-debug.tar.gz (the
-# separate debug info). OBL_RELEASE_VERSION overrides version.txt; OBL_SIM_BUILD the build tree (build/linux-release).
+# Writes build/dist/openbeach-<version>-linux-x86_64.tar.gz. OBL_RELEASE_VERSION overrides version.txt; OBL_SIM_BUILD
+# the build tree (build/linux-release).
 # OBL_GLIBC_MAX is the newest glibc symbol version allowed (2.35: Ubuntu 22.04; Debian 12 has 2.36).
 set -euo pipefail
 
@@ -16,7 +16,7 @@ dist="${OBL_DIST_DIR:-$root/build/dist}"
 glibc_max="${OBL_GLIBC_MAX:-2.35}"
 name="openbeach-$version-linux-x86_64"
 
-# RelWithDebInfo is -O2 like the Windows release build; the debug info goes to a separate archive. libstdc++ and libgcc
+# RelWithDebInfo is -O2 like the Windows release build; the shipped binaries are stripped. libstdc++ and libgcc
 # link statically, so the newest GLIBCXX of the build machine is not a run-time requirement.
 OBL_SIM_BUILD_TYPE=RelWithDebInfo OBL_SIM_SKIP_CONVERSION=1 OBL_SIM_BUILD="$build" \
     bash "$root/tools/obl_sim_linux.sh" -DOBL_LINUX_WINDOWED=ON \
@@ -34,8 +34,8 @@ OBL_SOURCE_ROOT="$root" python3 "$root/tools/obl_sim_tests.py" --no-build --buil
 
 stage="$dist/$name"
 stripped="$dist/$name-bin"
-rm -rf "$stage" "$stripped" "$dist/$name-debug" "$dist/$name.tar.gz" "$dist/$name-debug.tar.gz"
-mkdir -p "$stripped" "$dist/$name-debug"
+rm -rf "$stage" "$stripped" "$dist/$name.tar.gz"
+mkdir -p "$stripped"
 for bin in OpenBeach obl-convert; do
     # Every needed glibc symbol must exist in the oldest supported glibc.
     newest=$(objdump -T "$build/bin/$bin" | grep -oE 'GLIBC_[0-9]+(\.[0-9]+)+' | sed 's/GLIBC_//' | sort -Vu | tail -1)
@@ -48,15 +48,12 @@ for bin in OpenBeach obl-convert; do
         exit 1
     fi
     echo "$bin: glibc $newest, needs $(readelf -d "$build/bin/$bin" 2>/dev/null | grep -oE '\[[^]]+\]' | tr -d '[]' | tr '\n' ' ')"
-    objcopy --only-keep-debug "$build/bin/$bin" "$dist/$name-debug/$bin.debug"
     # --strip-all keeps .dynsym: the crash report still names the exported functions (-rdynamic).
     strip --strip-all -o "$stripped/$bin" "$build/bin/$bin"
-    objcopy --add-gnu-debuglink="$dist/$name-debug/$bin.debug" "$stripped/$bin"
 done
 python3 "$root/tools/ci/release/stage.py" --platform linux --version "$version" --out "$stage" \
     --bin "$stripped/OpenBeach" "$stripped/obl-convert"
 rm -rf "$stripped"
 tar_opts=(--sort=name --owner=0 --group=0 --numeric-owner --mtime="@${SOURCE_DATE_EPOCH:-$(git -C "$root" log -1 --format=%ct)}")
 tar "${tar_opts[@]}" -C "$dist" -czf "$dist/$name.tar.gz" "$name"
-tar "${tar_opts[@]}" -C "$dist" -czf "$dist/$name-debug.tar.gz" "$name-debug"
-ls -l "$dist/$name.tar.gz" "$dist/$name-debug.tar.gz"
+ls -l "$dist/$name.tar.gz"

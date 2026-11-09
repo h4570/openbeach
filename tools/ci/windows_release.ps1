@@ -2,7 +2,7 @@
 # post-build conversion, runs the L0 references on that build, lays out the release with tools/ci/release/stage.py and packs
 # it. tools/ci/windows_smoke.ps1 then starts the unpacked archive.
 #   ./tools/ci/windows_release.ps1 [-Version <v>] [-SkipTests]
-# Writes build/dist/openbeach-<version>-windows-x64.zip and build/dist/openbeach-<version>-windows-x64-debug.zip (the PDBs).
+# Writes build/dist/openbeach-<version>-windows-x64.zip.
 param(
     [string]$Version = '',
     # Only for a local packaging check: the release job always runs the references.
@@ -39,16 +39,13 @@ try {
 
     New-Item -ItemType Directory -Force $dist | Out-Null
     $zip = Join-Path $dist "$name.zip"
-    $debugZip = Join-Path $dist "$name-debug.zip"
-    Remove-Item -LiteralPath $zip, $debugZip -Force -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath $zip -Force -ErrorAction SilentlyContinue
     $epoch = [int](git -C $repo log -1 --format=%ct)
     $binaries = @('OpenBeach.exe', 'obl-convert.exe') | ForEach-Object { Join-Path $bin $_ }
     & python (Join-Path $repo 'tools\ci\release\stage.py') --platform windows --version $Version `
         --out (Join-Path $dist $name) --zip $zip --epoch $epoch --bin @binaries
     if ($LASTEXITCODE) { throw "staging failed ($LASTEXITCODE)" }
-    # The PDBs stay out of the player's archive; a crash report from it is read against them.
-    Compress-Archive -Path (Join-Path $bin 'OpenBeach.pdb'), (Join-Path $bin 'obl-convert.pdb') -DestinationPath $debugZip
-    Get-Item $zip, $debugZip | ForEach-Object { '{0}  {1:N1} MB' -f $_.Name, ($_.Length / 1MB) }
+    Get-Item $zip | ForEach-Object { '{0}  {1:N1} MB' -f $_.Name, ($_.Length / 1MB) }
 } finally {
     Pop-Location
 }

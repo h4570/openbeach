@@ -1,12 +1,15 @@
 # Release archives
 
 Every GitHub release carries a player's archive per system, built by `.github/workflows/release.yml`
-([ci.md](ci.md#release-workflow)), and the debug info beside it:
+([ci.md](ci.md#release-workflow)):
 
-| Asset | Job | Debug info |
-|---|---|---|
-| `openbeach-<version>-windows-x64.zip` | `windows` | `...-windows-x64-debug.zip` (`OpenBeach.pdb`, `obl-convert.pdb`) |
-| `openbeach-<version>-linux-x86_64.tar.gz` | `linux` | `...-linux-x86_64-debug.tar.gz` (`objcopy --only-keep-debug`; the stripped binaries name it through `.gnu_debuglink`) |
+| Asset | Job |
+|---|---|
+| `openbeach-<version>-windows-x64.zip` | `windows` |
+| `openbeach-<version>-linux-x86_64.tar.gz` | `linux` |
+
+No debug info is published: the PDBs stay in the build tree, and the Linux binaries are stripped (`.dynsym` stays, so a
+crash report still names exported functions).
 
 ## Layout
 The archive puts the guides at the top, so a player sees where to start:
