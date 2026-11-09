@@ -55,6 +55,8 @@ KROK 3: GRAJ
 [linux]  Nie uruchamiaj gry jako root/sudo: dźwięk nie zadziała.
 [linux]  Import dodaje też OpenBeach z jego ikoną do menu aplikacji.
 [mac]  Uruchom OpenBeach z folderu Aplikacje albo z Launchpada.
+  Przed startem gry otwiera się okno ustawień: język, okno albo pełny ekran, rozmiar okna, limit klatek i film na
+  początku. Kliknij Play (albo Enter); jeśli nic nie zmienisz, nic się nie zmieni.
 [win|linux]  Alt+Enter przełącza między oknem a pełnym ekranem. W trakcie rozgrywki mysz zostaje w oknie gry, żeby krawędź
 [win|linux]  ekranu przewijała mapę; Esc (opcje) albo Alt+Tab ją uwalnia.
 [mac]  Option+Return przełącza między oknem a pełnym ekranem. W trakcie rozgrywki mysz zostaje w oknie gry, żeby krawędź
@@ -63,10 +65,8 @@ KROK 3: GRAJ
 JĘZYK
   Gra jest dostępna tylko w językach Twojej kopii: po angielsku z płyty UK/US i późniejszej płyty angielskiej, a po
   francusku, niemiecku, włosku, polsku i hiszpańsku z płyty europejskiej i francusko-niemieckiej. Import bierze język
-  Twojej instalacji, a przy płycie pyta o niego. Żeby przełączyć na inny język Twojej kopii, zmień Language= w
-[win|linux]  game/userdata/BeachLife.ini: 0 angielski, 1 francuski, 2 włoski, 3 niemiecki, 4 hiszpański, 5 polski.
-[mac]  ~/Library/Application Support/OpenBeach/userdata/BeachLife.ini:
-[mac]  0 angielski, 1 francuski, 2 włoski, 3 niemiecki, 4 hiszpański, 5 polski.
+  Twojej instalacji, a przy płycie pyta o niego. Żeby przełączyć na inny język Twojej kopii, wybierz go w oknie
+  ustawień, które otwiera się przed grą.
 
 ZAPISY, USTAWIENIA I LOG
 [win|linux]  Wszystko jest w game/userdata/: zapisy w SaveGames/, ustawienia w BeachLife.ini i openbeach.ini, log w openbeach.log.

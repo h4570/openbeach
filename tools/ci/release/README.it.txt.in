@@ -54,6 +54,9 @@ PASSO 3: GIOCA
 [linux]  Non avviare il gioco come root/sudo: l'audio non funzionerà.
 [linux]  L'importazione aggiunge anche OpenBeach, con la sua icona, al menu delle applicazioni.
 [mac]  Avvia OpenBeach da Applicazioni o dal Launchpad.
+  Prima dell'avvio del gioco si apre una finestra di impostazioni: lingua, finestra o schermo intero, dimensione della
+  finestra, limite di fotogrammi e filmato iniziale. Fai clic su Play (o premi Invio); se non cambi nulla, non cambia
+  nulla.
 [win|linux]  Alt+Invio passa dalla finestra allo schermo intero e viceversa. Durante una partita il mouse resta nella finestra
 [win|linux]  del gioco, così il bordo dello schermo fa scorrere la mappa; Esc (le opzioni) o Alt+Tab lo liberano.
 [mac]  Opzione+A capo passa tra finestra e schermo intero. Mentre giochi una mappa il mouse resta nella finestra del gioco,
@@ -61,11 +64,9 @@ PASSO 3: GIOCA
 
 LINGUA
   Il gioco è disponibile solo nelle lingue della tua copia: inglese per il CD UK/US e il CD inglese più recente, e
-  francese, tedesco, italiano, polacco e spagnolo per il CD europeo e quello francese/tedesco. L'importazione prende la
-  lingua della tua installazione, o te la chiede per un CD. Per passare a un'altra lingua della tua copia, cambia
-[win|linux]  Language= in game/userdata/BeachLife.ini: 0 inglese, 1 francese, 2 italiano, 3 tedesco, 4 spagnolo, 5 polacco.
-[mac]  Language= in ~/Library/Application Support/OpenBeach/userdata/BeachLife.ini:
-[mac]  0 inglese, 1 francese, 2 italiano, 3 tedesco, 4 spagnolo, 5 polacco.
+  francese, tedesco, italiano, polacco e spagnolo per il CD europeo e quello francese/tedesco. L'importazione prende
+  la lingua della tua installazione, o te la chiede per un CD. Per passare a un'altra lingua della tua copia, sceglila
+  nella finestra di impostazioni che si apre prima del gioco.
 
 SALVATAGGI, IMPOSTAZIONI E LOG
 [win|linux]  Tutto è in game/userdata/: i salvataggi in SaveGames/, le impostazioni in BeachLife.ini e openbeach.ini, il log in

@@ -1,7 +1,7 @@
 # Settings (`openbeach.ini`)
 
 The game reads `openbeach.ini` from the game directory at start-up (`src/platform/config.cpp`) and creates it
-with defaults and comments when it is missing. Environment variables override the file; scripted tests set them with
+with defaults and comments when it is missing; the [settings window](settings-window.md) changes the same keys. Environment variables override the file; scripted tests set them with
 `# @env` headers. The game's own settings (resolution, volumes, dialog positions) are in `BeachLife.ini`.
 
 | Key | Default | Env | Meaning |
@@ -11,6 +11,7 @@ with defaults and comments when it is missing. Environment variables override th
 | `[Display] Scale` | 1 | `OBL_SCALE` | window size multiplier 1-4 (decimals allowed), capped at the monitor size |
 | `[Display] MaxFps` | 60 | `OBL_MAXFPS` | frame cap, 0 = unlimited (scripted runs: 0) |
 | `[Intro] PlayMovie` | 1 | `OBL_PLAYMOVIE` | Eidos intro movie (scripted runs: 0) |
+| `[Launcher] ShowSettings` | 1 | | the settings window before the game starts ([settings-window.md](settings-window.md)); `--settings` shows it anyway, `--no-settings` never |
 
 Other environment variables used by tools and tests: `OBL_HIDDEN` (hidden window), `OBL_SCRIPT` (scripted test run),
 `OBL_HEADLESS` (headless replay run, [../architecture/headless/index.md](../architecture/headless/index.md)),

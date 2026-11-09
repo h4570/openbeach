@@ -157,6 +157,8 @@ add_library(obl_common STATIC
     ${CMAKE_SOURCE_DIR}/src/game/world/world_state.cpp
     ui/save_slot_header.cpp
     ui/save_slot_header.h
+    game/start_settings.cpp
+    game/start_settings.h
     tables/text_load.cpp
     tables/text_load.h
     game/own_credits.cpp

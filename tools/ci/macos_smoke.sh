@@ -19,7 +19,7 @@ trap cleanup EXIT
 mkdir -p "$work/home"
 log="$work/home/Library/Application Support/OpenBeach/l0/openbeach.log"
 # The launcher replaces itself with the game (exec), so $game is the game's process.
-HOME="$work/home" SDL_AUDIO_DRIVER=dummy "$app/Contents/MacOS/openbeach-launcher" --demo >"$work/stdout.log" 2>&1 &
+HOME="$work/home" SDL_AUDIO_DRIVER=dummy "$app/Contents/MacOS/openbeach-launcher" --demo --no-settings >"$work/stdout.log" 2>&1 &
 game=$!
 
 # The intro movie, then the first frame of the menu: the presenter's texture is made by the first presented frame.

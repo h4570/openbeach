@@ -10,3 +10,4 @@
 | [releases.md](releases.md) | The release archives for Windows and Linux, the Windows installer and the experimental macOS disk image: layout, README and AGENTS.md, import scripts, the macOS app and launcher, optimized build, glibc floor, smoke tests, testing by hand. |
 | [ci-l0.md](ci-l0.md) | No-data L0 CI tests, compile-time diagnosis, compiler-cache settings and fast-build measurements. |
 | [settings.md](settings.md) | `openbeach.ini` keys and their environment-variable overrides. |
+| [settings-window.md](settings-window.md) | The window before the game starts (language, display, window size, mouse, frame cap, intro): what it stores where, when it opens and when tools skip it (`--no-settings`, `--settings`). |

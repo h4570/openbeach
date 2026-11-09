@@ -56,6 +56,9 @@ CE QU'IL VOUS FAUT
 [linux]  Ne lancez pas le jeu en root/sudo : le son ne fonctionnera pas.
 [linux]  L'import ajoute aussi OpenBeach, avec son icône, au menu des applications.
 [mac]  Lancez OpenBeach depuis Applications ou le Launchpad.
+  Avant le lancement du jeu, une fenêtre de réglages permet de choisir la langue, la fenêtre ou le plein écran, la
+  taille de la fenêtre, la limite d'images par seconde et la vidéo d'intro. Cliquez sur Play (ou appuyez sur Entrée) ;
+  si vous ne changez rien, rien ne change.
 [win|linux]  Alt+Entrée passe de la fenêtre au plein écran et inversement. Pendant une partie, la souris reste dans la fenêtre
 [win|linux]  du jeu, pour que le bord de l'écran fasse défiler la carte ; Échap (les options) ou Alt+Tab la libère.
 [mac]  Option+Retour bascule entre fenêtre et plein écran. Pendant une partie, la souris reste dans la fenêtre du jeu pour
@@ -63,11 +66,9 @@ CE QU'IL VOUS FAUT
 
 LANGUE
   Le jeu n'est disponible que dans les langues de votre copie : l'anglais pour les CD UK/US et anglais tardif, et le
-  français, l'allemand, l'italien, le polonais et l'espagnol pour les CD européen et français/allemand. L'import prend la
-  langue de votre installation, ou vous la demande pour un CD. Pour passer à une autre langue de votre copie, changez
-[win|linux]  Language= dans game/userdata/BeachLife.ini : 0 anglais, 1 français, 2 italien, 3 allemand, 4 espagnol, 5 polonais.
-[mac]  Language= dans ~/Library/Application Support/OpenBeach/userdata/BeachLife.ini :
-[mac]  0 anglais, 1 français, 2 italien, 3 allemand, 4 espagnol, 5 polonais.
+  français, l'allemand, l'italien, le polonais et l'espagnol pour les CD européen et français/allemand. L'import prend
+  la langue de votre installation, ou vous la demande pour un CD. Pour passer à une autre langue de votre copie,
+  choisissez-la dans la fenêtre de réglages qui s'ouvre avant le jeu.
 
 SAUVEGARDES, RÉGLAGES ET JOURNAL
 [win|linux]  Tout est dans game/userdata/ : les sauvegardes dans SaveGames/, les réglages dans BeachLife.ini et openbeach.ini, le

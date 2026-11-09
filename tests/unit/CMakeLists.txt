@@ -277,6 +277,7 @@ add_executable(obl_unit_tests
     gui_sort_test.cpp
     save_slots_test.cpp
     settings_ini_test.cpp
+    start_settings_test.cpp
     gui_script_test.cpp
     gui_widgets_test.cpp
     gui_controls_test.cpp

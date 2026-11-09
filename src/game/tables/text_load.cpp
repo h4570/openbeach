@@ -16,6 +16,7 @@ using nlohmann::json;
 
 // Text table selection follows the settings language order: English, French, Italian, German, Spanish and Polish.
 constexpr const char* kLanguages[] = {"en", "fr", "it", "de", "es", "pl"};
+static_assert(std::size(kLanguages) == kLanguageCount);
 
 // The key of a pair is an identifier: ASCII, as the engine's table keys are (text_table.h).
 std::string AsciiKey(const json& key)

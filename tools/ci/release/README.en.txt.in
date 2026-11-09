@@ -51,6 +51,8 @@ STEP 3: PLAY
 [linux]  Do not run the game as root/sudo: the sound will not work.
 [linux]  The import also puts OpenBeach with its icon into your applications menu.
 [mac]  Start OpenBeach from Applications or Launchpad.
+  Before the game starts, a settings window lets you pick the language, window or fullscreen, the window size, the
+  frame rate cap and the intro movie. Click Play (or press Enter); if you change nothing, nothing changes.
 [win|linux]  Alt+Enter switches between a window and fullscreen. While you play a map the mouse stays in the game window, so the
 [win|linux]  screen edge scrolls the map; Esc (the options) or Alt+Tab lets it go.
 [mac]  Option+Return switches between a window and fullscreen. While you play a map the mouse stays in the game window, so
@@ -58,11 +60,9 @@ STEP 3: PLAY
 
 LANGUAGE
   The game is available only in the languages of your copy: English for the UK/US and the later English CDs, and
-  French, German, Italian, Polish and Spanish for the European and the French/German CDs. The import takes the language
-  of your installation, or asks for one when you import a CD. To switch to another language of your copy, change
-[win|linux]  Language= in game/userdata/BeachLife.ini: 0 English, 1 French, 2 Italian, 3 German, 4 Spanish, 5 Polish.
-[mac]  Language= in ~/Library/Application Support/OpenBeach/userdata/BeachLife.ini:
-[mac]  0 English, 1 French, 2 Italian, 3 German, 4 Spanish, 5 Polish.
+  French, German, Italian, Polish and Spanish for the European and the French/German CDs. The import takes the
+  language of your installation, or asks for one when you import a CD. To switch to another language of your copy,
+  pick it in the settings window that opens before the game.
 
 SAVES, SETTINGS AND THE LOG
 [win|linux]  Everything is in game/userdata/: saves in SaveGames/, settings in BeachLife.ini and openbeach.ini, the log in
