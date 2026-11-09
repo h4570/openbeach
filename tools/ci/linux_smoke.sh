@@ -29,7 +29,7 @@ for _ in $(seq 100); do [[ -s "$work/display" ]] && break; sleep 0.1; done
 display=":$(cat "$work/display")"
 
 env -u WAYLAND_DISPLAY DISPLAY="$display" SDL_VIDEO_DRIVER=x11 SDL_AUDIO_DRIVER=dummy OBL_PACK=l0 \
-    XDG_RUNTIME_DIR="$work" "$dir/game/OpenBeach" --game-dir "$work/game" >"$work/stdout.log" 2>&1 &
+    XDG_RUNTIME_DIR="$work" "$dir/game/OpenBeach" --no-settings --game-dir "$work/game" >"$work/stdout.log" 2>&1 &
 game=$!
 
 # The intro movie, then the first frame of the menu: the presenter's texture is made by the first presented frame.

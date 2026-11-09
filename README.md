@@ -87,8 +87,9 @@ $bin/obl-convert resources "<your Beach Life folder>" run/remaster     # window 
 $bin/OpenBeach --game-dir run      # play
 ```
 
-Window or borderless fullscreen, window scale, frame cap and the intro movie are set in `run/openbeach.ini`
-([settings](docs/build/settings.md)); the resolution is changed in game under Options -> Video. More on starting the
+The game starts with a [settings window](docs/build/settings-window.md) for the language, window or borderless
+fullscreen, window scale, frame cap and the intro movie; they live in `run/openbeach.ini` and `run/BeachLife.ini`
+([settings](docs/build/settings.md)), and the resolution is changed in game under Options -> Video. More on starting the
 game and the hidden/headless modes: [running the game](docs/build/running-the-game.md).
 
 The browser version imports your own copy in the page and keeps it on your machine: [browser build](docs/architecture/browser-build.md).

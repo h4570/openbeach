@@ -54,6 +54,8 @@ SCHRITT 3: SPIELEN
 [linux]  ./play.sh   (im Ordner "game")
 [linux]  Der Import legt OpenBeach mit seinem Symbol auch ins Anwendungsmenü.
 [mac]  Starte OpenBeach aus dem Ordner Programme oder aus dem Launchpad.
+  Vor dem Spielstart öffnet sich ein Einstellungsfenster: Sprache, Fenster oder Vollbild, Fenstergröße, Bildratenlimit
+  und Intro-Film. Klicke auf Play (oder drücke Eingabe); wenn du nichts änderst, bleibt alles, wie es ist.
 [win|linux]  Alt+Eingabe wechselt zwischen Fenster und Vollbild. Während einer Partie bleibt die Maus im Spielfenster,
 [win|linux]  damit der Bildschirmrand die Karte scrollt; Esc (die Optionen) oder Alt+Tab gibt sie frei.
 [mac]  Wahltaste+Zeilenschalter (Option+Return) wechselt zwischen Fenster und Vollbild. Während du eine Karte spielst, bleibt
@@ -62,11 +64,8 @@ SCHRITT 3: SPIELEN
 SPRACHE
   Das Spiel gibt es nur in den Sprachen deiner Kopie: Englisch bei der UK/US-CD und der späteren englischen CD, und
   Französisch, Deutsch, Italienisch, Polnisch und Spanisch bei der europäischen und der französisch/deutschen CD. Der
-  Import übernimmt die Sprache deiner Installation oder fragt bei einer CD nach. Für eine andere Sprache deiner Kopie
-[win|linux]  ändere Language= in game/userdata/BeachLife.ini: 0 Englisch, 1 Französisch, 2 Italienisch, 3 Deutsch, 4 Spanisch,
-[mac]  ändere Language= in ~/Library/Application Support/OpenBeach/userdata/BeachLife.ini:
-[mac]  0 Englisch, 1 Französisch, 2 Italienisch, 3 Deutsch, 4 Spanisch, 5 Polnisch.
-[win|linux]  5 Polnisch.
+  Import übernimmt die Sprache deiner Installation oder fragt bei einer CD nach. Eine andere Sprache deiner Kopie
+  wählst du im Einstellungsfenster, das sich vor dem Spiel öffnet.
 
 SPIELSTÄNDE, EINSTELLUNGEN UND PROTOKOLL
 [win|linux]  Alles liegt in game/userdata/: Spielstände in SaveGames/, Einstellungen in BeachLife.ini und openbeach.ini, das

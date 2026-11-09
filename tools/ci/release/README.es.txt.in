@@ -52,18 +52,18 @@ PASO 3: JUEGA
 [linux]  ./play.sh   (en la carpeta "game")
 [linux]  La importación también añade OpenBeach, con su icono, al menú de aplicaciones.
 [mac]  Abre OpenBeach desde Aplicaciones o el Launchpad.
+  Antes de empezar el juego se abre una ventana de ajustes: idioma, ventana o pantalla completa, tamaño de la ventana,
+  límite de fotogramas y vídeo de introducción. Haz clic en Play (o pulsa Intro); si no cambias nada, nada cambia.
 [win|linux]  Alt+Intro cambia entre ventana y pantalla completa. Durante una partida, el ratón se queda en la ventana del juego,
 [win|linux]  para que el borde de la pantalla desplace el mapa; Esc (las opciones) o Alt+Tab lo liberan.
 [mac]  Opción+Intro cambia entre ventana y pantalla completa. Mientras juegas un mapa, el ratón se queda en la ventana del
 [mac]  juego para que el borde de la pantalla desplace el mapa; Esc (las opciones) o Cmd+Tab lo libera.
 
 IDIOMA
-  El juego solo está disponible en los idiomas de tu copia: inglés para el CD UK/US y el CD inglés posterior, y francés,
-  alemán, italiano, polaco y español para el CD europeo y el francés/alemán. La importación toma el idioma de tu
-  instalación, o te lo pregunta con un CD. Para pasar a otro idioma de tu copia, cambia Language= en
-[win|linux]  game/userdata/BeachLife.ini: 0 inglés, 1 francés, 2 italiano, 3 alemán, 4 español, 5 polaco.
-[mac]  ~/Library/Application Support/OpenBeach/userdata/BeachLife.ini:
-[mac]  0 inglés, 1 francés, 2 italiano, 3 alemán, 4 español, 5 polaco.
+  El juego solo está disponible en los idiomas de tu copia: inglés para el CD UK/US y el CD inglés posterior, y
+  francés, alemán, italiano, polaco y español para el CD europeo y el francés/alemán. La importación toma el idioma de
+  tu instalación, o te lo pregunta con un CD. Para pasar a otro idioma de tu copia, elígelo en la ventana de ajustes
+  que se abre antes del juego.
 
 PARTIDAS, AJUSTES Y REGISTRO
 [win|linux]  Todo está en game/userdata/: las partidas en SaveGames/, los ajustes en BeachLife.ini y openbeach.ini, el registro en

@@ -2,7 +2,7 @@
 
 ## Executables
 ```powershell
-./build/x64/bin/Debug/OpenBeach.exe   [--no-wait] [--hidden] [--game-dir DIR] [--script FILE | --headless REPLAY] [-- game args]
+./build/x64/bin/Debug/OpenBeach.exe   [--no-wait] [--hidden] [--game-dir DIR] [--script FILE | --headless REPLAY] [--settings | --no-settings] [-- game args]
 ```
 - `OpenBeach.exe` is the whole game: one process that loads the converted data of the working copy.
 - It reads `run/` by default (`--game-dir` selects another copy) and logs to `run/openbeach.log`.
@@ -14,7 +14,7 @@
 Automated runs should be hidden: `--hidden` or env `OBL_HIDDEN=1` keeps the window at the bottom of the
 z-order, unfocused, without a taskbar or alt-tab entry (off-screen windows present nothing, so they are not used).
 ```powershell
-./tools/capture.ps1 [-At 5,35] [-OutDir ...]   # hidden start, window screenshots at the given seconds, then stop
+./tools/capture.ps1 [-At 5,35] [-OutDir ...]   # hidden start without the settings window, window screenshots at the given seconds, then stop
 ```
 Capture restores every byte of `run/BeachLife.ini` after stopping the game, including on capture or launch failure.
 Its output can be piped or redirected: the native
@@ -30,7 +30,7 @@ from `tools/common.ps1`; they match the process by the path of `<game dir>\Beach
 directory). The instance lock file is named by a hash of the game directory, so several copies can run side by side.
 
 ## Start-up sequence
-Intro movie (skippable, `[Intro] PlayMovie`), two logo screens (left click or timeout), main menu after about 30 s
+A player's start opens the [settings window](settings-window.md) first (not in test runs, `--no-settings` skips it). Then the intro movie (skippable, `[Intro] PlayMovie`), two logo screens (left click or timeout), main menu after about 30 s
 without input. Scripted runs skip the movie and run without a frame cap.
 
 ## Audio

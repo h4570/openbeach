@@ -12,6 +12,9 @@
 // by the unit (the font's glyph index), so the engine gets the bytes back.
 namespace obl::text_load {
 
+// The settings language indices are 0 .. kLanguageCount - 1.
+inline constexpr unsigned kLanguageCount = 6;
+
 // Convert the settings language index to en, fr, it, de, es or pl; unsupported indices fall back to English.
 const char* LanguageCode(unsigned index);
 

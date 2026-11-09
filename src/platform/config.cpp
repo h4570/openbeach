@@ -2,6 +2,7 @@
 #include "core/config.h"
 
 #include "core/code_page.h"
+#include "game/game/start_settings.h"
 #include "game/ui/display_geometry.h"
 #include "core/ini_file.h"
 #include "core/log.h"
@@ -21,24 +22,6 @@ namespace {
 Settings g_settings;
 std::filesystem::path g_path;
 
-constexpr char kDefaultIni[] = "; OpenBeach settings (read at start-up)\r\n"
-                               "\r\n"
-                               "[Display]\r\n"
-                               "; 1 = window 800x600 (movable, alt-tab friendly), 0 = borderless fullscreen on the monitor\r\n"
-                               "; Alt+Enter switches between the two and stores the choice here\r\n"
-                               "Windowed=1\r\n"
-                               "; 1 = in gameplay keep the mouse in the active game window, so the screen edge scrolls the map;\r\n"
-                               "; Alt+Tab or the options (Esc) let it go, 0 = the mouse leaves the window freely\r\n"
-                               "ConfineMouse=1\r\n"
-                               "; window size multiplier (1..4, decimals allowed), capped at the monitor size\r\n"
-                               "Scale=1\r\n"
-                               "; frame rate cap, 0 = unlimited (render as fast as possible)\r\n"
-                               "MaxFps=60\r\n"
-                               "\r\n"
-                               "[Intro]\r\n"
-                               "; 1 = play the Eidos intro movie (in the game window when Windowed=1), 0 = skip it\r\n"
-                               "PlayMovie=1\r\n";
-
 bool ReadBool(const std::filesystem::path& path, const char* section, const char* key, bool fallback)
 {
     return ini::ReadInt(path, section, key, fallback ? 1 : 0) != 0;
@@ -48,13 +31,11 @@ bool ReadBool(const std::filesystem::path& path, const char* section, const char
 
 void Load(const Text16& gameDirectory)
 {
-    const std::filesystem::path path = WidePath(gameDirectory) / "openbeach.ini";
+    const std::filesystem::path path = WidePath(gameDirectory) / game::start_settings::kFileName;
     g_path = path;
     std::error_code ec;
-    if (!std::filesystem::exists(path, ec) && !ec) {
-        std::ofstream out(path, std::ios::binary);
-        if (out.write(kDefaultIni, sizeof(kDefaultIni) - 1)) OBL_LOG("config: created default openbeach.ini");
-    }
+    if (!std::filesystem::exists(path, ec) && !ec && game::start_settings::CreateDefaultFile(path))
+        OBL_LOG("config: created default openbeach.ini");
 
     g_settings.windowed = ReadBool(path, "Display", "Windowed", g_settings.windowed);
     g_settings.confineMouse = ReadBool(path, "Display", "ConfineMouse", g_settings.confineMouse);

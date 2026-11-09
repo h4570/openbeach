@@ -3,12 +3,14 @@
 // is the host.
 
 #include "launch_options.h"
+#include "settings_window.h"
 #include "standalone_host.h"
 
 #include <SDL3/SDL_filesystem.h>
 #include <SDL3/SDL_main.h>
 
 #include <cstdio>
+#include <cstdlib>
 #include <filesystem>
 #include <string>
 #include <system_error>
@@ -20,6 +22,8 @@ using namespace obl;
 struct Options : launcher::GameOptions {
     bool standaloneHost = false; // --standalone-host: this process is the host (set by Launch only)
     bool runEntry = true; // --no-entry: the host stops after the start-up (ctest standalone_host)
+    bool forceSettings = false; // --settings: show the settings window even when openbeach.ini turned it off
+    bool noSettings = false; // --no-settings: never show it (smoke tests, a desktop shortcut that wants the game at once)
 };
 
 void PrintUsage()
@@ -57,6 +61,10 @@ bool ParseArgs(int argc, char** argv, Options& o)
             o.standaloneHost = true;
         } else if (a == "--no-entry") {
             o.runEntry = false;
+        } else if (a == "--settings") {
+            o.forceSettings = true;
+        } else if (a == "--no-settings") {
+            o.noSettings = true;
         } else {
             PrintUsage();
             return false;
@@ -70,6 +78,15 @@ bool ParseArgs(int argc, char** argv, Options& o)
     return true;
 }
 
+// Only a player's start: test runs and tools pass a flag or variable that rules it out, and must never wait on a window.
+bool OffersSettings(const Options& o)
+{
+    if (o.noSettings || o.hidden || !o.runEntry || !o.script.empty() || !o.headless.empty()) return false;
+    for (const char* name : {"OBL_HIDDEN", "OBL_SCRIPT", "OBL_HEADLESS"})
+        if (const char* value = std::getenv(name); value && *value) return false;
+    return launcher::ShouldShowSettings(o.gameDir, o.forceSettings);
+}
+
 } // namespace
 
 int main(int argc, char* argv[])
@@ -77,6 +94,7 @@ int main(int argc, char* argv[])
     Options o;
     if (!ParseArgs(argc, argv, o)) return 1;
     if (o.standaloneHost) return standalone::HostMain(o.gameDir, o.gameArgs, o.runEntry);
+    if (OffersSettings(o) && launcher::RunSettingsWindow(o.gameDir) == launcher::SettingsChoice::Quit) return 0;
     launcher::SetGameEnvironment(o);
     return standalone::Launch(o.gameDir, o.gameArgs, o.wait, o.runEntry);
 }

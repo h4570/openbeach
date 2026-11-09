@@ -146,17 +146,18 @@ presents, without audio the game is silent. The README names the Debian/Ubuntu p
   with `OBL_PACK=l0` and the dummy audio driver, waits for the first presented menu frame and a few seconds in the menu,
   then stops the host. The job also installs with the installer (`/VERYSILENT`, no `/ISO`) into `build/installed` and runs
   the same test there.
-- **Linux:** `tools/ci/linux_smoke.sh <unpacked tarball>` starts `game/OpenBeach` the same way under Xvfb (never a real
+- **Linux:** `tools/ci/linux_smoke.sh <unpacked tarball>` starts `game/OpenBeach --no-settings` the same way under Xvfb (never a real
   display) with SDL's X11 driver, then sends `SIGTERM`; SDL turns it into its quit event, and the test expects `WinMain
   returned 0`, `process exit` and exit code 0. `tools/ci/linux_smoke_distros.sh` runs it in clean `debian:12` and
   `ubuntu:24.04` containers with only the README's packages (its English section, the first list) and Xvfb. The job
   keeps a screenshot of the Xvfb screen in its artifact.
 
 - **macOS:** `tools/ci/macos_smoke.sh <OpenBeach.app>` runs on the app in the mounted disk image: `openbeach-launcher
-  --demo` under a temporary `HOME`, the same log checks in a Cocoa window, `SIGTERM` and a clean exit; the job keeps a
+  --demo --no-settings` under a temporary `HOME`, the same log checks in a Cocoa window, `SIGTERM` and a clean exit; the job keeps a
   `screencapture` of the screen. `codesign --verify --deep --strict` checks the packed app's signature first.
 
 Not covered: the import scripts and the installer's import (CI has no copy of the game), the macOS launcher's dialogs,
+the [settings window](settings-window.md) (the smoke tests skip it),
 Gatekeeper on a downloaded copy, real input, a real audio device, Wayland and a GPU driver.
 
 ## Testing without a release

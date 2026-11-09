@@ -45,7 +45,7 @@ $ini = Join-Path $repo 'run/BeachLife.ini'
 $iniBytes = if (Test-Path -LiteralPath $ini) { [IO.File]::ReadAllBytes($ini) } else { $null }
 $launcherProcess = $null
 try {
-    $launchArgs = @('--no-wait', '--keep-saves','--game-dir', "`"$(Join-Path $repo 'run')`"")
+    $launchArgs = @('--no-wait', '--keep-saves', '--no-settings', '--game-dir', "`"$(Join-Path $repo 'run')`"")
     if (-not $Visible) { $launchArgs += '--hidden' }
     # Do not attach the native launcher/host to PowerShell's pipeline handles. Keep diagnostics in files.
     $launcherProcess = Start-Process $launcher -ArgumentList $launchArgs -WindowStyle Hidden -PassThru `
