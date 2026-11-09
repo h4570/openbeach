@@ -8,7 +8,7 @@
 
 #include <cstdlib>
 #include <cstdint>
-#if !defined(__EMSCRIPTEN__)
+#if defined(__x86_64__) || defined(__i386__)
 #include <immintrin.h>
 #endif
 #include <cstring>
@@ -138,10 +138,12 @@ bool ExecuteDeterminismCommand(const std::string& name, const std::vector<std::s
         // Ignore MXCSR's sticky exception status bits, which change with ordinary arithmetic.
         // x64 code never uses the legacy FPU and MSVC has no inline asm there: report its reset value.
         const uint16_t x87 = 0x27f;
-#if defined(__EMSCRIPTEN__)
-        const uint32_t mxcsr = 0x1f80; // wasm has no MXCSR: its float math is always round-to-nearest, masked, no FTZ/DAZ
-#else
+#if defined(__x86_64__) || defined(__i386__)
         const uint32_t mxcsr = _mm_getcsr();
+#else
+        // wasm and arm64 have no MXCSR. wasm is always round-to-nearest, masked, no FTZ/DAZ; so is arm64 with the FPCR
+        // a process starts with, which the game never changes.
+        const uint32_t mxcsr = 0x1f80;
 #endif
         OBL_LOG("autotest: fp-report x87-control=%u x87-masks=%u x87-precision=%u x87-rounding=%u "
                 "sse-control=%u sse-masks=%u sse-rounding=%u sse-ftz=%u sse-daz=%u",

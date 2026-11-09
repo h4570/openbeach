@@ -40,6 +40,15 @@ build needs SDL's X11 or Wayland development packages for a real window (`tools/
 It starts, presents frames under Xvfb and quits cleanly; the release tarball is built with
 `bash tools/ci/linux_release.sh` ([releases.md](releases.md)).
 
+## macOS
+Experimental, arm64 only (Apple silicon), with Xcode's command line tools (Apple Clang), CMake, Ninja and Python 3. The same
+script builds the windowed game with SDL's Cocoa backend:
+
+```bash
+OBL_SIM_SKIP_CONVERSION=1 bash tools/obl_sim_linux.sh -DOBL_LINUX_WINDOWED=ON -DCMAKE_OSX_ARCHITECTURES=arm64
+```
+The release app and disk image come from `bash tools/ci/macos_release.sh` ([releases.md](releases.md#macos)).
+
 ## WebAssembly
 `bash tools/wasm_linux.sh` builds the unit tests, the simulation and the importer adapter with Emscripten (`EMSDK` names the SDK).
 

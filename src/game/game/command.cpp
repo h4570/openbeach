@@ -1,5 +1,6 @@
 #include "game/game/command.h"
 #include "game/game/command_controls.h"
+#include "core/float_chars.h"
 
 #include <cmath>
 
@@ -283,7 +284,7 @@ std::optional<float> ParseFloat(std::string_view text)
 {
     if (text.empty()) return std::nullopt;
     float value = 0.0f;
-    const auto [end, ec] = std::from_chars(text.data(), text.data() + text.size(), value);
+    const auto [end, ec] = FloatFromChars(text.data(), text.data() + text.size(), value);
     if (ec != std::errc{} || end != text.data() + text.size()) return std::nullopt;
     return value;
 }

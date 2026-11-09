@@ -4,6 +4,9 @@
 #   cmake -S src/host_linux -B build/linux-sim -G Ninja -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
 cmake_minimum_required(VERSION 3.28)
 project(OpenBeachSimLinux LANGUAGES C CXX)
+if(APPLE)
+    enable_language(OBJC) # SDL's Cocoa backends
+endif()
 
 if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     message(FATAL_ERROR "obl-sim needs Clang: the Windows test tools use __try (docs/architecture/linux-host.md)")
@@ -18,6 +21,18 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_SCAN_FOR_MODULES OFF) # no C++ modules; the scan would only fail early on the same errors as the compile
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_POSITION_INDEPENDENT_CODE OFF)
+# The x86 float flags (AVX2, SSE math, an 8-byte long double) apply only to an x86-64 build; arm64 (the macOS build,
+# docs/build/releases.md) is IEEE scalar math without them, and Apple's arm64 long double is already 8 bytes.
+if(CMAKE_OSX_ARCHITECTURES)
+    set(OBL_TARGET_ARCH ${CMAKE_OSX_ARCHITECTURES})
+else()
+    set(OBL_TARGET_ARCH ${CMAKE_SYSTEM_PROCESSOR})
+endif()
+if(OBL_TARGET_ARCH MATCHES "^(x86_64|AMD64|amd64)$")
+    set(OBL_X86_64 ON)
+else()
+    set(OBL_X86_64 OFF)
+endif()
 
 # CI recompiles most of the host when shared layout headers change. -O1 keeps the
 # simulation optimized without the compile cost of -O2; ordinary builds retain -O2.
@@ -85,6 +100,15 @@ if(OBL_LINUX_WINDOWED AND EMSCRIPTEN)
         set(SDL_${enabled} ON CACHE BOOL "" FORCE)
     endforeach()
     foreach(disabled CAMERA GPU HAPTIC HIDAPI JOYSTICK SENSOR VULKAN)
+        set(SDL_${disabled} OFF CACHE BOOL "" FORCE)
+    endforeach()
+elseif(OBL_LINUX_WINDOWED AND APPLE)
+    # macOS (docs/build/releases.md): SDL's Cocoa video, Core Audio and its Metal/OpenGL renderers come with the system.
+    set(SDL_UNIX_CONSOLE_BUILD OFF CACHE BOOL "" FORCE)
+    foreach(enabled AUDIO RENDER OPENGL)
+        set(SDL_${enabled} ON CACHE BOOL "" FORCE)
+    endforeach()
+    foreach(disabled X11 WAYLAND KMSDRM CAMERA GPU HAPTIC HIDAPI JOYSTICK SENSOR VULKAN OPENGLES)
         set(SDL_${disabled} OFF CACHE BOOL "" FORCE)
     endforeach()
 elseif(OBL_LINUX_WINDOWED)
@@ -206,10 +230,15 @@ foreach(target ${GAME_TARGETS})
             target_link_options(${target} PRIVATE -sNODERAWFS=1)
         endif()
     else()
-        target_compile_options(${target} PRIVATE -march=haswell -mfpmath=sse -mlong-double-64)
-        # Non-PIE keeps the executable at a fixed address; -rdynamic lets the crash report name our
-        # functions through dladdr (fatal.cpp).
-        target_link_options(${target} PRIVATE -no-pie -rdynamic)
+        if(OBL_X86_64)
+            target_compile_options(${target} PRIVATE -march=haswell -mfpmath=sse -mlong-double-64)
+        endif()
+        # -rdynamic lets the crash report name our functions through dladdr (fatal.cpp). Non-PIE keeps the Linux
+        # executable at a fixed address; macOS on arm64 has no non-PIE executables.
+        target_link_options(${target} PRIVATE -rdynamic)
+        if(NOT APPLE)
+            target_link_options(${target} PRIVATE -no-pie)
+        endif()
     endif()
     if(NOT target STREQUAL "obl-game")
         target_link_libraries(${target} PRIVATE obl-game)

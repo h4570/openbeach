@@ -18,7 +18,11 @@
 
 #if !defined(__EMSCRIPTEN__)
 #include <execinfo.h>
+#if defined(__APPLE__)
+#include <sys/ucontext.h> // <ucontext.h> refuses to compile without _XOPEN_SOURCE there
+#else
 #include <ucontext.h>
+#endif
 #endif
 #include <unistd.h>
 
@@ -60,11 +64,17 @@ obl::game::ExitHandler __cdecl OnExit(obl::game::ExitHandler function)
 // the exit code), then the default action ends the process with the signal.
 void OnFault(int signal, siginfo_t* info, void* context)
 {
-    const auto* registers = static_cast<ucontext_t*>(context)->uc_mcontext.gregs;
-#if defined(__x86_64__)
-    const auto eip = static_cast<uintptr_t>(registers[REG_RIP]);
+    const auto* state = static_cast<ucontext_t*>(context);
+#if defined(__APPLE__) && defined(__aarch64__)
+    const auto eip = static_cast<uintptr_t>(state->uc_mcontext->__ss.__pc);
+#elif defined(__APPLE__)
+    const auto eip = static_cast<uintptr_t>(state->uc_mcontext->__ss.__rip);
+#elif defined(__aarch64__)
+    const auto eip = static_cast<uintptr_t>(state->uc_mcontext.pc);
+#elif defined(__x86_64__)
+    const auto eip = static_cast<uintptr_t>(state->uc_mcontext.gregs[REG_RIP]);
 #else
-    const auto eip = static_cast<uintptr_t>(registers[REG_EIP]);
+    const auto eip = static_cast<uintptr_t>(state->uc_mcontext.gregs[REG_EIP]);
 #endif
     OBL_LOG("obl-sim: FAILED signal %d (%s) at %0*llX, address %p, in %s", signal, strsignal(signal), int(2 * sizeof(eip)),
             static_cast<unsigned long long>(eip), info->si_addr, obl::fatal::DescribeAddress(eip).c_str());

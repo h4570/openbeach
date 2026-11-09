@@ -6,7 +6,8 @@ name: Release
 on:
   push:
     branches: [main]
-  # By hand: builds, tests and packs the Linux and Windows releases as workflow artifacts only (no release, no upload to one).
+  # By hand: builds, tests and packs the Linux, Windows and macOS releases as workflow artifacts only (no release, no upload
+  # to one).
   workflow_dispatch:
 
 permissions:
@@ -134,3 +135,46 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release upload "$env:TAG" (Get-ChildItem build/dist/openbeach-*.zip, build/dist/openbeach-*-installer.exe).FullName --repo "$env:GITHUB_REPOSITORY" --clobber
+
+  # The macOS disk image (docs/build/releases.md, "macOS"), experimental: a native arm64 build on Apple silicon, the same L0
+  # references, then the app's launcher starts the demo in a Cocoa window.
+  macos:
+    needs: release
+    if: ${{ !cancelled() && (github.event_name == 'workflow_dispatch' || needs.release.outputs.release_created == 'true') }}
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      TAG: ${{ needs.release.outputs.tag_name }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Packages
+        run: brew install ninja
+      - name: Build, L0 references and package
+        run: |
+          version="${TAG:-$(cat version.txt)-dev.$(git rev-parse --short HEAD)}"
+          OBL_RELEASE_VERSION="$version" bash tools/ci/macos_release.sh
+      - name: Smoke test
+        run: |
+          mkdir -p build/smoke
+          dmg=$(ls build/dist/openbeach-*-macos-arm64.dmg | head -1)
+          hdiutil attach -readonly -nobrowse -mountpoint build/smoke/volume "$dmg"
+          trap 'hdiutil detach build/smoke/volume' EXIT
+          codesign --verify --deep --strict build/smoke/volume/OpenBeach.app
+          bash tools/ci/macos_smoke.sh build/smoke/volume/OpenBeach.app build/dist/macos-smoke.png
+      - name: Workflow artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: macos-release
+          path: |
+            build/dist/*.dmg
+            build/dist/macos-smoke.png
+          if-no-files-found: error
+          retention-days: 14
+      - name: Attach to the release
+        if: needs.release.outputs.release_created == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$TAG" build/dist/openbeach-*.dmg --repo "$GITHUB_REPOSITORY" --clobber

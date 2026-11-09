@@ -10,7 +10,8 @@ entries ([ci.md](../build/ci.md)).
 tools/obl_sim_linux.sh [-k]          # cmake + ninja into build/linux-sim-x64 (or $OBL_SIM_BUILD); -k: show every compile error
 build/linux-sim-x64/bin/obl-sim --game-dir run --headless tests/replays/headless_s1.replay
 ```
-The host builds for x86-64 only; the WebAssembly build ([web-build.md](web-build.md)) covers 32-bit pointers.
+The host builds for x86-64 Linux and, for the experimental macOS release, arm64 macOS with Apple Clang
+([../build/releases.md](../build/releases.md#macos)); the WebAssembly build ([web-build.md](web-build.md)) covers 32-bit pointers.
 The build also produces the portable `obl-convert` CLI. When `run/BeachLife.exe` exists, the script converts its GUI
 tables to `run/packs/base/gui/`, the game parameters to `run/packs/base/rules/`, and the catalog, guest sets, texts and
 `pack.json` to `run/packs/base/` before returning; conversion failure fails the script. A custom game directory used with
@@ -58,6 +59,9 @@ headless entries that share fixtures run in one job.
 ## Toolchain and ABI
 - **Clang only** (GCC has no MS inline asm or `__try`), x86-64, C++20, `-fms-extensions -fasm-blocks`, `-O2`. Floating
   point is scalar AVX2 like the Windows `/arch:AVX2` build (`-march=haswell -mfpmath=sse -ffp-contract=off`). `-mlong-double-64`: an 8-byte `long double` like MSVC's.
+  An arm64 build (macOS) leaves out the three x86 flags (`OBL_X86_64` in `src/host_linux/CMakeLists.txt`) and `-no-pie`;
+  its `long double` is 8 bytes already, `__rdtsc` is a `steady_clock` tick (`win_types/intrin.h`) and `fp-report` prints the
+  default control word, as on wasm. The L0 world hashes match x86-64 (checked by the macOS release job).
 - **x87 precision:** none. The loading bar is C++ on doubles, so the host sets no x87 control word; Linux's default 64-bit
   precision control is never used for float results.
 - **Game text is `char16_t`.** The game's text is UTF-16; shared code holds it as `Char16`/`Text16`

@@ -5,6 +5,7 @@
 
 #include "core/log.h"
 
+#include <cstdint>
 #include <cstdio>
 
 #ifdef _WIN32
@@ -60,7 +61,8 @@ int Stamp(char* out, size_t size)
     std::tm local{};
     localtime_r(&now.tv_sec, &local);
     return std::snprintf(out, size, "[%02d:%02d:%02d.%03ld][%5lu] ", local.tm_hour, local.tm_min, local.tm_sec, now.tv_nsec / 1000000,
-            static_cast<unsigned long>(pthread_self()));
+            // pthread_t is an integer on Linux and a pointer on macOS: the C cast takes both.
+            (unsigned long)(uintptr_t)pthread_self());
 }
 #endif
 

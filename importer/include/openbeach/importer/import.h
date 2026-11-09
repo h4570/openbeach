@@ -5,6 +5,7 @@
 // command and the browser worker (importer/web/) both run it, so the two produce the same pack.
 
 #include "openbeach/importer/byte_source.h"
+#include "openbeach/importer/known_exe.h"
 #include "openbeach/importer/pack_sink.h"
 #include "openbeach/importer/shard.h"
 #include "openbeach/importer/spool.h"
@@ -21,8 +22,6 @@ class Registry;
 }
 
 namespace obl::convert {
-
-struct KnownExe;
 
 struct ImportOptions {
     // The pack's default text table; without one, BeachLife.ini's language of the source (an error when it has none).
@@ -50,7 +49,7 @@ struct ImportOptions {
     UnitExchange exchange;
     // A CD: only extract the sprite archive into the spool and keep it there, for the shards to adopt; nothing is converted.
     bool prepareSpool = false;
-    // The executables the source may hold (KnownExe, importer/src/source/source.h); empty means the supported builds.
+    // The executables the source may hold (KnownExe, known_exe.h); empty means the supported builds.
     // Tests pass their own table so a synthetic copy imports end to end.
     std::span<const KnownExe> knownExes;
 };

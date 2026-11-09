@@ -1,6 +1,7 @@
 #pragma once
 
 #include "openbeach/importer/byte_source.h"
+#include "openbeach/importer/known_exe.h"
 
 #include <cstdint>
 #include <filesystem>
@@ -12,16 +13,10 @@
 
 namespace obl::convert {
 
-enum class ExeBuild { DigitalOct2002, CdAug2002 };
 enum class DataRevision { EuAug2002, UkAug2002 };
 
 std::string_view Name(ExeBuild build);
 std::string_view Name(DataRevision revision);
-
-struct KnownExe {
-    std::string_view sha256; // lowercase hex
-    ExeBuild build;
-};
 
 std::span<const KnownExe> SupportedExes();
 

@@ -65,13 +65,30 @@ enum class Map : uint8_t {
     Special
 };
 
+struct SectionField;
+
+// The records of a Map::Group. Not a std::span member: libc++ before 19 (Apple's too) instantiates the span's members
+// while SectionField is still incomplete and fails.
+struct FieldGroup {
+    const SectionField* data = nullptr;
+    size_t size = 0;
+    constexpr FieldGroup() = default;
+    template<size_t N> constexpr FieldGroup(const SectionField (&fields)[N]) : data(fields), size(N) {}
+    std::span<const SectionField> Fields() const;
+};
+
 struct SectionField {
     const char* label; // the emitter's label (save_body.cpp field tables)
     const char* name; // obl.save key; null for dropped and special records
     Map map;
-    std::span<const struct SectionField> group = {};
+    FieldGroup group = {};
     formats::SaveStateSet states = formats::SaveStateSet::None; // the names of a Map::State record
 };
+
+std::span<const SectionField> FieldGroup::Fields() const
+{
+    return {data, size};
+}
 
 // In the emitter's order. `m_LastGameDayTime` is the hour of the previous frame (World update), `m_lastGameDayTime` the
 // hour the day cycle last checked; `m_averageTotty` is the guests' average attractiveness.
@@ -225,7 +242,7 @@ FoundField FindField(std::span<const SectionField> table, std::string_view label
             for (size_t i = 0; i < prefix.size(); ++i, ++cut)
                 if (prefix[i] == '[')
                     while (cut + 1 < label.size() && label[cut + 1] >= '0' && label[cut + 1] <= '9') ++cut;
-            FoundField inner = FindField(f.group, label.substr(cut), occurrence);
+            FoundField inner = FindField(f.group.Fields(), label.substr(cut), occurrence);
             if (inner.spec && inner.spec->name && *f.name) inner.key = std::string(f.name) + "." + inner.key;
             return inner;
         }
@@ -2295,7 +2312,7 @@ bool TableHasKey(std::span<const SectionField> table, std::string_view key)
             if (!rest.starts_with(prefix) || rest.size() <= prefix.size() || rest[prefix.size()] != '.') continue;
             rest.remove_prefix(prefix.size() + 1);
         }
-        if (TableHasKey(f.group, rest)) return true;
+        if (TableHasKey(f.group.Fields(), rest)) return true;
     }
     return false;
 }

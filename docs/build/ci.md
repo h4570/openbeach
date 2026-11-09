@@ -21,10 +21,12 @@ whatever a release needs runs in this file, after `release` and on its outputs `
 - `linux`: builds the Linux tarball on Ubuntu 22.04, runs the L0 references on the optimized build, smoke-tests it under
   Xvfb (also in `debian:12` and `ubuntu:24.04` containers) and attaches it to the release ([releases.md](releases.md));
 - `windows`: builds the Windows zip and installer on `windows-2025`, runs the same L0 references, starts the packed game
-  and the silently installed one hidden and attaches both.
+  and the silently installed one hidden and attaches both;
+- `macos` (experimental): builds the arm64 disk image on `macos-15`, runs the same L0 references, starts the demo from
+  the packed app and attaches the `.dmg`.
 
-By hand (`workflow_dispatch`) only `linux` and `windows` run and keep the archives as the workflow artifacts
-`linux-release` and `windows-release`.
+By hand (`workflow_dispatch`) only `linux`, `windows` and `macos` run and keep the archives as the workflow artifacts
+`linux-release`, `windows-release` and `macos-release`.
 
 The CI run started after a release replaces the push run of the same commit, so a merged release pull request publishes
 the site; a newer push would cancel it too, and the site then needs the run by hand.

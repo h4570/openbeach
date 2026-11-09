@@ -135,6 +135,7 @@ add_executable(obl_unit_tests
     file_io_test.cpp
     os_test.cpp
     ascii_case_test.cpp
+    float_chars_test.cpp
     byte_reader_test.cpp
     code_page_test.cpp
     wide_format_test.cpp
