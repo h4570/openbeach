@@ -52,9 +52,10 @@ data. It is what the automated tests use, and it runs on the same mechanics as t
 ([L0 tests](docs/build/ci-l0.md)).
 
 ## Download
-Every [release](https://github.com/h4570/openbeach/releases) has a Windows x64 zip and a Linux x86-64 tarball (glibc
-2.35+: Debian 12, Ubuntu 22.04 and later). Unpack it and follow `README.txt` (in the six languages of the game): drag
-your copy onto `Import.cmd` (`import.sh` on Linux) once, then start `Play.cmd`. `AGENTS.md` beside it tells an AI agent
+Every [release](https://github.com/h4570/openbeach/releases) has a Windows x64 installer and zip and a Linux x86-64
+tarball (glibc 2.35+: Debian 12, Ubuntu 22.04 and later). The installer asks for the `.iso` of your CD, imports it and
+adds the shortcuts. From an archive, follow `README.<language>.txt` (in the six languages of the game): drag your copy
+onto `Import.cmd` (`import.sh` on Linux) once, then start `Play.cmd`. `AGENTS.md` beside it tells an AI agent
 how to do it for you ([release archives](docs/build/releases.md)).
 
 ## Building and running

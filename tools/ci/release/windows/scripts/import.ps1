@@ -1,8 +1,11 @@
 # Imports the player's own copy of Beach Life into userdata\ of a Windows release (docs/build/releases.md): the converted
-# pack, the cursors and the game language in BeachLife.ini. Started by Import.cmd.
+# pack, the cursors and the game language in BeachLife.ini. Started by Import.cmd and by the installer.
 #   import.ps1 [-Source <installation, CD drive, extracted CD or .iso>] [-Language en|fr|it|de|es|pl]
-# Asks for the copy when none is given, and for the language when the copy does not name one (a CD). Exit code 1 on failure.
-param([string]$Source = '', [string]$Language = '')
+#              [-PreferLanguage en|fr|it|de|es|pl] [-PauseOnError]
+# Asks for the copy when none is given, and for the language when the copy does not name one (a CD) and -PreferLanguage
+# does not either: with it the converter takes that language when the copy has it, else one the copy has, and asks
+# nothing. -PauseOnError keeps the window open on a failure (the installer's window would close at once). Exit code 1 on failure.
+param([string]$Source = '', [string]$Language = '', [string]$PreferLanguage = '', [switch]$PauseOnError)
 $ErrorActionPreference = 'Stop'
 $game = Split-Path $PSScriptRoot
 $convert = Join-Path $game 'obl-convert.exe'
@@ -16,6 +19,10 @@ $languages = @('en', 'fr', 'it', 'de', 'es', 'pl')
 function Stop-Import([string]$message) {
     Write-Host ''
     Write-Host "ERROR: $message" -ForegroundColor Red
+    if ($PauseOnError) {
+        Write-Host ''
+        Read-Host 'Press Enter to close this window' | Out-Null
+    }
     exit 1
 }
 
@@ -97,9 +104,10 @@ try {
     New-Item -ItemType Directory -Force -Path $fresh, (Join-Path $userdata 'remaster') | Out-Null
     $arguments = @('import', $Source, $fresh)
     if ($Language) { $arguments += @('--language', $Language) }
+    elseif ($PreferLanguage) { $arguments += @('--prefer-language', $PreferLanguage) }
     $exit = Invoke-Convert $arguments
     # A CD names no language (an installation does, in its BeachLife.ini): ask which of the copy's languages to play.
-    if ($exit -ne 0 -and -not $Language -and ($script:convertOutput -join "`n") -match 'Language') {
+    if ($exit -ne 0 -and -not $Language -and -not $PreferLanguage -and ($script:convertOutput -join "`n") -match 'Language') {
         Write-Host ''
         Write-Host 'Your copy does not say which language to use. Type one your copy has:'
         Write-Host '  en English (UK/US and the later English CD)'

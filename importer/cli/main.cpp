@@ -124,8 +124,11 @@ int Usage()
             "       obl-convert pack <installation directory> <pack directory> [--language <lang>] [--schemas <dir>]\n"
             "  writes <pack directory>/pack.json last: identity, import reference, default language (without --language: the\n"
             "  BeachLife.ini language when the pack has its table), hash and tier of every file\n"
-            "       obl-convert import <installation or CD root> <pack directory> [--language <lang>] [--jobs <n>]\n"
+            "       obl-convert import <installation or CD root> <pack directory> [--language <lang> | --prefer-language <lang>]\n"
+            "               [--jobs <n>]\n"
             "  runs every pack command above, pack.json last (what the browser import runs)\n"
+            "  --prefer-language <lang>: the installation's language, else <lang> when the copy has it, else the copy's first\n"
+            "  (a CD names none; the Windows installer passes the player's choice); --language takes <lang> or fails\n"
             "  --jobs <n>: worker threads for the sprite and map images (default: one per hardware thread; 1 converts serially);\n"
             "  the files, errors and progress are the same for every n\n"
             "       obl-convert save-info <save<N>.dat> [--objects]\n"
@@ -584,6 +587,8 @@ int Import(const std::vector<std::string>& args)
         if (i + 1 >= args.size()) return Usage();
         if (args[i] == "--language")
             options.language = args[i + 1];
+        else if (args[i] == "--prefer-language")
+            options.preferredLanguage = args[i + 1];
         else if (args[i] == "--jobs") {
             const auto parsed = ParseJobs(args[i + 1]);
             if (!parsed) return Usage();
