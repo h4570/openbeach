@@ -17,15 +17,18 @@ It works on Windows, macOS, Linux and Android, in any modern browser.</p>
 </p>
 
 <p align="center">
+  <img src="https://img.shields.io/badge/Windows-supported-0078D4?logo=pcgamingwiki&logoColor=white" alt="Windows: supported">
+  <img src="https://img.shields.io/badge/Linux-supported-0078D4?logo=linux&logoColor=white" alt="Linux: supported">
+  <img src="https://img.shields.io/badge/Browser-supported-0078D4?logo=googlechrome&logoColor=white" alt="Browser">
+  <img src="https://img.shields.io/badge/macOS-experimental-FF7A59?logo=apple&logoColor=white" alt="macOS: experimental">
+  <img src="https://img.shields.io/badge/Mobile-experimental-FF7A59?logo=android&logoColor=white" alt="Mobile: experimental">
+</p>
+
+<p align="center">
   <img src="https://img.shields.io/badge/C%2B%2B-20-00599C?logo=cplusplus&logoColor=white" alt="C++20">
   <img src="https://img.shields.io/badge/SDL-3-1D4F91" alt="SDL3">
   <img src="https://img.shields.io/badge/WebAssembly-wasm32-654FF0?logo=webassembly&logoColor=white" alt="WebAssembly: wasm32">
   <img src="https://img.shields.io/badge/x86--64-64--bit-555555" alt="x86-64">
-  <img src="https://img.shields.io/badge/Windows-supported-0078D4" alt="Windows">
-  <img src="https://img.shields.io/badge/Linux-supported-FCC624?logo=linux&logoColor=black" alt="Linux: supported">
-  <img src="https://img.shields.io/badge/macOS-experimental-FF7A59?logo=apple&logoColor=white" alt="macOS: experimental">
-  <img src="https://img.shields.io/badge/Browser-supported-37B3B0" alt="Browser">
-  <img src="https://img.shields.io/badge/Mobile-experimental-FF7A59?logo=android&logoColor=white" alt="Mobile: experimental">
 </p>
 
 # OpenBeach
