@@ -83,7 +83,8 @@ bool MusicStream::Open(const char* path, float volume)
     SDL_AudioSpec spec{SDL_AUDIO_F32, static_cast<int>(s.decoder.channels), static_cast<int>(s.decoder.sampleRate)};
     s.stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, &Impl::Fill, &s);
     if (!s.stream) {
-        OBL_LOG("music: SDL stream failed: %s", SDL_GetError());
+        OBL_LOG("music: SDL stream failed: %s (audio driver %s)", SDL_GetError(),
+                SDL_GetCurrentAudioDriver() ? SDL_GetCurrentAudioDriver() : "none");
         Close();
         return false;
     }

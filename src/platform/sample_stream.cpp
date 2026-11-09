@@ -1,5 +1,7 @@
 #include "game/ui/sample_stream.h"
+#include "core/log.h"
 #include <SDL3/SDL.h>
+#include <utility>
 #include <algorithm>
 #include <array>
 
@@ -89,9 +91,14 @@ bool SampleStream::Open(audio::Wave wave, bool loop, int volume, bool muted, con
     SDL_AudioSpec spec{SDL_AUDIO_S16, s.spatial ? 2 : s.wave.channels, s.wave.rate};
     s.stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, &Impl::Fill, &s);
     if (!s.stream) {
+        OBL_LOG("samples: SDL stream failed: %s (audio driver %s)", SDL_GetError(),
+                SDL_GetCurrentAudioDriver() ? SDL_GetCurrentAudioDriver() : "none");
         Close();
         return false;
     }
+    // Once: the driver SDL picked shows at once when it fell back to ALSA (no sound server reachable).
+    static bool driverLogged = false;
+    if (!std::exchange(driverLogged, true)) OBL_LOG("samples: SDL audio driver %s", SDL_GetCurrentAudioDriver());
     s.Gain();
     Start();
     if (Stats().failed) {

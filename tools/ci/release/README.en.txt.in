@@ -48,6 +48,7 @@ STEP 2: IMPORT YOUR COPY (once, about 15 minutes)
 STEP 3: PLAY
 [win]  Double-click Play.cmd in the "game" folder.
 [linux]  ./play.sh   (in the "game" folder)
+[linux]  Do not run the game as root/sudo: the sound will not work.
 [linux]  The import also puts OpenBeach with its icon into your applications menu.
 [mac]  Start OpenBeach from Applications or Launchpad.
 [win|linux]  Alt+Enter switches between a window and fullscreen. While you play a map the mouse stays in the game window, so the
