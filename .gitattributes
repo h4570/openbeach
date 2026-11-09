@@ -1,4 +1,6 @@
 *.sh text eol=lf
+# The executable of the macOS app bundle, a bash script without an extension.
+tools/ci/release/macos/openbeach-launcher text eol=lf
 # Pack data is read byte for byte (the GUI layout header ends in a bare LF, file hashes): no CRLF conversion on checkout.
 data/packs/** -text
 # Binary references: a line-ending rewrite must never touch them.

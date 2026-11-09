@@ -15,16 +15,24 @@ COSA TI SERVE
   cambiare nulla.
 [win]- Windows 10 o 11 a 64 bit.
 [linux]- Linux x86-64 con glibc 2.35 o più recente (Debian 12, Ubuntu 22.04 e successivi) e un desktop X11 o Wayland.
+[mac]- Un Mac con chip Apple (M1 o successivo) e macOS 13.3 Ventura o successivo;
+[mac]  i Mac con processore Intel non sono supportati.
 
 [win]PROGRAMMA DI INSTALLAZIONE
 [win]  La versione ha anche un programma di installazione (openbeach-@VERSION@-windows-x64-installer.exe): chiede il file
 [win]  .iso del tuo CD, installa OpenBeach e importa la tua copia, quindi i passi 1 e 2 sono fatti. Avvia OpenBeach dal
 [win]  desktop o dal menu Start; "Import Beach Life" nel menu Start importa di nuovo una copia.
 [win]
-PASSO 1: ESTRAI
+[win|linux]PASSO 1: ESTRAI
+[mac]PASSO 1: INSTALLA
 [win]  Estrai l'intero archivio in una tua cartella, per esempio Documenti\OpenBeach (non Programmi).
 [win]  Suggerimento: clic destro sul .zip scaricato, Proprietà, spunta "Annulla blocco", OK, poi estrai.
 [linux]  Estrai l'intero archivio in una tua cartella, per esempio ~/OpenBeach.
+[mac]  La versione macOS è sperimentale: si avvia e si gioca, ma è testata meno di Windows e Linux.
+[mac]  Apri il file .dmg scaricato e trascina OpenBeach sulla cartella Applicazioni accanto.
+[mac]  L'app non è firmata da Apple, quindi macOS ne rifiuta il primo avvio («Apple non può verificare...»): fai clic su
+[mac]  «Fine», apri Impostazioni di Sistema, Privacy e sicurezza, scorri in basso, fai clic su «Apri comunque» accanto a
+[mac]  OpenBeach e conferma. Solo questa volta.
 
 PASSO 2: IMPORTA LA TUA COPIA (una volta sola, circa 15 minuti)
 [win]  Apri la cartella "game" e trascina la cartella di Beach Life, l'unità CD o il file .iso su Import.cmd.
@@ -34,29 +42,44 @@ PASSO 2: IMPORTA LA TUA COPIA (una volta sola, circa 15 minuti)
 [linux]  Apri un terminale nella cartella "game" ed esegui uno di questi comandi:
 [linux]    ./import.sh "/percorso/di/Beach Life"     un'installazione, il CD o un'immagine disco montata
 [linux]    ./import.sh ~/Scaricati/beachlife.iso    un'immagine disco (viene montata per l'importazione)
+[mac]  Avvia OpenBeach da Applicazioni. Senza una copia importata propone l'importazione: fai clic su «Import my copy...»,
+[mac]  scegli il file .iso (o un file qualsiasi della cartella di Beach Life o del CD, per esempio BeachLife.exe) e la lingua
+[mac]  del gioco. Una finestra di Terminale mostra l'importazione; al termine il gioco si avvia.
   La tua copia viene solo letta, mai modificata. Puoi ripetere l'importazione in qualsiasi momento.
+[mac]  Per importare di nuovo, nel Terminale: /Applications/OpenBeach.app/Contents/Resources/import.sh
 
 PASSO 3: GIOCA
 [win]  Fai doppio clic su Play.cmd nella cartella "game".
 [linux]  ./play.sh   (nella cartella "game")
 [linux]  L'importazione aggiunge anche OpenBeach, con la sua icona, al menu delle applicazioni.
-  Alt+Invio passa dalla finestra allo schermo intero e viceversa. Durante una partita il mouse resta nella finestra
-  del gioco, così il bordo dello schermo fa scorrere la mappa; Esc (le opzioni) o Alt+Tab lo liberano.
+[mac]  Avvia OpenBeach da Applicazioni o dal Launchpad.
+[win|linux]  Alt+Invio passa dalla finestra allo schermo intero e viceversa. Durante una partita il mouse resta nella finestra
+[win|linux]  del gioco, così il bordo dello schermo fa scorrere la mappa; Esc (le opzioni) o Alt+Tab lo liberano.
+[mac]  Opzione+A capo passa tra finestra e schermo intero. Mentre giochi una mappa il mouse resta nella finestra del gioco,
+[mac]  così il bordo dello schermo scorre la mappa; Esc (le opzioni) o Cmd+Tab lo rilascia.
 
 LINGUA
   Il gioco è disponibile solo nelle lingue della tua copia: inglese per il CD UK/US e il CD inglese più recente, e
   francese, tedesco, italiano, polacco e spagnolo per il CD europeo e quello francese/tedesco. L'importazione prende la
   lingua della tua installazione, o te la chiede per un CD. Per passare a un'altra lingua della tua copia, cambia
-  Language= in game/userdata/BeachLife.ini: 0 inglese, 1 francese, 2 italiano, 3 tedesco, 4 spagnolo, 5 polacco.
+[win|linux]  Language= in game/userdata/BeachLife.ini: 0 inglese, 1 francese, 2 italiano, 3 tedesco, 4 spagnolo, 5 polacco.
+[mac]  Language= in ~/Library/Application Support/OpenBeach/userdata/BeachLife.ini:
+[mac]  0 inglese, 1 francese, 2 italiano, 3 tedesco, 4 spagnolo, 5 polacco.
 
 SALVATAGGI, IMPOSTAZIONI E LOG
-  Tutto è in game/userdata/: i salvataggi in SaveGames/, le impostazioni in BeachLife.ini e openbeach.ini, il log in
-  openbeach.log. Per aggiornare OpenBeach, estrai la nuova versione e copia la tua cartella userdata nella sua cartella
-  "game". Salvataggi del gioco originale: copiali in game/userdata/SaveGames/, OpenBeach li converte all'avvio.
+[win|linux]  Tutto è in game/userdata/: i salvataggi in SaveGames/, le impostazioni in BeachLife.ini e openbeach.ini, il log in
+[win|linux]  openbeach.log. Per aggiornare OpenBeach, estrai la nuova versione e copia la tua cartella userdata nella sua cartella
+[win|linux]  "game". Salvataggi del gioco originale: copiali in game/userdata/SaveGames/, OpenBeach li converte all'avvio.
+[mac]  Tutto è in ~/Library/Application Support/OpenBeach/userdata/ (Finder: Vai, Vai alla cartella, incolla il percorso):
+[mac]  salvataggi in SaveGames/, impostazioni in BeachLife.ini e openbeach.ini, il log in openbeach.log. Per aggiornare
+[mac]  OpenBeach trascina la nuova versione su Applicazioni e sostituisci la vecchia: copia importata, salvataggi e
+[mac]  impostazioni restano. Salvataggi del gioco originale: copiali lì in SaveGames/; OpenBeach li converte all'avvio.
 
 NON HAI LA COPIA A PORTATA DI MANO? PROVA LA DEMO
 [win]  Fai doppio clic su Demo.cmd: un piccolo scenario del progetto, senza dati del gioco originale.
 [linux]  ./demo.sh   un piccolo scenario del progetto, senza dati del gioco originale.
+[mac]  Avvia OpenBeach e fai clic su «Play the demo»: un piccolo scenario del progetto, senza dati del gioco originale.
+[mac]  Dopo un'importazione avvialo nel Terminale: open -a OpenBeach --args --demo
 
 DOVE TROVO UN FILE .ISO?
   Se hai ancora il disco, creane un'immagine su un computer con un lettore: ImgBurn o AnyBurn su Windows, Utility Disco
@@ -71,7 +94,12 @@ DOVE TROVO UN FILE .ISO?
 [linux]  (su Ubuntu 24.04 e successivi il pacchetto ALSA si chiama libasound2t64).
 
 PROBLEMI
-  OpenBeach è ancora in sviluppo: la campagna e la modalità libera si possono giocare, ma puoi incontrare dei bug.
-  Segnalali con game/userdata/openbeach.log su https://github.com/h4570/openbeach/issues o su
-  https://discord.gg/PtJqgwGtZm . Senza installare nulla: https://openbeach.app fa girare il gioco nel browser.
-  Licenza: GPL-3.0-or-later (game/LICENSE); componenti di terze parti: game/THIRD_PARTY_NOTICES.md.
+[win|linux]  OpenBeach è ancora in sviluppo: la campagna e la modalità libera si possono giocare, ma puoi incontrare dei bug.
+[win|linux]  Segnalali con game/userdata/openbeach.log su https://github.com/h4570/openbeach/issues o su
+[win|linux]  https://discord.gg/PtJqgwGtZm . Senza installare nulla: https://openbeach.app fa girare il gioco nel browser.
+[win|linux]  Licenza: GPL-3.0-or-later (game/LICENSE); componenti di terze parti: game/THIRD_PARTY_NOTICES.md.
+[mac]  OpenBeach è ancora in sviluppo e la versione macOS è sperimentale: potresti trovare dei bug. Segnalali con
+[mac]  ~/Library/Application Support/OpenBeach/userdata/openbeach.log su https://github.com/h4570/openbeach/issues o su
+[mac]  https://discord.gg/PtJqgwGtZm
+[mac]  Senza installare nulla: https://openbeach.app esegue il gioco nel browser.
+[mac]  Licenza: GPL-3.0-or-later; la licenza e i componenti di terze parti sono in OpenBeach.app/Contents/Resources/.

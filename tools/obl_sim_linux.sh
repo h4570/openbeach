@@ -27,7 +27,8 @@ if [[ "${OBL_SIM_SKIP_CONVERSION:-0}" != "1" && -f "$game/BeachLife.exe" ]]; the
 # and CI's L0 step and a converted-pack cache hit never run it. The local gates keep compiling both.
 targets=()
 if [[ "${OBL_SIM_ONLY:-0}" == "1" && "$convert" == 0 ]]; then targets=(--target obl-sim); fi
-cmake --build "$dir" "${targets[@]}" "${keep[@]}"
+# ${a[@]+...}: an empty array is "unbound" under set -u in bash before 4.4 (macOS ships 3.2).
+cmake --build "$dir" ${targets[@]+"${targets[@]}"} ${keep[@]+"${keep[@]}"}
 echo "obl-sim build: $((SECONDS - started)) s"
 if [[ "$convert" == 1 ]]; then
     "$dir/bin/obl-convert" gui-tables "$game/BeachLife.exe" "$game/packs/base"

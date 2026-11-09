@@ -7,6 +7,6 @@
 | [running-the-game.md](running-the-game.md) | Starting the game (`OpenBeach.exe`), hidden runs that do not disturb the desktop, logs, killing leftovers safely, and the start-up sequence. |
 | [ci.md](ci.md) | The public GitHub Actions workflow: triggers, jobs and their local equivalents. |
 | [ci-local.md](ci-local.md) | Reproducing the CI jobs on a local Linux machine or WSL. |
-| [releases.md](releases.md) | The release archives for Windows and Linux: layout, README and AGENTS.md, import scripts, optimized build, glibc floor, smoke tests, testing by hand. |
+| [releases.md](releases.md) | The release archives for Windows and Linux, the Windows installer and the experimental macOS disk image: layout, README and AGENTS.md, import scripts, the macOS app and launcher, optimized build, glibc floor, smoke tests, testing by hand. |
 | [ci-l0.md](ci-l0.md) | No-data L0 CI tests, compile-time diagnosis, compiler-cache settings and fast-build measurements. |
 | [settings.md](settings.md) | `openbeach.ini` keys and their environment-variable overrides. |

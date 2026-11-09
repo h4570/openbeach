@@ -23,6 +23,7 @@ It works on Windows, macOS, Linux and Android, in any modern browser.</p>
   <img src="https://img.shields.io/badge/x86--64-64--bit-555555" alt="x86-64">
   <img src="https://img.shields.io/badge/Windows-supported-0078D4" alt="Windows">
   <img src="https://img.shields.io/badge/Linux-supported-FCC624?logo=linux&logoColor=black" alt="Linux: supported">
+  <img src="https://img.shields.io/badge/macOS-experimental-FF7A59?logo=apple&logoColor=white" alt="macOS: experimental">
   <img src="https://img.shields.io/badge/Browser-supported-37B3B0" alt="Browser">
   <img src="https://img.shields.io/badge/Mobile-experimental-FF7A59?logo=android&logoColor=white" alt="Mobile: experimental">
 </p>
@@ -30,8 +31,8 @@ It works on Windows, macOS, Linux and Android, in any modern browser.</p>
 # OpenBeach
 
 An open reimplementation of **Beach Life** (Deep Red Games / Eidos, 2002), the beach-resort management game, written in
-C++20 with SDL3. It runs on Windows, on Linux and in the browser, and has a headless simulation that plays whole
-scenarios without a window, graphics or sound.
+C++20 with SDL3. It runs on Windows, on Linux, on macOS (experimental) and in the browser, and has a headless simulation
+that plays whole scenarios without a window, graphics or sound.
 
 <p align="center"><img src="assets/screenshots/browser.jpg" alt="OpenBeach running the game in a browser tab" width="640"></p>
 
@@ -52,9 +53,10 @@ data. It is what the automated tests use, and it runs on the same mechanics as t
 ([L0 tests](docs/build/ci-l0.md)).
 
 ## Download
-Every [release](https://github.com/h4570/openbeach/releases) has a Windows x64 installer and zip and a Linux x86-64
-tarball (glibc 2.35+: Debian 12, Ubuntu 22.04 and later). The installer asks for the `.iso` of your CD, imports it and
-adds the shortcuts. From an archive, follow `README.<language>.txt` (in the six languages of the game): drag your copy
+Every [release](https://github.com/h4570/openbeach/releases) has a Windows x64 installer and zip, a Linux x86-64
+tarball (glibc 2.35+: Debian 12, Ubuntu 22.04 and later) and an experimental macOS disk image for Apple silicon (macOS
+13.3+). The installer asks for the `.iso` of your CD, imports it and adds the shortcuts. On a Mac, drag OpenBeach from the
+`.dmg` onto Applications and start it: it asks for your `.iso` on the first start. From an archive, follow `README.<language>.txt` (in the six languages of the game): drag your copy
 onto `Import.cmd` (`import.sh` on Linux) once, then start `Play.cmd`. `AGENTS.md` beside it tells an AI agent
 how to do it for you ([release archives](docs/build/releases.md)).
 

@@ -36,9 +36,9 @@ Each of these is behind `EMSCRIPTEN` / `__EMSCRIPTEN__`, and the native builds a
 - **File system.** `-sNODERAWFS=1` lets Node read the repository and the game directory directly; plus
   `-sALLOW_MEMORY_GROWTH=1 -sSTACK_SIZE=8MB` (the default 64 KB stack is too small for the deep game call chains).
 - **`__rdtsc`** (`ProfileTimer` in `game.cpp`, through `win_types/intrin.h`): wasm has no cycle counter; the shim returns
-  `steady_clock` ticks, enough for the profile timers.
+  `steady_clock` ticks, enough for the profile timers. It applies to every non-x86 build (also arm64 macOS).
 - **`_mm_getcsr`** (`fp-report` in `testing/determinism.cpp`): wasm has no MXCSR; the command reports the default control
-  word, which is what wasm always does (round to nearest, all exceptions masked, no FTZ/DAZ).
+  word, which is what wasm always does (round to nearest, all exceptions masked, no FTZ/DAZ). Also every non-x86 build.
 - **`execinfo.h`, `ucontext.h`, signals** (`host_linux/main.cpp`'s fault handler): wasm has no signals; a trap ends the run
   with Node's JavaScript stack trace, which names our functions. `InitFaultHandlers` is empty there.
 

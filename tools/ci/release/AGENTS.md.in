@@ -5,19 +5,34 @@ the game once, then start the game. Talk to the user in their language; `README.
 people, one file per language. Source and documentation: https://github.com/h4570/openbeach
 
 ## Layout
-```
-README.<language>.txt  for the user
-AGENTS.md           this file
-game/
+[win|linux]```
+[win|linux]README.<language>.txt  for the user
+[win|linux]AGENTS.md           this file
+[win|linux]game/
 [win]  OpenBeach.exe     the game (also started by Play.cmd and Demo.cmd)
 [win]  obl-convert.exe   the converter that reads the user's copy (started by Import.cmd)
 [win]  Import.cmd        scripts\import.ps1: the import with prompts
 [linux]  OpenBeach         the game (also started by play.sh and demo.sh)
 [linux]  obl-convert       the converter that reads the user's copy (started by import.sh)
 [linux]  import.sh         the import with prompts
-  userdata/         the game directory: converted pack, settings, saves, log (empty until the import)
-  l0/               the game directory of the demo (the project's own L0 pack, no original data)
-```
+[win|linux]  userdata/         the game directory: converted pack, settings, saves, log (empty until the import)
+[win|linux]  l0/               the game directory of the demo (the project's own L0 pack, no original data)
+[win|linux]```
+[mac]The disk image (`.dmg`) holds the app and these guides; the user drags the app onto `/Applications`:
+[mac]```
+[mac]README.<language>.txt  for the user
+[mac]AGENTS.md              this file
+[mac]OpenBeach.app/Contents/
+[mac]  MacOS/openbeach-launcher   the app's executable: plays, or asks for the copy and imports it in Terminal
+[mac]  MacOS/OpenBeach            the game
+[mac]  MacOS/obl-convert          the converter that reads the user's copy
+[mac]  Resources/import.sh        the import with prompts
+[mac]  Resources/l0/packs/l0/     the project's own L0 pack (the demo, no original data)
+[mac]```
+[mac]The game never writes into the app. Its directories are in `~/Library/Application Support/OpenBeach/`:
+[mac]`userdata/` (converted pack, settings, saves, log; missing until the import) and `l0/` (the demo). Below, `<app>` is
+[mac]`/Applications/OpenBeach.app` and `<userdata>` is `~/Library/Application Support/OpenBeach/userdata`. If
+[mac]`<userdata>/packs/base/pack.json` exists, the copy is imported already: go to step 4.
 [win]
 [win]The installer (`openbeach-@VERSION@-windows-x64-installer.exe`) lays out the same tree in the folder the user chose
 [win](by default `%LOCALAPPDATA%\Programs\OpenBeach`) and imports an `.iso` with `game\scripts\import.ps1`. If
@@ -27,14 +42,20 @@ game/
 - **Never modify the user's copy.** The converter only reads it; never write, move or delete anything in it.
 - **Never download the game or an .iso for the user.** OpenBeach needs the user's own legal copy. If they have none, say
   so and offer the demo.
-- Ask before deleting `game/userdata/`: it holds the user's saves (`SaveGames/`) and settings.
-- Do not move the binaries out of `game/`: the scripts and the game find each other by that folder.
+[win|linux]- Ask before deleting `game/userdata/`: it holds the user's saves (`SaveGames/`) and settings.
+[win|linux]- Do not move the binaries out of `game/`: the scripts and the game find each other by that folder.
+[mac]- Ask before deleting `<userdata>`: it holds the user's saves (`SaveGames/`) and settings.
+[mac]- Do not change files inside the app: that breaks its signature.
 
 ## 1. Check the system
 [win]- Windows 10 or 11, x64. PowerShell 5.1 or newer is part of Windows.
 [linux]- x86-64 Linux with glibc 2.35 or newer: `ldd --version`. The game needs an X11 or Wayland session.
 [linux]- Run-time libraries: `README.en.txt`, "LIBRARIES" (Debian/Ubuntu package list). Without them SDL falls
 [linux]  back (no OpenGL: software rendering, no sound server: silence); a missing X11/Wayland library stops the window.
+[mac]- A Mac with Apple silicon and macOS 13.3 or newer: `uname -m` prints `arm64`, `sw_vers -productVersion` 13.3 or more.
+[mac]  Intel Macs cannot run it. The macOS version is experimental: tell the user so.
+[mac]- The app is not signed by Apple. If macOS refuses to start it, the user allows it once in System Settings, Privacy &
+[mac]  Security, "Open Anyway". Do not remove the quarantine attribute yourself unless the user asks you to.
 
 ## 2. Find the user's copy
 Ask the user where it is; do not search their whole disk without asking. Any of these works:
@@ -58,10 +79,19 @@ copy by hashes and refuses an unknown one with a message, without writing anythi
 [linux]`<copy>` is the folder or the `.iso` file: the script mounts an image with `udisksctl` (no sudo) and unmounts it
 [linux]afterwards. If that fails, mount it yourself (`sudo mount -o loop,ro <file.iso> <dir>`, with the user's consent) and
 [linux]pass the directory.
+[mac]```sh
+[mac]"<app>/Contents/Resources/import.sh" "<copy>" [<code>]
+[mac]```
+[mac]`<copy>` is the folder or the disc image (`.iso`, `.cdr`): the script mounts an image read-only with `hdiutil attach`
+[mac]and detaches it afterwards. If that fails, ask the user to double-click the image and pass the mounted volume
+[mac](`/Volumes/<name>`). Terminal may ask the user to allow access to Downloads or Documents.
 
-The script imports into `game/userdata/packs/base.new/` and replaces `game/userdata/packs/base/` with it only on success
-(a failed import keeps the old pack), writes `game/userdata/remaster/` (cursors) and sets `[Language] Language=<index>`
-in `game/userdata/BeachLife.ini`, keeping other settings.
+[win|linux]The script imports into `game/userdata/packs/base.new/` and replaces `game/userdata/packs/base/` with it only on success
+[win|linux](a failed import keeps the old pack), writes `game/userdata/remaster/` (cursors) and sets `[Language] Language=<index>`
+[win|linux]in `game/userdata/BeachLife.ini`, keeping other settings.
+[mac]The script imports into `<userdata>/packs/base.new/` and replaces `<userdata>/packs/base/` with it only on success
+[mac](a failed import keeps the old pack), writes `<userdata>/remaster/` (cursors) and sets `[Language] Language=<index>`
+[mac]in `<userdata>/BeachLife.ini`, keeping other settings.
 [linux]It also adds `~/.local/share/applications/openbeach.desktop` with the OpenBeach icon (the applications menu).
 Run it with a long timeout or in the background: it prints one line per step and ends with `Done.` and exit code 0.
 
@@ -70,8 +100,10 @@ an error about the language, and the script then asks on standard input. Pass th
 run it without a terminal: `en` (UK/US and later English CD) or one of `fr de it pl es` (European and French/German CD);
 the copy must have that table.
 [win]`-PreferLanguage <code>` instead takes that language when the copy has it, else one it has, and asks nothing.
+[mac]`--prefer-language <code>` instead takes that language when the copy has it, else one it has, and asks nothing.
 The game's index order is `en fr it de es pl` (0 to 5). To switch later to another language the pack has
-(`game/userdata/packs/base/text/<code>.json`), change `Language=` in `game/userdata/BeachLife.ini`.
+[win|linux](`game/userdata/packs/base/text/<code>.json`), change `Language=` in `game/userdata/BeachLife.ini`.
+[mac](`<userdata>/packs/base/text/<code>.json`), change `Language=` in `<userdata>/BeachLife.ini`.
 
 Manual equivalent of the script (the converter alone):
 [win]```powershell
@@ -82,6 +114,10 @@ Manual equivalent of the script (the converter alone):
 [linux]game/obl-convert import "<copy>" game/userdata/packs/base [--language <code>]
 [linux]game/obl-convert resources "<copy>" game/userdata/remaster
 [linux]```
+[mac]```sh
+[mac]"<app>/Contents/MacOS/obl-convert" import "<copy>" "<userdata>/packs/base" [--language <code>]
+[mac]"<app>/Contents/MacOS/obl-convert" resources "<copy>" "<userdata>/remaster"
+[mac]```
 Both target directories must exist. Then write the INI as above: without `[Beach Life Options]` and `Version=1` the
 game ignores the file and starts in English, which a European copy does not have.
 
@@ -90,23 +126,33 @@ game ignores the file and starts in English, which a European copy does not have
 [win]arguments also uses `game\userdata\`.
 [linux]`game/play.sh` (= `game/OpenBeach --game-dir game/userdata`). `game/OpenBeach` without arguments also uses
 [linux]`game/userdata/`.
+[mac]`open -a OpenBeach` (the launcher runs `<app>/Contents/MacOS/OpenBeach --game-dir <userdata>`). Without an imported
+[mac]copy the launcher asks the user in dialogs instead of starting the game.
 
 The game opens a window: intro movie, two logo screens, then the main menu. Tell the user it is ready; do not leave it
 running for them to find unless they asked you to start it.
 
-Success check without looking at the screen: `game/userdata/openbeach.log` gets `init done` shortly after the start.
+[win|linux]Success check without looking at the screen: `game/userdata/openbeach.log` gets `init done` shortly after the start.
+[mac]Success check without looking at the screen: `<userdata>/openbeach.log` gets `init done` shortly after the start.
 A missing or broken pack stops the start with a message naming the file and "Import the game data again": run step 3.
 
 ## Demo without the original game
 [win]`game\Demo.cmd` (= `OBL_PACK=l0`, `OpenBeach.exe --game-dir game\l0`).
 [linux]`game/demo.sh` (= `OBL_PACK=l0 game/OpenBeach --game-dir game/l0`).
+[mac]`open -a OpenBeach --args --demo` (copies the L0 pack to `~/Library/Application Support/OpenBeach/l0/` and starts
+[mac]the game there with `OBL_PACK=l0`).
 
 ## Troubleshooting
 - Converter errors are printed with `error:`; an unknown executable or sprite stamp means an unsupported copy.
 [win]- SmartScreen ("Windows protected your PC") blocks unsigned files downloaded from the internet: the user clicks
 [win]  "More info", "Run anyway", or unblocks the .zip (Properties, Unblock) before unpacking.
-- Log: `game/userdata/openbeach.log` (the demo: `game/l0/openbeach.log`). Bugs go to
-  https://github.com/h4570/openbeach/issues with that log.
-- Saves of the original game: copy them into `game/userdata/SaveGames/`; the game converts them when it starts.
-- Updating: unpack the new version and copy the old `game/userdata/` into it. If the new version asks to import the game
-  data again, run step 3.
+[win|linux]- Log: `game/userdata/openbeach.log` (the demo: `game/l0/openbeach.log`). Bugs go to
+[win|linux]  https://github.com/h4570/openbeach/issues with that log.
+[win|linux]- Saves of the original game: copy them into `game/userdata/SaveGames/`; the game converts them when it starts.
+[win|linux]- Updating: unpack the new version and copy the old `game/userdata/` into it. If the new version asks to import the game
+[win|linux]  data again, run step 3.
+[mac]- Log: `<userdata>/openbeach.log` (the demo: `~/Library/Application Support/OpenBeach/l0/openbeach.log`). Bugs go to
+[mac]  https://github.com/h4570/openbeach/issues with that log; say it is the experimental macOS version.
+[mac]- Saves of the original game: copy them into `<userdata>/SaveGames/`; the game converts them when it starts.
+[mac]- Updating: replace `/Applications/OpenBeach.app` with the new one; `<userdata>` stays. If the new version asks to
+[mac]  import the game data again, run step 3.

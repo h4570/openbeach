@@ -1,16 +1,17 @@
 # Release archives
 
-Every GitHub release carries a player's archive per system and a Windows installer, built by
-`.github/workflows/release.yml` ([ci.md](ci.md#release-workflow)):
+Every GitHub release carries a player's archive per system, a Windows installer and an experimental macOS disk image,
+built by `.github/workflows/release.yml` ([ci.md](ci.md#release-workflow)):
 
 | Asset | Job |
 |---|---|
 | `openbeach-<version>-windows-x64.zip` | `windows` |
 | `openbeach-<version>-windows-x64-installer.exe` | `windows`, from the same staged directory as the zip ([Installer](#installer)) |
 | `openbeach-<version>-linux-x86_64.tar.gz` | `linux` |
+| `openbeach-<version>-macos-arm64.dmg` | `macos`, experimental ([macOS](#macos)) |
 
-No debug info is published: the PDBs stay in the build tree, and the Linux binaries are stripped (`.dynsym` stays, so a
-crash report still names exported functions).
+No debug info is published: the PDBs stay in the build tree, and the Linux and macOS binaries are stripped (the exported
+symbols stay, so a crash report still names exported functions).
 
 ## Layout
 The archive puts the guides at the top, so a player sees where to start:
@@ -26,8 +27,9 @@ The archive puts the guides at the top, so a player sees where to start:
 | `game/LICENSE`, `game/THIRD_PARTY_NOTICES.md` | the licences |
 | `game/openbeach.png` (Linux) | the icon of the applications menu entry `import.sh` adds |
 
-`tools/ci/release/stage.py` lays this out for both systems: a template line starting with `[win]` or `[linux]` is kept
-only on that system, and the Windows README gets backslash paths and CRLF line endings. Batch files are checked out with
+`tools/ci/release/stage.py` lays this out for every system: a template line starting with `[win]`, `[linux]` or `[mac]`,
+or several of them as `[win|linux]`, is kept only on those systems, and the Windows README gets backslash paths and CRLF
+line endings. The macOS layout is different ([macOS](#macos)). Batch files are checked out with
 CRLF (`.gitattributes`): `cmd.exe` misreads labels in LF files.
 
 **The import script** runs `obl-convert import <copy> userdata/packs/base` (replacing an older pack whole) and
@@ -63,6 +65,36 @@ directory as `Data`.
 `tools/ci/windows_release.ps1` finds `ISCC.exe` (`ISCC`, `PATH`, Program Files or `%LOCALAPPDATA%/Programs/Inno Setup 6`,
 the per-user `winget install JRSoftware.InnoSetup`); the release job installs it with Chocolatey when the image lacks it.
 
+## macOS
+Experimental: a native arm64 build for Apple silicon and macOS 13.3 or newer; Intel Macs are not supported. The disk image
+holds `OpenBeach.app`, a link to `/Applications` (the player drags the app onto it), the READMEs and `AGENTS.md`:
+
+| Path in the app | What it is |
+|---|---|
+| `Contents/Info.plist` | `tools/ci/release/macos/Info.plist.in`; `CFBundleShortVersionString` is the version up to three numbers |
+| `Contents/MacOS/openbeach-launcher` | the bundle's executable, a bash 3.2 script (`tools/ci/release/macos/`) |
+| `Contents/MacOS/OpenBeach`, `obl-convert` | the game and the converter (stripped) |
+| `Contents/Resources/import.sh` | the import, like Linux's, with `hdiutil attach` for a disc image |
+| `Contents/Resources/l0/packs/l0/` | the demo's L0 pack |
+| `Contents/Resources/openbeach.icns`, `LICENSE`, `THIRD_PARTY_NOTICES.md` | the icon (the 256 px PNG as `ic08`) and the licences |
+
+**The game never writes into the app**, which would break its signature and fails on the read-only image. Its game
+directories are `~/Library/Application Support/OpenBeach/userdata/` (the player's copy) and `.../l0/` (the demo, the
+pack copied there at each start), and the launcher passes them with `--game-dir`. The game's own lookup of `obl-convert`
+(old saves) takes the executable's directory there (`_NSGetExecutablePath`): in a bundle `SDL_GetBasePath` names
+`Contents/Resources`.
+
+**The launcher** starts the game on `userdata/` when it holds `packs/base/pack.json`. Otherwise an `osascript` dialog
+offers the import or the demo. The import asks for the copy (`choose file`: a disc image is the copy, any other file names
+its folder, so `BeachLife.exe` or a file on the CD works) and the language (`choose from list`, preselected from
+`AppleLanguages`), then opens `import.command` (beside `userdata/`) in Terminal: `import.sh --prefer-language <code>
+<copy>`, then `open` of the app, so the game starts after a successful import and a failure stays readable. `--demo`
+starts the demo (`open -a OpenBeach --args --demo`).
+
+**Signing.** There is no Developer ID: `codesign --sign -` signs the bundle ad hoc (arm64 runs no unsigned code), so
+Gatekeeper refuses the first start of a downloaded copy and the player allows it once in System Settings, Privacy &
+Security, "Open Anyway" (README). A Developer ID and notarization would remove that step.
+
 ## Icons
 The OpenBeach mark (`assets/logo/openbeach-mark.svg`) is the program's icon everywhere: `tools/make_icons.py` renders
 `assets/logo/openbeach.ico` (16 to 256 px, uncompressed 32-bit entries) and `openbeach-256.png`, both committed.
@@ -78,6 +110,13 @@ The OpenBeach mark (`assets/logo/openbeach-mark.svg`) is the program's icon ever
   `WM_CLASS`), which ties its window to that entry for the dock and the task switcher.
 
 ## Build
+**macOS** (`tools/ci/macos_release.sh`): `tools/obl_sim_linux.sh` with Apple Clang, `RelWithDebInfo`,
+`CMAKE_OSX_ARCHITECTURES=arm64` and `CMAKE_OSX_DEPLOYMENT_TARGET=13.3`. Without the x86 flags the float math is scalar
+IEEE with no FMA contraction (`-ffp-contract=off`), and the optimized `obl-sim` of the same build runs the same L0
+references as Linux before anything is packed. SDL builds its Cocoa video, Core Audio and Metal/OpenGL renderers.
+Then `strip -x`, `stage.py --platform macos`, the ad-hoc signature and `hdiutil create -format UDZO`. The job runs on
+`macos-15` (Apple silicon).
+
 **Windows** (`tools/ci/windows_release.ps1`): the `x64` preset with `-DOBL_CONVERT_ON_BUILD=OFF`, RelWithDebInfo, the
 static MSVC runtime of every build, so the zip needs no redistributable; Inno Setup 6 builds the installer.
 `tools/runtests.ps1 -Pack public -Config
@@ -113,12 +152,18 @@ presents, without audio the game is silent. The README names the Debian/Ubuntu p
   `ubuntu:24.04` containers with only the README's packages (its English section, the first list) and Xvfb. The job
   keeps a screenshot of the Xvfb screen in its artifact.
 
-Not covered: the import scripts and the installer's import (CI has no copy of the game), real input, a real audio
-device, Wayland and a GPU driver.
+- **macOS:** `tools/ci/macos_smoke.sh <OpenBeach.app>` runs on the app in the mounted disk image: `openbeach-launcher
+  --demo` under a temporary `HOME`, the same log checks in a Cocoa window, `SIGTERM` and a clean exit; the job keeps a
+  `screencapture` of the screen. `codesign --verify --deep --strict` checks the packed app's signature first.
+
+Not covered: the import scripts and the installer's import (CI has no copy of the game), the macOS launcher's dialogs,
+Gatekeeper on a downloaded copy, real input, a real audio device, Wayland and a GPU driver.
 
 ## Testing without a release
-Run the workflow by hand (`gh workflow run release.yml --ref <branch>`): the `release` job is skipped, and `linux` and
-`windows` build, test and pack, then keep the archives (and the installer) as the workflow artifacts
-`linux-release` and `windows-release` (14 days) with the version `<version.txt>-dev.<commit>`. Only a release run attaches them to the release
+Run the workflow by hand (`gh workflow run release.yml --ref <branch>`): the `release` job is skipped, and `linux`,
+`windows` and `macos` build, test and pack, then keep the archives (and the installer) as the workflow artifacts
+`linux-release`, `windows-release` and `macos-release` (14 days) with the version `<version.txt>-dev.<commit>`. Only a release run attaches them to the release
 (`gh release upload <tag> --clobber`). Locally: `./tools/ci/windows_release.ps1 [-SkipTests]`, and in WSL
-`bash tools/ci/linux_release.sh` (an LF copy of the checkout, [../testing/unit-tests.md](../testing/unit-tests.md)).
+`bash tools/ci/linux_release.sh` (an LF copy of the checkout, [../testing/unit-tests.md](../testing/unit-tests.md)), and on a
+Mac with Xcode's command line tools, CMake and Ninja `bash tools/ci/macos_release.sh` (`OBL_SKIP_TESTS=1` skips the L0
+references).

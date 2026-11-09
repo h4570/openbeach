@@ -19,6 +19,9 @@
 #else
 #include <unistd.h>
 #endif
+#ifdef __APPLE__
+#include <mach-o/dyld.h>
+#endif
 
 namespace obl::standalone {
 
@@ -47,8 +50,19 @@ fs::path DirectoryPrefix(const std::string& dir)
     return path.has_filename() ? path / "" : path;
 }
 
+// The directory of the game's executable, where obl-convert lies beside it.
 fs::path HostDirectory()
 {
+#ifdef __APPLE__
+    // In an app bundle SDL_GetBasePath names Contents/Resources; both programs are in Contents/MacOS.
+    char self[4096];
+    uint32_t size = sizeof(self);
+    std::error_code error;
+    if (_NSGetExecutablePath(self, &size) == 0) {
+        const fs::path path = fs::canonical(fs::path(self), error);
+        if (!error) return path.parent_path();
+    }
+#endif
     const char* base = SDL_GetBasePath();
     return base ? fs::path(reinterpret_cast<const char8_t*>(base)) : fs::path();
 }

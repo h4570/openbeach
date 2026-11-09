@@ -1,0 +1,108 @@
+#!/bin/bash
+# The executable of OpenBeach.app (docs/build/releases.md, "macOS"). Starts the game on the imported copy in
+# ~/Library/Application Support/OpenBeach/userdata; without one it asks for the player's copy (or offers the demo) and
+# imports it in a Terminal window, which opens the game when the import is done.
+#   OpenBeach.app/Contents/MacOS/openbeach-launcher [--demo] [game options...]
+# macOS ships bash 3.2: no associative arrays, no ${var,,}.
+set -u
+
+contents="$(cd "$(dirname "$0")/.." && pwd)"
+app="$(cd "$contents/.." && pwd)"
+bin="$contents/MacOS"
+resources="$contents/Resources"
+home="$HOME/Library/Application Support/OpenBeach"
+userdata="$home/userdata"
+demo="$home/l0"
+
+# A dialog with buttons; prints the button the player clicked, nothing when they closed it.
+ask() {
+    /usr/bin/osascript - "$@" <<'EOF' 2>/dev/null
+on run argv
+    set answer to display dialog (item 1 of argv) with title "OpenBeach" buttons (items 2 thru -1 of argv) default button ((count of argv) - 1) with icon note
+    return button returned of answer
+end run
+EOF
+}
+
+tell() {
+    /usr/bin/osascript - "$1" <<'EOF' >/dev/null 2>&1
+on run argv
+    display dialog (item 1 of argv) with title "OpenBeach" buttons {"OK"} default button 1 with icon caution
+end run
+EOF
+}
+
+play_demo() {
+    # The game writes its settings, saves and log into its directory, never into the app: the bundle stays signed and
+    # can lie on a read-only disk image.
+    mkdir -p "$demo/packs" && rm -rf "$demo/packs/l0" && cp -R "$resources/l0/packs/l0" "$demo/packs/l0" ||
+        { tell "Cannot write to $demo."; exit 1; }
+    OBL_PACK=l0 exec "$bin/OpenBeach" --game-dir "$demo" "$@"
+}
+
+# The game language the player picks, preselected from the system's first language.
+choose_language() {
+    local system
+    system=$(defaults read -g AppleLanguages 2>/dev/null | sed -n '2s/[^a-z]*\([a-z][a-z]\).*/\1/p')
+    /usr/bin/osascript - "${system:-en}" <<'EOF' 2>/dev/null
+on run argv
+    set names to {"English", "Français", "Italiano", "Deutsch", "Español", "Polski"}
+    set codes to {"en", "fr", "it", "de", "es", "pl"}
+    set preselected to item 1 of names
+    repeat with i from 1 to count of codes
+        if item i of codes is (item 1 of argv) then set preselected to item i of names
+    end repeat
+    set picked to choose from list names with title "OpenBeach" with prompt "Game language (if your copy does not have it, the import takes one it has):" default items {preselected}
+    if picked is false then return ""
+    repeat with i from 1 to count of names
+        if item i of names is (item 1 of picked) then return item i of codes
+    end repeat
+end run
+EOF
+}
+
+import_copy() {
+    local copy language script
+    copy=$(/usr/bin/osascript <<'EOF' 2>/dev/null
+set picked to choose file with prompt "Choose the disc image (.iso) of your Beach Life CD, or any file in your installed Beach Life folder or on the CD (for example BeachLife.exe):"
+return POSIX path of picked
+EOF
+    ) || exit 0
+    [[ -n "$copy" ]] || exit 0
+    # A file of a folder or of a CD names that folder; a disc image is the copy itself (import.sh mounts it).
+    case "$(printf '%s' "$copy" | tr '[:upper:]' '[:lower:]')" in
+        *.iso | *.cdr | *.img | *.dmg) ;;
+        *) copy="$(dirname "$copy")" ;;
+    esac
+    language=$(choose_language)
+    [[ -n "$language" ]] || exit 0
+    mkdir -p "$home" || { tell "Cannot write to $home."; exit 1; }
+    # Terminal shows the import's progress (about 15 minutes) and keeps its messages on a failure; the script it runs
+    # opens the app again when the import succeeded.
+    script="$home/import.command"
+    {
+        printf '#!/bin/bash\n'
+        printf 'clear\n'
+        printf '%q --prefer-language %q %q && exec open %q\n' "$resources/import.sh" "$language" "$copy" "$app"
+    } > "$script" && chmod +x "$script" || { tell "Cannot write to $home."; exit 1; }
+    open -a Terminal "$script" || tell "Cannot open Terminal for the import. Run this in Terminal: \"$resources/import.sh\" \"$copy\""
+    exit 0
+}
+
+if [[ "${1:-}" == "--demo" ]]; then
+    shift
+    play_demo "$@"
+fi
+# Finder may pass a process serial number (-psn_...) to an app started from it; the game would refuse it.
+args=()
+for arg in "$@"; do
+    case "$arg" in -psn_*) ;; *) args+=("$arg") ;; esac
+done
+if [[ -f "$userdata/packs/base/pack.json" ]]; then
+    exec "$bin/OpenBeach" --game-dir "$userdata" ${args[@]+"${args[@]}"}
+fi
+case "$(ask "OpenBeach plays Beach Life on your own copy of the game. Import your copy once (about 15 minutes), or try the small demo scenario that needs no original data." "Quit" "Play the demo" "Import my copy...")" in
+    "Import my copy...") import_copy ;;
+    "Play the demo") play_demo ${args[@]+"${args[@]}"} ;;
+    *) exit 0 ;;
+esac
