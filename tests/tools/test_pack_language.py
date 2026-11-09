@@ -1,4 +1,4 @@
-"""The pack CLI must preserve the INI language or require an explicit choice.
+"""The pack CLI must preserve the INI language or require an explicit choice; the import CLI takes a preferred one.
 
 The INI checks run on a synthetic source. A source the CLI identifies needs a supported executable, so the language
 guard of an identified source runs only with --game-dir (a private opt-in check on the licensed copy); without it,
@@ -37,6 +37,20 @@ def main():
             result = run()
             assert result.returncode == 1 and "no valid Language.Language" in result.stderr, result
             assert manifest.read_text(encoding="utf-8") == "previous manifest"
+
+        # A CD names no language: `import` refuses it without a choice, and --prefer-language (the Windows installer) gets
+        # past that guard to the first step, which names the missing executable of this empty source.
+        copy = root / "copy"
+        copy.mkdir()
+
+        def run_import(*options):
+            return subprocess.run([str(args.converter.resolve()), "import", str(copy), str(root / "imported"), *options],
+                                  capture_output=True, text=True, timeout=30)
+
+        result = run_import()
+        assert result.returncode == 1 and "no valid Language.Language" in result.stderr, result
+        result = run_import("--prefer-language", "pl")
+        assert result.returncode == 1 and "Language" not in result.stderr and "gui-tables" in result.stderr, result
 
         # The source identity requires these two installation files, copied without modifying the live run.
         for name in ("BeachLife.exe", "Data/Sprites/BLSprite.hdr"):

@@ -67,8 +67,10 @@ CLI commands (one line each, so parallel converter work adds its own line):
 - `obl-convert scenarios <installation> <out> [--schemas <dir>]` writes 24 scenario documents and campaign order; reports ignored PIS entries
 - `obl-convert maps <installation> <out> [--jobs <n>] [--schemas <dir>]` writes `<out>/maps/` (islands, water masks and prop key lookup; placements stay in scripts)
 - `obl-convert pack <installation> <pack> [--language <lang>] [--schemas <dir>]` writes `<pack>/pack.json`
-- `obl-convert import <installation or CD root> <pack> [--language <lang>] [--jobs <n>]` runs `ImportPack`: every pack command above in
-  the producers' order, `pack.json` last; the browser import runs the same function
+- `obl-convert import <installation or CD root> <pack> [--language <lang> | --prefer-language <lang>] [--jobs <n>]` runs `ImportPack`:
+  every pack command above in the producers' order, `pack.json` last; the browser import runs the same function.
+  `--prefer-language` picks among the copy's own tables (`ChooseLanguage`: the installation's, then `<lang>`, then the
+  first), so a CD always imports; the Windows installer passes the player's choice
 - `obl-convert save-info <save<N>.dat>` reads an old slot to its end and prints the header (floats as value and bits, the title as escaped raw bytes) and record counts per type, with `--objects` the typed sections, objects per class and consistency problems
 - `obl-convert save <save<N>.dat> <pack> <out.json> [--schemas <dir>]` writes the converted save
 
