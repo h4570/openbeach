@@ -8,6 +8,7 @@
 #include "game/game/game_accessors.h"
 #include "game/ui/gui_manager_dialogs.h"
 #include "game/ui/gui_manager_types.h"
+#include "game/world/world_state.h"
 #include "core/config.h"
 #include "platform/cursor.h"
 #include "platform/display_window.h"
@@ -169,6 +170,12 @@ bool InGameOptionsOpen()
     return manager && gui_manager_dialogs::IsDialogOpen(manager, "InGameOptions");
 }
 
+bool PlayerPaused()
+{
+    const world::World* world = game::GetWorld();
+    return world && world->m_paused != 0 && world->m_forcedPaused == 0;
+}
+
 bool g_mouseConfined; // what SDL was last asked for
 
 void UpdateMouseConfinement()
@@ -176,7 +183,7 @@ void UpdateMouseConfinement()
 #ifndef __EMSCRIPTEN__
     SDL_Window* window = SDL_GetWindowFromID(SdlGameWindowId());
     if (!window) return;
-    const bool want = WantMouseConfined(config::Get().confineMouse, g_hidden, InGameplay(), InGameOptionsOpen());
+    const bool want = WantMouseConfined(config::Get().confineMouse, g_hidden, InGameplay(), InGameOptionsOpen(), PlayerPaused());
     if (want == g_mouseConfined) return;
     if (SDL_SetWindowMouseGrab(window, want))
         g_mouseConfined = want;
@@ -633,7 +640,7 @@ void ClearSyntheticCursor()
 
 bool MouseConfineWanted()
 {
-    return WantMouseConfined(config::Get().confineMouse, false, InGameplay(), InGameOptionsOpen());
+    return WantMouseConfined(config::Get().confineMouse, false, InGameplay(), InGameOptionsOpen(), PlayerPaused());
 }
 
 ui::InputBackend* PlatformInputBackend()
