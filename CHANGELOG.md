@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.1](https://github.com/h4570/openbeach/compare/v1.11.0...v1.11.1) (2026-11-09)
+
+
+### Bug Fixes
+
+* **platform:** repair the settings window's size, language and start ([#65](https://github.com/h4570/openbeach/issues/65)) ([3d10e68](https://github.com/h4570/openbeach/commit/3d10e680e2acfc16a80b084a0e61a7e50e129052))
+
 ## [1.11.0](https://github.com/h4570/openbeach/compare/v1.10.1...v1.11.0) (2026-11-09)
 
 
