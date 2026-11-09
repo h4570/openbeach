@@ -261,7 +261,13 @@ file(GLOB TEST_SOURCES CONFIGURE_DEPENDS ${REPO}/tests/unit/*_test.cpp)
 # Windows-only by nature: DirectInput scancodes against SDL's Windows table (docs/testing/unit-tests.md lists the exclusions).
 set(EXCLUDED_TESTS ${REPO}/tests/unit/input_mapping_test.cpp)
 set(HOST_SOURCES
-    ${REPO}/src/testing/png.cpp)
+    ${REPO}/src/testing/png.cpp
+    ${REPO}/src/launcher/settings_text.cpp)
+if(OBL_UNIT_SDL)
+    list(APPEND HOST_SOURCES ${REPO}/src/launcher/settings_view.cpp)
+else()
+    list(APPEND EXCLUDED_TESTS ${REPO}/tests/unit/settings_view_test.cpp)
+endif()
 if(NOT OBL_UNIT_SDL)
     list(REMOVE_ITEM COMMON_SOURCES ${REPO}/src/game/ui/sound_bank.cpp)
     # ScriptedSound exercises the SoundBank as well; excluding only its direct tests leaves unresolved SoundBank symbols.
