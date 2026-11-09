@@ -381,6 +381,9 @@ SettingsChoice RunSettingsWindow(const std::string& gameDir)
         SDL_SetRenderVSync(renderer, 1);
         SDL_SetRenderLogicalPresentation(renderer, kWidth, kHeight, SDL_LOGICAL_PRESENTATION_LETTERBOX);
         SDL_ShowWindow(sdlWindow);
+        // A shortcut that starts the program minimized (the installer's does, to keep the console out of the way) hands
+        // that state to the process's first window, which is this one: the player would only see a taskbar button.
+        if (SDL_GetWindowFlags(sdlWindow) & SDL_WINDOW_MINIMIZED) SDL_RestoreWindow(sdlWindow);
         SDL_RaiseWindow(sdlWindow);
         Window window(before);
         play = RunLoop(renderer, window);

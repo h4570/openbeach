@@ -30,6 +30,9 @@ that becomes the game, which releases SDL video before the game initializes it a
 - when `ShowSettings=0`, unless `--settings` is given.
 The browser build has no such window (`browser_main.cpp`).
 
+The window is a regular window even when the shortcut starts the program minimized: the installer's shortcut does, to
+keep the console out of sight, and Windows hands that state to the process's first window, so the window restores itself.
+
 ## Drawing
 SDL's renderer and its built-in 8x8 font (`SDL_RenderDebugText`, ASCII only, so all text is English), no extra library.
 The layout is 432x316 units, shown at a whole multiple (twice the desktop scale, smaller if it would not fit), letterboxed
