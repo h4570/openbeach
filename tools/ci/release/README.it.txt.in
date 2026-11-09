@@ -16,6 +16,11 @@ COSA TI SERVE
 [win]- Windows 10 o 11 a 64 bit.
 [linux]- Linux x86-64 con glibc 2.35 o più recente (Debian 12, Ubuntu 22.04 e successivi) e un desktop X11 o Wayland.
 
+[win]PROGRAMMA DI INSTALLAZIONE
+[win]  La versione ha anche un programma di installazione (openbeach-@VERSION@-windows-x64-installer.exe): chiede il file
+[win]  .iso del tuo CD, installa OpenBeach e importa la tua copia, quindi i passi 1 e 2 sono fatti. Avvia OpenBeach dal
+[win]  desktop o dal menu Start; "Import Beach Life" nel menu Start importa di nuovo una copia.
+[win]
 PASSO 1: ESTRAI
 [win]  Estrai l'intero archivio in una tua cartella, per esempio Documenti\OpenBeach (non Programmi).
 [win]  Suggerimento: clic destro sul .zip scaricato, Proprietà, spunta "Annulla blocco", OK, poi estrai.

@@ -20,8 +20,8 @@ whatever a release needs runs in this file, after `release` and on its outputs `
 - the site: `release` starts the CI run with `deploy` (below);
 - `linux`: builds the Linux tarball on Ubuntu 22.04, runs the L0 references on the optimized build, smoke-tests it under
   Xvfb (also in `debian:12` and `ubuntu:24.04` containers) and attaches it to the release ([releases.md](releases.md));
-- `windows`: builds the Windows zip on `windows-2025`, runs the same L0 references, starts the packed game hidden and
-  attaches the zip.
+- `windows`: builds the Windows zip and installer on `windows-2025`, runs the same L0 references, starts the packed game
+  and the silently installed one hidden and attaches both.
 
 By hand (`workflow_dispatch`) only `linux` and `windows` run and keep the archives as the workflow artifacts
 `linux-release` and `windows-release`.

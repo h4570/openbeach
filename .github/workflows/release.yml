@@ -73,7 +73,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: gh release upload "$TAG" build/dist/openbeach-*.tar.gz --repo "$GITHUB_REPOSITORY" --clobber
 
-  # The Windows zip (docs/build/releases.md): the same L0 references, then the packed game starts hidden on the L0 pack.
+  # The Windows zip and installer (docs/build/releases.md): the same L0 references, then the packed game and the silently
+  # installed one start hidden on the L0 pack.
   windows:
     needs: release
     if: ${{ !cancelled() && (github.event_name == 'workflow_dispatch' || needs.release.outputs.release_created == 'true') }}
@@ -89,6 +90,10 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
+      - name: Inno Setup
+        run: |
+          # The image may carry Inno Setup 6; windows_release.ps1 finds it, and installs it here only when it is absent.
+          if (-not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) { choco install innosetup --version=6.7.3 -y --no-progress }
       - name: Build, L0 references and package
         run: |
           $version = if ($env:TAG) { $env:TAG } else { "$((Get-Content version.txt -Raw).Trim())-dev.$(git rev-parse --short HEAD)" }
@@ -98,6 +103,15 @@ jobs:
           $zip = Get-ChildItem build/dist/openbeach-*-windows-x64.zip | Select-Object -First 1
           Expand-Archive -LiteralPath $zip.FullName -DestinationPath build/smoke -Force
           ./tools/ci/windows_smoke.ps1 (Join-Path build/smoke $zip.BaseName)
+      - name: Smoke test of the installer
+        run: |
+          # Without /ISO the installer imports nothing: it lays out the same tree as the zip.
+          $installer = Get-ChildItem build/dist/openbeach-*-windows-x64-installer.exe | Select-Object -First 1
+          $target = Join-Path $PWD 'build\installed'
+          $setup = Start-Process -FilePath $installer.FullName -Wait -PassThru `
+            -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/DIR=`"$target`"", '/LOG=build\installer.log'
+          if ($setup.ExitCode) { Get-Content build/installer.log; throw "installer exit code $($setup.ExitCode)" }
+          ./tools/ci/windows_smoke.ps1 $target
       - name: Test logs
         if: failure()
         uses: actions/upload-artifact@v6
@@ -110,11 +124,13 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: windows-release
-          path: build/dist/*.zip
+          path: |
+            build/dist/*.zip
+            build/dist/*-installer.exe
           if-no-files-found: error
           retention-days: 14
       - name: Attach to the release
         if: needs.release.outputs.release_created == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "$env:TAG" (Get-ChildItem build/dist/openbeach-*.zip).FullName --repo "$env:GITHUB_REPOSITORY" --clobber
+        run: gh release upload "$env:TAG" (Get-ChildItem build/dist/openbeach-*.zip, build/dist/openbeach-*-installer.exe).FullName --repo "$env:GITHUB_REPOSITORY" --clobber
