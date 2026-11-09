@@ -2,8 +2,9 @@
 
 A player's start of `OpenBeach` first opens a small window with the settings that matter before playing, so nobody has to
 edit an ini file. **Play** (or Enter) stores what changed and starts the game; **Quit**, Esc or closing the window starts
-nothing (exit code 0). Code: `src/launcher/settings_window.cpp` (the window), `src/game/game/start_settings.cpp` (what it
-reads and writes, unit test `tests/unit/start_settings_test.cpp`).
+nothing (exit code 0). Code: `src/launcher/settings_window.cpp` (the window and its events), `settings_view.cpp` (rows,
+drawing, hit test), `settings_text.cpp` (the words per language), `src/game/game/start_settings.cpp` (what it reads and
+writes). Unit tests: `start_settings_test.cpp`, `settings_text_test.cpp`, `settings_view_test.cpp`.
 
 | Row | Stored in | Notes |
 |---|---|---|
@@ -33,8 +34,20 @@ The browser build has no such window (`browser_main.cpp`).
 The window is a regular window even when the shortcut starts the program minimized: the installer's shortcut does, to
 keep the console out of sight, and Windows hands that state to the process's first window, so the window restores itself.
 
+## Language
+The window speaks the language selected in its Language row and switches as the row changes; the row shows each language
+by its own name (Deutsch, Polski, ...). A copy without a text table speaks English.
+
 ## Drawing
-SDL's renderer and its built-in 8x8 font (`SDL_RenderDebugText`, ASCII only, so all text is English), no extra library.
-The layout is 432x316 units, shown at a whole multiple (twice the desktop scale, smaller if it would not fit), letterboxed
-when the system resizes it. Keyboard: Up/Down or Tab move, Left/Right or Space change a row, Enter plays, Esc quits; the
+SDL's renderer and its built-in 8x8 font (`SDL_RenderDebugText`), no extra library. It draws ASCII only (its Latin-1
+glyphs stop before the accented letters), so the texts go without accents, umlauts (ae, oe, ue, ss) and Polish diacritics.
+`settings_text_test.cpp` checks that every text is drawable and fits its place.
+The layout is 432x316 units. The window shows it at one and a half times the desktop scale in steps of 0.5 (1.5x at
+100 %, 3x at 200 %), smaller if it would not fit in nine tenths of the screen, letterboxed when the system resizes it. The
+layout is drawn at the next whole multiple into a texture, where the 8x8 font stays crisp, and that texture is scaled down
+with linear filtering: a pixel font scaled by 1.5 directly gets uneven strokes.
+`OBL_SETTINGS_IMAGES=<dir>` makes the unit case "settings view: each language draws its own window" write every language's
+window as PNG at 1x, 1.5x and 2x, through the same path, without a display.
+
+Keyboard: Up/Down or Tab move, Left/Right or Space change a row, Enter plays, Esc quits; the
 mouse picks a row, the left half of a value goes back and the rest forward, the wheel steps the focused row.

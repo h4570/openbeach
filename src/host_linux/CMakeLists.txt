@@ -181,7 +181,8 @@ if(OBL_LINUX_WINDOWED)
         set(LAUNCHER_SOURCES ${REPO}/src/launcher/browser_main.cpp)
     else()
         set(LAUNCHER_SOURCES ${REPO}/src/launcher/remaster_main.cpp ${REPO}/src/launcher/standalone_host.cpp
-            ${REPO}/src/launcher/old_saves.cpp ${REPO}/src/launcher/settings_window.cpp)
+            ${REPO}/src/launcher/old_saves.cpp ${REPO}/src/launcher/settings_window.cpp
+            ${REPO}/src/launcher/settings_view.cpp ${REPO}/src/launcher/settings_text.cpp)
     endif()
     add_executable(OpenBeach ${INIT_SOURCE} ${WINDOWED_MODULES} ${LAUNCHER_SOURCES} ${REPO}/src/launcher/launch_options.cpp)
     target_include_directories(OpenBeach PRIVATE ${REPO}/src/launcher)

@@ -278,6 +278,8 @@ add_executable(obl_unit_tests
     save_slots_test.cpp
     settings_ini_test.cpp
     start_settings_test.cpp
+    settings_text_test.cpp
+    settings_view_test.cpp
     gui_script_test.cpp
     gui_widgets_test.cpp
     gui_controls_test.cpp
@@ -319,6 +321,8 @@ add_executable(obl_unit_tests
     pis_edges_test.cpp
     ${CMAKE_SOURCE_DIR}/src/platform/input_mapping.cpp
     ${CMAKE_SOURCE_DIR}/src/testing/png.cpp
+    ${CMAKE_SOURCE_DIR}/src/launcher/settings_text.cpp
+    ${CMAKE_SOURCE_DIR}/src/launcher/settings_view.cpp
     ${CMAKE_SOURCE_DIR}/src/game/objects/vehicle.cpp
     json_schema_test.cpp
     convert_cabinet_test.cpp

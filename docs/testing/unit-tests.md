@@ -59,7 +59,8 @@ new `tests/unit/*_test.cpp`, and `src/core/*.cpp` are picked up by glob, a file 
 `GLUE_SOURCES` there.
 
 `tools/unit_linux.sh gcc -DOBL_UNIT_SDL=OFF` builds without fetching or linking SDL. This excludes the sound-bank,
-scripted-sound (which also uses `SoundBank`) and image-comparison tests, plus the sound-bank implementation. Other
+scripted-sound (which also uses `SoundBank`), image-comparison and settings-window view tests, plus the sound-bank
+implementation. The default build has SDL without its renderer, so the settings window's drawing case reports SKIP there. Other
 pure audio logic tests still run. Plain CI jobs check both configurations; a later local run can restore the default
 with `-DOBL_UNIT_SDL=ON` in the same build directory.
 
