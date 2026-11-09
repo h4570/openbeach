@@ -156,7 +156,8 @@ public:
         SDL_AudioSpec spec{SDL_AUDIO_F32, 2, m_rate}; // pl_mpeg always delivers interleaved stereo floats
         m_stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, nullptr, nullptr);
         if (!m_stream) {
-            OBL_LOG("intro movie: SDL_OpenAudioDeviceStream failed: %s - silent, wall clock", SDL_GetError());
+            OBL_LOG("intro movie: SDL_OpenAudioDeviceStream failed: %s (audio driver %s) - silent, wall clock", SDL_GetError(),
+                    SDL_GetCurrentAudioDriver() ? SDL_GetCurrentAudioDriver() : "none");
             SDL_QuitSubSystem(SDL_INIT_AUDIO);
             return;
         }
@@ -165,7 +166,7 @@ public:
         plm_set_audio_lead_time(plm, kLeadSeconds);
         plm_set_audio_decode_callback(plm, &MovieAudio::OnSamples, this);
         SDL_ResumeAudioStreamDevice(m_stream);
-        OBL_LOG("intro movie: audio %d Hz stereo via SDL stream", m_rate);
+        OBL_LOG("intro movie: audio %d Hz stereo via SDL stream (driver %s)", m_rate, SDL_GetCurrentAudioDriver());
     }
 
     ~MovieAudio()

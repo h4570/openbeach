@@ -53,6 +53,7 @@ CE QU'IL VOUS FAUT
 ÉTAPE 3 : JOUER
 [win]  Double-cliquez sur Play.cmd dans le dossier « game ».
 [linux]  ./play.sh   (dans le dossier « game »)
+[linux]  Ne lancez pas le jeu en root/sudo : le son ne fonctionnera pas.
 [linux]  L'import ajoute aussi OpenBeach, avec son icône, au menu des applications.
 [mac]  Lancez OpenBeach depuis Applications ou le Launchpad.
 [win|linux]  Alt+Entrée passe de la fenêtre au plein écran et inversement. Pendant une partie, la souris reste dans la fenêtre

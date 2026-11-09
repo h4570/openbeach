@@ -50,6 +50,7 @@ PASO 2: IMPORTA TU COPIA (una sola vez, unos 15 minutos)
 PASO 3: JUEGA
 [win]  Haz doble clic en Play.cmd en la carpeta "game".
 [linux]  ./play.sh   (en la carpeta "game")
+[linux]  No ejecutes el juego como root/sudo: el sonido no funcionará.
 [linux]  La importación también añade OpenBeach, con su icono, al menú de aplicaciones.
 [mac]  Abre OpenBeach desde Aplicaciones o el Launchpad.
 [win|linux]  Alt+Intro cambia entre ventana y pantalla completa. Durante una partida, el ratón se queda en la ventana del juego,

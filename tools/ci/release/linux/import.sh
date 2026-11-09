@@ -5,6 +5,11 @@
 # Asks for the copy when none is given, and for the language when the copy does not name one (a CD). Exit code 1 on failure.
 set -uo pipefail
 
+# A root process cannot reach the normal user's desktop sound server: no sound, and root-owned files in userdata/.
+if [[ "$(id -u)" == 0 ]]; then
+    echo "WARNING: you are running as root (sudo). Sound will not work and files in userdata/ become root-owned." >&2
+    echo "         Run this as your normal user instead." >&2
+fi
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 userdata="$here/userdata"
 pack="$userdata/packs/base"
