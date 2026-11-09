@@ -1,0 +1,73 @@
+OpenBeach @VERSION@ for @PLATFORM@
+@UNDERLINE@
+
+OpenBeach to darmowy silnik open source, który uruchamia Beach Life, grę o zarządzaniu kurortem z 2002 roku, na plikach
+Twojej własnej kopii. To nieoficjalny projekt fanów i nie zawiera żadnych danych oryginalnej gry: potrzebujesz własnej,
+legalnej kopii.
+
+Nie znasz się na tym? Otwórz ten folder w agencie AI (na przykład Claude Code albo Codex) i napisz:
+    Zainstaluj OpenBeach i zaimportuj moją kopię Beach Life.
+Agent postępuje według AGENTS.md i zapyta Cię o to, czego potrzebuje.
+
+CO JEST POTRZEBNE
+- Twoja kopia Beach Life: folder instalacji, płyta CD albo jej obraz (.iso).
+  Działają: płyta europejska i francusko-niemiecka, płyta UK/US (Virtual Resort: Spring Break), późniejsza płyta
+  angielska oraz zainstalowane foldery tych wydań. Kopia nieznana importerowi zostaje odrzucona z komunikatem i nic nie
+  zostaje zmienione.
+[win]- Windows 10 lub 11, 64-bitowy.
+[linux]- Linux x86-64 z glibc 2.35 lub nowszym (Debian 12, Ubuntu 22.04 i nowsze) oraz pulpit X11 albo Wayland.
+
+KROK 1: ROZPAKUJ
+[win]  Rozpakuj całe archiwum do własnego folderu, na przykład Dokumenty\OpenBeach (nie do Program Files).
+[win]  Wskazówka: prawy klik na pobranym .zip, Właściwości, zaznacz „Odblokuj”, OK, potem rozpakuj.
+[linux]  Rozpakuj całe archiwum do własnego folderu, na przykład ~/OpenBeach.
+
+KROK 2: ZAIMPORTUJ SWOJĄ KOPIĘ (raz, około 15 minut)
+[win]  Otwórz folder „game” i przeciągnij folder Beach Life, napęd z płytą albo plik .iso na Import.cmd.
+[win]  (Albo kliknij dwa razy Import.cmd i przeciągnij kopię do jego okna.) Poczekaj na „Done”.
+[win]  Jeśli Windows pokaże „System Windows ochronił ten komputer”, kliknij „Więcej informacji”, a potem
+[win]  „Uruchom mimo to”: pliki nie są podpisane.
+[linux]  Otwórz terminal w folderze „game” i uruchom jedno z poleceń:
+[linux]    ./import.sh "/ścieżka/do/Beach Life"      instalacja, płyta albo zamontowany obraz
+[linux]    ./import.sh ~/Pobrane/beachlife.iso      obraz płyty (zostanie zamontowany na czas importu)
+  Twoja kopia jest tylko czytana, nigdy zmieniana. Import możesz powtórzyć w każdej chwili.
+
+KROK 3: GRAJ
+[win]  Kliknij dwa razy Play.cmd w folderze „game”.
+[linux]  ./play.sh   (w folderze „game”)
+[linux]  Import dodaje też OpenBeach z jego ikoną do menu aplikacji.
+  Alt+Enter przełącza między oknem a pełnym ekranem. W trakcie rozgrywki mysz zostaje w oknie gry, żeby krawędź
+  ekranu przewijała mapę; Esc (opcje) albo Alt+Tab ją uwalnia.
+
+JĘZYK
+  Gra jest dostępna tylko w językach Twojej kopii: po angielsku z płyty UK/US i późniejszej płyty angielskiej, a po
+  francusku, niemiecku, włosku, polsku i hiszpańsku z płyty europejskiej i francusko-niemieckiej. Import bierze język
+  Twojej instalacji, a przy płycie pyta o niego. Żeby przełączyć na inny język Twojej kopii, zmień Language= w
+  game/userdata/BeachLife.ini: 0 angielski, 1 francuski, 2 włoski, 3 niemiecki, 4 hiszpański, 5 polski.
+
+ZAPISY, USTAWIENIA I LOG
+  Wszystko jest w game/userdata/: zapisy w SaveGames/, ustawienia w BeachLife.ini i openbeach.ini, log w openbeach.log.
+  Żeby zaktualizować OpenBeach, rozpakuj nową wersję i skopiuj swój folder userdata do jej folderu „game”. Zapisy
+  oryginalnej gry: skopiuj je do game/userdata/SaveGames/, OpenBeach przekonwertuje je przy starcie.
+
+NIE MASZ KOPII POD RĘKĄ? WYPRÓBUJ DEMO
+[win]  Kliknij dwa razy Demo.cmd: mały scenariusz samego projektu, bez danych oryginalnej gry.
+[linux]  ./demo.sh   mały scenariusz samego projektu, bez danych oryginalnej gry.
+
+SKĄD WZIĄĆ PLIK .ISO?
+  Jeśli nadal masz płytę, zrób jej obraz na komputerze z napędem: ImgBurn albo AnyBurn na Windows, Narzędzie dyskowe na
+  Macu (obraz „DVD/CD master”, ze zmienioną nazwą z .cdr na .iso) albo polecenie dd na Linuksie. Jeśli płyta zginęła lub
+  jest porysowana, możesz poszukać w internecie obrazu własnego wydania gry.
+[linux]
+[linux]BIBLIOTEKI
+[linux]  SDL jest wbudowany i ładuje biblioteki systemu. Pulpit je ma; w przeciwnym razie:
+[linux]    sudo apt install libx11-6 libxext6 libxcursor1 libxi6 libxfixes3 libxrandr2 libxss1 \
+[linux]                     libwayland-client0 libwayland-cursor0 libwayland-egl1 libxkbcommon0 libdecor-0-0 \
+[linux]                     libgl1 libegl1 libasound2 libpulse0
+[linux]  (w Ubuntu 24.04 i nowszych pakiet ALSA nazywa się libasound2t64).
+
+PROBLEMY
+  OpenBeach jest wciąż rozwijany: kampanię i tryb swobodny da się przejść, ale możesz trafić na błędy. Zgłaszaj je z
+  plikiem game/userdata/openbeach.log na https://github.com/h4570/openbeach/issues albo na https://discord.gg/PtJqgwGtZm .
+  Bez instalacji: https://openbeach.app uruchamia grę w przeglądarce.
+  Licencja: GPL-3.0-or-later (game/LICENSE); komponenty zewnętrzne: game/THIRD_PARTY_NOTICES.md.

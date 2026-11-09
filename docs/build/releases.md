@@ -9,11 +9,11 @@ Every GitHub release carries a player's archive per system, built by `.github/wo
 | `openbeach-<version>-linux-x86_64.tar.gz` | `linux` | `...-linux-x86_64-debug.tar.gz` (`objcopy --only-keep-debug`; the stripped binaries name it through `.gnu_debuglink`) |
 
 ## Layout
-Three entries at the top, so a player sees where to start:
+The archive puts the guides at the top, so a player sees where to start:
 
 | Path | What it is |
 |---|---|
-| `README.txt` | the steps for people in the six languages of the game (`tools/ci/release/README.txt.in`) |
+| `README.<language>.txt` | the steps for people, one file per game language (`tools/ci/release/README.<language>.txt.in`) |
 | `AGENTS.md` | the same steps for an AI agent, in English (`tools/ci/release/AGENTS.md.in`) |
 | `game/OpenBeach[.exe]`, `game/obl-convert[.exe]` | the game and the converter (Linux: stripped) |
 | `game/Import.cmd`, `Play.cmd`, `Demo.cmd`, `scripts/import.ps1` (Windows); `game/import.sh`, `play.sh`, `demo.sh` (Linux) | the player's commands (`tools/ci/release/<windows\|linux>/`) |

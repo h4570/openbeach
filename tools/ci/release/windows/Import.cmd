@@ -1,5 +1,5 @@
 @echo off
-rem Imports your own copy of Beach Life (README.txt): drop the game folder, the CD drive or the .iso file on this file,
+rem Imports your own copy of Beach Life (README.en.txt): drop the game folder, the CD drive or the .iso file on this file,
 rem or start it and drag the copy into the window. The work is done by scripts\import.ps1.
 rem   Import.cmd [copy] [language]
 setlocal

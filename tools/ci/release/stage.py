@@ -3,9 +3,9 @@
 
     stage.py --platform windows|linux --version <v> --out <dir>/<name> --bin <file>... [--zip <file.zip>]
 
-The directory gets README.txt and AGENTS.md (rendered from the templates beside this script: a line starting with
+The directory gets README.<language>.txt files and AGENTS.md (rendered from the templates beside this script: a line starting with
 "[win]" or "[linux]" is kept only on that platform), and game/ with the binaries, the platform's scripts, the L0 pack in
-game/l0/packs/l0/, an empty game/userdata/, the licences and (Linux) the icon of the menu entry. Paths in README.txt use the platform's separator.
+game/l0/packs/l0/, an empty game/userdata/, the licences and (Linux) the icon of the menu entry. Paths in the README files use the platform's separator.
 """
 
 import argparse
@@ -55,10 +55,11 @@ def stage(platform, version, out, binaries):
         shutil.rmtree(out)
     game = out / "game"
     (game / "userdata").mkdir(parents=True)
-    readme = render(HERE / "README.txt.in", platform, version)
-    if platform == "windows":
-        readme = windows_paths(readme)
-    write_text(out / "README.txt", readme, platform)
+    for template in sorted(HERE.glob("README.*.txt.in")):
+        readme = render(template, platform, version)
+        if platform == "windows":
+            readme = windows_paths(readme)
+        write_text(out / template.name.removesuffix(".in"), readme, platform)
     write_text(out / "AGENTS.md", render(HERE / "AGENTS.md.in", platform, version), platform)
     for binary in binaries:
         shutil.copy2(binary, game / Path(binary).name)
