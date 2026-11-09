@@ -1,12 +1,12 @@
 # OpenBeach @VERSION@ (@PLATFORM@): instructions for an AI agent
 
 The user downloaded this archive and wants to play Beach Life (2002) with OpenBeach. Your job: import their own copy of
-the game once, then start the game. Talk to the user in their language; `README.txt` has the same steps for people, in
-six languages. Source and documentation: https://github.com/h4570/openbeach
+the game once, then start the game. Talk to the user in their language; `README.<language>.txt` has the same steps for
+people, one file per language. Source and documentation: https://github.com/h4570/openbeach
 
 ## Layout
 ```
-README.txt          for the user
+README.<language>.txt  for the user
 AGENTS.md           this file
 game/
 [win]  OpenBeach.exe     the game (also started by Play.cmd and Demo.cmd)
@@ -29,7 +29,7 @@ game/
 ## 1. Check the system
 [win]- Windows 10 or 11, x64. PowerShell 5.1 or newer is part of Windows.
 [linux]- x86-64 Linux with glibc 2.35 or newer: `ldd --version`. The game needs an X11 or Wayland session.
-[linux]- Run-time libraries: `README.txt`, section EN, "LIBRARIES" (Debian/Ubuntu package list). Without them SDL falls
+[linux]- Run-time libraries: `README.en.txt`, "LIBRARIES" (Debian/Ubuntu package list). Without them SDL falls
 [linux]  back (no OpenGL: software rendering, no sound server: silence); a missing X11/Wayland library stops the window.
 
 ## 2. Find the user's copy

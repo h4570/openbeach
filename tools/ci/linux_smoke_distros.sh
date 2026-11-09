@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Runs the smoke test (tools/ci/linux_smoke.sh) of an unpacked Linux release inside clean distribution containers, with
-# only the run-time packages its README.txt names plus Xvfb: proves the glibc floor and the package list.
+# only the run-time packages its README.en.txt names plus Xvfb: proves the glibc floor and the package list.
 #   tools/ci/linux_smoke_distros.sh <unpacked release directory> [image...]   (default: debian:12 ubuntu:24.04)
 set -euo pipefail
 
@@ -11,8 +11,8 @@ images=("$@")
 [[ ${#images[@]} -gt 0 ]] || images=(debian:12 ubuntu:24.04)
 # The package list of the README: the "sudo apt install" line and its continuation lines (ending in a backslash).
 packages=$(awk '/sudo apt install/ { on = 1; sub(/.*apt install/, "") } on { line = $0; sub(/\\[ \t]*$/, "", line); print line; if ($0 !~ /\\[ \t]*$/) exit }' \
-    "$dir/README.txt" | tr -s ' \n' '  ')
-[[ -n "$packages" ]] || { echo "error: no package list in $dir/README.txt" >&2; exit 1; }
+    "$dir/README.en.txt" | tr -s ' \n' '  ')
+[[ -n "$packages" ]] || { echo "error: no package list in $dir/README.en.txt" >&2; exit 1; }
 
 for image in "${images[@]}"; do
     echo "== $image: $packages"
