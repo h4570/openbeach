@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.11.0](https://github.com/h4570/openbeach/compare/v1.10.1...v1.11.0) (2026-11-09)
+
+
+### Features
+
+* **importer:** add --prefer-language to obl-convert import ([0695072](https://github.com/h4570/openbeach/commit/069507222e7bc4da20e8fc261e412b83462b85ab))
+* **platform:** add a settings window before the game starts ([6bc22ee](https://github.com/h4570/openbeach/commit/6bc22ee3656990419d6a9f4051deba731e4274fd))
+* **platform:** add a windows installer ([c848c85](https://github.com/h4570/openbeach/commit/c848c855d6c8d0d87cd4736468ef371efb5c116f))
+* **platform:** add a windows installer ([4053d5c](https://github.com/h4570/openbeach/commit/4053d5c88fe7f7d17a0febceb4b3f4d313b8042a))
+* **platform:** add an experimental macos release ([d4eba9a](https://github.com/h4570/openbeach/commit/d4eba9a25d22e233afcc18efe75e639e5745dccb))
+* **platform:** add an experimental macos release ([3fea142](https://github.com/h4570/openbeach/commit/3fea142f9a3dad342a7fa36cb7c32ebbb37b2366))
+* **platform:** release the mouse while the game is paused with p ([aca9ee1](https://github.com/h4570/openbeach/commit/aca9ee1255e5ec134bee5c83f8905b6d188737d7))
+* **platform:** release the mouse while the game is paused with p ([5f62713](https://github.com/h4570/openbeach/commit/5f62713dcc37aad03510188092de9a7863e278ff))
+
+
+### Bug Fixes
+
+* **platform:** log the audio driver and warn when run as root on linux ([eff929b](https://github.com/h4570/openbeach/commit/eff929bea37f99fa5f79689689d56d281b45cde5))
+* **platform:** log the audio driver and warn when run as root on linux ([44313d7](https://github.com/h4570/openbeach/commit/44313d7ee522e3f3efa3fa5b2329f65e0dc79fb5))
+* **platform:** split release readmes by language ([caaa416](https://github.com/h4570/openbeach/commit/caaa416a09bd3c5f310cca24be006e1de7cc0a1e))
+* **platform:** split release readmes by language ([721afff](https://github.com/h4570/openbeach/commit/721afff18348eb532274b5681aba1fed99f5b9a5))
+
 ## [1.10.1](https://github.com/h4570/openbeach/compare/v1.10.0...v1.10.1) (2026-11-08)
 
 
