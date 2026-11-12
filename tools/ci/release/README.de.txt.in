@@ -77,6 +77,15 @@ SPIELSTÄNDE, EINSTELLUNGEN UND PROTOKOLL
 [mac]  Aktualisieren ziehst du die neue Version auf Programme und ersetzt die alte: Kopie, Spielstände und Einstellungen
 [mac]  bleiben. Spielstände des Originalspiels: kopiere sie dort nach SaveGames/; OpenBeach wandelt sie beim Start um.
 
+SPIELSTÄNDE AUS DEM ORIGINALSPIEL ÜBERNEHMEN
+Alte Spielstände sind Dateien wie save1.dat, save2.dat usw. Das Originalspiel legt sie im Ordner SaveGames seiner
+Installation ab (eine CD enthält keine). So setzt du sie in OpenBeach fort:
+[win|linux]  1. Beende OpenBeach und kopiere die Dateien save<N>.dat nach game/userdata/SaveGames/ (lege den Ordner an, falls er fehlt).
+[mac]  1. Beende OpenBeach und kopiere die Dateien save<N>.dat nach ~/Library/Application Support/OpenBeach/userdata/SaveGames/.
+  2. Starte das Spiel. Es wandelt beim Start jeden Spielstand um; die Originale landen in SaveGames/legacy/ und die Slots
+     erscheinen in der Ladeliste. Ein Spielstand, der sich nicht umwandeln lässt, bleibt liegen; der Grund steht in openbeach.log.
+  Importiere zuerst die Spieldaten (SCHRITT 2): Die Spielstände werden anhand davon umgewandelt. Die Browser-Version liest keine .dat-Dateien.
+
 KEINE KOPIE ZUR HAND? PROBIERE DIE DEMO
 [win]  Doppelklicke Demo.cmd: ein kleines eigenes Szenario des Projekts, ohne Daten des Originalspiels.
 [linux]  ./demo.sh   ein kleines eigenes Szenario des Projekts, ohne Daten des Originalspiels.

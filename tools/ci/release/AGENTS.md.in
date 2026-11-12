@@ -148,11 +148,11 @@ A missing or broken pack stops the start with a message naming the file and "Imp
 [win]  "More info", "Run anyway", or unblocks the .zip (Properties, Unblock) before unpacking.
 [win|linux]- Log: `game/userdata/openbeach.log` (the demo: `game/l0/openbeach.log`). Bugs go to
 [win|linux]  https://github.com/h4570/openbeach/issues with that log.
-[win|linux]- Saves of the original game: copy them into `game/userdata/SaveGames/`; the game converts them when it starts.
+[win|linux]- Saves of the original game: copy them into `game/userdata/SaveGames/`; the game converts them when it starts (the originals move to `SaveGames/legacy/`; a slot that fails stays and `openbeach.log` says why). They are the `save<N>.dat` files of the original installation's `SaveGames` folder; import the game data first.
 [win|linux]- Updating: unpack the new version and copy the old `game/userdata/` into it. If the new version asks to import the game
 [win|linux]  data again, run step 3.
 [mac]- Log: `<userdata>/openbeach.log` (the demo: `~/Library/Application Support/OpenBeach/l0/openbeach.log`). Bugs go to
 [mac]  https://github.com/h4570/openbeach/issues with that log; say it is the experimental macOS version.
-[mac]- Saves of the original game: copy them into `<userdata>/SaveGames/`; the game converts them when it starts.
+[mac]- Saves of the original game: copy them into `<userdata>/SaveGames/`; the game converts them when it starts (the originals move to `SaveGames/legacy/`; a slot that fails stays and `openbeach.log` says why). They are the `save<N>.dat` files of the original installation's `SaveGames` folder; import the game data first.
 [mac]- Updating: replace `/Applications/OpenBeach.app` with the new one; `<userdata>` stays. If the new version asks to
 [mac]  import the game data again, run step 3.

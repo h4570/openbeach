@@ -77,6 +77,15 @@ ZAPISY, USTAWIENIA I LOG
 [mac]  przeciągnij nową wersję na Aplikacje i zastąp starą: zaimportowana kopia, zapisy i ustawienia zostają.
 [mac]  Zapisy oryginalnej gry: skopiuj je tam do SaveGames/, OpenBeach przekonwertuje je przy starcie.
 
+IMPORT ZAPISÓW Z ORYGINALNEJ GRY
+Stare zapisy to pliki save1.dat, save2.dat itd. Oryginalna gra trzyma je w folderze SaveGames swojej instalacji (płyta
+ich nie zawiera). Żeby kontynuować je w OpenBeach:
+[win|linux]  1. Zamknij OpenBeach i skopiuj pliki save<N>.dat do game/userdata/SaveGames/ (utwórz folder, jeśli go nie ma).
+[mac]  1. Zamknij OpenBeach i skopiuj pliki save<N>.dat do ~/Library/Application Support/OpenBeach/userdata/SaveGames/.
+  2. Uruchom grę. Przy starcie konwertuje każdy zapis; oryginały trafiają do SaveGames/legacy/, a sloty pojawiają się na
+     liście wczytywania. Zapis, którego nie da się przekonwertować, zostaje na miejscu, a powód jest w openbeach.log.
+  Najpierw zaimportuj dane gry (KROK 2): zapisy są konwertowane na ich podstawie. Wersja w przeglądarce nie czyta plików .dat.
+
 NIE MASZ KOPII POD RĘKĄ? WYPRÓBUJ DEMO
 [win]  Kliknij dwa razy Demo.cmd: mały scenariusz samego projektu, bez danych oryginalnej gry.
 [linux]  ./demo.sh   mały scenariusz samego projektu, bez danych oryginalnej gry.

@@ -77,6 +77,15 @@ SALVATAGGI, IMPOSTAZIONI E LOG
 [mac]  OpenBeach trascina la nuova versione su Applicazioni e sostituisci la vecchia: copia importata, salvataggi e
 [mac]  impostazioni restano. Salvataggi del gioco originale: copiali lì in SaveGames/; OpenBeach li converte all'avvio.
 
+IMPORTARE I SALVATAGGI DEL GIOCO ORIGINALE
+I vecchi salvataggi sono file come save1.dat, save2.dat ecc. Il gioco originale li tiene nella cartella SaveGames della
+sua installazione (un CD non ne contiene). Per continuarli in OpenBeach:
+[win|linux]  1. Chiudi OpenBeach e copia i file save<N>.dat in game/userdata/SaveGames/ (crea la cartella se manca).
+[mac]  1. Chiudi OpenBeach e copia i file save<N>.dat in ~/Library/Application Support/OpenBeach/userdata/SaveGames/.
+  2. Avvia il gioco. Converte ogni salvataggio all'avvio; gli originali vanno in SaveGames/legacy/ e gli slot compaiono
+     nell'elenco di caricamento. Un salvataggio non convertibile resta dov'è, e openbeach.log ne spiega il motivo.
+  Importa prima i dati del gioco (PASSO 2): i salvataggi vengono convertiti con essi. La versione browser non legge i file .dat.
+
 NON HAI LA COPIA A PORTATA DI MANO? PROVA LA DEMO
 [win]  Fai doppio clic su Demo.cmd: un piccolo scenario del progetto, senza dati del gioco originale.
 [linux]  ./demo.sh   un piccolo scenario del progetto, senza dati del gioco originale.
