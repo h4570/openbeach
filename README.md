@@ -63,6 +63,14 @@ tarball (glibc 2.35+: Debian 12, Ubuntu 22.04 and later) and an experimental mac
 onto `Import.cmd` (`import.sh` on Linux) once, then start `Play.cmd`. `AGENTS.md` beside it tells an AI agent
 how to do it for you ([release archives](docs/build/releases.md)).
 
+### Saves of the original game
+Old `save<N>.dat` files (the original game keeps them in the `SaveGames` folder of its installation) carry over to a
+release build. Import your copy first, then close OpenBeach and copy the files into `game/userdata/SaveGames/` (Windows
+and Linux archives; on a Mac `~/Library/Application Support/OpenBeach/userdata/SaveGames/`). The next start converts every
+slot, moves the `.dat` originals to `SaveGames/legacy/` and lists the slots under Load game; a slot that cannot be converted
+stays as it is and `openbeach.log` says why. A development build does the same with `run/SaveGames/`. The browser version
+does not read `.dat` files ([how the conversion works](docs/architecture/data-formats/save-switch.md)).
+
 ## Building and running
 Details and the WebAssembly build: [building](docs/build/building.md).
 

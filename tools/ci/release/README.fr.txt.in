@@ -81,6 +81,15 @@ SAUVEGARDES, RÉGLAGES ET JOURNAL
 [mac]  sauvegardes et les réglages restent. Sauvegardes du jeu original : copiez-les dans SaveGames/ ; OpenBeach les
 [mac]  convertit au démarrage.
 
+IMPORTER LES SAUVEGARDES DU JEU ORIGINAL
+Les anciennes sauvegardes sont des fichiers save1.dat, save2.dat, etc. Le jeu original les range dans le dossier SaveGames
+de son installation (un CD n'en contient pas). Pour les continuer dans OpenBeach :
+[win|linux]  1. Fermez OpenBeach et copiez les fichiers save<N>.dat dans game/userdata/SaveGames/ (créez le dossier s'il manque).
+[mac]  1. Quittez OpenBeach et copiez les fichiers save<N>.dat dans ~/Library/Application Support/OpenBeach/userdata/SaveGames/.
+  2. Lancez le jeu. Il convertit chaque sauvegarde au démarrage ; les originaux passent dans SaveGames/legacy/ et les
+     emplacements apparaissent dans la liste de chargement. Une sauvegarde non convertible reste en place, openbeach.log dit pourquoi.
+  Importez d'abord les données du jeu (ÉTAPE 2) : les sauvegardes sont converties avec elles. La version navigateur ne lit pas les .dat.
+
 PAS DE COPIE SOUS LA MAIN ? ESSAYEZ LA DÉMO
 [win]  Double-cliquez sur Demo.cmd : un petit scénario du projet, sans aucune donnée du jeu original.
 [linux]  ./demo.sh   un petit scénario du projet, sans aucune donnée du jeu original.

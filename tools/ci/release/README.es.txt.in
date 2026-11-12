@@ -75,6 +75,15 @@ PARTIDAS, AJUSTES Y REGISTRO
 [mac]  OpenBeach, arrastra la nueva versión a Aplicaciones y sustituye la antigua: la copia importada, las partidas y los
 [mac]  ajustes se mantienen. Partidas del juego original: cópialas allí en SaveGames/; OpenBeach las convierte al arrancar.
 
+IMPORTAR PARTIDAS DEL JUEGO ORIGINAL
+Las partidas antiguas son archivos como save1.dat, save2.dat, etc. El juego original las guarda en la carpeta SaveGames de
+su instalación (un CD no las contiene). Para continuarlas en OpenBeach:
+[win|linux]  1. Cierra OpenBeach y copia los archivos save<N>.dat en game/userdata/SaveGames/ (crea la carpeta si no existe).
+[mac]  1. Cierra OpenBeach y copia los archivos save<N>.dat en ~/Library/Application Support/OpenBeach/userdata/SaveGames/.
+  2. Inicia el juego. Convierte cada partida al arrancar; los originales pasan a SaveGames/legacy/ y las ranuras aparecen en
+     la lista de cargar. Una partida que no se puede convertir se queda donde está, y openbeach.log explica el motivo.
+  Importa antes los datos del juego (PASO 2): las partidas se convierten con ellos. La versión del navegador no lee archivos .dat.
+
 ¿NO TIENES LA COPIA A MANO? PRUEBA LA DEMO
 [win]  Haz doble clic en Demo.cmd: un pequeño escenario propio del proyecto, sin datos del juego original.
 [linux]  ./demo.sh   un pequeño escenario propio del proyecto, sin datos del juego original.
