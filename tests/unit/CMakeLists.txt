@@ -148,6 +148,9 @@ add_executable(obl_unit_tests
     input_mapping_test.cpp
     input_state_test.cpp
     touch_gestures_test.cpp
+    pad_pointer_test.cpp
+    frame_bands_test.cpp
+    sprite_slice_test.cpp
     state_helpers_test.cpp
     mp3info_test.cpp
     id3tag_test.cpp
@@ -332,6 +335,7 @@ add_executable(obl_unit_tests
     gui_content_test.cpp
     gui_layouts_test.cpp
     own_credits_test.cpp
+    own_controls_test.cpp
     convert_gui_tables_test.cpp
     convert_byte_source_test.cpp
     convert_source_test.cpp

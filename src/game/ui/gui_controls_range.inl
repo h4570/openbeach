@@ -233,7 +233,7 @@ void ScrollOverlay(Scroll* w)
 }
 
 // ---- GuiSlider ----------------------------------------------------------------------------------------------------------------------
-enum class SliderKey { Red, Green, Blue, Music, Effects, Other };
+enum class SliderKey { Red, Green, Blue, Music, Effects, CursorSpeed, ScrollSpeed, Other };
 SliderKey KeyOf(const char* name)
 {
     if (std::strcmp(name, "WEATHER_RED") == 0) return SliderKey::Red;
@@ -241,6 +241,8 @@ SliderKey KeyOf(const char* name)
     if (std::strcmp(name, "WEATHER_BLUE") == 0) return SliderKey::Blue;
     if (std::strcmp(name, "MUSIC_VOLUME") == 0) return SliderKey::Music;
     if (std::strcmp(name, "EFFECTS_VOLUME") == 0) return SliderKey::Effects;
+    if (std::strcmp(name, "SCROLL_SPEED") == 0) return SliderKey::ScrollSpeed;
+    if (std::strcmp(name, "CURSOR_SPEED") == 0) return SliderKey::CursorSpeed; // OpenBeach's own, see own_controls.h
     return SliderKey::Other;
 }
 void* WeatherObject()
@@ -273,6 +275,8 @@ void SliderSet(ui::GuiSliderData* w, float value)
         game::settings_store::Current().m_effectsVolume = quantized;
         SoundSetEffects(SoundObject(), nullptr, quantized);
         return;
+    case SliderKey::CursorSpeed: game::settings_store::Current().m_cursorSpeed = static_cast<int>(std::lround(quantized * 100.0f)); return;
+    case SliderKey::ScrollSpeed: game::settings_store::Current().m_scrollSpeed = static_cast<int>(std::lround(quantized * 100.0f)); return;
     case SliderKey::Other: ProviderStore(Provider(), w->m_variable, quantized); return;
     }
 }
@@ -320,6 +324,8 @@ void SliderUpdate(SliderW* w, float dt)
     case SliderKey::Blue: value = static_cast<float>(WeatherGet<2>(WeatherObject(), nullptr)); break;
     case SliderKey::Music: value = audio::CurrentSound()->musicVolume; break;
     case SliderKey::Effects: value = SoundGetEffects(SoundObject(), nullptr); break;
+    case SliderKey::CursorSpeed: value = static_cast<float>(game::settings_store::Current().m_cursorSpeed) / 100.0f; break;
+    case SliderKey::ScrollSpeed: value = static_cast<float>(game::settings_store::Current().m_scrollSpeed) / 100.0f; break;
     default: {
         obl::Char16 text[512];
         obl::Char16* end;

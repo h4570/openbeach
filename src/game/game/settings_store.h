@@ -22,6 +22,8 @@ struct Settings {
     std::vector<settings::DialogPosition> m_dialogPositions; // moved GUI windows ([Dialog]), in insertion order
     int m_resolutionWidth = settings::kDefaultResWidth;
     int m_resolutionHeight = settings::kDefaultResHeight;
+    int m_cursorSpeed = settings::kDefaultCursorSpeed; // percent; the handheld stick (Video options slider)
+    int m_scrollSpeed = settings::kDefaultScrollSpeed; // percent; the map's scrolling (Video options slider)
     uint8_t m_nudgeScroll = 1;
     uint8_t m_seaEffects = 1;
     uint8_t m_lightEffects = 1;

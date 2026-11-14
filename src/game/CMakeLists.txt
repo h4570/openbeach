@@ -72,6 +72,8 @@ add_library(obl_common STATIC
     ui/sprite_animation.cpp
     ui/sprite_animation.h
     ui/gui_layouts.cpp
+    ui/own_controls.cpp
+    ui/own_controls.h
     ui/gui_layouts.h
     map/path_tile_script.cpp
     map/path_tile_script.h
@@ -163,6 +165,8 @@ add_library(obl_common STATIC
     tables/text_load.h
     game/own_credits.cpp
     game/own_credits.h
+    game/own_texts.cpp
+    game/own_texts.h
     ui/gui_canvas.cpp
     ui/gui_canvas.h
     ui/gui_controls.h

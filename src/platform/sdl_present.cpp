@@ -14,6 +14,12 @@
 #include "core/cursor_file.h"
 #include "platform/display_window.h"
 #include "platform/hidden_window.h"
+#ifdef OBL_HANDHELD
+#include "game/ui/sprite_anim.h"
+#include "platform/cursor.h"
+#include "platform/frame_share.h"
+#include "platform/input.h"
+#endif
 #include "core/log.h"
 #include "core/platform_main.h"
 #include "openbeach_icon.gen.h"
@@ -90,6 +96,9 @@ bool EnsureVideo()
 
 void Shutdown()
 {
+#ifdef OBL_HANDHELD
+    SharedFrameClose();
+#endif
     if (g_texture) SDL_DestroyTexture(g_texture);
     if (g_renderer) SDL_DestroyRenderer(g_renderer);
     g_texture = nullptr;
@@ -316,6 +325,10 @@ SDL_Window* CreateSdlGameWindow(void* instance, int clientWidth, int clientHeigh
     g_created = true;
     g_stats.created = true;
     g_stats.icon = SetGameIcon(window);
+#ifdef OBL_HANDHELD
+    // The A53 takes 150-375 ms to decode a guest's sheet: animations decode in the background before they are drawn.
+    ui::EnableSpritePrefetch();
+#endif
     if (!g_stats.icon) OBL_LOG("sdl window: the OpenBeach icon was not set: %s", SDL_GetError());
     // SDL's own window procedure stays: close, focus and input reach the game as SDL events (PumpSdlEvents, input.cpp) and the
     // local cursor is an SDL cursor (cursor.cpp).
@@ -368,6 +381,22 @@ HWND GetWin32Window(void* window)
 bool PresentBackBuffer(const uint16_t* bits, int pitch, int width, int height, bool rgb555)
 {
     if (g_failed || !bits || width <= 0 || height <= 0) return false;
+#ifdef OBL_HANDHELD
+    // No video driver for SDL3: the frame goes to the panel thread (frame_share.cpp). The window SDL's offscreen driver made
+    // only carries events; the cursor position is in its client pixels, which is the game's when the window has the game's size.
+    SharedCursor cursor;
+    int clientW = 0, clientH = 0;
+    int x = 0, y = 0;
+    if (g_window) SDL_GetWindowSizeInPixels(g_window, &clientW, &clientH);
+    if (HandheldCursor(x, y) && clientW > 0 && clientH > 0) {
+        cursor.visible = LocalCursorVisible();
+        cursor.x = x * width / clientW;
+        cursor.y = y * height / clientH;
+    }
+    if (!SharedFramePresent(bits, pitch, width, height, rgb555, cursor)) return false;
+    ++g_stats.presents;
+    return true;
+#endif
     return Present(bits, pitch, width, height, rgb555 ? SDL_PIXELFORMAT_XRGB1555 : SDL_PIXELFORMAT_RGB565);
 }
 

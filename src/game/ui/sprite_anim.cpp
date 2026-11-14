@@ -11,9 +11,16 @@
 
 #include <algorithm>
 #include <array>
+#include <chrono>
+#include <condition_variable>
 #include <cstring>
+#include <deque>
 #include <memory>
+#include <mutex>
 #include <string>
+#include <thread>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 namespace obl::ui {
@@ -86,21 +93,156 @@ void LoadAll(Anim* a)
 
 // The offsets of the frames of other directions stay zero until their direction loads: GetFrame reads only those of the
 // direction it returns a frame of.
+void EnsureDirectionIndex(Anim* a, const PackAnim& p)
+{
+    if (a->m_directionIndexLoaded) return;
+    a->m_frameIndices = Copy(p.anim.frameMap.data(), p.anim.frameMap.size());
+    const std::vector<uint32_t> zero(a->m_uniqueFrames);
+    a->m_frameOffsets = Copy(zero.data(), zero.size());
+    for (int i = 0; i < a->m_directions; ++i) a->m_directionOffsets[i] = p.base[i];
+    a->m_directionIndexLoaded = 1;
+}
+
 void LoadDirection(Anim* a, int d)
 {
     const PackAnim& p = Pack(*a);
     a->m_allLoaded = 0;
-    if (!a->m_directionIndexLoaded) {
-        a->m_frameIndices = Copy(p.anim.frameMap.data(), p.anim.frameMap.size());
-        const std::vector<uint32_t> zero(a->m_uniqueFrames);
-        a->m_frameOffsets = Copy(zero.data(), zero.size());
-        for (int i = 0; i < a->m_directions; ++i) a->m_directionOffsets[i] = p.base[i];
-        a->m_directionIndexLoaded = 1;
-    }
+    EnsureDirectionIndex(a, p);
     std::vector<uint32_t> offsets(a->m_uniqueFrames);
     const std::vector<uint8_t> data = Encode(p, p.first[d], p.first[d + 1], p.base[d], offsets);
     std::copy(offsets.begin() + p.first[d], offsets.begin() + p.first[d + 1], a->m_frameOffsets + p.first[d]);
     a->m_directionData[d] = Copy(data.data(), data.size());
+    a->m_loaded = 1;
+}
+
+// ---- background decoding ---------------------------------------------------------------------------------------------------------
+// Decoding an animation's sheet takes the handheld's A53 150-375 ms, and GetFrame does it in the frame that first draws the animation
+// (the directions of a guest's animation share one sheet, so each new direction decodes it again). With EnableSpritePrefetch a worker
+// thread decodes whole animations ahead of time: those of objects just outside the view (map_view_culling.cpp) and the other
+// directions of one that just loaded. GetFrame takes the prepared frames, waits for an animation the worker is decoding, and otherwise
+// loads as before. The frames are byte for byte those of the inline load (sprite_pack::SliceFrames).
+struct Prepared {
+    std::vector<uint8_t> data; // every unique frame, base 0
+    std::vector<uint32_t> offsets;
+    std::string error;
+    std::chrono::steady_clock::time_point done;
+};
+
+// A copy of what the decode needs: the job never touches g_anims, which the game's thread may grow or the exit may free meanwhile.
+struct Job {
+    uint32_t index; // SpriteAnim::m_dataOffset
+    sprite_pack::Anim anim;
+    std::filesystem::path directory;
+};
+
+struct Prefetch {
+    std::mutex mutex;
+    std::condition_variable wake, decoded;
+    std::deque<Job> queue;
+    std::unordered_set<uint32_t> pending; // queued or being decoded
+    std::unordered_map<uint32_t, Prepared> results;
+    size_t resultBytes = 0;
+    uint32_t decoding = UINT32_MAX;
+};
+
+constexpr size_t kPreparedBytes = 64u << 20; // prepared frames that nothing drew yet; beyond it the oldest go
+bool g_prefetch; // set once by EnableSpritePrefetch, on the game's thread
+
+Prefetch& Prefetching()
+{
+    static Prefetch* prefetch = new Prefetch; // never destroyed: the worker may still wait on it while the process exits
+    return *prefetch;
+}
+
+void PrefetchWorker()
+{
+    Prefetch& pf = Prefetching();
+    std::unique_lock lock(pf.mutex);
+    for (;;) {
+        pf.wake.wait(lock, [&] { return !pf.queue.empty(); });
+        const Job job = std::move(pf.queue.front());
+        pf.queue.pop_front();
+        pf.decoding = job.index;
+        lock.unlock();
+        Prepared prepared;
+        prepared.offsets.resize(job.anim.uniqueFrames);
+        sprite_pack::EncodeFrames(job.directory, job.anim, 0, job.anim.uniqueFrames, 0, prepared.data, prepared.offsets, prepared.error);
+        prepared.done = std::chrono::steady_clock::now();
+        lock.lock();
+        pf.decoding = UINT32_MAX;
+        pf.pending.erase(job.index);
+        pf.resultBytes += prepared.data.size();
+        pf.results[job.index] = std::move(prepared);
+        while (pf.resultBytes > kPreparedBytes && pf.results.size() > 1) {
+            auto oldest = pf.results.begin();
+            for (auto it = pf.results.begin(); it != pf.results.end(); ++it)
+                if (it->second.done < oldest->second.done) oldest = it;
+            pf.resultBytes -= oldest->second.data.size();
+            pf.results.erase(oldest);
+        }
+        pf.decoded.notify_all();
+    }
+}
+
+// Queues `a` for the worker unless it is loaded whole, prepared or queued already.
+void Request(const Anim* a)
+{
+    if (!g_prefetch || a->m_dataOffset >= g_anims.size()) return;
+    const PackAnim& p = *g_anims[a->m_dataOffset];
+    if (p.metadataOnly) return;
+    if (a->m_loaded) {
+        if (a->m_allLoaded) return;
+        bool missing = false;
+        for (int d = 0; d < a->m_directions && !missing; ++d) missing = !a->m_directionData[d];
+        if (!missing) return;
+    }
+    Prefetch& pf = Prefetching();
+    {
+        std::lock_guard lock(pf.mutex);
+        if (pf.pending.count(a->m_dataOffset) || pf.results.count(a->m_dataOffset)) return;
+        pf.pending.insert(a->m_dataOffset);
+        pf.queue.push_back({a->m_dataOffset, p.anim, g_spritesDirectory});
+    }
+    pf.wake.notify_one();
+}
+
+// The prepared frames of `a`, waiting while the worker decodes them; false when they are not prepared (queued only, or never asked).
+bool TakePrepared(const Anim* a, Prepared& out)
+{
+    if (!g_prefetch) return false;
+    Prefetch& pf = Prefetching();
+    std::unique_lock lock(pf.mutex);
+    if (pf.decoding == a->m_dataOffset) pf.decoded.wait(lock, [&] { return pf.decoding != a->m_dataOffset; });
+    const auto it = pf.results.find(a->m_dataOffset);
+    if (it == pf.results.end()) return false;
+    out = std::move(it->second);
+    pf.resultBytes -= out.data.size();
+    pf.results.erase(it);
+    return true;
+}
+
+// Prepared frames into `a`, as LoadAll or LoadDirection load them; directions already loaded stay as they are.
+void Install(Anim* a, const PackAnim& p, const Prepared& r)
+{
+    if (!r.error.empty()) Failure(r.error.c_str());
+    if (a->m_dataSize < kDirectionalSize) {
+        if (a->m_loaded) return;
+        a->m_frameIndices = Copy(p.anim.frameMap.data(), p.anim.frameMap.size());
+        a->m_frameOffsets = Copy(r.offsets.data(), r.offsets.size());
+        a->m_allLoaded = 1;
+        a->m_allData = Copy(r.data.data(), r.data.size());
+        a->m_loaded = 1;
+        return;
+    }
+    a->m_allLoaded = 0;
+    EnsureDirectionIndex(a, p);
+    std::vector<uint32_t> offsets(a->m_uniqueFrames);
+    for (int d = 0; d < a->m_directions; ++d) {
+        if (a->m_directionData[d]) continue;
+        const std::vector<uint8_t> data = sprite_pack::SliceFrames(r.data, r.offsets, p.first[d], p.first[d + 1], p.base[d], offsets);
+        std::copy(offsets.begin() + p.first[d], offsets.begin() + p.first[d + 1], a->m_frameOffsets + p.first[d]);
+        a->m_directionData[d] = Copy(data.data(), data.size());
+    }
     a->m_loaded = 1;
 }
 
@@ -109,10 +251,15 @@ uint8_t* GetFrame(Anim* a, int frame, int d)
     frame = std::min(frame, static_cast<int>(a->m_frames) - 1);
     d = std::min(d, static_cast<int>(a->m_directions) - 1);
     if (!a->m_loaded || (!a->m_allLoaded && !a->m_directionData[d])) {
-        if (a->m_dataSize < kDirectionalSize)
-            LoadAll(a);
-        else
-            LoadDirection(a, d);
+        Prepared prepared;
+        if (TakePrepared(a, prepared)) Install(a, Pack(*a), prepared);
+        if (!a->m_loaded || (!a->m_allLoaded && !a->m_directionData[d])) {
+            if (a->m_dataSize < kDirectionalSize)
+                LoadAll(a);
+            else
+                LoadDirection(a, d);
+        }
+        Request(a); // the directions still missing, from one decode in the background
     }
     uint32_t offset = a->m_frameOffsets[a->m_frameIndices[d * a->m_frames + frame]];
     return a->m_allLoaded ? a->m_allData + offset : a->m_directionData[d] + (offset - a->m_directionOffsets[d]);
@@ -321,6 +468,23 @@ void AttachPackAnim(Anim* a, sprite_pack::Anim pack, bool metadataOnly)
     a->m_dataOffset = static_cast<uint32_t>(g_anims.size());
     p->anim = std::move(pack);
     g_anims.push_back(std::move(p));
+}
+
+void EnableSpritePrefetch()
+{
+    if (g_prefetch) return;
+    g_prefetch = true;
+    std::thread(PrefetchWorker).detach(); // runs for the rest of the process
+}
+
+bool SpritePrefetchEnabled()
+{
+    return g_prefetch;
+}
+
+void PrefetchSpriteAnim(const ui::SpriteAnim* anim)
+{
+    Request(anim);
 }
 
 bool ConfigureSpriteAnimations(const std::filesystem::path& gameDirectory)

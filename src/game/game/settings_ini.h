@@ -4,6 +4,7 @@
 #include "game/ui/media_pack.h"
 #include "game/ui/playlist_scan.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -36,6 +37,12 @@ struct SoundValues {
     bool tracksRead = false;
 };
 
+// The thumb stick's pointer speed on handhelds, in percent (the Video options slider; platform/pad_pointer.h).
+inline constexpr int kDefaultCursorSpeed = 30;
+// The map's scroll speed in percent of the original (the Video options slider); never applied below kMinScrollSpeed.
+inline constexpr int kDefaultScrollSpeed = 100;
+inline constexpr int kMinScrollSpeed = 10;
+
 struct VideoValues {
     int resWidth = 0;
     int resHeight = 0;
@@ -43,6 +50,9 @@ struct VideoValues {
     uint8_t seaEffects = 0;
     uint8_t lightEffects = 0;
     uint8_t keyline = 0;
+    int cursorSpeed = kDefaultCursorSpeed;
+    int scrollSpeed = kDefaultScrollSpeed;
+    bool padSpeeds = false; // CursorSpeed and ScrollSpeed are saved only where a stick is the pointer (own_controls.h)
 };
 
 namespace detail {
@@ -129,6 +139,10 @@ template<class Env> void LoadVideo(Env& env, VideoValues& values)
     if (detail::Get(env, kVideoSection, "SeaEffects", kVideoBuffer, text)) values.seaEffects = std::atoi(text.c_str()) != 0;
     if (detail::Get(env, kVideoSection, "LightEffects", kVideoBuffer, text)) values.lightEffects = std::atoi(text.c_str()) != 0;
     if (detail::Get(env, kVideoSection, "Keyline", kVideoBuffer, text)) values.keyline = std::atoi(text.c_str()) != 0;
+    if (detail::Get(env, kVideoSection, "CursorSpeed", kVideoBuffer, text))
+        values.cursorSpeed = std::clamp(std::atoi(text.c_str()), 0, 100);
+    if (detail::Get(env, kVideoSection, "ScrollSpeed", kVideoBuffer, text))
+        values.scrollSpeed = std::clamp(std::atoi(text.c_str()), 0, 100);
 }
 
 template<class Env> void SaveVideo(Env& env, const VideoValues& values)
@@ -139,6 +153,10 @@ template<class Env> void SaveVideo(Env& env, const VideoValues& values)
     env.Write(kVideoSection, "SeaEffects", detail::Number(values.seaEffects));
     env.Write(kVideoSection, "LightEffects", detail::Number(values.lightEffects));
     env.Write(kVideoSection, "Keyline", detail::Number(values.keyline));
+    if (values.padSpeeds) {
+        env.Write(kVideoSection, "CursorSpeed", detail::Number(values.cursorSpeed));
+        env.Write(kVideoSection, "ScrollSpeed", detail::Number(values.scrollSpeed));
+    }
 }
 
 // Remembered GUI window positions, [Dialog] (the dialog-positions saver / LoadDialogPositions).

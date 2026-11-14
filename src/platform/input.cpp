@@ -15,17 +15,26 @@
 #include "input_mapping.h"
 #include "core/log.h"
 #include "platform/sdl_present.h"
+#include "platform/pad_pointer.h"
+#include "game/game/settings_store.h"
+#include "game/ui/own_controls.h"
 #include "platform/touch_gestures.h"
 #include "platform/window_placement.h"
 
 #include <windows.h>
 #include <SDL3/SDL.h>
+#ifdef OBL_HANDHELD
+#include <fcntl.h>
+#include <linux/joystick.h>
+#include <unistd.h>
+#endif
 #ifdef __EMSCRIPTEN__
 #include <emscripten/html5.h>
 #endif
 
 #include <algorithm>
 #include <array>
+#include <cerrno>
 #include <cmath>
 #include <deque>
 #include <cstdlib>
@@ -192,6 +201,118 @@ void UpdateMouseConfinement()
 #endif
 }
 
+#ifdef OBL_HANDHELD
+// ---------------------------------------------------------------------------------------------
+// The handheld build has no mouse (docs/build/handheld.md): the left stick moves the cursor, L1 or A is the left button and R1 or B
+// the right one (which starts the camera drag; the stick then drags). The pad is read from the kernel's joystick device (/dev/input/js0, or
+// $OBL_PAD_DEVICE): SDL3 does not classify this firmware's input devices as joysticks, and the kernel numbers axes and buttons by
+// their evdev codes, as SDL does. Axes arrive scaled to -32767..32767. $OBL_PAD_L1, $OBL_PAD_R1 and $OBL_PAD_AXIS_X/Y set the numbers.
+int g_padFd = -1;
+// The RG40XXV's numbers (the firmware's gamecontrollerdb): A 0, B 1, L1 4, R1 5, the stick on axes 0 and 1, the D-pad on the hat axes 4 and 5.
+constexpr int kPadButtonA = 0, kPadButtonB = 1, kPadButtonX = 3, kPadButtonSelect = 6, kPadHatX = 4, kPadHatY = 5;
+// Buttons that are a key: SELECT opens the game's menu (Esc), X turns the building being placed (Space).
+struct PadKey {
+    int button;
+    int scancode;
+    bool down;
+};
+PadKey g_padKeys[] = {{kPadButtonSelect, SDL_SCANCODE_ESCAPE, false}, {kPadButtonX, SDL_SCANCODE_SPACE, false}};
+int g_padL1 = 4, g_padR1 = 5, g_padAxisX = 0, g_padAxisY = 1;
+bool g_padDpad[4]; // left, right, up, down: held as the arrow keys that scroll the map
+std::array<int, 16> g_padAxes{};
+std::array<bool, 32> g_padButtons{};
+Uint64 g_padNs;
+bool g_padLeftDown, g_padRightDown;
+PadPointer g_padPointer;
+PadAccumulator g_padX, g_padY;
+
+// A button or axis number from the environment; one the arrays cannot hold keeps the default.
+int PadSetting(const char* name, int fallback, size_t count)
+{
+    const char* text = std::getenv(name);
+    const int value = text && *text ? std::atoi(text) : fallback;
+    return value >= 0 && static_cast<size_t>(value) < count ? value : fallback;
+}
+
+void OpenHandheldPad()
+{
+    if (g_padFd >= 0) return;
+    static Uint64 lastTry; // a pad that is not there is looked for once a second
+    const Uint64 now = SDL_GetTicks();
+    if (lastTry && now - lastTry < 1000) return;
+    lastTry = now ? now : 1;
+    const char* path = std::getenv("OBL_PAD_DEVICE");
+    g_padFd = ::open(path && *path ? path : "/dev/input/js0", O_RDONLY | O_NONBLOCK);
+    if (g_padFd >= 0) OBL_LOG("input: pad %s opened", path && *path ? path : "/dev/input/js0");
+}
+
+// Reads what the kernel queued since the last frame into the axis and button state.
+void ReadPadEvents()
+{
+    js_event event;
+    for (;;) {
+        const ssize_t got = ::read(g_padFd, &event, sizeof(event));
+        if (got == static_cast<ssize_t>(sizeof(event))) {
+            const unsigned type = event.type & ~JS_EVENT_INIT;
+            if (type == JS_EVENT_AXIS && event.number < g_padAxes.size()) g_padAxes[event.number] = event.value;
+            if (type == JS_EVENT_BUTTON && event.number < g_padButtons.size()) g_padButtons[event.number] = event.value != 0;
+        } else if (got < 0 && errno == EINTR) {
+            continue;
+        } else {
+            if (got < 0 && errno != EAGAIN) { // the device went away: look for it again
+                ::close(g_padFd);
+                g_padFd = -1;
+            }
+            return;
+        }
+    }
+}
+
+void ReadHandheldPad()
+{
+    OpenHandheldPad();
+    if (g_padFd < 0) return;
+    ReadPadEvents();
+    if (g_padFd < 0) return;
+    const Uint64 now = SDL_GetTicksNS();
+    const double seconds = g_padNs ? std::min(0.1, static_cast<double>(now - g_padNs) / 1e9) : 0.0;
+    g_padNs = now;
+    int width = 0, height = 0;
+    GameWindowClientSize(game::GetGameWindow(), width, height);
+    if (width <= 0 || height <= 0) return;
+    if (g_sdlMouseClient.x < 0) g_sdlMouseClient = {width / 2, height / 2}; // first use, or after a reset
+    const PadPointer::Delta move = g_padPointer.Step(g_padAxes[static_cast<size_t>(g_padAxisX)], g_padAxes[static_cast<size_t>(g_padAxisY)],
+            seconds, game::settings_store::Current().m_cursorSpeed);
+    const int dx = g_padX.Add(move.x), dy = g_padY.Add(move.y);
+    if (Dragging()) {
+        platform::InjectRelativeMotion(dx, dy);
+    } else {
+        g_sdlMouseClient = {
+                std::clamp<LONG>(g_sdlMouseClient.x + dx, 0, width - 1), std::clamp<LONG>(g_sdlMouseClient.y + dy, 0, height - 1)};
+    }
+    // L1 and A are the left button, R1 and B the right one.
+    const bool left = g_padButtons[static_cast<size_t>(g_padL1)] || g_padButtons[kPadButtonA];
+    const bool right = g_padButtons[static_cast<size_t>(g_padR1)] || g_padButtons[kPadButtonB];
+    if (left != g_padLeftDown) PushEvent(input_state::kRecordLeft, left ? 0x80 : 0);
+    if (right != g_padRightDown) PushEvent(input_state::kRecordRight, right ? 0x80 : 0);
+    g_padLeftDown = left;
+    g_padRightDown = right;
+    for (PadKey& key : g_padKeys) {
+        const bool pressed = g_padButtons[static_cast<size_t>(key.button)];
+        if (pressed != key.down) g_keys.OnKey(SdlScancodeToKeyCode(key.scancode), pressed, false);
+        key.down = pressed;
+    }
+    // The D-pad is the arrow keys, which scroll the map.
+    const int hatX = g_padAxes[kPadHatX], hatY = g_padAxes[kPadHatY];
+    const bool held[4] = {hatX < -16384, hatX > 16384, hatY < -16384, hatY > 16384};
+    const int scancodes[4] = {SDL_SCANCODE_LEFT, SDL_SCANCODE_RIGHT, SDL_SCANCODE_UP, SDL_SCANCODE_DOWN};
+    for (int i = 0; i < 4; ++i) {
+        if (held[i] != g_padDpad[i]) g_keys.OnKey(SdlScancodeToKeyCode(scancodes[i]), held[i], false);
+        g_padDpad[i] = held[i];
+    }
+}
+#endif
+
 void ReadSdlInputEvents(ui::Input* input)
 {
     EnsureEventWatch();
@@ -248,6 +369,9 @@ void ReadSdlInputEvents(ui::Input* input)
             if (whole) PushEvent(input_state::kRecordWheel, static_cast<uint32_t>(whole));
         }
     }
+#ifdef OBL_HANDHELD
+    ReadHandheldPad();
+#endif
     ReadSdlTouchEvents();
     ApplyFullscreenToggle();
     UpdateMouseConfinement();
@@ -434,7 +558,7 @@ bool StartSdlRelativeDrag()
 {
     SDL_Window* window = SDL_GetWindowFromID(SdlGameWindowId());
     if (!window) return SDL_SetError("no SDL game window");
-    if (!g_hidden && !kAbsoluteDrag && !SDL_SetWindowRelativeMouseMode(window, true)) return false;
+    if (!g_hidden && !kHandheld && !kAbsoluteDrag && !SDL_SetWindowRelativeMouseMode(window, true)) return false;
     float x = 0, y = 0;
     SDL_GetMouseState(&x, &y);
     g_absoluteDrag.Start(x, y);
@@ -462,7 +586,7 @@ void EndSdlRelativeDrag()
     if (kAbsoluteDrag && g_inputFocused && !byFinger)
         g_sdlMouseClient = {static_cast<LONG>(std::floor(g_absoluteDrag.X())), static_cast<LONG>(std::floor(g_absoluteDrag.Y()))};
     SDL_Window* window = SDL_GetWindowFromID(SdlGameWindowId());
-    if (!g_hidden && !kAbsoluteDrag && window) {
+    if (!g_hidden && !kHandheld && !kAbsoluteDrag && window) {
         // While the mode is active this warp only moves SDL's hidden position; leaving the mode then makes
         // the single physical warp. Without keyboard focus SDL has already left the mode itself.
         if (returnCursor && SDL_GetKeyboardFocus() == window)
@@ -502,13 +626,20 @@ public:
         SDL_SetHint(SDL_HINT_MOUSE_RELATIVE_WARP_MOTION, "0");
         // Fingers are the gestures' (touch_gestures.h); SDL must not also turn them into mouse events.
         if (kTouchGestures) SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
+#ifdef OBL_HANDHELD
+        g_padL1 = PadSetting("OBL_PAD_L1", g_padL1, g_padButtons.size());
+        g_padR1 = PadSetting("OBL_PAD_R1", g_padR1, g_padButtons.size());
+        g_padAxisX = PadSetting("OBL_PAD_AXIS_X", g_padAxisX, g_padAxes.size());
+        g_padAxisY = PadSetting("OBL_PAD_AXIS_Y", g_padAxisY, g_padAxes.size());
+        own_controls::SetPadPointer(true); // the Video options get the cursor speed slider
+#endif
         return true;
     }
 
     bool Poll(ui::Input& input) override
     {
         ReadSdlInputEvents(&input);
-        return g_inputFocused && (g_hidden || SDL_GetKeyboardFocus() == SDL_GetWindowFromID(SdlGameWindowId()));
+        return g_inputFocused && (g_hidden || kHandheld || SDL_GetKeyboardFocus() == SDL_GetWindowFromID(SdlGameWindowId()));
     }
 
     void UpdateKeys(ui::Input& input) override
@@ -601,6 +732,14 @@ public:
 SdlInputBackend g_sdlBackend;
 
 } // namespace
+
+bool HandheldCursor(int& x, int& y)
+{
+    if (!kHandheld || g_sdlMouseClient.x < 0) return false;
+    x = g_sdlMouseClient.x;
+    y = g_sdlMouseClient.y;
+    return true;
+}
 
 ui::SdlRelativeDragState GetSdlRelativeDragState()
 {

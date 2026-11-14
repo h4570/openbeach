@@ -9,6 +9,8 @@
 #include "core/ascii_case.h"
 #include "core/log.h"
 #include "game/game/own_credits.h"
+#include "game/game/own_texts.h"
+#include "game/ui/own_controls.h"
 #include "core/call_counter.h"
 #include "game/tables/text_load.h"
 #include "game/tables/text_table.h"
@@ -108,7 +110,12 @@ Table* Create(const char* language)
     for (text::Entry& own : g_expectedCredits)
         for (const text::Entry& entry : entries)
             if (ascii::EqualsNoCase(entry.key.c_str(), own.key.c_str())) own.value = entry.value;
-    auto* table = new Table(text::MakeTable(text_load::PackPath(language), SlotModulus(), entries, ownTexts));
+    // The credits are checked against the table (g_expectedCredits); the texts of the own controls only join it, where the
+    // controls exist (own_controls.h).
+    std::vector<text::Entry> extra = ownTexts;
+    if (own_controls::PadPointer())
+        for (text::Entry& own : own_texts::Texts(language)) extra.push_back(std::move(own));
+    auto* table = new Table(text::MakeTable(text_load::PackPath(language), SlotModulus(), entries, extra));
     GlobalTable() = table;
     return table;
 }

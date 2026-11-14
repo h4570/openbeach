@@ -75,4 +75,17 @@ bool ReadSprite(const std::filesystem::path& spritesDir, std::string_view key, b
 bool EncodeFrames(const std::filesystem::path& spritesDir, const Anim& anim, int first, int end, uint32_t base, std::vector<uint8_t>& data,
         std::vector<uint32_t>& offsets, std::string& error);
 
+// The frames [first, end) out of `data` and `offsets` (EncodeFrames of frames [0, offsets.size()) with base 0): the bytes and the
+// offsets EncodeFrames(first, end, base) would have produced, so that one decode of a sheet can serve several ranges. `outOffsets`
+// receives the offsets of frames first..end-1 at the same indices.
+inline std::vector<uint8_t> SliceFrames(const std::vector<uint8_t>& data, const std::vector<uint32_t>& offsets, int first, int end,
+        uint32_t base, std::vector<uint32_t>& outOffsets)
+{
+    const size_t begin = offsets[static_cast<size_t>(first)];
+    const size_t stop = static_cast<size_t>(end) < offsets.size() ? offsets[static_cast<size_t>(end)] : data.size();
+    for (int u = first; u < end; ++u)
+        outOffsets[static_cast<size_t>(u)] = base + (offsets[static_cast<size_t>(u)] - static_cast<uint32_t>(begin));
+    return std::vector<uint8_t>(data.begin() + static_cast<std::ptrdiff_t>(begin), data.begin() + static_cast<std::ptrdiff_t>(stop));
+}
+
 } // namespace obl::sprite_pack
