@@ -11,3 +11,4 @@
 | [ci-l0.md](ci-l0.md) | No-data L0 CI tests, compile-time diagnosis, compiler-cache settings and fast-build measurements. |
 | [settings.md](settings.md) | `openbeach.ini` keys and their environment-variable overrides. |
 | [settings-window.md](settings-window.md) | The window before the game starts (language, display, window size, mouse, frame cap, intro): what it stores where, when it opens and when tools skip it (`--no-settings`, `--settings`). |
+| [handheld.md](handheld.md) | The experimental aarch64 build for Linux handhelds without a window system (Anbernic RG40XXV): cross build with Zig, the picture through the firmware's own SDL2 in a thread of the game, a thumb stick as the mouse, the volume keys, starting it over SSH, the environment variables that tune it. |

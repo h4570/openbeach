@@ -44,6 +44,38 @@ OBL_TEST_CASE("settings_ini.missing_keys_keep_values")
     OBL_CHECK_EQ(int(video.keyline), 1);
 }
 
+OBL_TEST_CASE("settings_ini.cursor_speed_is_a_percentage")
+{
+    FakeIni missing;
+    VideoValues video;
+    LoadVideo(missing, video);
+    OBL_CHECK_EQ(video.cursorSpeed, kDefaultCursorSpeed); // an INI from before the setting keeps the default
+    FakeIni high;
+    high.values["Video/CursorSpeed"] = "250";
+    LoadVideo(high, video);
+    OBL_CHECK_EQ(video.cursorSpeed, 100);
+    FakeIni low;
+    low.values["Video/CursorSpeed"] = "-5";
+    LoadVideo(low, video);
+    OBL_CHECK_EQ(video.cursorSpeed, 0);
+}
+
+OBL_TEST_CASE("settings_ini.scroll_speed_is_a_percentage")
+{
+    FakeIni missing;
+    VideoValues video;
+    LoadVideo(missing, video);
+    OBL_CHECK_EQ(video.scrollSpeed, kDefaultScrollSpeed); // the original speed until set
+    FakeIni set;
+    set.values["Video/ScrollSpeed"] = "40";
+    LoadVideo(set, video);
+    OBL_CHECK_EQ(video.scrollSpeed, 40);
+    FakeIni high;
+    high.values["Video/ScrollSpeed"] = "999";
+    LoadVideo(high, video);
+    OBL_CHECK_EQ(video.scrollSpeed, 100);
+}
+
 OBL_TEST_CASE("settings_ini.literal_default_counts_as_missing")
 {
     FakeIni ini;
@@ -132,7 +164,16 @@ OBL_TEST_CASE("settings_ini.save_order_and_formats")
     SaveVideo(video, VideoValues{1280, 720, 1, 0, 1, 0});
     const std::vector<std::pair<std::string, std::string>> expectedVideo{{"Video/ResWidth", "1280"}, {"Video/ResHeight", "720"},
             {"Video/NudgeScroll", "1"}, {"Video/SeaEffects", "0"}, {"Video/LightEffects", "1"}, {"Video/Keyline", "0"}};
-    OBL_CHECK(video.writes == expectedVideo);
+    OBL_CHECK(video.writes == expectedVideo); // the speeds belong to builds whose pointer is a stick
+
+    FakeIni handheld;
+    VideoValues stick{1280, 720, 1, 0, 1, 0};
+    stick.padSpeeds = true;
+    SaveVideo(handheld, stick);
+    std::vector<std::pair<std::string, std::string>> expectedHandheld = expectedVideo;
+    expectedHandheld.push_back({"Video/CursorSpeed", "30"});
+    expectedHandheld.push_back({"Video/ScrollSpeed", "100"});
+    OBL_CHECK(handheld.writes == expectedHandheld);
 }
 
 OBL_TEST_CASE("settings_ini.save_then_load_round_trip")

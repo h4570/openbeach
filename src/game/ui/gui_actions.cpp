@@ -137,6 +137,8 @@ struct LiveEnv {
         auto& settings = game::settings_store::Current();
         settings.m_nudgeScroll = settings.m_seaEffects = settings.m_lightEffects = 1;
         settings.m_keyline = 0;
+        settings.m_cursorSpeed = obl::settings::kDefaultCursorSpeed;
+        settings.m_scrollSpeed = obl::settings::kDefaultScrollSpeed;
     }
     void ApplySeaEffects(bool enabled) { obl::ui::renderer::SetSeaEffects(game::GetRenderer(), enabled); }
     void WriteSettingsMusicVolume(float volume) { game::settings_store::Current().m_musicVolume = volume; }

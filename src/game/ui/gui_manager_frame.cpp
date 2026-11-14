@@ -10,6 +10,7 @@
 #include "game/ui/sprite.h"
 #include "game/game/settings_store.h"
 #include "game/ui/gui_controls.h"
+#include "game/ui/own_controls.h"
 #include "game/ui/gui_containers.h"
 #include "game/ui/gui_tables.h"
 #include "game/ui/gui_data.h"
@@ -402,7 +403,7 @@ struct GameEnv {
     {
         size = 0;
         if (!file) return nullptr;
-        const std::string bytes = gui_layouts::ReadScript(file);
+        const std::string bytes = own_controls::Apply(gui_layouts::ReadScript(file));
         auto* text = static_cast<uint8_t*>(::operator new(bytes.size() + 1));
         std::memcpy(text, bytes.data(), bytes.size());
         text[bytes.size()] = file_io::kTerminator;

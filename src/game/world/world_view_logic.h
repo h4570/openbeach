@@ -80,6 +80,7 @@ template<class Env> void ApplyZoomRequest(ui::ViewState& view, Env& env)
 //   void AddVelocity(float x, float y)      adds to the camera velocity of the map view
 //   void ClearKeyHover()                    clears the GUI's key hover (an arrow key moved the camera)
 //   bool NudgeScroll()                      the [Game] NudgeScroll option: the screen edge scrolls
+//   float ScrollSpeed()                     the scroll speed setting as a factor (1 = the original speed)
 //   int RenderWidth() / RenderHeight()      the renderer's size
 //   int RightButton() / MouseDeltaX() / MouseDeltaY()   the right button state and the mouse delta
 //   bool MainItemHovered()                  whether the GUI's main item is hovered
@@ -92,7 +93,8 @@ template<class Env> void ApplyZoomRequest(ui::ViewState& view, Env& env)
 // 10, in double precision as extended precision computes it (the product of two floats is exact there).
 template<class Env> void UpdateCameraInput(ui::ViewState& view, Env& env)
 {
-    const float step = env.FrameDelta() * kKeyScrollPixelsPerSecond;
+    const float scroll = env.ScrollSpeed();
+    const float step = env.FrameDelta() * kKeyScrollPixelsPerSecond * scroll;
     const bool left = env.KeyHeld(kKeyLeft);
     if (left) env.AddVelocity(-step, 0.0f);
     const bool right = env.KeyHeld(kKeyRight);
@@ -104,7 +106,7 @@ template<class Env> void UpdateCameraInput(ui::ViewState& view, Env& env)
     if (down || up || right || left) env.ClearKeyHover();
 
     if (env.NudgeScroll()) {
-        const float edge = env.FrameDelta() * kKeyScrollPixelsPerSecond;
+        const float edge = env.FrameDelta() * kKeyScrollPixelsPerSecond * scroll;
         const int cursorX = env.CursorX(), cursorY = env.CursorY();
         if (cursorX == 0) env.AddVelocity(-edge, 0.0f);
         if (cursorX == static_cast<int>(env.RenderWidth()) - 1) env.AddVelocity(edge, 0.0f);

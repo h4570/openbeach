@@ -1,4 +1,5 @@
 #include "game/ui/gui_manager_dialogs.h"
+#include "game/ui/own_controls.h"
 #include "game/ui/gui_manager_frame.h"
 #include "game/ui/renderer_api.h"
 #include "game/ui/cursor.h"
@@ -21,6 +22,7 @@
 #include "core/call_counter.h"
 #include "game/world/world_view_logic.h"
 
+#include <algorithm>
 #include <cstdint>
 
 namespace obl::world {
@@ -58,6 +60,12 @@ public:
     void AddVelocity(float x, float y) { (m_world.m_mapView)->AddCameraVelocity(x, y); }
     void ClearKeyHover() { game::GetGuiManager()->m_selection = -1; }
     bool NudgeScroll() { return game::settings_store::Current().m_nudgeScroll != 0; }
+    // The setting exists where a stick is the pointer (own_controls.h); elsewhere the map scrolls at the original speed.
+    float ScrollSpeed()
+    {
+        if (!own_controls::PadPointer()) return 1.0f;
+        return static_cast<float>(std::max(game::settings_store::Current().m_scrollSpeed, obl::settings::kMinScrollSpeed)) / 100.0f;
+    }
     int RightButton() { return m_view.m_input->m_rightButton; }
     int MouseDeltaX() { return m_view.m_input->m_deltaX; }
     int MouseDeltaY() { return m_view.m_input->m_deltaY; }

@@ -8,6 +8,9 @@
 // IntroMovieFrame call is one pass (game_host.h), so the browser build plays it without blocking.
 
 #include "platform/intro_movie.h"
+#ifdef OBL_HANDHELD
+#include "platform/frame_share.h"
+#endif
 
 #include "core/config.h"
 #include "game/game/game_accessors.h"
@@ -123,6 +126,16 @@ private:
         SDL_SetRenderDrawColor(m_renderer, 0, 0, 0, 255);
         SDL_RenderClear(m_renderer);
         SDL_RenderTexture(m_renderer, m_texture, nullptr, &dst);
+#ifdef OBL_HANDHELD
+        // The handheld's panel shows only what frame_share.cpp hands it: the software renderer's frame goes there as a 16 bpp image.
+        if (SDL_Surface* shot = SDL_RenderReadPixels(m_renderer, nullptr)) {
+            if (SDL_Surface* rgb = SDL_ConvertSurface(shot, SDL_PIXELFORMAT_RGB565)) {
+                SharedFramePresent(static_cast<const uint16_t*>(rgb->pixels), rgb->pitch, rgb->w, rgb->h, false, SharedCursor{});
+                SDL_DestroySurface(rgb);
+            }
+            SDL_DestroySurface(shot);
+        }
+#endif
         SDL_RenderPresent(m_renderer);
     }
 

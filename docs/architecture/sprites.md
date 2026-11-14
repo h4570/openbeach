@@ -5,6 +5,11 @@
 
 - `sprite_anim.cpp` loads converted frames, either together or by direction. `ConfigureSpriteAnimations` selects the
   pack directory and registers the cache driver.
+- Background decoding (`EnableSpritePrefetch`, off unless a host enables it; the handheld build does): a worker thread decodes whole
+  animations ahead of time, those of objects near the view (`map_view_culling.cpp`) and the other directions of one that just loaded.
+  `GetFrame` takes the prepared frames, waits for an animation being decoded, and otherwise loads as before. Frames cut from one
+  decode (`sprite_pack::SliceFrames`) equal those of a per-direction load byte for byte, so only the moment of decoding changes.
+  Prepared frames that nothing drew yet are capped at 64 MB.
 - `sprite_bank.cpp` loads resources, creates and releases instances, and sweeps idle animation caches.
   `ConfigureSpriteBank` selects the directory and registers the bank driver. `GetSpriteBank` and `SetSpriteBank`
   access the active world's bank.

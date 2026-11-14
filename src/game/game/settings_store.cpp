@@ -1,4 +1,5 @@
 #include "game/game/settings_store.h"
+#include "game/ui/own_controls.h"
 #include "game/game/game_accessors.h"
 #include "game/game/game.h"
 #include "core/log.h"
@@ -52,7 +53,8 @@ void SaveSound(const Settings& s)
 }
 void LoadVideo(Settings& s)
 {
-    settings::VideoValues values{s.m_resolutionWidth, s.m_resolutionHeight, s.m_nudgeScroll, s.m_seaEffects, s.m_lightEffects, s.m_keyline};
+    settings::VideoValues values{s.m_resolutionWidth, s.m_resolutionHeight, s.m_nudgeScroll, s.m_seaEffects, s.m_lightEffects, s.m_keyline,
+            s.m_cursorSpeed, s.m_scrollSpeed};
     IniEnv env{s.m_iniPath.c_str()};
     settings::LoadVideo(env, values);
     s.m_resolutionWidth = values.resWidth;
@@ -61,13 +63,15 @@ void LoadVideo(Settings& s)
     s.m_seaEffects = values.seaEffects;
     s.m_lightEffects = values.lightEffects;
     s.m_keyline = values.keyline;
+    s.m_cursorSpeed = values.cursorSpeed;
+    s.m_scrollSpeed = values.scrollSpeed;
 }
 void SaveVideo(const Settings& s)
 {
     IniEnv env{s.m_iniPath.c_str()};
     settings::SaveVideo(env,
-            settings::VideoValues{
-                    s.m_resolutionWidth, s.m_resolutionHeight, s.m_nudgeScroll, s.m_seaEffects, s.m_lightEffects, s.m_keyline});
+            settings::VideoValues{s.m_resolutionWidth, s.m_resolutionHeight, s.m_nudgeScroll, s.m_seaEffects, s.m_lightEffects, s.m_keyline,
+                    s.m_cursorSpeed, s.m_scrollSpeed, own_controls::PadPointer()});
 }
 
 // The built-in tracks are added without a file check: the playlist checks a track when it opens it (media_files.h).

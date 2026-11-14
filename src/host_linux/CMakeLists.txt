@@ -86,6 +86,12 @@ FetchContent_MakeAvailable(dr_mp3)
 # renderer and audio drivers (X11/Wayland, ALSA/PulseAudio/PipeWire as found, all loaded at run time). Without it SDL has
 # dummy drivers only, as in the Linux unit tests: headless never initializes a subsystem.
 option(OBL_LINUX_WINDOWED "Also build the windowed OpenBeach (SDL video, renderer and audio)" OFF)
+# OBL_HANDHELD (with OBL_LINUX_WINDOWED, docs/build/handheld.md): the build for handhelds that have a pad but no window system
+# (Anbernic's stock firmware). SDL gets no X11/Wayland/KMS/GL: its offscreen video driver and software renderer only carry the window and the
+# events, a thread shows the frames through the firmware's SDL2 (src/platform/frame_share.cpp) and a thumb stick plays the mouse
+# (src/platform/input.cpp). It needs the device's SDL2 and ALSA headers: OBL_SDL2_INCLUDE_DIR and ALSA_INCLUDE_DIR
+# (tools/obl_handheld.py passes them).
+option(OBL_HANDHELD "With OBL_LINUX_WINDOWED: the firmware's SDL2 for the picture and a pad as the mouse, for handhelds" OFF)
 set(SDL_SHARED OFF CACHE BOOL "" FORCE)
 set(SDL_STATIC ON CACHE BOOL "" FORCE)
 set(SDL_TEST_LIBRARY OFF CACHE BOOL "" FORCE)
@@ -109,6 +115,15 @@ elseif(OBL_LINUX_WINDOWED AND APPLE)
         set(SDL_${enabled} ON CACHE BOOL "" FORCE)
     endforeach()
     foreach(disabled X11 WAYLAND KMSDRM CAMERA GPU HAPTIC HIDAPI JOYSTICK SENSOR VULKAN OPENGLES)
+        set(SDL_${disabled} OFF CACHE BOOL "" FORCE)
+    endforeach()
+elseif(OBL_LINUX_WINDOWED AND OBL_HANDHELD)
+    # No X11/Wayland on purpose: the console-build switch only silences SDL's check for them (the offscreen driver stays).
+    set(SDL_UNIX_CONSOLE_BUILD ON CACHE BOOL "" FORCE)
+    foreach(enabled AUDIO RENDER)
+        set(SDL_${enabled} ON CACHE BOOL "" FORCE)
+    endforeach()
+    foreach(disabled X11 WAYLAND KMSDRM CAMERA GPU HAPTIC HIDAPI JOYSTICK SENSOR VULKAN OPENGL OPENGLES)
         set(SDL_${disabled} OFF CACHE BOOL "" FORCE)
     endforeach()
 elseif(OBL_LINUX_WINDOWED)
@@ -141,6 +156,7 @@ file(GLOB_RECURSE HOST_SOURCES CONFIGURE_DEPENDS ${REPO}/src/app/*.cpp ${REPO}/s
 # entries are stubs (headless_modules.cpp) and their game functions abort. The windowed OpenBeach builds them.
 set(WINDOWED_MODULES
     ${REPO}/src/platform/cursor.cpp
+    ${REPO}/src/platform/frame_share.cpp
     ${REPO}/src/platform/frame_limiter.cpp
     ${REPO}/src/platform/hidden_window_sdl.cpp
     ${REPO}/src/platform/input.cpp
@@ -185,6 +201,16 @@ if(OBL_LINUX_WINDOWED)
             ${REPO}/src/launcher/settings_view.cpp ${REPO}/src/launcher/settings_text.cpp)
     endif()
     add_executable(OpenBeach ${INIT_SOURCE} ${WINDOWED_MODULES} ${LAUNCHER_SOURCES} ${REPO}/src/launcher/launch_options.cpp)
+    if(OBL_HANDHELD)
+        target_compile_definitions(OpenBeach PRIVATE OBL_HANDHELD=1)
+        if(NOT EXISTS "${OBL_SDL2_INCLUDE_DIR}/SDL.h" OR NOT EXISTS "${ALSA_INCLUDE_DIR}/alsa/asoundlib.h")
+            message(FATAL_ERROR "OBL_HANDHELD needs the device's SDL2 and ALSA headers: OBL_SDL2_INCLUDE_DIR, ALSA_INCLUDE_DIR "
+                "(docs/build/handheld.md)")
+        endif()
+        # Only the panel sees SDL2's headers: the rest of the game includes SDL3's, whose names they share.
+        set_source_files_properties(${REPO}/src/platform/frame_share.cpp PROPERTIES INCLUDE_DIRECTORIES
+            "${OBL_SDL2_INCLUDE_DIR};${ALSA_INCLUDE_DIR}")
+    endif()
     target_include_directories(OpenBeach PRIVATE ${REPO}/src/launcher)
     # The development default of --game-dir, as in the Windows build.
     target_compile_definitions(OpenBeach PRIVATE "OBL_DEFAULT_GAME_DIR=\"${REPO}/run\"")

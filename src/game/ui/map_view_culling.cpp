@@ -4,6 +4,7 @@
 
 #include "game/map/grid_state.h"
 #include "game/ui/sprite.h"
+#include "game/ui/sprite_anim.h"
 #include "core/log.h"
 #include "game/ui/map_culling.h"
 #include "game/ui/map_view_access.h"
@@ -66,6 +67,21 @@ bool CullQuery(MapView* view, const object::Base* object)
     return IsRectVisible(view->m_renderer, QueryOf(view, object));
 }
 
+// Whether `object` lies within half a view of the view: scrolling may bring it in next (sprite prefetch, sprite_anim.h).
+bool IsNearView(MapView* view, const object::Base* object)
+{
+    renderer_ops::VisibleView around = ViewOf(*view->m_renderer);
+    const int marginX = around.width / 2, marginY = around.height / 2;
+    around.x -= marginX;
+    around.y -= marginY;
+    around.width += 2 * marginX;
+    around.height += 2 * marginY;
+    const RectQuery query = QueryOf(view, object);
+    int stray = query.x;
+    return renderer_ops::IsRectVisible(around, query.x, query.y, query.srcX, query.srcY, query.width, query.height,
+            static_cast<int>(reinterpret_cast<uintptr_t>(&stray)));
+}
+
 double VisibleTileRange(MapView* view)
 {
     const Renderer* renderer = game::GetRenderer();
@@ -86,6 +102,23 @@ double VisibleTileRange(MapView* view)
     return map_culling::SeaShare(sea, range);
 }
 
+// Starts decoding the animations of `object` in the background while it is near the view, where the host asked for it (the
+// handheld build, sprite_anim.h): scrolling then finds them ready. A building draws several planes at once (image, depth, shadow,
+// pick ...), so all of them; a guest has hundreds of animations, so the one it plays.
+void PrefetchNearView(MapView* view, const object::Base* object)
+{
+    const auto* instance = static_cast<const SpriteInstance*>(object->m_sprite);
+    if (!SpritePrefetchEnabled() || !instance || !instance->m_sprite || instance->m_animIndex < 0 ||
+            instance->m_animIndex >= instance->m_sprite->m_animCount)
+        return;
+    if (!IsNearView(view, object)) return;
+    const auto* sprite = instance->m_sprite;
+    if (sprite->m_animCount <= 8)
+        for (int i = 0; i < sprite->m_animCount; ++i) PrefetchSpriteAnim(sprite->m_anims[i]);
+    else
+        PrefetchSpriteAnim(sprite->m_anims[instance->m_animIndex]);
+}
+
 } // namespace
 
 bool MapView::ClipObjectRect(const object::Base* object)
@@ -102,7 +135,13 @@ void MapView::DrawObjects(object::Base** list, int count, int)
         object::Base* object = list[i];
         if (!object->m_visible) continue;
         const uint8_t type = static_cast<uint8_t>(object->m_type);
-        if (map_culling::DrawObjectsCulls(type) && !CullQuery(this, object)) continue;
+        const bool culls = map_culling::DrawObjectsCulls(type);
+        if (culls && !CullQuery(this, object)) {
+            PrefetchNearView(this, object);
+            continue;
+        }
+        // Buildings and scenery are always drawn and clip themselves: their planes load when they first come into view.
+        if (!culls) PrefetchNearView(this, object);
         if (map_culling::IsGuestType(type)) ++m_guestObjectsDrawn;
         object->Draw();
     }

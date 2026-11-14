@@ -43,6 +43,7 @@ struct Env {
     std::vector<std::string> calls;
     std::vector<int> held, pressed;
     float dt = 0.5f;
+    float scroll = 1.0f; // the scroll speed setting as a factor
     int zoom = 1;
     uint32_t width = 800, height = 600;
     bool nudge = false, mainHovered = false, inRect = true, canUse = true;
@@ -73,6 +74,7 @@ struct Env {
     void AddVelocity(float x, float y) { Log("vel " + std::to_string(x) + " " + std::to_string(y)); }
     void ClearKeyHover() { Log("hover"); }
     bool NudgeScroll() { return nudge; }
+    float ScrollSpeed() { return scroll; }
     int RightButton() { return rightButton; }
     int MouseDeltaX() { return deltaX; }
     int MouseDeltaY() { return deltaY; }
@@ -165,6 +167,19 @@ OBL_TEST_CASE("world_view.camera_keys_and_edge_scroll")
     f.cursor.m_y = 0;
     UpdateCameraInput(f.state, env);
     OBL_CHECK(Is(env, {"vel 75.000000 0.000000", "vel 0.000000 -75.000000"}));
+}
+
+OBL_TEST_CASE("world_view.scroll_speed_scales_keys_and_edge_scroll")
+{
+    Fixture f;
+    Env env;
+    env.scroll = 0.5f;
+    env.nudge = true;
+    env.held = {kKeyLeft};
+    f.cursor.m_x = 799;
+    f.cursor.m_y = 100;
+    UpdateCameraInput(f.state, env);
+    OBL_CHECK(Is(env, {"vel -37.500000 0.000000", "hover", "vel 37.500000 0.000000"})); // half of 75 for both
 }
 
 OBL_TEST_CASE("world_view.right_button_drag_moves_and_marks_the_state")
