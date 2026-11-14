@@ -39,18 +39,3 @@ release: copy that folder's contents beside the binary. A script in `Roms/PORTS`
 `OpenBeach.sh` holding `#!/bin/sh` and `exec /mnt/sdcard/ports/OpenBeach/launch.sh`. The game runs with `SDL_VIDEO_DRIVER=offscreen` and its window at the game's size (`Windowed=1`), so that client pixels are
 game pixels.
 
-Started over SSH instead, the panel gets no picture unless the session looks like a start from the menu: the menu's
-`LD_LIBRARY_PATH=/usr/lib32:/usr/lib:/mnt/vendor/lib` (without it SDL2 finds Debian's library without the Mali driver), the menu
-itself not running (it holds the display; `kill -9` of `dmenu.bin` stops it for the 30 s before `loadapp.sh` starts it again), and
-the frame buffer mode the menu leaves behind on a normal exit, which a killed menu does not restore: 640x480 at 32 bpp, saved by the
-firmware in `/mnt/mod/ctrl/configs/fb.cfg` (set it back with `FBIOPUT_VSCREENINFO`).
-
-A killed menu also leaves the virtual terminals as it set them (its SDL2 switches to its own terminal, puts it in graphics mode
-and locks switching), and every later start of the menu then waits for a terminal switch the kernel refuses: the menu process
-runs and the panel stays black. Undo it on `/dev/tty0` and the active terminal: `VT_UNLOCKSWITCH`, `KDSETMODE` `KD_TEXT`, then
-`VT_ACTIVATE` of the terminal the menu holds open (`/proc/<dmenu.bin>/fd`, `tty3` on the RG40XXV); a reboot does the same.
-Starting the game from the menu needs none of this.
-
-## Not done yet
-A way to leave the game from the pad (the in-game menu works). A guest's new activity on screen still costs one decode of its
-sheet; sheets split by direction in the converter, or a cache of the decoded frames, would shorten it.
