@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.1](https://github.com/h4570/openbeach/compare/v1.12.0...v1.12.1) (2026-11-18)
+
+
+### Bug Fixes
+
+* **game:** clear the ticker strip of a new gui manager ([#76](https://github.com/h4570/openbeach/issues/76)) ([9ad9087](https://github.com/h4570/openbeach/commit/9ad9087a058b9cf5f477a9d90232d1f80c14953d))
+
 ## [1.12.0](https://github.com/h4570/openbeach/compare/v1.11.1...v1.12.0) (2026-11-18)
 
 
