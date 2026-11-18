@@ -169,6 +169,10 @@ void ReportObject(const std::vector<std::string>& args)
                     events->m_slots[0].m_price, events->m_slots[1].m_price, events->m_slots[2].m_price, events->m_slots[0].m_EventID,
                     events->m_slots[1].m_EventID, events->m_slots[2].m_EventID);
         }
+    } else if (type == object::ObjectType::Scenery) {
+        const auto* scenery = reinterpret_cast<const object::Scenery*>(object);
+        std::snprintf(line + used, sizeof(line) - used, " called-repair=%d called-clean=%d vandalised=%d", scenery->m_urgentRepairCalled,
+                scenery->m_urgentCleaningCalled, scenery->m_vandalised);
     } else if (type >= object::ObjectType::Lifeguard && type <= object::ObjectType::SecurityGuard) {
         const auto* member = reinterpret_cast<const object::Staff*>(object);
         used += std::snprintf(line + used, sizeof(line) - used,

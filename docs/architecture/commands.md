@@ -56,7 +56,7 @@ complete (below); object dialog controls use typed commands (`command_controls.h
 | `send-staff` | `staff x y z` | send mode click on the ground -> `the send-staff direct-to-point order` | staff member, the point's tile walkable land without building |
 | `send-staff-to` | `staff target` | send mode click on a picked object -> `StaffObject_DirectToTarget` | staff member, target exists |
 | `set-building-open` | `building open` | `OpenBuilding` / `CloseBuilding` | building in its own dialog state |
-| `call-repair` / `call-cleaner` | `building` | `CallRepair` / `CallCleaner` | building in its own dialog state |
+| `call-repair` / `call-cleaner` | `building` | `CallRepair` / `CallCleaner` | building in its own dialog state, or scenery whose queue takes the job: repairable scenery (a street lamp) for `call-repair`, litter or a bin for `call-cleaner` |
 | `set-price` | `building slot price` | price number adjuster: `SetVariable("COMMOD_PRICE_<slot>")` | building in its own dialog state, slot < its commodity count; price 0..999.99 |
 | `set-event-price` | `building slot price` | show price slider: `SetVariable("EVENT<slot>_PRICE")` | building in its own dialog state, slot 0..2, a show schedule (`m_pEvents`; the game's SetVariable does not check), the slot's show not in progress |
 | `set-beer` | `building key` | beer/cocktail list row (list kinds 4/12) -> `BuildingObject_SetBeerType` | building in its own dialog state, known `BeerDef::m_key` that the scenario script offers (`m_bScriptFlag`) |

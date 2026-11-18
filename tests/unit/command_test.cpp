@@ -6,6 +6,7 @@
 #include "game/game/command.h"
 #include "game/game/command_controls.h"
 #include "game/game/command_ranges.h"
+#include "game/game/command_call_target.h"
 
 #include <cmath>
 #include <cstring>
@@ -38,6 +39,20 @@ OBL_TEST_CASE("command.GUI_ranges_reject_invalid_floats_and_keep_price_units")
     OBL_CHECK(!InGuiRange(SetBeerStrength{1, 1.01f}));
     OBL_CHECK(!InGuiRange(SetSecurityHarshness{1, 1.01f}));
     OBL_CHECK(!InGuiRange(SetRepGuestTime{1, 1.01f}));
+}
+
+// Issue #70: a vandalised street lamp could not be given an urgent repair ("not a building"). Scenery is a call target when its queue
+// can do the job.
+OBL_TEST_CASE("command.scenery_call_targets_follow_their_queue")
+{
+    obl::tables::SceneryDef lamp;
+    lamp.m_repair = 1;
+    obl::tables::SceneryDef plain;
+    OBL_CHECK(SceneryCallRefusal(Call::Repair, lamp, "STREET_LAMP") == nullptr);
+    OBL_CHECK(SceneryCallRefusal(Call::Repair, plain, "BENCH") != nullptr);
+    OBL_CHECK(SceneryCallRefusal(Call::Clean, plain, "Bin") == nullptr);
+    OBL_CHECK(SceneryCallRefusal(Call::Clean, plain, "litter") == nullptr);
+    OBL_CHECK(SceneryCallRefusal(Call::Clean, lamp, "STREET_LAMP") != nullptr);
 }
 
 OBL_TEST_CASE("command.GUI_number_bounds_preserve_minimum_clamps_without_copy_bypass")

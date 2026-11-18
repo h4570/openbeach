@@ -11,6 +11,8 @@
 #include "game/tables/building_behavior.h"
 #include "game/game/command_controls.h"
 #include "game/game/command_ranges.h"
+#include "game/game/command_call_target.h"
+#include "game/objects/object_scenery.h"
 #include "game/feedback/feedback_vocabulary.h"
 
 #include "game/ui/gui_modes_place.h"
@@ -126,6 +128,20 @@ CommandResult PlayerBuilding(ObjectId id, object::Base*& out)
     if (ascii::EqualsNoCase(reinterpret_cast<Building*>(out)->m_definition->m_Menu, "NONE")) return Reject("building has no dialog");
     if (out->m_waitingForDeath) return Reject("building is being removed");
     if (HasBuildJob(out) || HasDemolishJob(out)) return Reject("building is under construction or demolition");
+    return kApplied;
+}
+// The target of call-repair or call-cleaner: a building in its own dialog state, or scenery whose queue can take the job (a vandalised
+// street lamp, a full bin). Scenery used to be rejected as "not a building", so a broken lamp could not be given an urgent repair.
+CommandResult PlayerCallTarget(Call call, ObjectId id, object::Base*& out)
+{
+    out = ObjectById(id);
+    if (!out) return Reject("no such object id");
+    if (TypeOf(out) == ObjectType::Building) return PlayerBuilding(id, out);
+    if (TypeOf(out) != ObjectType::Scenery) return Reject("not a building or scenery");
+    if (out->m_waitingForDeath) return Reject("scenery is being removed");
+    const tables::SceneryDef* def = reinterpret_cast<object::Scenery*>(out)->m_definition;
+    if (!def) return Reject("scenery has no definition");
+    if (const char* refusal = SceneryCallRefusal(call, *def, out->m_Name)) return Reject(refusal);
     return kApplied;
 }
 CommandResult PlayerStaff(ObjectId id, object::Base*& out)
@@ -353,7 +369,7 @@ CommandResult Apply(const SetBuildingOpen& c)
 CommandResult Apply(const CallRepair& c)
 {
     object::Base* building = nullptr;
-    if (const CommandResult check = PlayerBuilding(c.building, building); !check.applied) return check;
+    if (const CommandResult check = PlayerCallTarget(Call::Repair, c.building, building); !check.applied) return check;
     repair::repair_facade::AddUrgentJob(GetWorld()->m_repairManager, static_cast<int>(c.building));
     reinterpret_cast<object::Prop*>(building)->SetUrgentRepairCalled(1);
     return kApplied;
@@ -361,7 +377,7 @@ CommandResult Apply(const CallRepair& c)
 CommandResult Apply(const CallCleaner& c)
 {
     object::Base* building = nullptr;
-    if (const CommandResult check = PlayerBuilding(c.building, building); !check.applied) return check;
+    if (const CommandResult check = PlayerCallTarget(Call::Clean, c.building, building); !check.applied) return check;
     cleaning::cleaning_facade::AddUrgentJob(GetWorld()->m_cleaningManager, static_cast<int>(c.building));
     reinterpret_cast<object::Prop*>(building)->SetUrgentCleaningCalled(1);
     return kApplied;
