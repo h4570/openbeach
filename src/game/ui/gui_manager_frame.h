@@ -754,6 +754,9 @@ template<class Env> View* Construct(Env& env, View* manager)
     manager->m_modeObject = nullptr;
     manager->m_balloonActive = 0;
     manager->m_balloon = nullptr;
+    // Only a TickerText of the HUD script sets the strip (SetTickerBounds), and a headless run loads none, yet the balloon's
+    // scrolling compares against it: left to the allocator, it decided when feedback notices left the queue.
+    manager->m_tickerLeft = manager->m_tickerTop = manager->m_tickerRight = manager->m_tickerBottom = 0;
     manager->m_selection = -1;
     manager->m_resolutionRequested = 0;
     for (int32_t& slot : manager->m_context) slot = 0;

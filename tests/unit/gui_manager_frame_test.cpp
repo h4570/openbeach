@@ -631,6 +631,21 @@ OBL_TEST_CASE("Construct starts in the default mode with the no-GUI mode request
     OBL_CHECK(f.view->m_tickerList == env.objects[2].data());
 }
 
+// The game allocates the manager raw. Headless, no TickerText sets the strip, and the balloon's scrolling compares against it: left
+// unset, it decided in WebAssembly builds when feedback notices left the queue, and the world hash of the L0 golden moved.
+OBL_TEST_CASE("Construct clears the ticker strip of a manager in reused memory")
+{
+    Fixture f;
+    f.manager.fill(0xa5);
+    LifeEnv env{{{f}}};
+    Construct(env, f.view);
+    OBL_CHECK(f.view->m_tickerLeft == 0);
+    OBL_CHECK(f.view->m_tickerTop == 0);
+    OBL_CHECK(f.view->m_tickerRight == 0);
+    OBL_CHECK(f.view->m_tickerBottom == 0);
+    OBL_CHECK(f.view->m_balloonActive == 0);
+}
+
 OBL_TEST_CASE("Destruct tears everything down in the fixed order and clears the global last")
 {
     Fixture f;

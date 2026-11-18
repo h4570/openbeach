@@ -529,6 +529,9 @@ Game* ConstructAfterMovie(Game* game, HINSTANCE__* instance, void* window, bool 
             }});
     // The Game owns the block before the constructor runs: its helpers read GetGuiManager() before it returns.
     if (void* block = ::operator new(sizeof(ui::GuiManager))) {
+        // Construct sets the fields the game reads first; zeroing keeps any other one off whatever the allocator hands back,
+        // which differs between builds (WebAssembly) and so would move the world hashes.
+        std::memset(block, 0, sizeof(ui::GuiManager));
         game->m_guiManager = Owned<ui::GuiManager, &DestructGuiManager>(block);
         game->m_guiManager.get()->Construct();
     }
