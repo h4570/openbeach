@@ -2,6 +2,7 @@
 #include "game/ui/sprite_anim.h"
 #include "game/ui/sprite_bank.h"
 
+#include "game/game/diagnostics.h"
 #include "game/game/game_accessors.h"
 #include "game/ui/sprite.h"
 #include "core/log.h"
@@ -42,10 +43,11 @@ struct PackAnim {
 std::filesystem::path g_spritesDirectory;
 std::vector<std::unique_ptr<PackAnim>> g_anims;
 
+// Through FatalError, so the browser's page hears of it (an exit inside its main loop would only end the frame).
 [[noreturn]] void Failure(const char* detail)
 {
-    OBL_LOG("FatalError: sprite animation: %s", detail);
-    std::_Exit(1); // the log is unbuffered: nothing to flush
+    game::FatalError("sprite animation: %s", detail);
+    std::abort(); // FatalError exits the process
 }
 
 const PackAnim& Pack(const Anim& a)

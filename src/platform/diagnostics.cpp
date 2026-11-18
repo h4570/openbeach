@@ -14,6 +14,9 @@
 #include "platform/sdl_present.h"
 
 #include <windows.h>
+#ifdef __EMSCRIPTEN__
+#include <emscripten/emscripten.h>
+#endif
 
 #include <cstdarg>
 #include <cstdio>
@@ -24,11 +27,33 @@ namespace obl::game {
 namespace {
 
 FatalErrorTrap g_trap = nullptr;
+bool g_inFatalError = false;
+
+#ifdef __EMSCRIPTEN__
+// In the browser an exit() inside the main loop only ends the animation frame (the runtime is kept alive), so the next
+// frame would run the game on. The loop stops instead, the page shows its "failed" layer with the message and the log
+// (browser_files.js), and the runtime really ends.
+[[noreturn]] void StopInBrowser(const char* kind, const char* message)
+{
+    emscripten_cancel_main_loop();
+    // clang-format off: JavaScript
+    EM_ASM({
+        if (Module["oblFailure"]) Module["oblFailure"](UTF8ToString($0), UTF8ToString($1));
+    }, kind, message);
+    // clang-format on
+    emscripten_force_exit(1);
+    __builtin_unreachable();
+}
+#endif
 
 // A normal exit: the game's static destructors run and stdio is flushed.
-[[noreturn]] void GameExit(const char* source)
+[[noreturn]] void GameExit(const char* source, const char* kind, const char* message)
 {
     OBL_LOG("game exit: code 0 (C++ %s)", source);
+#ifdef __EMSCRIPTEN__
+    if (!config::Get().headless) StopInBrowser(kind, message); // the Node builds exit as natively
+#endif
+    (void)kind, (void)message;
     ::obl::platform::Exit(0);
     __assume(0);
 }
@@ -41,6 +66,12 @@ FatalErrorTrap g_trap = nullptr;
         OBL_LOG("trapped FatalError - %s", message); // not "FatalError:", which the test runner counts as a failure
         g_trap(message);
     }
+    // A FatalError while exiting (a static destructor that finds a broken state) must not exit again.
+    if (g_inFatalError) {
+        OBL_LOG("FatalError while exiting: %s", message);
+        std::_Exit(1);
+    }
+    g_inFatalError = true;
     OBL_LOG("FatalError: %s", message);
     if (config::Get().headless) {
         // A fatal error can occur during startup or teardown, outside RunHeadless's tick loop.
@@ -51,7 +82,7 @@ FatalErrorTrap g_trap = nullptr;
         __assume(0);
     }
     // The formatted text is not shown anywhere else, so only the log keeps it (with a bounded format).
-    GameExit("FatalError");
+    GameExit("FatalError", "fatal", message);
 }
 
 } // namespace
@@ -79,7 +110,7 @@ void ShowErrorAndExit(void* owner, const Char16* text)
     code_page::Narrow(text, message, sizeof(message));
     OBL_LOG("ShowErrorAndExit: %s", message);
 #endif
-    GameExit("ShowErrorAndExit");
+    GameExit("ShowErrorAndExit", "error", message);
 }
 
 void ShowNotice(void* owner, const char* text, const char* caption, bool information)

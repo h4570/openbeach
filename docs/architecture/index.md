@@ -21,6 +21,7 @@ the contracts between them.
 | [linux-host.md](linux-host.md) | The Linux headless `obl-sim`: building and running in WSL, the test runner, process lifecycle, RNG, host services and game paths. |
 | [portable-host.md](portable-host.md) | The windowed game on SDL3 on Windows, Linux and the browser: each piece of the windowed path (entry, start-up, window, input, cursor, presentation, frame limiter, intro movie, audio, launcher) and what it still needs from Windows. |
 | [browser-build.md](browser-build.md) | The windowed host on SDL3's Emscripten backend: the build, the site, the local probe, and each browser piece (main loop, waits, files from OPFS, audio unlock, page, deploy). |
+| [browser-failures.md](browser-failures.md) | How the browser page hears that the game stopped (error, abort, FatalError, stopped loop), its "failed" layer and the log kept in OPFS (`logs/last.log`, `logs/previous.log`). |
 | [web-build.md](web-build.md) | The unit tests and the headless `obl-sim` built with Emscripten and run under Node (all synthetic unit tests pass, L0 world hashes equal x64), the flags and shims, threads, and what the 32-bit build covers. |
 
 - [Sprites](sprites.md): animation caches, resource ownership, instance rendering and baking.

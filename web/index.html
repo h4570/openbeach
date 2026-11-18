@@ -2,7 +2,7 @@
 <!-- The browser game's site (docs/architecture/browser-build.md, "Site"): the description of the project and, in a frame, the
      importer's drop zone, which converts the player's own copy into OPFS packs/base in a worker (import_worker.js), then the
      game: a loading line while browser_files.js copies the game files, a ready layer whose click starts main (browsers open
-     Web Audio only inside a user gesture), the canvas scaled at its own aspect, and a "game ended" layer. site.js holds the
+     Web Audio only inside a user gesture), the canvas scaled at its own aspect, and the "game ended" and "game failed" layers. site.js holds the
      logic and site_text.js the page's six languages; tools/web_site.sh assembles the site and the build copies this page
      beside OpenBeach.js as index.html. -->
 <html lang="en">
@@ -84,7 +84,7 @@
         height: min(calc(100vh - max(var(--chrome, 86px), var(--chrome-fit, 0px))), calc((100vw - 56px - var(--side, 0px)) / var(--aspect, 1.3333))) !important; }
     .layer { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
         gap: 12px; padding: 20px; text-align: center; }
-    .layer[hidden], .gamebar[hidden] { display: none; }
+    .layer[hidden], .gamebar[hidden], .secondary [hidden] { display: none; }
     .layer h2 { margin: 0; font-size: 24px; }
     .layer p { margin: 0; }
     .soft { color: var(--mist); font-size: 14px; }
@@ -339,6 +339,7 @@
                         <button onclick="Module.downloadSaves()" data-t="downloadSaves">Download saves</button>
                         <label><span data-t="importSaves">Import saves</span><input id="import-saves" type="file" accept=".json"></label>
                         <a href="?import" data-t="importAgain">Import the game again</a>
+                        <button id="previous-log" hidden data-t="downloadPreviousLog">Download the last log</button>
                     </div>
                     <p class="soft" data-t="savesNote">Saves live only in this browser. Clearing its data deletes them.</p>
                     <p id="start-status" class="soft"></p>
@@ -349,6 +350,16 @@
                 <button class="play" onclick="location.reload()" data-t="play">Play</button>
                 <div class="secondary"><button onclick="Module.downloadSaves()" data-t="downloadSaves">Download saves</button>
                     <button onclick="Module.downloadLog()" data-t="downloadLog">Download log</button></div>
+            </div>
+            <!-- Module.onGameFailed (browser_files.js): an error, an abort or a stopped main loop. -->
+            <div id="failed" class="layer" hidden>
+                <h2 data-t="gameFailed">The game stopped</h2>
+                <p id="failed-reason" class="soft"></p>
+                <p class="soft" data-t="failedNote">Please report the bug on GitHub or Discord and attach the log. Games saved before stay in this browser.</p>
+                <button class="play" onclick="location.reload()" data-t="reload">Reload</button>
+                <div class="secondary"><button onclick="Module.downloadLog()" data-t="downloadLog">Download log</button>
+                    <button onclick="Module.downloadSaves()" data-t="downloadSaves">Download saves</button>
+                    <a href="https://github.com/h4570/openbeach/issues" target="_blank" rel="noopener" data-t="reportBug">Report the bug</a></div>
             </div>
         </div>
         <div class="touch-keys">

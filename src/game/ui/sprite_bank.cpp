@@ -1,6 +1,7 @@
 #include "core/pack_path.h"
 #include "game/ui/sprite_bank.h"
 
+#include "game/game/diagnostics.h"
 #include "game/game/game_accessors.h"
 #include "core/ascii_case.h"
 #include "core/config.h"
@@ -39,10 +40,11 @@ int& StaleCursor()
     return game::GetContext().spriteStaleCursor;
 }
 
+// Through FatalError, so the browser's page hears of it (an exit inside its main loop would only end the frame).
 [[noreturn]] void Failure(const char* detail)
 {
-    OBL_LOG("FatalError: sprite bank: %s", detail);
-    std::_Exit(1); // the log is unbuffered: nothing to flush
+    game::FatalError("sprite bank: %s", detail);
+    std::abort(); // FatalError exits the process
 }
 
 // DestructSprite/DestructInstance and FreeBank release these typed arrays.

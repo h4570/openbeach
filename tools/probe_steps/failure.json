@@ -1,0 +1,7 @@
+[
+ {"at": 2, "eval": "(async()=>{ const shown=()=>!document.getElementById('failed').hidden; for(let i=0;i<240&&!shown();++i) await new Promise(r=>setTimeout(r,500)); let blob=null; const create=URL.createObjectURL; URL.createObjectURL=(b)=>{blob=b; return create.call(URL,b);}; Module.downloadLog(); URL.createObjectURL=create; const log=blob?await blob.text():''; return {failed: shown(), reason: document.getElementById('failed-reason').textContent, canvasHidden: document.getElementById('canvas').hidden, logBytes: log.length, gameLog: log.includes('FatalError: '), cause: log.includes('==== browser: fatal: '), audio: Module.SDL3&&Module.SDL3.audioContext?Module.SDL3.audioContext.state:'none'}; })()"},
+ {"at": 3, "shot": "failed"},
+ {"at": 5, "eval": "location.reload()"},
+ {"at": 8, "eval": "(async()=>{ for(let i=0;i<240&&document.getElementById('start').hidden;++i) await new Promise(r=>setTimeout(r,500)); let blob=null; const create=URL.createObjectURL; URL.createObjectURL=(b)=>{blob=b; return create.call(URL,b);}; await Module.downloadPreviousLog(); URL.createObjectURL=create; const log=blob?await blob.text():''; return {start: !document.getElementById('start').hidden, offered: !document.getElementById('previous-log').hidden, previousCause: log.includes('==== browser: fatal: ')}; })()"},
+ {"at": 9, "shot": "start-after-failure"}
+]

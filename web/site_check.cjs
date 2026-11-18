@@ -83,7 +83,7 @@ async function loadPage({opfs = {}, search = "", languages = ["pl-PL"], stored =
     const ids = ["canvas", "import", "import-folder", "import-iso", "import-status", "loading", "loading-text", "start", "start-button",
         "import-saves", "start-status", "ended", "import-progress", "import-main", "import-step", "import-percent", "import-sub",
         "import-count", "import-bars", "drop", "drop-status", "game-bar", "fullscreen", "exit-fullscreen", "site-language",
-        "start-language", "start-language-row", "key-space", "key-escape"];
+        "start-language", "start-language-row", "key-space", "key-escape", "failed", "failed-reason", "previous-log"];
     const elements = Object.fromEntries(ids.map((id) => [id, fakeElement(id)]));
     elements["loading-text"].textContent = "Loading...";
     Object.assign(elements["key-space"].dataset, {code: "Space", key: " "});
@@ -92,7 +92,9 @@ async function loadPage({opfs = {}, search = "", languages = ["pl-PL"], stored =
     translated.dataset.t = "play";
     const body = fakeElement("body");
     body.appendChild = (child) => scripts.push(child);
-    for (const id of ["import", "start", "ended", "start-language-row", "import-bars", "import-sub", "game-bar"]) elements[id].hidden = true;
+    for (const id of ["import", "start", "ended", "failed", "start-language-row", "import-bars", "import-sub", "game-bar", "previous-log"]) {
+        elements[id].hidden = true;
+    }
     const scripts = [];
     const workers = [];
     const page = {reloads: 0, persistCalls: 0, elements, scripts, workers, translated, body, stored};
@@ -180,7 +182,7 @@ async function loadPage({opfs = {}, search = "", languages = ["pl-PL"], stored =
     vm.runInContext(source, context, {filename: scriptPath});
     await context.siteStarted;
     page.context = context;
-    page.visible = () => ["import", "loading", "start", "ended"].filter((id) => !elements[id].hidden);
+    page.visible = () => ["import", "loading", "start", "ended", "failed"].filter((id) => !elements[id].hidden);
     return page;
 }
 
@@ -361,6 +363,12 @@ async function main() {
     page.context.Module.writeSettings = async (text) => {
         ini = text;
     };
+    let previousLog = false;
+    let previousDownloads = 0;
+    page.context.Module.hasPreviousLog = async () => previousLog;
+    page.context.Module.downloadPreviousLog = async () => {
+        previousDownloads++;
+    };
 
     // The first start picks a resolution for the tab; an INI that names one keeps it.
     vm.runInContext("importedNow = false", page.context);
@@ -393,6 +401,13 @@ async function main() {
     await flush();
     const startSelect = page.elements["start-language"];
     check(page.visible().join() === "start", "game files ready: the ready layer shows");
+    check(page.elements["previous-log"].hidden, "previous log: without one the start layer offers none");
+    previousLog = true;
+    page.context.Module.onGameFilesReady(10);
+    await flush();
+    check(!page.elements["previous-log"].hidden, "previous log: the start layer offers the last run's log");
+    await page.elements["previous-log"].fire("click");
+    check(previousDownloads === 1, "previous log: the button downloads it");
     check(!page.elements["start-language-row"].hidden && startSelect.children.map((o) => o.value).join() === "en,fr,pl" &&
         startSelect.value === "fr" && !startSelect.disabled, "start language: the pack's tables are listed, the INI's language is shown");
     vm.runInContext("importedNow = true", page.context);
@@ -455,6 +470,12 @@ async function main() {
     page.context.Module.onGameEnded();
     check(page.visible().join() === "ended" && page.elements.canvas.hidden && !page.body.classList.contains("playing"),
         "game ended: the ended layer replaces the canvas");
+    page.elements.canvas.hidden = false;
+    page.context.Module.onGameFailed({kind: "abort", message: "boom", stack: "at x"});
+    check(page.visible().join() === "failed" && page.elements.canvas.hidden && page.elements["failed-reason"].textContent === "Przyczyna: boom",
+        "game failed: the failed layer replaces the canvas and names the cause");
+    page.context.Module.onGameFailed({kind: "stalled", message: "no frame for 16 s", stack: ""});
+    check(page.elements["failed-reason"].textContent === "Gra przestała odpowiadać.", "game failed: a stopped loop is told in the page's language");
 
     // A saves file imports through the pre-js and reloads; a bad one shows the error and stays.
     page = await loadPage({opfs: packTree()});

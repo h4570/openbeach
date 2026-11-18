@@ -10,7 +10,7 @@
 const kGameScript = "/OpenBeach.js";
 const kImportWorker = "/import_worker.js";
 const kLanguageNames = {en: "English", fr: "Français", it: "Italiano", de: "Deutsch", es: "Español", pl: "Polski"};
-const kLayers = ["import", "loading", "start", "ended"];
+const kLayers = ["import", "loading", "start", "ended", "failed"];
 
 const element = (id) => document.getElementById(id);
 
@@ -485,6 +485,16 @@ element("start-language").addEventListener("change", async (event) => {
     }
 });
 
+// The log of the run before this page load (browser_files.js keeps it in OPFS logs/previous.log), for a bug report after
+// a game that froze or crashed: the start layer offers it when there is one.
+async function offerPreviousLog() {
+    element("previous-log").hidden = !(await Module.hasPreviousLog());
+}
+
+element("previous-log").addEventListener("click", () => {
+    Module.downloadPreviousLog().catch((error) => setLine("start-status", "cannotDownloadLog", {message: error.message}));
+});
+
 element("start-button").addEventListener("click", () => {
     show(null);
     element("canvas").focus();
@@ -518,6 +528,7 @@ var Module = {
         // The layer shows even if the language list cannot be read: the game then starts in the INI's language.
         fillStartLanguages().catch((error) => console.error("start language: " + error.message))
             .then(seedResolution).catch((error) => console.error("start resolution: " + error.message))
+            .then(offerPreviousLog).catch((error) => console.error("previous log: " + error.message))
             .then(() => show("start"));
     },
     onGameFilesError(error) {
@@ -530,6 +541,13 @@ var Module = {
     onGameEnded() {
         element("canvas").hidden = true;
         show("ended");
+    },
+    // The game stopped for good: the layer names the cause and offers the log for a bug report.
+    onGameFailed({kind, message}) {
+        element("canvas").hidden = true;
+        if (kind === "stalled") setLine("failed-reason", "failedStalled");
+        else setLine("failed-reason", "failedReason", {message});
+        show("failed");
     },
 };
 

@@ -165,20 +165,34 @@ void FinishWindowedGame()
 }
 
 #ifdef __EMSCRIPTEN__
+// The page's watchdog (browser_files.js) reports a stopped loop when this beat stays away while the tab is visible. It
+// beats after a frame, not before: a frame that ends in an error must not count.
+// clang-format off: JavaScript
+EM_JS(void, BrowserFrameBeat, (), { Module["oblFrameAt"] = performance.now(); });
+// clang-format on
+
 // A browser tab must not block (docs/architecture/browser-build.md): the browser calls one frame per animation frame.
 void RunBrowserFrame()
 {
     if (!g_windowed.game) {
         RunStartupFrame(); // the movie keeps its own clock, so the MaxFps schedule starts with the game
+        BrowserFrameBeat();
         return;
     }
-    if (!BrowserFrameDue()) return; // MaxFps below the display rate
-    if (RunFrame()) return;
+    if (!BrowserFrameDue()) { // MaxFps below the display rate
+        BrowserFrameBeat();
+        return;
+    }
+    if (RunFrame()) {
+        BrowserFrameBeat();
+        return;
+    }
     emscripten_cancel_main_loop();
     FinishWindowedGame();
     OBL_LOG("platform-main: browser main loop ended");
-    // The page replaces the canvas with its "game ended" layer (web/index.html).
+    // The page replaces the canvas with its "game ended" layer (web/index.html); the watchdog stops with the frames.
     EM_ASM({
+        Module["oblFrameAt"] = 0;
         if (Module["onGameEnded"]) Module["onGameEnded"]();
     });
 }

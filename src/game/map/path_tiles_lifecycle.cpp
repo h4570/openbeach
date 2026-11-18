@@ -5,6 +5,7 @@
 #include "core/log.h"
 #include "core/os.h"
 #include "core/pack_path.h"
+#include "game/game/diagnostics.h"
 #include "game/game/game_accessors.h"
 #include "game/map/path_queries.h"
 #include "game/map/path_tiles_state.h"
@@ -48,8 +49,8 @@ struct GameEnv {
         if (!sprite_pack::ReadSprite(os::ResolvePath((pack_path::Selected() / "sprites").generic_string()), key, false, sprite, error,
                     sprite_pack::ReadMode::Metadata) ||
                 !sprite.autotile) {
-            OBL_LOG("FatalError: path tiles %s: %s", name, error.empty() ? "missing autotile table" : error.c_str());
-            std::_Exit(1);
+            game::FatalError("path tiles %s: %s", name, error.empty() ? "missing autotile table" : error.c_str());
+            std::abort(); // FatalError exits the process
         }
         std::memcpy(table, sprite.autotile->masks.data(), sizeof(table));
         fullFrame = sprite.autotile->full;

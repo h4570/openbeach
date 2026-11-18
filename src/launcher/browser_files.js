@@ -2,9 +2,245 @@
 // origin's private file system (OPFS) into MEMFS /game, so every loader keeps its synchronous reads, then main starts with
 // --game-dir /game. The OPFS tree: packs/base/... as the browser importer (importer/web/import_worker.js) writes it, plus
 // the player's BeachLife.ini and SaveGames/. src/launcher/browser_files_check.cjs runs it under Node against a fake OPFS.
+// It also keeps the log and reports a game that stopped (docs/architecture/browser-failures.md).
 
 // The runtime reads the arguments of main when its code loads, after this file.
 Module["arguments"] = ["--game-dir", "/game"].concat(Module["arguments"] || []);
+
+// ---- Failures and the log ----
+// A tab that stops leaves nothing behind on its own: the log is a MEMFS file. So the log's tail is kept here, written to
+// OPFS logs/last.log as it grows (the next start moves it to logs/previous.log, which the start layer offers), and every
+// way the game can stop reports once through Module.oblFailure, which shows the page's "failed" layer. Set up before the
+// runtime's code because it copies Module.printErr when it loads; an abort can come before preRun (no memory for wasm).
+const oblBrowserLog = (function oblSetUpBrowserLog() {
+    const logPath = "/game/openbeach.log";
+    const logsDirectory = "logs";
+    const keptBytes = 1 << 20; // the log's tail kept in memory and in OPFS
+    const keptErrorLines = 200;
+    const tickMs = 2000;
+    const stallMs = 15000;
+
+    let logText = "";
+    let logRead = 0; // bytes of the MEMFS log already in logText
+    const errorLines = []; // the runtime's printErr and the page's errors, the last keptErrorLines
+    let failure = null;
+    let changes = 0; // the text grew; persistLog writes when this moved
+    let persistedChanges = 0;
+    let persistReady = false; // set once the start rotated last.log, which needs this tab's lock
+    let persisting = Promise.resolve();
+
+    function readLog() {
+        let bytes;
+        try {
+            bytes = FS.readFile(logPath);
+        } catch (error) {
+            return ""; // no log yet, or no file system (an abort before the runtime)
+        }
+        if (bytes.length < logRead) logRead = 0; // the game reopened the log
+        if (bytes.length === logRead) return "";
+        const text = new TextDecoder().decode(bytes.subarray(logRead));
+        logRead = bytes.length;
+        logText += text;
+        if (logText.length > keptBytes) logText = logText.slice(logText.indexOf("\n", logText.length - keptBytes) + 1);
+        changes++;
+        return text;
+    }
+
+    // New log text goes to the console as the game writes it.
+    function copyLogToConsole() {
+        const text = readLog();
+        if (text) console.log(text.replace(/\n$/, ""));
+    }
+
+    function noteError(line) {
+        errorLines.push(line);
+        if (errorLines.length > keptErrorLines) errorLines.shift();
+        changes++;
+    }
+
+    function fullText() {
+        let text = logText;
+        if (errorLines.length > 0) text += "==== browser: last errors\n" + errorLines.join("\n") + "\n";
+        if (failure) {
+            text += "==== browser: " + failure.kind + ": " + failure.message + "\n";
+            if (failure.stack) text += failure.stack.replace(/\n?$/, "\n");
+        }
+        const agent = globalThis.navigator && navigator.userAgent;
+        if (agent) text += "==== browser: " + agent + "\n";
+        return text;
+    }
+
+    async function logsHandle(create) {
+        const root = await navigator.storage.getDirectory();
+        return root.getDirectoryHandle(logsDirectory, {create});
+    }
+
+    async function readStored(name) {
+        try {
+            return await (await (await (await logsHandle(false)).getFileHandle(name)).getFile()).text();
+        } catch (error) {
+            if (error && error.name === "NotFoundError") return null;
+            throw error;
+        }
+    }
+
+    async function writeStored(name, text) {
+        const handle = await (await logsHandle(true)).getFileHandle(name, {create: true});
+        const stream = await handle.createWritable();
+        await stream.write(new TextEncoder().encode(text));
+        await stream.close();
+    }
+
+    // Writes run one after the other: two writables on one file race. A failed write is retried on the next change.
+    function persistLog() {
+        if (!persistReady || changes === persistedChanges) return persisting;
+        const at = changes;
+        const text = fullText();
+        persisting = persisting.then(() => writeStored("last.log", text)).then(() => {
+            persistedChanges = at;
+        }, (error) => {
+            console.error("browser: cannot store the log: " + error.message);
+        });
+        return persisting;
+    }
+
+    // At the start, the last run's log becomes the previous one. OPFS has no portable rename, so it is read, written and
+    // removed. Without a last.log the previous one stays: a start without play keeps the log of the run before it.
+    async function rotate() {
+        try {
+            const last = await readStored("last.log");
+            if (last !== null) {
+                await writeStored("previous.log", last);
+                await (await logsHandle(false)).removeEntry("last.log");
+            }
+        } catch (error) {
+            console.error("browser: cannot keep the previous log: " + error.message);
+        }
+        persistReady = true;
+    }
+
+    function triggerDownload(name, bytes, type) {
+        const url = URL.createObjectURL(new Blob([bytes], {type}));
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = name;
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 10000);
+    }
+
+    Module["downloadLog"] = function oblDownloadLog() {
+        copyLogToConsole();
+        triggerDownload("openbeach.log", new TextEncoder().encode(fullText()), "text/plain");
+    };
+
+    Module["hasPreviousLog"] = async function oblHasPreviousLog() {
+        return (await readStored("previous.log").catch(() => null)) !== null;
+    };
+
+    Module["downloadPreviousLog"] = async function oblDownloadPreviousLog() {
+        const text = await readStored("previous.log");
+        if (text === null) throw new Error("no previous log");
+        triggerDownload("openbeach-previous.log", new TextEncoder().encode(text), "text/plain");
+    };
+
+    // Once: the first report names the cause, the ones it sets off (an abort's rethrow, the exit after a FatalError) are
+    // the same failure.
+    Module["oblFailure"] = function oblFailure(kind, message, stack) {
+        if (failure) return;
+        failure = {kind: String(kind), message: String(message || ""), stack: stack ? String(stack) : ""};
+        Module["oblFrameAt"] = 0; // no stall report after the failure
+        const steps = [
+            copyLogToConsole,
+            () => console.error("browser: game failed (" + failure.kind + "): " + failure.message),
+            () => Module["flushGameFiles"] && Module["flushGameFiles"](),
+            () => { changes++; persistLog(); },
+            () => {
+                const sdl = Module["SDL3"];
+                if (sdl && sdl.audioContext && sdl.audioContext.state === "running") sdl.audioContext.suspend();
+            },
+            () => Module["onGameFailed"] && Module["onGameFailed"]({...failure}),
+        ];
+        for (const step of steps) {
+            try {
+                step();
+            } catch (error) {
+                console.error("browser: while reporting the failure: " + error.message);
+            }
+        }
+    };
+
+    // The game's own code: its script or its wasm. An error of the page's own scripts (or another origin's "Script error.")
+    // is only noted, so a page bug cannot cover a running game.
+    function fromGame(error, filename) {
+        return fromWasm(error) || /OpenBeach\.js/.test(String(filename || "") + " " + String((error && error.stack) || ""));
+    }
+
+    // A rejection counts only from the wasm: SDL's script glue (in OpenBeach.js) leaves promises such as
+    // AudioContext.resume() uncaught, and their rejection does not stop the game.
+    function fromWasm(error) {
+        if (typeof WebAssembly !== "undefined" && error instanceof WebAssembly.RuntimeError) return true;
+        return /wasm-function/.test(String((error && error.stack) || ""));
+    }
+
+    const printErr = Module["printErr"];
+    Module["printErr"] = function oblPrintErr(text) {
+        noteError(String(text));
+        if (printErr) printErr(text);
+        else console.error(text);
+    };
+    const onAbort = Module["onAbort"];
+    Module["onAbort"] = function oblOnAbort(what) {
+        if (onAbort) onAbort(what);
+        Module["oblFailure"]("abort", what, new Error().stack);
+    };
+    // Called only when the runtime really ends (emscripten_force_exit); a plain exit() inside the main loop does not.
+    const onExit = Module["onExit"];
+    Module["onExit"] = function oblOnExit(code) {
+        if (onExit) onExit(code);
+        Module["oblFailure"]("exit", "the game exited with code " + code, new Error().stack);
+    };
+    // A trap in the wasm (or a throw in the game's script) leaves the main loop's animation frame as an uncaught error.
+    // The loop stops, while SDL's audio callbacks keep the music going.
+    window.addEventListener("error", (event) => {
+        const error = event.error;
+        noteError("page error: " + event.message + (event.filename ? " (" + event.filename + ":" + event.lineno + ")" : ""));
+        if (fromGame(error, event.filename)) Module["oblFailure"]("error", event.message, error && error.stack);
+    });
+    window.addEventListener("unhandledrejection", (event) => {
+        const reason = event.reason;
+        const message = reason && reason.message ? reason.message : String(reason);
+        noteError("unhandled rejection: " + message);
+        if (fromWasm(reason)) Module["oblFailure"]("rejection", message, reason && reason.stack);
+    });
+
+    // The watchdog: the game's frames beat Module.oblFrameAt (performance.now(), RunBrowserFrame). A loop that stopped
+    // without an error leaves the beat behind while the page lives on. A hidden tab gets no animation frames, so only a
+    // visible one counts, from the moment it became visible. A tick that comes late saw the main thread busy (a frame
+    // that loads a world), which is no stop, so the count starts again.
+    let lastTick = 0;
+    let watchFrom = 0;
+    function checkFrames() {
+        const now = performance.now();
+        const late = lastTick > 0 && now - lastTick > 2 * tickMs;
+        lastTick = now;
+        if (late) watchFrom = now;
+        if (late || failure || !(Module["oblFrameAt"] > 0) || document.visibilityState !== "visible") return;
+        const since = now - Math.max(Module["oblFrameAt"], watchFrom);
+        if (since > stallMs) Module["oblFailure"]("stalled", "no frame for " + Math.round(since / 1000) + " s while the tab was visible", "");
+    }
+
+    function tick() {
+        copyLogToConsole();
+        checkFrames();
+        persistLog();
+    }
+
+    function becameVisible() {
+        watchFrom = performance.now();
+    }
+
+    return {copyLogToConsole, persistLog, rotate, tick, becameVisible, triggerDownload, tickMs};
+})();
 
 Module["preRun"] = [].concat(Module["preRun"] || [], function oblLoadGameFiles() {
     const target = "/game";
@@ -18,8 +254,7 @@ Module["preRun"] = [].concat(Module["preRun"] || [], function oblLoadGameFiles()
     // What the game writes and the flush returns to OPFS.
     const writtenFiles = ["BeachLife.ini", "progress.json"];
     const writtenDirectory = "SaveGames";
-    const logFile = "openbeach.log";
-    const flushIntervalMs = 2000;
+    const flushIntervalMs = oblBrowserLog.tickMs;
     const lockName = "openbeach-game";
 
     async function lookup(root, path, kind) {
@@ -179,36 +414,6 @@ Module["preRun"] = [].concat(Module["preRun"] || [], function oblLoadGameFiles()
         return flushing;
     };
 
-    // The log goes to the console as the game writes it; the file stays downloadable.
-    let logged = 0;
-    function copyLogToConsole() {
-        let bytes;
-        try {
-            bytes = FS.readFile(target + "/" + logFile);
-        } catch (error) {
-            return;
-        }
-        if (bytes.length < logged) logged = 0; // the game reopened the log
-        if (bytes.length === logged) return;
-        const text = new TextDecoder().decode(bytes.subarray(logged));
-        logged = bytes.length;
-        console.log(text.replace(/\n$/, ""));
-    }
-
-    Module["downloadLog"] = function oblDownloadLog() {
-        copyLogToConsole();
-        triggerDownload(logFile, FS.readFile(target + "/" + logFile), "text/plain");
-    };
-
-    function triggerDownload(name, bytes, type) {
-        const url = URL.createObjectURL(new Blob([bytes], {type}));
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = name;
-        link.click();
-        setTimeout(() => URL.revokeObjectURL(url), 10000);
-    }
-
     // Save export/import as one JSON file: {format, files: {"SaveGames/x": base64}} with the saves, settings and progress.
     function toBase64(bytes) {
         let text = "";
@@ -228,7 +433,7 @@ Module["preRun"] = [].concat(Module["preRun"] || [], function oblLoadGameFiles()
     };
 
     Module["downloadSaves"] = function oblDownloadSaves() {
-        triggerDownload("openbeach-saves.json", new TextEncoder().encode(Module["exportSaves"]()), "application/json");
+        oblBrowserLog.triggerDownload("openbeach-saves.json", new TextEncoder().encode(Module["exportSaves"]()), "application/json");
     };
 
     // Writes the exported files to OPFS (the next start reads them); returns how many. Run before the game starts, or
@@ -284,14 +489,16 @@ Module["preRun"] = [].concat(Module["preRun"] || [], function oblLoadGameFiles()
             if (now !== null) flushed.set(relative, now);
         }
         setInterval(() => {
-            copyLogToConsole();
+            oblBrowserLog.tick();
             Module["flushGameFiles"]();
         }, flushIntervalMs);
         document.addEventListener("visibilitychange", () => {
             if (document.visibilityState === "hidden") Module["flushGameFiles"]();
+            else oblBrowserLog.becameVisible();
         });
         window.addEventListener("pagehide", () => {
-            copyLogToConsole();
+            oblBrowserLog.copyLogToConsole();
+            oblBrowserLog.persistLog();
             Module["flushGameFiles"]();
         });
     }
@@ -323,7 +530,8 @@ Module["preRun"] = [].concat(Module["preRun"] || [], function oblLoadGameFiles()
 
     addRunDependency("obl-game-files");
     const copyStarted = Date.now();
-    acquireLock().then(load).then((files) => {
+    // The log rotates only under the lock: a second tab must not move the running one's last.log.
+    acquireLock().then(oblBrowserLog.rotate).then(load).then((files) => {
         startWriteBack();
         console.log("browser: " + files + " game files copied to " + target + " in " + (Date.now() - copyStarted) + " ms");
         // The page swaps its loading text for the click-to-start layer.

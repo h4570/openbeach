@@ -96,13 +96,13 @@ How each piece of the windowed host runs in a tab.
 | Intro movie | `platform/intro_movie.cpp` | `IntroMovieStart`/`IntroMovieFrame`/`IntroMovieFinish` (`game_host.h`); `game_api::BeginCreate` builds the Game up to the movie, every host runs `RunStartupFrame` (one movie pass) until it ends, then `FinishCreate` builds the rest; the native pass waits 2 ms, the browser's runs once per animation frame | - |
 | Process entry | `launcher/remaster_main.cpp`, `standalone_host.cpp`; browser `launcher/browser_main.cpp` | natively SDL `main`, options from `argv`, `chdir` to the game directory, `ConvertStartupSaves` (`posix_spawn` of the converter); the browser build links `browser_main.cpp` instead: shared options, `chdir`, `OpenGame`, `RunGame`, no host process and no old-save conversion (the importer converts saves) | - |
 | Game files | every loader (`std::ifstream`, `os::OpenFile`) | the pre-js `launcher/browser_files.js` copies OPFS `packs/base/` (as `import_worker.js` writes it), `BeachLife.ini` and `SaveGames/` into MEMFS `/game` under a run dependency, so `main` starts after the copy with `--game-dir /game` ahead of the page's arguments; no loader becomes asynchronous | - |
-| Writes | INI, saves, progress, log | synchronous writes | written to MEMFS; the pre-js compares (mtime, size) of `BeachLife.ini`, `progress.json` and `SaveGames/*` every 2 s and on `visibilitychange`/`pagehide` and writes changes (and deletions) to OPFS; new log text goes to the console |
+| Writes | INI, saves, progress, log | synchronous writes | written to MEMFS; the pre-js compares (mtime, size) of `BeachLife.ini`, `progress.json` and `SaveGames/*` every 2 s and on `visibilitychange`/`pagehide` and writes changes (and deletions) to OPFS; new log text goes to the console and its tail to OPFS `logs/last.log` ([browser-failures.md](browser-failures.md)) |
 | Instance lock | `platform/instance_lock.cpp` | `flock` on a temp file | the pre-js takes the Web Lock `openbeach-game` (`ifAvailable`) before copying; a second tab gets `onGameFilesError`; no Web Locks API means no lock. The C++ `flock` stays (harmless in MEMFS) |
 | Audio | `sound_lifecycle.cpp`, `sample_stream.cpp` | SDL's Web Audio device; the pre-js holds `main` behind the run dependency `obl-start-click` until the page's "click to start" layer calls `Module.startGame` (shown on `Module.onGameFilesReady`), so `main` runs inside the click and the `AudioContext` starts unsuspended; a click before the wasm finished loading starts `main` later, outside the gesture | - |
 | Window size, placement | `window_placement.cpp`, `sdl_present.cpp` | the canvas (`#canvas`, `Module.canvas`) is the window, opaque because the presenter asks for no alpha channel: SDL sets its pixel size, the page's CSS scales it to the largest 4:3 box in the tab (`!important` over SDL's inline size); SDL ignores placement there | - |
 | Cursor | `cursor.cpp` | SDL colour cursors from `.cur` files | SDL's Emscripten backend sets CSS cursors from surfaces |
 | Quit | `RequestQuit`, `SDL_EVENT_QUIT` | `RunBrowserFrame` cancels the loop, runs `FinishWindowedGame` and calls the page's `Module.onGameEnded`, which hides the canvas and shows "game ended" with a reload button | - |
-| Fatal errors, crash report | `app/fatal.cpp`, `ShowErrorAndExit` | log + exit; `dladdr` names | an `abort` shows the message on the page; the JavaScript stack names our functions |
+| Fatal errors, crash report | `app/fatal.cpp`, `FatalError`, `ShowErrorAndExit` | log + exit; `dladdr` names | the page's "failed" layer names the cause (a `FatalError`, an `abort`, a trap, a stopped loop) and offers the log with the JavaScript stack ([browser-failures.md](browser-failures.md)) |
 | Threads | - | the game creates none | no `-pthread`, so no `SharedArrayBuffer` and no cross-origin isolation headers on GitHub Pages |
 | Page and deploy | `web/`, `tools/web_site.sh` | `web/index.html` with the importer's picker and the game canvas, assembled and uploaded by the `wasm` CI job as the artifact `browser-site` | the CI job `deploy` publishes it ([ci.md](../build/ci.md)) |
 
@@ -128,7 +128,7 @@ How each piece of the windowed host runs in a tab.
    one into OPFS (`Module.importSaves(text)`, only INI, progress and `SaveGames/<file>`; reload afterwards), prints new
    log text to the console and offers the file (`Module.downloadLog`), and holds a Web Lock. `browser_files_check.cjs`
    covers all of it against a fake OPFS/MEMFS.
-   The page has download buttons on the "game ended" layer and "Import saves" on the start layer.
+   The page has download buttons on the "game ended" and "failed" layers and "Import saves" on the start layer.
 6. **Site and deploy.** The static page joining importer and game ("Site" above), built by the `wasm` job with the pinned
    Emscripten and uploaded as the artifact `browser-site`. A release, or a CI run by hand with `deploy`, publishes it to GitHub Pages
    with `actions/upload-pages-artifact` and `actions/deploy-pages` (`pages: write`, `id-token: write`).
@@ -138,6 +138,10 @@ How each piece of the windowed host runs in a tab.
    player's import and saves. DNS records for GitHub Pages are DNS only (not proxied, so GitHub can issue the certificate),
    HTTPS is enforced (`.app` requires it in every browser), and an Actions deploy takes the domain from the repository
    settings, so the site needs no `CNAME` file.
+
+## Failures and logs
+How the page hears that the game stopped (an error, an abort, a `FatalError`, a stopped loop), shows its "failed" layer
+and keeps the log in OPFS for a bug report: [browser-failures.md](browser-failures.md).
 
 ## Decisions and limits
 - **No Asyncify/JSPI.** Only the main loop and the intro movie loop block; both become per-frame callbacks, so the code
