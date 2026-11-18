@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.12.0](https://github.com/h4570/openbeach/compare/v1.11.1...v1.12.0) (2026-11-18)
+
+
+### Features
+
+* **platform:** run on anbernic handhelds with their stock firmware ([cdf395e](https://github.com/h4570/openbeach/commit/cdf395ee545afcec874286cc1b3357da67238a48))
+
+
+### Bug Fixes
+
+* **game:** let scenery take urgent repair and cleaning calls ([61435ee](https://github.com/h4570/openbeach/commit/61435ee7984e7b9084cdecc5a9abee8354d346ae)), closes [#70](https://github.com/h4570/openbeach/issues/70)
+* **site:** show a failed layer and keep the log when the game stops ([d0bff33](https://github.com/h4570/openbeach/commit/d0bff33f6a99b08a193e89d7c6a4c599503b5139)), closes [#69](https://github.com/h4570/openbeach/issues/69)
+
 ## [1.11.1](https://github.com/h4570/openbeach/compare/v1.11.0...v1.11.1) (2026-11-09)
 
 
