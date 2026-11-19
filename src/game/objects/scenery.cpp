@@ -121,9 +121,9 @@ public:
         // The position is the raw bits of three floats; the lookup reads only x and y.
         return GetGrid()->GetCellAtWorldPoint(std::bit_cast<float>(xyz[0]), std::bit_cast<float>(xyz[1]));
     }
-    bool CellHas(void* cell, Scenery& s) { return cell_objects::ContainsObject(*static_cast<map::GridCell*>(cell), s); }
-    void RemoveFromCell(void* cell, Scenery& s) { cell_objects::RemoveObject(*static_cast<map::GridCell*>(cell), s); }
-    void AddToCell(void* cell, Scenery& s) { cell_objects::AddObject(*static_cast<map::GridCell*>(cell), s); }
+    bool CellHas(void* cell, object::Base& s) { return cell_objects::ContainsObject(*static_cast<map::GridCell*>(cell), s); }
+    void RemoveFromCell(void* cell, object::Base& s) { cell_objects::RemoveObject(*static_cast<map::GridCell*>(cell), s); }
+    void AddToCell(void* cell, object::Base& s) { cell_objects::AddObject(*static_cast<map::GridCell*>(cell), s); }
     double TerrainHeight(int worldX, int worldY) { return GetMapView()->GetTerrainHeightF(worldX, worldY); }
 
     void RestoreBackground(Rect& rect)
@@ -257,11 +257,12 @@ test::CallCounter g_actions("objects.scenery-actions", &DriveActions);
 
 } // namespace
 
-// Entity has no position setter of its own: every class that keeps the base slot places itself like scenery.
+// Entity has no position setter of its own: every class that keeps the base slot places itself like scenery. The placement
+// touches only Base's fields, so it takes the object as a Base (buildings come through here as well, and are no Scenery).
 void Base::SetPosition(const float* xyz)
 {
     PlacementEnv env;
-    scenery::SetPosition(env, *static_cast<Scenery*>(this), xyz);
+    scenery::SetPosition(env, *this, xyz);
 }
 
 void Scenery::SetName(const char* name)

@@ -10,13 +10,13 @@
 #include <cstdint>
 #include <cstring>
 
-// SetPosition updates scenery placement; RequestRemoval restores the background and removes its effects.
+// SetPosition updates the placement of any object that keeps Base's position slot (scenery, buildings, ...); RequestRemoval restores the background and removes its effects.
 // Src/game/objects/scenery.cpp supplies the environment; unit tests use a fake.
 //   SetPosition:
 // void* CellAt(const uint32_t xyz[3]) the cell at the world position on the grid (the float bits go through unchanged)
-// bool CellHas(void* cell, Scenery&) tests whether the object belongs to the cell's list
-// void RemoveFromCell(void* cell, Scenery&) removing the object from the cell
-// void AddToCell(void* cell, Scenery&) appending the object to the cell (push_back)
+// bool CellHas(void* cell, object::Base&) tests whether the object belongs to the cell's list
+// void RemoveFromCell(void* cell, object::Base&) removing the object from the cell
+// void AddToCell(void* cell, object::Base&) appending the object to the cell (push_back)
 // double TerrainHeight(int worldX, int worldY) the terrain height on g_MapView
 //   RequestRemoval:
 // void RestoreBackground(Rect&) restoring the background rectangle
@@ -44,21 +44,21 @@ inline uint32_t FloatBits(float value)
 // cell under its CURRENT position and joins the new one. (An object that was never in the old cell is removed from it all the same: the removal
 // walks the list and finds nothing.) The position is stored as given, and z is then replaced by the terrain height under (x, y), truncated like
 // truncated toward zero (y is converted first).
-template<class Env> void SetPosition(Env& env, Scenery& scenery, const float* position)
+template<class Env> void SetPosition(Env& env, object::Base& object, const float* position)
 {
     const uint32_t target[3] = {FloatBits(position[0]), FloatBits(position[1]), FloatBits(position[2])};
     void* newCell = env.CellAt(target);
-    if (!env.CellHas(newCell, scenery)) {
-        const uint32_t current[3] = {FloatBits(scenery.m_WorldXYZ[0]), FloatBits(scenery.m_WorldXYZ[1]), FloatBits(scenery.m_WorldXYZ[2])};
-        env.RemoveFromCell(env.CellAt(current), scenery);
-        env.AddToCell(newCell, scenery);
+    if (!env.CellHas(newCell, object)) {
+        const uint32_t current[3] = {FloatBits(object.m_WorldXYZ[0]), FloatBits(object.m_WorldXYZ[1]), FloatBits(object.m_WorldXYZ[2])};
+        env.RemoveFromCell(env.CellAt(current), object);
+        env.AddToCell(newCell, object);
     }
-    scenery.m_WorldXYZ[0] = position[0];
-    scenery.m_WorldXYZ[1] = position[1];
-    scenery.m_WorldXYZ[2] = position[2];
+    object.m_WorldXYZ[0] = position[0];
+    object.m_WorldXYZ[1] = position[1];
+    object.m_WorldXYZ[2] = position[2];
     const int worldY = FloatToIntWrap(static_cast<double>(position[1]));
     const int worldX = FloatToIntWrap(static_cast<double>(position[0]));
-    scenery.m_WorldXYZ[2] = static_cast<float>(env.TerrainHeight(worldX, worldY));
+    object.m_WorldXYZ[2] = static_cast<float>(env.TerrainHeight(worldX, worldY));
 }
 
 // The side of the map blocks: the scenery's screen rectangle is limited to 0..0x1000 (the lower bounds and the upper ones separately).

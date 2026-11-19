@@ -21,7 +21,7 @@ namespace {
 
 // Two cells (a position with x < 100 is cell 1, otherwise cell 2) holding the objects standing in them, and a log of what the removal asked for.
 struct FakeEnv {
-    std::vector<const Scenery*> cells[3];
+    std::vector<const obl::object::Base*> cells[3];
     std::vector<std::string> log;
     std::vector<obl::object::Building*> buildings;
     std::vector<bool> busy; // HasBuildJob/HasDemolishJob answer per building
@@ -29,15 +29,15 @@ struct FakeEnv {
 
     static int CellIndex(const uint32_t xyz[3]) { return scenery::FloatBits(100.0f) > xyz[0] ? 1 : 2; }
     void* CellAt(const uint32_t xyz[3]) { return &cells[CellIndex(xyz)]; }
-    bool CellHas(void* cell, Scenery& s)
+    bool CellHas(void* cell, obl::object::Base& s)
     {
-        for (const Scenery* o : *static_cast<std::vector<const Scenery*>*>(cell))
+        for (const obl::object::Base* o : *static_cast<std::vector<const obl::object::Base*>*>(cell))
             if (o == &s) return true;
         return false;
     }
-    void RemoveFromCell(void* cell, Scenery& s)
+    void RemoveFromCell(void* cell, obl::object::Base& s)
     {
-        auto& list = *static_cast<std::vector<const Scenery*>*>(cell);
+        auto& list = *static_cast<std::vector<const obl::object::Base*>*>(cell);
         for (size_t i = 0; i < list.size();)
             if (list[i] == &s)
                 list.erase(list.begin() + i);
@@ -45,9 +45,9 @@ struct FakeEnv {
                 ++i;
         log.push_back("remove");
     }
-    void AddToCell(void* cell, Scenery& s)
+    void AddToCell(void* cell, obl::object::Base& s)
     {
-        static_cast<std::vector<const Scenery*>*>(cell)->push_back(&s);
+        static_cast<std::vector<const obl::object::Base*>*>(cell)->push_back(&s);
         log.push_back("add");
     }
     double TerrainHeight(int x, int y)
@@ -153,6 +153,25 @@ OBL_TEST_CASE("scenery_placement.set_position_of_an_unlisted_object_joins_the_ne
     scenery::SetPosition(env, *s, target);
     OBL_CHECK(env.cells[1].empty());
     OBL_CHECK_EQ(env.cells[2].size(), static_cast<size_t>(1));
+}
+
+// Base::SetPosition places buildings too (world scripts' CreateBuilding): the placement must take them as a Base, since a
+// Building is no Scenery (casting one to Scenery was undefined behavior that UBSan's vptr check reported).
+OBL_TEST_CASE("scenery_placement.set_position_places_a_building")
+{
+    FakeEnv env;
+    Building building;
+    obl::object::Base& object = building;
+    object.m_WorldXYZ[0] = 10.0f;
+    env.cells[1].push_back(&object);
+    const float target[3] = {250.25f, 7.5f, 99.0f};
+    scenery::SetPosition(env, object, target);
+    OBL_CHECK(env.cells[1].empty());
+    OBL_REQUIRE(env.cells[2].size() == 1);
+    OBL_CHECK(env.cells[2][0] == &object);
+    OBL_CHECK_EQ(building.m_WorldXYZ[0], 250.25f);
+    OBL_CHECK_EQ(building.m_WorldXYZ[1], 7.5f);
+    OBL_CHECK_EQ(building.m_WorldXYZ[2], 12.75f);
 }
 
 OBL_TEST_CASE("scenery_placement.removal_of_plain_scenery_only_posts")
