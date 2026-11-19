@@ -1,5 +1,6 @@
 #include "game/ui/music_stream.h"
 
+#include "game/ui/mp3_duration.h"
 #include "game/ui/music_volume.h"
 #include "core/log.h"
 
@@ -9,14 +10,29 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <fstream>
 
 namespace obl::audio {
+namespace {
+
+size_t ReadPrefixAt(const char* path, uint64_t offset, std::span<uint8_t> out)
+{
+    std::ifstream in(path, std::ios::binary);
+    if (!in) return 0;
+    in.seekg(static_cast<std::streamoff>(offset));
+    if (!in) return 0;
+    in.read(reinterpret_cast<char*>(out.data()), static_cast<std::streamsize>(out.size()));
+    return static_cast<size_t>(in.gcount());
+}
+
+} // namespace
 
 struct MusicStream::Impl {
     drmp3 decoder{};
     SDL_AudioStream* stream = nullptr;
     bool audio = false, initialized = false, paused = false, eof = false, failed = false, muted = false;
-    uint64_t submitted = 0;
+    bool hasExactDuration = false;
+    uint64_t submitted = 0, exactFrames = 0;
     int volume = 0;
     double duration = 0, energy = 0;
     std::array<float, 4096 * 2> pcm{};
@@ -34,6 +50,9 @@ struct MusicStream::Impl {
                     drmp3_read_pcm_frames_f32(&impl.decoder, std::min(4096, (wanted + frameBytes - 1) / frameBytes), impl.pcm.data());
             if (!frames) {
                 impl.eof = true;
+                impl.exactFrames = impl.submitted;
+                impl.hasExactDuration = true;
+                impl.duration = static_cast<double>(impl.submitted) / impl.decoder.sampleRate;
                 impl.failed = !SDL_FlushAudioStream(stream);
                 break;
             }
@@ -72,8 +91,18 @@ bool MusicStream::Open(const char* path, float volume)
         Close();
         return false;
     }
-    // The frame-count scan restores the decoder position and never retains the song's PCM.
-    s.duration = static_cast<double>(drmp3_get_pcm_frame_count(&s.decoder)) / s.decoder.sampleRate;
+    if (s.decoder.totalPCMFrameCount != DRMP3_UINT64_MAX) {
+        // Xing/Info already gave dr_mp3 the frame count during init, so this call does no I/O.
+        s.exactFrames = drmp3_get_pcm_frame_count(&s.decoder);
+        s.hasExactDuration = true;
+        s.duration = static_cast<double>(s.exactFrames) / s.decoder.sampleRate;
+    } else if (s.decoder.streamLength != DRMP3_UINT64_MAX && s.decoder.streamLength > s.decoder.streamStartOffset) {
+        // Avoid decoding the whole file on Open: read only the opening frame header for VBRI or CBR estimation.
+        std::array<uint8_t, 4096> head{};
+        const size_t headSize = ReadPrefixAt(path, s.decoder.streamStartOffset, head);
+        const uint64_t audioBytes = s.decoder.streamLength - s.decoder.streamStartOffset;
+        s.duration = EstimateMp3Duration({head.data(), headSize}, audioBytes);
+    }
     if (!SDL_InitSubSystem(SDL_INIT_AUDIO)) {
         OBL_LOG("music: SDL audio init failed: %s", SDL_GetError());
         Close();
@@ -173,7 +202,14 @@ bool MusicStream::SeekForTest(double seconds)
     auto& s = *impl_;
     if (!s.stream || seconds < 0 || !std::isfinite(seconds)) return false;
     SDL_LockAudioStream(s.stream);
-    auto frame = static_cast<uint64_t>(std::min(seconds, s.duration) * s.decoder.sampleRate);
+    if (!s.hasExactDuration) {
+        // Resolve the exact frame count lazily so clamping never overshoots dr_mp3's EOF.
+        s.exactFrames = drmp3_get_pcm_frame_count(&s.decoder);
+        s.hasExactDuration = true;
+        s.duration = static_cast<double>(s.exactFrames) / s.decoder.sampleRate;
+    }
+    const auto target = static_cast<uint64_t>(std::min(seconds, s.duration) * s.decoder.sampleRate);
+    const uint64_t frame = std::min(target, s.exactFrames);
     bool ok = drmp3_seek_to_pcm_frame(&s.decoder, frame) != 0;
     if (ok) {
         SDL_ClearAudioStream(s.stream);

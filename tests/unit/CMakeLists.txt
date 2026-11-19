@@ -201,6 +201,7 @@ add_executable(obl_unit_tests
     text_load_test.cpp
     pack_path_test.cpp
     hash_prime_test.cpp
+    mp3_duration_test.cpp
     music_volume_test.cpp
     script_program_test.cpp
     script_program_exec_test.cpp
