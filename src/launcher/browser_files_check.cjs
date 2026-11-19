@@ -72,7 +72,7 @@ const settle = async () => {
 // The pre-js with the runtime pieces it uses; resolves with the file system and the arguments once main would run. The
 // page's click (Module.startGame) comes after the copy unless clickFirst, and never when click is false. `clock.now` is
 // performance.now(); downloads and the page's onGameFailed calls are collected.
-function runPreJs(source, opfs, {click = true, clickFirst = false, lock = "none"} = {}) {
+function runPreJs(source, opfs, {click = true, clickFirst = false, lock = "none", nodeClass = undefined} = {}) {
     const files = new Map();
     const dirs = new Set();
     const logged = [];
@@ -154,8 +154,8 @@ function runPreJs(source, opfs, {click = true, clickFirst = false, lock = "none"
         const console = {log(...args) { logged.push(args.join(" ")); }, error() {}};
         const performance = {now: () => timeline.now};
         new Function("Module", "FS", "addRunDependency", "removeRunDependency", "navigator", "console", "document", "window",
-            "setInterval", "performance", "URL", source)(Module, FS, addRunDependency, removeRunDependency, navigator, console,
-            events.document, events.window, events.setInterval, performance, fakeUrl);
+            "setInterval", "performance", "URL", "ScriptProcessorNode", source)(Module, FS, addRunDependency, removeRunDependency,
+            navigator, console, events.document, events.window, events.setInterval, performance, fakeUrl, nodeClass);
         for (const step of Module.preRun) step();
         if (clickFirst) {
             Module.startGame();
@@ -196,6 +196,34 @@ async function main() {
     }
     check(full.dirs.has("/game/packs/base/gfx/deep"), "full tree: nested directories created");
     check([...full.files.keys()].every((file) => full.owned.has(file)), "full tree: MEMFS owns the read buffers, no copy");
+
+    // Issue #81: SDL's Emscripten audio leaves onaudioprocess on the playback node it disconnects when it closes the
+    // device, and Firefox delivered the node's queued events into the freed device. A full disconnect drops the handler.
+    class FakeNode {
+        constructor() {
+            this.outputs = 1;
+        }
+        disconnect(target) {
+            if (target === undefined) this.outputs = 0;
+        }
+        dispatch() {
+            if (this.onaudioprocess) this.onaudioprocess({});
+        }
+    }
+    await runPreJs(source, {packs: {base: {"pack.json": bytes("{}")}}}, {nodeClass: FakeNode});
+    await runPreJs(source, {packs: {base: {"pack.json": bytes("{}")}}}, {nodeClass: FakeNode}); // a second load wraps once
+    let calls = 0;
+    const node = new FakeNode();
+    node.onaudioprocess = () => calls++;
+    node.dispatch();
+    node.disconnect("a gain node");
+    node.dispatch();
+    check(calls === 2 && node.outputs === 1, "audio node: a partial disconnect keeps the handler");
+    node.disconnect();
+    node.dispatch();
+    check(calls === 2 && node.outputs === 0 && node.onaudioprocess === null,
+        "audio node: a full disconnect drops the handler, so queued events no longer reach the closed device");
+    check(!(await runPreJs(source, {packs: {base: {"pack.json": bytes("{}")}}})).error, "audio node: no ScriptProcessorNode (Node) is fine");
 
     // The pack's 5600 files: reads overlap instead of waiting for each other.
     const many = {};

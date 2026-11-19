@@ -7,6 +7,22 @@
 // The runtime reads the arguments of main when its code loads, after this file.
 Module["arguments"] = ["--game-dir", "/game"].concat(Module["arguments"] || []);
 
+// ---- Audio ----
+// SDL's Emscripten backend plays through a ScriptProcessorNode whose onaudioprocess calls into the device. Closing the
+// device (the last sample or song stopped) disconnects the node and frees the device, but leaves the handler, whose only
+// check passes again once the next device is open. After a long frame Firefox still delivers the old node's queued
+// events, and each called into the freed device: "indirect call to null" in a world with real data (issue #81). A node
+// disconnected from everything is done, so its handler goes with it.
+(function oblDropHandlerOnDisconnect(nodeClass) {
+    if (!nodeClass || nodeClass.prototype.oblDropsHandler) return;
+    const disconnect = nodeClass.prototype.disconnect;
+    nodeClass.prototype.disconnect = function oblDisconnect() {
+        if (arguments.length === 0) this.onaudioprocess = null;
+        return disconnect.apply(this, arguments);
+    };
+    nodeClass.prototype.oblDropsHandler = true;
+})(typeof ScriptProcessorNode !== "undefined" ? ScriptProcessorNode : null);
+
 // ---- Failures and the log ----
 // A tab that stops leaves nothing behind on its own: the log is a MEMFS file. So the log's tail is kept here, written to
 // OPFS logs/last.log as it grows (the next start moves it to logs/previous.log, which the start layer offers), and every

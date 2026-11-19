@@ -33,3 +33,9 @@ log's tail itself, and every way the game stops reports once through `Module.obl
   start layer's button. With the probe, `--prepare tools/probe_steps/failure_prepare.js` removes the sprite sheets from the
   game copy, so a running game ends in FatalError, and `--script tools/probe_steps/failure.json` checks the layer, its log
   and the previous log after a reload.
+- **A closed audio device's node.** SDL's Emscripten backend closes the physical device when its last stream closes (a
+  song ends, the samples stop) and opens a new one with the next stream. It disconnects the old `ScriptProcessorNode`
+  and frees the device, but keeps the node's `onaudioprocess`, which only checks that some device is open. After a long
+  frame Firefox still delivers the old node's queued events, and each called into the freed device: "indirect call to
+  null" once the memory was reused (issue #81). The pre-js makes a full `disconnect()` of a `ScriptProcessorNode` drop
+  its handler; `browser_files_check.cjs` checks it.
