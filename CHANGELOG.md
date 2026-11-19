@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.4](https://github.com/h4570/openbeach/compare/v1.12.3...v1.12.4) (2026-11-19)
+
+
+### Bug Fixes
+
+* **site:** resume audio after async suspend on Firefox ([#87](https://github.com/h4570/openbeach/issues/87)) ([4ee71af](https://github.com/h4570/openbeach/commit/4ee71afb5ed2cd18ac88d6038ac8564d331f205e)), closes [#86](https://github.com/h4570/openbeach/issues/86)
+
 ## [1.12.3](https://github.com/h4570/openbeach/compare/v1.12.2...v1.12.3) (2026-11-19)
 
 
