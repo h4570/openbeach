@@ -225,6 +225,106 @@ async function main() {
         "audio node: a full disconnect drops the handler, so queued events no longer reach the closed device");
     check(!(await runPreJs(source, {packs: {base: {"pack.json": bytes("{}")}}})).error, "audio node: no ScriptProcessorNode (Node) is fine");
 
+    // Audio suspend/resume around a long frame (browser_files.js): Firefox updates AudioContext.state asynchronously when
+    // suspend() finishes on the audio thread, after the long frame already called ResumeAudioOutput.
+    const audioRun = await runPreJs(source, {packs: {base: {"pack.json": bytes("{}")}}});
+    let finishSuspend = null;
+    const asyncCtx = {
+        state: "running",
+        suspends: 0,
+        resumes: 0,
+        suspend() {
+            this.suspends++;
+            return new Promise((resolve) => {
+                finishSuspend = () => {
+                    this.state = "suspended";
+                    resolve();
+                };
+            });
+        },
+        resume() {
+            this.resumes++;
+            this.state = "running";
+            return Promise.resolve();
+        },
+    };
+    audioRun.Module.SDL3 = {audioContext: asyncCtx};
+    audioRun.Module.oblSuspendAudio();
+    audioRun.Module.oblResumeAudio();
+    check(asyncCtx.suspends === 1 && asyncCtx.resumes === 0 && asyncCtx.state === "running",
+        "audio suspend (async): state stays running during the long frame");
+    finishSuspend();
+    await Promise.resolve();
+    check(asyncCtx.resumes === 1 && asyncCtx.state === "running",
+        "audio suspend (async): resumes once suspend() settles to suspended");
+
+    // Chromium flips state synchronously inside suspend(); resume() runs once synchronously, not again in .then().
+    const syncCtx = {
+        state: "running",
+        suspends: 0,
+        resumes: 0,
+        suspend() {
+            this.suspends++;
+            this.state = "suspended";
+            return Promise.resolve();
+        },
+        resume() {
+            this.resumes++;
+            this.state = "running";
+            return Promise.resolve();
+        },
+    };
+    audioRun.Module.SDL3 = {audioContext: syncCtx};
+    audioRun.Module.oblSuspendAudio();
+    audioRun.Module.oblResumeAudio();
+    await Promise.resolve();
+    check(syncCtx.suspends === 1 && syncCtx.resumes === 1 && syncCtx.state === "running",
+        "audio suspend (sync): resumes once synchronously");
+
+    // A context already suspended (e.g. autoplay policy) is left alone.
+    const blockedCtx = {
+        state: "suspended",
+        suspends: 0,
+        resumes: 0,
+        suspend() { this.suspends++; return Promise.resolve(); },
+        resume() { this.resumes++; return Promise.resolve(); },
+    };
+    audioRun.Module.SDL3 = {audioContext: blockedCtx};
+    audioRun.Module.oblSuspendAudio();
+    audioRun.Module.oblResumeAudio();
+    await Promise.resolve();
+    check(blockedCtx.suspends === 0 && blockedCtx.resumes === 0 && blockedCtx.state === "suspended",
+        "audio suspend: an already suspended context is not touched");
+
+    // A second suspend before the first settles keeps audio suspended until the second resume.
+    const nestedCtx = {
+        state: "running",
+        resumes: 0,
+        pending: [],
+        suspend() {
+            return new Promise((resolve) => this.pending.push(() => {
+                this.state = "suspended";
+                resolve();
+            }));
+        },
+        resume() {
+            this.resumes++;
+            this.state = "running";
+            return Promise.resolve();
+        },
+    };
+    audioRun.Module.SDL3 = {audioContext: nestedCtx};
+    audioRun.Module.oblSuspendAudio();
+    audioRun.Module.oblResumeAudio();
+    audioRun.Module.oblSuspendAudio();
+    nestedCtx.pending.shift()();
+    await Promise.resolve();
+    check(nestedCtx.resumes === 0 && nestedCtx.state === "suspended",
+        "audio suspend: a re-suspend prevents the earlier suspend's promise from resuming");
+    audioRun.Module.oblResumeAudio();
+    check(nestedCtx.resumes === 1 && nestedCtx.state === "running",
+        "audio suspend: the matching resume restores audio");
+
     // The pack's 5600 files: reads overlap instead of waiting for each other.
     const many = {};
     for (let i = 0; i < 100; i++) many["f" + i + ".bin"] = bytes(String(i));

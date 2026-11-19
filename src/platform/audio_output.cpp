@@ -28,8 +28,7 @@ void SuspendAudioOutput()
 #ifdef __EMSCRIPTEN__
     // clang-format off: JavaScript
     EM_ASM({
-        const sdl = Module["SDL3"];
-        if (sdl && sdl.audioContext && sdl.audioContext.state === "running") sdl.audioContext.suspend();
+        if (Module["oblSuspendAudio"]) Module["oblSuspendAudio"]();
     });
     // clang-format on
 #endif
@@ -43,8 +42,7 @@ void ResumeAudioOutput()
 #ifdef __EMSCRIPTEN__
     // clang-format off: JavaScript
     EM_ASM({
-        const sdl = Module["SDL3"];
-        if (sdl && sdl.audioContext && sdl.audioContext.state === "suspended") sdl.audioContext.resume();
+        if (Module["oblResumeAudio"]) Module["oblResumeAudio"]();
     });
     // clang-format on
 #endif

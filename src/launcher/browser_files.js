@@ -23,6 +23,47 @@ Module["arguments"] = ["--game-dir", "/game"].concat(Module["arguments"] || []);
     nodeClass.prototype.oblDropsHandler = true;
 })(typeof ScriptProcessorNode !== "undefined" ? ScriptProcessorNode : null);
 
+// Suspending SDL's AudioContext around a long frame stops Web Audio from looping its last ScriptProcessorNode buffer while
+// the main thread is blocked (platform/audio_output.cpp). Per the Web Audio spec, suspend() updates audioContext.state only
+// asynchronously after the audio thread replies (Firefox does this; Chromium flips state synchronously). Because the long
+// frame ends before the main thread returns to the event loop, ResumeAudioOutput runs while state is still "running";
+// checking state === "suspended" alone skipped resume() on Firefox and left gameplay silent.
+(function oblSetUpAudioSuspend() {
+    let wantSuspended = false;
+    let suspendedByUs = false;
+
+    Module["oblSuspendAudio"] = function oblSuspendAudio() {
+        wantSuspended = true;
+        const ctx = Module["SDL3"] && Module["SDL3"].audioContext;
+        if (!ctx || ctx.state !== "running") return;
+        suspendedByUs = true;
+        const pending = ctx.suspend();
+        if (pending && typeof pending.then === "function") {
+            pending.then(() => {
+                if (wantSuspended || !suspendedByUs) return;
+                suspendedByUs = false;
+                if (ctx.state === "suspended") {
+                    const resumed = ctx.resume();
+                    if (resumed && typeof resumed.catch === "function") resumed.catch(() => {});
+                }
+            }, () => {
+                if (!wantSuspended) suspendedByUs = false;
+            });
+        }
+    };
+
+    Module["oblResumeAudio"] = function oblResumeAudio() {
+        wantSuspended = false;
+        if (!suspendedByUs) return;
+        const ctx = Module["SDL3"] && Module["SDL3"].audioContext;
+        if (ctx && ctx.state === "suspended") {
+            suspendedByUs = false;
+            const resumed = ctx.resume();
+            if (resumed && typeof resumed.catch === "function") resumed.catch(() => {});
+        }
+    };
+})();
+
 // ---- Failures and the log ----
 // A tab that stops leaves nothing behind on its own: the log is a MEMFS file. So the log's tail is kept here, written to
 // OPFS logs/last.log as it grows (the next start moves it to logs/previous.log, which the start layer offers), and every
@@ -170,10 +211,7 @@ const oblBrowserLog = (function oblSetUpBrowserLog() {
             () => console.error("browser: game failed (" + failure.kind + "): " + failure.message),
             () => Module["flushGameFiles"] && Module["flushGameFiles"](),
             () => { changes++; persistLog(); },
-            () => {
-                const sdl = Module["SDL3"];
-                if (sdl && sdl.audioContext && sdl.audioContext.state === "running") sdl.audioContext.suspend();
-            },
+            () => Module["oblSuspendAudio"] && Module["oblSuspendAudio"](),
             () => Module["onGameFailed"] && Module["onGameFailed"]({...failure}),
         ];
         for (const step of steps) {

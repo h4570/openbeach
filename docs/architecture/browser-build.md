@@ -159,8 +159,10 @@ and keeps the log in OPFS for a bug report: [browser-failures.md](browser-failur
 - **Audio around long frames.** SDL feeds Web Audio from a `ScriptProcessorNode` on the main thread; a frame that builds,
   loads or leaves a world blocks it, and the browser repeated the last buffer (a stuck loop). `game::Update` calls
   `SuspendAudioOutput`/`ResumeAudioOutput` (`game_host.h`, `platform/audio_output.cpp`) around such a frame; in the
-  browser they suspend and resume SDL's `AudioContext`, which acts on the audio thread even while the main thread is
-  busy. Natively they only count (probe `audio-suspends`, test `audio_long_frame.txt`).
+  browser they call `Module.oblSuspendAudio`/`Module.oblResumeAudio` (`browser_files.js`) to suspend and resume SDL's
+  `AudioContext`, which acts on the audio thread even while the main thread is busy, and chain `resume()` onto
+  `suspend()`'s promise when `AudioContext.state` flips asynchronously (Firefox). Natively they only count (probe
+  `audio-suspends`, test `audio_long_frame.txt`).
 - **Camera drag under the page's pointer lock.** Browsers grant a pointer lock only inside the input event's handler, but
   the game starts a right-drag a frame after the button, so SDL's relative mode got its lock only on a later event and the
   map moved by a pixel. The browser build (`kAbsoluteDrag`, `input_mapping.h`) leaves relative mode off; `site.js` asks for
