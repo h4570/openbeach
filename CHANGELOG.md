@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.12.3](https://github.com/h4570/openbeach/compare/v1.12.2...v1.12.3) (2026-11-19)
+
+
+### Bug Fixes
+
+* **site:** drop the audio handler of a disconnected node ([#83](https://github.com/h4570/openbeach/issues/83)) ([70fb7a4](https://github.com/h4570/openbeach/commit/70fb7a4758a2df86bb2e0f7530f59eecfb089be5)), closes [#81](https://github.com/h4570/openbeach/issues/81)
+
+
+### Performance Improvements
+
+* **game:** avoid full mp3 decode when opening a music track ([#85](https://github.com/h4570/openbeach/issues/85)) ([5fdb01e](https://github.com/h4570/openbeach/commit/5fdb01e3655739c5410d53141d738755a7e67a39)), closes [#82](https://github.com/h4570/openbeach/issues/82)
+
 ## [1.12.2](https://github.com/h4570/openbeach/compare/v1.12.1...v1.12.2) (2026-11-19)
 
 
