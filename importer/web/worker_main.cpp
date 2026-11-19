@@ -12,7 +12,9 @@
 //   "shard"   with "shard": {"index", "count"}: converts that share of the maps' and sprites' units and hands each to
 //             Module.oblImport.unitPut/unitEnd; writes nothing to the pack
 //   "units"   the whole import, taking the maps' and sprites' units from Module.oblImport.unitOpen/... (the shards' output)
+// A whole import (absent or "units") also writes the icon and the cursors under remaster/, beside `root`.
 
+#include "importer/src/writers/resource_convert.h"
 #include "importer/web/storage_sink.h"
 #include "importer/web/web_source.h"
 
@@ -240,6 +242,16 @@ bool Run(const char* requestText)
     if (!ImportPack(*source, *pack, schemas, options, error)) {
         g_error = error;
         return false;
+    }
+    // The cursors live beside the pack in remaster/, as the native import scripts put them (obl-convert resources). Only the
+    // instance that writes the pack writes them; a "prepare" or "shard" stage writes nothing.
+    if (stage.empty() || stage == "units") {
+        const auto remaster = web::OpenStorageSink(storage, "remaster");
+        int files = 0;
+        if (!obl::convert::ConvertResources(*source, *remaster, files, error)) {
+            g_error = "resources: " + error;
+            return false;
+        }
     }
     return true;
 }

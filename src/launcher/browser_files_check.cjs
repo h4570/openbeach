@@ -174,6 +174,7 @@ async function main() {
             base: {"pack.json": bytes("{}"), gfx: {"sea.png": bytes("png"), deep: {"a.bin": new Uint8Array([0, 1, 255])}}},
             other: {"skip.json": bytes("x")},
         },
+        remaster: {"cursor_106.cur": bytes("cur")},
         "BeachLife.ini": bytes("[Beach Life Options]\n"),
         SaveGames: {"slot1.obl.save": bytes("save")},
         "import.log": bytes("not copied"),
@@ -185,6 +186,7 @@ async function main() {
         "/game/packs/base/pack.json": "{}",
         "/game/packs/base/gfx/sea.png": "png",
         "/game/packs/base/gfx/deep/a.bin": "\x00\x01\xff",
+        "/game/remaster/cursor_106.cur": "cur", // issue #75: the cursors reach the game directory
         "/game/BeachLife.ini": "[Beach Life Options]\n",
         "/game/SaveGames/slot1.obl.save": "save",
     };

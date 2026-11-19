@@ -247,6 +247,8 @@ Module["preRun"] = [].concat(Module["preRun"] || [], function oblLoadGameFiles()
     // OPFS entries copied into the game directory: the pack must exist, the settings and the saves may not yet.
     const entries = [
         {path: "packs/base", kind: "directory", required: true},
+        // The cursors of the player's copy; an import by an older site has none, and the game then logs each missing cursor once.
+        {path: "remaster", kind: "directory", required: false},
         {path: "BeachLife.ini", kind: "file", required: false},
         {path: "SaveGames", kind: "directory", required: false},
         {path: "progress.json", kind: "file", required: false},

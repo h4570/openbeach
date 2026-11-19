@@ -90,11 +90,19 @@ Text16 CursorFilePath(int resourceId)
 
 SDL_Cursor* LoadCursorFile(int resourceId)
 {
-    // One cursor per shape, created once SDL video runs; a failed load is retried on the next request.
-    static std::map<int, SDL_Cursor*> cache;
-    auto& cursor = cache[resourceId];
-    if (!cursor && SDL_WasInit(SDL_INIT_VIDEO)) cursor = CreateCursor(resourceId);
-    return cursor;
+    // One cursor per shape, created once SDL video runs. A failed load is remembered too: the file does not appear while the
+    // game runs, and retrying it on every cursor change filled the log with the same line (issue #75).
+    struct Entry {
+        bool tried = false;
+        SDL_Cursor* cursor = nullptr;
+    };
+    static std::map<int, Entry> cache;
+    Entry& entry = cache[resourceId];
+    if (!entry.tried && SDL_WasInit(SDL_INIT_VIDEO)) {
+        entry.cursor = CreateCursor(resourceId);
+        entry.tried = true;
+    }
+    return entry.cursor;
 }
 
 SDL_Cursor* ArrowCursor()

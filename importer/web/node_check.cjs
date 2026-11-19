@@ -388,14 +388,20 @@ async function full(createOblImport, game, iso, compare, language, out, workers)
         const pack = JSON.parse(Buffer.from(store.get("packs/base/pack.json")));
         check(pack.language === language && store.has(`packs/base/text/${language}.json`), `the pack's language is ${language}`);
     }
+    // The icon and the seven cursors go beside the pack, to remaster/ (worker_main.cpp), where the game reads them.
+    const remaster = [...store.keys()].filter((key) => key.startsWith("remaster/"));
+    check(remaster.length === 8 && store.has("remaster/icon.ico") && store.has("remaster/cursor_106.cur"),
+        `remaster/ holds the icon and the cursors (${remaster.length} files)`);
+    const packKeys = [...store.keys()].filter((key) => key.startsWith("packs/base/"));
     if (workers > 1) await sharded(createOblImport, files, plan, store, steps, aloneSeconds, workers);
     if (out) {
-        for (const [key, bytes] of store) {
+        for (const key of packKeys) {
+            const bytes = store.get(key);
             const target = path.join(out, key.slice("packs/base/".length));
             fs.mkdirSync(path.dirname(target), {recursive: true});
             fs.writeFileSync(target, bytes);
         }
-        console.log(`wrote ${store.size} files to ${out}`);
+        console.log(`wrote ${packKeys.length} files to ${out}`);
     }
     if (!compare) return;
     const expected = pickFolder(compare).map((file) => ({...file, relative: file.path.slice(path.basename(compare).length + 1)}));
@@ -407,8 +413,8 @@ async function full(createOblImport, game, iso, compare, language, out, workers)
             if (bytes && file.relative === "pack.json") printJsonDifference(JSON.parse(Buffer.from(bytes)), JSON.parse(fs.readFileSync(file.full)), "");
         }
     }
-    const extra = store.size - expected.length;
-    check(differing === 0 && extra === 0, `${store.size} files against ${expected.length} of ${compare}: ${differing} differ, ${extra} extra`);
+    const extra = packKeys.length - expected.length;
+    check(differing === 0 && extra === 0, `${packKeys.length} files against ${expected.length} of ${compare}: ${differing} differ, ${extra} extra`);
 }
 
 // The same import with helper threads: the same steps and the very same files, pack.json included, as the import by one worker.
