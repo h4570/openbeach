@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.12.2](https://github.com/h4570/openbeach/compare/v1.12.1...v1.12.2) (2026-11-19)
+
+
+### Bug Fixes
+
+* **game:** place objects as a base instead of a scenery ([#80](https://github.com/h4570/openbeach/issues/80)) ([89850da](https://github.com/h4570/openbeach/commit/89850da085c1e8da40640d1a9ab7933f9cc1d174))
+* **site:** import the cursors and log a missing one once ([ad0ff1e](https://github.com/h4570/openbeach/commit/ad0ff1ed8370fce5fd0664f63356b1614b17902c)), closes [#75](https://github.com/h4570/openbeach/issues/75)
+
 ## [1.12.1](https://github.com/h4570/openbeach/compare/v1.12.0...v1.12.1) (2026-11-18)
 
 
