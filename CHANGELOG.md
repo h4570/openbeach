@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.5](https://github.com/h4570/openbeach/compare/v1.12.4...v1.12.5) (2026-11-20)
+
+
+### Bug Fixes
+
+* **game:** center oversized zoomed-out map and clip sea blocks ([#90](https://github.com/h4570/openbeach/issues/90)) ([016cb00](https://github.com/h4570/openbeach/commit/016cb009eb1cc6a0cd4ab4cf8d278550ba67983e))
+
 ## [1.12.4](https://github.com/h4570/openbeach/compare/v1.12.3...v1.12.4) (2026-11-19)
 
 
