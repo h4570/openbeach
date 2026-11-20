@@ -225,6 +225,7 @@ void UpdatePaint(ui::GuiModePaint* mode, float dt)
     const float zoom = game::GetRenderer()->m_zoomScale;
     const int screen[2]{gui_modes_tools::PaintMapPixel(cursor[0], zoom, view->m_cameraX),
             gui_modes_tools::PaintMapPixel(cursor[1], zoom, view->m_cameraY)};
+    if (screen[0] < 0 || screen[0] >= view->m_mapWidth || screen[1] < 0 || screen[1] >= view->m_mapHeight) return;
     float world[3];
     const float* point = view->ScreenToWorldPoint(world, screen);
     map::Grid* grid = game::GetGrid();
@@ -270,13 +271,16 @@ void AnimateSceneryPanelOut(Manager* manager)
     manager->AnimateDialog(panel, 2, 1.0f, 0);
 }
 
-// The map pixel under the handed cursor (screen pixels / zoom + camera corner).
+// The map pixel under the handed cursor (screen pixels / zoom + camera corner), clamped to the map so extra sea padding
+// around the map never wraps WorldPointToTile back onto the island.
 void MapPixelUnder(int x, int y, int (&screen)[2])
 {
     const ui::MapView* view = ui::GetMapView();
     const float zoom = game::GetRenderer()->m_zoomScale;
-    screen[0] = gui_modes_tools::MouseMapPixel(x, zoom, view->m_cameraX);
-    screen[1] = gui_modes_tools::MouseMapPixel(y, zoom, view->m_cameraY);
+    const int maxX = view->m_mapWidth > 0 ? view->m_mapWidth - 1 : 0;
+    const int maxY = view->m_mapHeight > 0 ? view->m_mapHeight - 1 : 0;
+    screen[0] = std::clamp(gui_modes_tools::MouseMapPixel(x, zoom, view->m_cameraX), 0, maxX);
+    screen[1] = std::clamp(gui_modes_tools::MouseMapPixel(y, zoom, view->m_cameraY), 0, maxY);
 }
 
 // The world point under a map pixel; copied out because the game returns a pointer into its own scratch.
@@ -562,7 +566,10 @@ bool BarePatch(uint32_t x, uint32_t y)
 
 void TileOfView(int viewX, int viewY, uint32_t (&tile)[2], float (&world)[3])
 {
-    const int screen[2]{viewX + ui::GetMapView()->m_cameraX, viewY + ui::GetMapView()->m_cameraY};
+    const ui::MapView* view = ui::GetMapView();
+    const int maxX = view->m_mapWidth > 0 ? view->m_mapWidth - 1 : 0;
+    const int maxY = view->m_mapHeight > 0 ? view->m_mapHeight - 1 : 0;
+    const int screen[2]{std::clamp(viewX + view->m_cameraX, 0, maxX), std::clamp(viewY + view->m_cameraY, 0, maxY)};
     WorldUnder(screen, world);
     TileUnder(world, tile);
 }
@@ -1017,7 +1024,9 @@ bool WantsSelection(Object* object, bool preferSelected, int occludingBuildingId
 void TileOfScreenPoint(const int* screenPoint, uint32_t (&tile)[2])
 {
     const ui::MapView* view = ui::GetMapView();
-    const int screen[2]{screenPoint[0] + view->m_cameraX, screenPoint[1] + view->m_cameraY};
+    const int maxX = view->m_mapWidth > 0 ? view->m_mapWidth - 1 : 0;
+    const int maxY = view->m_mapHeight > 0 ? view->m_mapHeight - 1 : 0;
+    const int screen[2]{std::clamp(screenPoint[0] + view->m_cameraX, 0, maxX), std::clamp(screenPoint[1] + view->m_cameraY, 0, maxY)};
     float world[3];
     WorldUnder(screen, world);
     TileUnder(world, tile);

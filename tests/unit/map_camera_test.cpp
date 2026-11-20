@@ -63,7 +63,7 @@ OBL_TEST_CASE("map_camera.clamp_keeps_margins_per_zoom_level")
     OBL_CHECK_EQ(view.m_cameraX, -5);
 }
 
-OBL_TEST_CASE("map_camera.clamp_nan_goes_low_and_a_negative_limit_does_not_clamp_floats")
+OBL_TEST_CASE("map_camera.clamp_nan_goes_low_and_oversized_viewport_centers_the_map")
 {
     ui::MapView view = MakeView();
     view.m_cameraPositionX = kNan;
@@ -76,8 +76,32 @@ OBL_TEST_CASE("map_camera.clamp_nan_goes_low_and_a_negative_limit_does_not_clamp
     view.m_cameraX = 300;
     view.m_cameraPositionX = 300.0f;
     Clamp(view, 1);
-    OBL_CHECK_EQ(view.m_cameraX, 500 - 800 - 64);
-    OBL_CHECK_EQ(view.m_cameraPositionX, 300.0f);
+    OBL_CHECK_EQ(view.m_cameraX, -150);
+    OBL_CHECK_EQ(view.m_cameraPositionX, -150.0f);
+
+    // Ultrawide 3440x1440 zoomed out (level 2): horizontal span 6880 exceeds the 4096 map, so X centers at -1392
+    // while Y (span 2704) still clamps between the normal top/bottom margins.
+    view = MakeView();
+    view.m_viewWidth = 3440;
+    view.m_viewHeight = 1352;
+    view.m_cameraX = 1000;
+    view.m_cameraY = 1000;
+    view.m_cameraPositionX = 1000.0f;
+    view.m_cameraPositionY = 1000.0f;
+    Clamp(view, 2);
+    OBL_CHECK_EQ(view.m_cameraX, -1392);
+    OBL_CHECK_EQ(view.m_cameraPositionX, -1392.0f);
+    OBL_CHECK_EQ(view.m_cameraY, 1000);
+    OBL_CHECK_EQ(view.m_cameraPositionY, 1000.0f);
+
+    // 4K 3840x2160 (viewHeight 2072) zoomed out: both axes exceed 4096, so both center on even coordinates.
+    view.m_viewWidth = 3840;
+    view.m_viewHeight = 2072;
+    Clamp(view, 2);
+    OBL_CHECK_EQ(view.m_cameraX, -1792);
+    OBL_CHECK_EQ(view.m_cameraPositionX, -1792.0f);
+    OBL_CHECK_EQ(view.m_cameraY, -24);
+    OBL_CHECK_EQ(view.m_cameraPositionY, -24.0f);
 }
 
 OBL_TEST_CASE("map_camera.velocity_is_clamped_and_remembers_real_inputs")

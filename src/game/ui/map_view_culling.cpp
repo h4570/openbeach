@@ -12,6 +12,7 @@
 #include "game/ui/render_geometry.h"
 #include "game/ui/renderer_ops.h"
 
+#include <algorithm>
 #include <cstdint>
 
 namespace obl::ui {
@@ -94,8 +95,14 @@ double VisibleTileRange(MapView* view)
         out[1] = tile.y;
     };
     uint32_t topLeft[2], bottomRight[2];
-    worldToTile(map_culling::ViewTopLeft(view->m_cameraX, view->m_cameraY), topLeft);
-    worldToTile(map_culling::ViewBottomRight(view->m_cameraX, view->m_cameraY, width, height), bottomRight);
+    const int maxX = view->m_mapWidth > 0 ? view->m_mapWidth : 1;
+    const int maxY = view->m_mapHeight > 0 ? view->m_mapHeight : 1;
+    const int leftX = std::clamp(view->m_cameraX, 0, maxX - 1);
+    const int topY = std::clamp(view->m_cameraY, 0, maxY - 1);
+    const int rightX = std::clamp(view->m_cameraX + width, leftX + 1, maxX);
+    const int bottomY = std::clamp(view->m_cameraY + height, topY + 1, maxY);
+    worldToTile(map_culling::ViewTopLeft(leftX, topY), topLeft);
+    worldToTile(map_culling::ViewBottomRight(leftX, topY, rightX - leftX, bottomY - topY), bottomRight);
     const map_culling::TileRange range = map_culling::FixTileRange(topLeft, bottomRight);
     const int sea = map_culling::CountSeaTiles(grid->m_cells.data(), grid->m_width, grid->m_height, range.x0, range.y0,
             static_cast<int>(range.x1), static_cast<int>(range.y1));

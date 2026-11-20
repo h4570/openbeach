@@ -87,6 +87,15 @@ OBL_TEST_CASE("Radar camera rectangle lines depend on the zoom level")
     OBL_CHECK(lines[0].x1 == 30);
     OBL_CHECK(lines[3].y1 == 40);
     OBL_CHECK(CameraRectLines(view, 3, lines) == 0);
+
+    // Oversized view at zoom 2 clamps cleanly to the radar widget bounds.
+    const Rect widget{10, 20, 110, 120};
+    const ViewRect wide{-26, 30, 60, 70};
+    OBL_CHECK(CameraRectLines(wide, 2, widget, lines) == 4);
+    OBL_CHECK_EQ(lines[0].x0, 10);
+    OBL_CHECK_EQ(lines[0].x1, 110);
+    OBL_CHECK_EQ(lines[0].y0, 30);
+    OBL_CHECK_EQ(lines[1].y0, 110);
 }
 
 OBL_TEST_CASE("Radar markers map the world onto the widget with half the world depth")

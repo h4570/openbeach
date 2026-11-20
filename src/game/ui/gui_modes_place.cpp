@@ -344,7 +344,9 @@ constexpr int kModeDefault = 4;
 TileXY TileUnderView(int viewX, int viewY)
 {
     MapView* view = GetMapView();
-    const int screen[2]{viewX + view->m_cameraX, viewY + view->m_cameraY};
+    const int maxX = view->m_mapWidth > 0 ? view->m_mapWidth - 1 : 0;
+    const int maxY = view->m_mapHeight > 0 ? view->m_mapHeight - 1 : 0;
+    const int screen[2]{std::clamp(viewX + view->m_cameraX, 0, maxX), std::clamp(viewY + view->m_cameraY, 0, maxY)};
     float world[3];
     const float* point = view->ScreenToWorldPoint(world, screen);
     const grid_math::TileXY tile = game::GetGrid()->WorldPointToTile(point[0], point[1]);

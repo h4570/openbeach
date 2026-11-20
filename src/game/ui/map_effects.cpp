@@ -107,17 +107,28 @@ void DrawTileHighlight(const SceneBuffer& scene, const map_math::Terrain& terrai
     }
 }
 
+namespace {
+
+int FloorDiv(int a, int b)
+{
+    const int q = a / b;
+    const int r = a % b;
+    return (r != 0 && ((a ^ b) < 0)) ? q - 1 : q;
+}
+
+} // namespace
+
 SeaRange VisibleSeaBlocks(int cameraX, int cameraY, int viewWidth, int viewHeight, int blockSize, float zoomScale)
 {
     if (blockSize == 0) return {0, 0, 0, 0};
 
-    auto end = [zoomScale](int camera, int size) {
+    auto end = [zoomScale, blockSize](int camera, int size) {
         const double scaled = static_cast<double>(static_cast<uint32_t>(size)) / static_cast<double>(zoomScale);
         const int far = Signed(Wrap(FloatToIntWrap(scaled)) + Wrap(camera));
-        return ((far + ((far >> 31) & 0x7f)) >> 7) + 1;
+        return FloorDiv(far, blockSize) + 1;
     };
 
-    return {cameraX / blockSize, cameraY / blockSize, end(cameraX, viewWidth), end(cameraY, viewHeight)};
+    return {FloorDiv(cameraX, blockSize), FloorDiv(cameraY, blockSize), end(cameraX, viewWidth), end(cameraY, viewHeight)};
 }
 
 SeaBlockOrigin BlockOrigin(int blockSize, int column, int row, int cameraX, int cameraY)

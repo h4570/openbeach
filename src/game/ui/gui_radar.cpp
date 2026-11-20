@@ -213,8 +213,8 @@ void DrawRadar(Manager* gui)
     if (!gui->m_radarBig) return;
     DrawMarkers(gui);
     Line lines[4];
-    const int count = CameraRectLines(
-            {gui->m_viewX0, gui->m_viewY0, gui->m_viewX1, gui->m_viewY1}, static_cast<ui::Renderer*>(gui->m_renderer)->m_zoomLevel, lines);
+    const int count = CameraRectLines({gui->m_viewX0, gui->m_viewY0, gui->m_viewX1, gui->m_viewY1},
+            static_cast<ui::Renderer*>(gui->m_renderer)->m_zoomLevel, Bounds(gui->m_radarWidget), lines);
     for (int i = 0; i < count; ++i)
         ui::pixel_primitives::DrawLine(gui->m_renderer, lines[i].x0, lines[i].y0, lines[i].x1, lines[i].y1, gui->m_colorViewRect);
 }

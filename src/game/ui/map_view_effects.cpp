@@ -87,11 +87,25 @@ void HighlightTile(MapView* view, uint32_t tileX, uint32_t tileY, uint32_t color
 
 void DrawSeaBlocks(MapView* view)
 {
+    if (!view->m_blocks || view->m_blocksPerRow <= 0 || view->m_blocksPerColumn <= 0) return;
     Renderer* renderer = game::GetRenderer();
     const map_effects::SeaRange range = map_effects::VisibleSeaBlocks(
             view->m_cameraX, view->m_cameraY, view->m_viewWidth, view->m_viewHeight, view->m_blockSize, renderer->m_zoomScale);
-    for (int row = range.firstRow; row < range.endRow; ++row) {
-        for (int column = range.firstColumn; column < range.endColumn; ++column) {
+    const bool extendsPastMap =
+            range.firstRow < 0 || range.endRow > view->m_blocksPerColumn || range.firstColumn < 0 || range.endColumn > view->m_blocksPerRow;
+    if (extendsPastMap && renderer->m_workBuffer && renderer->m_width > 0 && renderer->m_height > 0) {
+        // Wide/tall zoomed-out viewports extend past the 4096x4096 map; clear the viewport before drawing valid blocks so
+        // the area outside the map stays clean black instead of showing stale frames or wrapping into neighbouring rows.
+        const int clearHeight = std::clamp(view->m_viewHeight, 0, renderer->m_height);
+        std::memset(
+                renderer->m_workBuffer, 0, static_cast<size_t>(clearHeight) * static_cast<size_t>(renderer->m_width) * sizeof(uint32_t));
+    }
+    const int firstRow = std::max(range.firstRow, 0);
+    const int endRow = std::min(range.endRow, view->m_blocksPerColumn);
+    const int firstColumn = std::max(range.firstColumn, 0);
+    const int endColumn = std::min(range.endColumn, view->m_blocksPerRow);
+    for (int row = firstRow; row < endRow; ++row) {
+        for (int column = firstColumn; column < endColumn; ++column) {
             const ui::MapBlock& block = view->m_blocks[view->m_blocksPerRow * row + column];
             if (!block.m_loaded) continue;
             const map_effects::SeaBlockOrigin origin =

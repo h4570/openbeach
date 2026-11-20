@@ -21,42 +21,58 @@ uint32_t Wrap(int value)
     return static_cast<uint32_t>(value);
 }
 
-struct Limits {
-    uint32_t right, bottom;
-    double floatRight;
+struct AxisLimit {
+    int32_t low, high;
+    double floatHigh;
 };
+
+struct Limits {
+    AxisLimit x, y;
+};
+
+AxisLimit MakeAxisLimit(uint32_t mapSize, uint32_t viewSpan, int margin)
+{
+    const uint64_t usable = static_cast<uint64_t>(viewSpan) + static_cast<uint64_t>(margin) * 2;
+    if (usable > mapSize) {
+        // Viewport exceeds the map along this axis: center the map and keep the origin even to match Update().
+        const int32_t centered = (static_cast<int32_t>(static_cast<int64_t>(mapSize) - static_cast<int64_t>(viewSpan)) / 2) & ~1;
+        return {centered, centered, static_cast<double>(centered)};
+    }
+    const int32_t high = static_cast<int32_t>(mapSize - viewSpan - static_cast<uint32_t>(margin));
+    return {margin, high, static_cast<double>(high)};
+}
 
 bool LimitsFor(const ui::MapView& view, int zoomLevel, Limits& out)
 {
     const uint32_t mapW = Wrap(view.m_mapWidth), mapH = Wrap(view.m_mapHeight);
     const uint32_t viewW = Wrap(view.m_viewWidth), viewH = Wrap(view.m_viewHeight);
+    uint32_t spanW = 0, spanH = 0;
     switch (zoomLevel) {
     case 0:
-        out.right = mapW - (viewW >> 1) - kMarginX;
-        out.bottom = mapH - (viewH >> 1) - kMarginY;
-        out.floatRight = static_cast<double>(out.right);
-        return true;
+        spanW = viewW >> 1;
+        spanH = viewH >> 1;
+        break;
     case 1:
-        out.right = mapW - viewW - kMarginX;
-        out.bottom = mapH - viewH - kMarginY;
-        out.floatRight = static_cast<double>(out.right);
-        return true;
+        spanW = viewW;
+        spanH = viewH;
+        break;
     case 2:
-
-        out.right = mapW - (viewW * 2 + kMarginX);
-        out.bottom = mapH - (viewH * 2 + kMarginY);
-        out.floatRight = static_cast<double>(mapW - viewW * 2) - kMarginX;
-        return true;
+        spanW = viewW * 2;
+        spanH = viewH * 2;
+        break;
     default: return false;
     }
+    out.x = MakeAxisLimit(mapW, spanW, kMarginX);
+    out.y = MakeAxisLimit(mapH, spanH, kMarginY);
+    return true;
 }
 
-void ClampInt(int32_t& value, int low, uint32_t high)
+void ClampInt(int32_t& value, int32_t low, int32_t high)
 {
     if (value < low)
         value = low;
-    else if (value > static_cast<int32_t>(high))
-        value = static_cast<int32_t>(high);
+    else if (value > high)
+        value = high;
 }
 
 bool BelowOrNan(double a, double b)
@@ -77,18 +93,18 @@ void Clamp(ui::MapView& view, int zoomLevel)
 {
     Limits limits;
     if (!LimitsFor(view, zoomLevel, limits)) return;
-    ClampInt(view.m_cameraX, kMarginX, limits.right);
-    ClampInt(view.m_cameraY, kMarginY, limits.bottom);
+    ClampInt(view.m_cameraX, limits.x.low, limits.x.high);
+    ClampInt(view.m_cameraY, limits.y.low, limits.y.high);
 
-    if (BelowOrNan(view.m_cameraPositionX, kMarginX))
-        view.m_cameraPositionX = static_cast<float>(kMarginX);
-    else if (static_cast<double>(limits.right) < view.m_cameraPositionX)
-        view.m_cameraPositionX = static_cast<float>(limits.floatRight);
+    if (BelowOrNan(view.m_cameraPositionX, limits.x.low))
+        view.m_cameraPositionX = static_cast<float>(limits.x.low);
+    else if (limits.x.floatHigh < view.m_cameraPositionX)
+        view.m_cameraPositionX = static_cast<float>(limits.x.floatHigh);
 
-    if (BelowOrNan(view.m_cameraPositionY, kMarginY))
-        view.m_cameraPositionY = static_cast<float>(kMarginY);
-    else if (static_cast<double>(limits.bottom) < view.m_cameraPositionY)
-        view.m_cameraPositionY = static_cast<float>(static_cast<double>(limits.bottom));
+    if (BelowOrNan(view.m_cameraPositionY, limits.y.low))
+        view.m_cameraPositionY = static_cast<float>(limits.y.low);
+    else if (limits.y.floatHigh < view.m_cameraPositionY)
+        view.m_cameraPositionY = static_cast<float>(limits.y.floatHigh);
 }
 
 void AddVelocity(ui::MapView& view, float x, float y)

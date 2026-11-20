@@ -203,12 +203,21 @@ OBL_TEST_CASE("map_effects.sea_range_covers_the_view_in_blocks")
     OBL_CHECK_EQ(range.endRow, 11);
 }
 
-OBL_TEST_CASE("map_effects.sea_range_rounds_toward_zero_like_the_exe")
+OBL_TEST_CASE("map_effects.sea_range_covers_negative_camera_with_floor_division")
 {
     const SeaRange range = VisibleSeaBlocks(-300, -300, 800, 800, 128, 1.0f);
-    OBL_CHECK_EQ(range.firstColumn, -2);
+    OBL_CHECK_EQ(range.firstColumn, -3);
+    OBL_CHECK_EQ(range.firstRow, -3);
     OBL_CHECK_EQ(range.endColumn, 4);
-    OBL_CHECK_EQ(VisibleSeaBlocks(-1000, 0, 800, 1, 128, 1.0f).endColumn, 0);
+    OBL_CHECK_EQ(range.endRow, 4);
+
+    // 3440x1440 zoomed out (scale 0.5) centered at cameraX = -1392: block -11 starts at -1408 <= -1392,
+    // endColumn 43 reaches 5504 > -1392 + 6880 = 5488.
+    const SeaRange ultrawide = VisibleSeaBlocks(-1392, 32, 3440, 1352, 128, 0.5f);
+    OBL_CHECK_EQ(ultrawide.firstColumn, -11);
+    OBL_CHECK_EQ(ultrawide.endColumn, 43);
+
+    OBL_CHECK_EQ(VisibleSeaBlocks(-1000, 0, 800, 1, 128, 1.0f).endColumn, -1);
     OBL_CHECK_EQ(VisibleSeaBlocks(0, 0, 10, 10, 0, 1.0f).endColumn, 0);
 }
 

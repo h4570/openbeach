@@ -3,6 +3,7 @@
 #include "core/float_to_int.h"
 #include "game/ui/gui_manager_types.h"
 
+#include <algorithm>
 #include <cstdint>
 
 namespace obl::gui_radar {
@@ -101,6 +102,20 @@ inline int CameraRectLines(const ViewRect& view, int zoomLevel, Line (&out)[4])
     out[1] = {view.x0, farY, farX, farY};
     out[2] = {view.x0, view.y0, view.x0, farY};
     out[3] = {farX, view.y0, farX, farY};
+    return 4;
+}
+
+inline int CameraRectLines(const ViewRect& view, int zoomLevel, const Rect& bounds, Line (&out)[4])
+{
+    if (CameraRectLines(view, zoomLevel, out) == 0) return 0;
+    const int32_t x0 = std::clamp(out[0].x0, bounds.x0, bounds.x1);
+    const int32_t y0 = std::clamp(out[0].y0, bounds.y0, bounds.y1);
+    const int32_t x1 = std::clamp(out[0].x1, bounds.x0, bounds.x1);
+    const int32_t y1 = std::clamp(out[1].y0, bounds.y0, bounds.y1);
+    out[0] = {x0, y0, x1, y0};
+    out[1] = {x0, y1, x1, y1};
+    out[2] = {x0, y0, x0, y1};
+    out[3] = {x1, y0, x1, y1};
     return 4;
 }
 

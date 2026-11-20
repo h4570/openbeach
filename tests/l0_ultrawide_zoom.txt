@@ -1,0 +1,29 @@
+# Zooming out (level 2) at resolutions wider than 1984 px or taller than 2016 px makes the viewport larger than the 4096x4096 map.
+# The camera must center instead of underflowing, and drawing sea blocks must clear the outside area without reading m_blocks out of bounds.
+# @env OBL_PACK=l0
+# @env OBL_WINDOWED=1
+# @timeout 90
+# @gameini Sound.PlayListCount=0
+await state == 1
+boot-gameplay scenario 1
+await gameplay
+res 3440 1440
+await frames 10
+zoom 2
+await frames 10
+expect zoom-level 2
+expect camera-x -1392
+res 3840 2160
+await frames 10
+expect zoom-level 2
+expect camera-x -1792
+expect-range camera-y -40 0
+res 1920 1080
+await frames 10
+expect zoom-level 2
+expect-range camera-x 64 192
+zoom 1
+await frames 10
+expect zoom-level 1
+expect-range camera-x 64 2112
+quit
