@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.6](https://github.com/h4570/openbeach/compare/v1.12.5...v1.12.6) (2026-11-20)
+
+
+### Bug Fixes
+
+* **site:** add crawlable language links and drop ?import anchor ([#92](https://github.com/h4570/openbeach/issues/92)) ([ea340c2](https://github.com/h4570/openbeach/commit/ea340c27f82ed9c5c5b3bb8d647f402cf6c53a1d))
+
 ## [1.12.5](https://github.com/h4570/openbeach/compare/v1.12.4...v1.12.5) (2026-11-20)
 
 
