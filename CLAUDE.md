@@ -2,6 +2,8 @@
 
 Rules for coding agents in this repository (`AGENTS.md` points here). Details live in `docs/` (start at `docs/index.md`).
 
+You also need to read `CLAUDE.local.md` if it exists.
+
 ## Project
 **OpenBeach** is an open-source engine in C++20 for the 2002 resort tycoon Beach Life. It plays on the files of the player's
 own copy, which a converter reads once, and it ships a small scenario of its own, the L0 pack, that needs no original data.
