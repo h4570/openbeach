@@ -205,6 +205,12 @@ function checkLanguagePages(siteDir) {
             check(html.includes(`<link rel="canonical" href="${url}">`), `pages: ${name} names its own address`);
             const alternates = [...html.matchAll(/<link rel="alternate" hreflang="([^"]+)" href="([^"]+)">/g)].map((m) => m[1]);
             check(alternates.join() === [...codes, "x-default"].join(), `pages: ${name} lists every language and the default`);
+            const langLinks = codes.every((other) => {
+                const target = `/${other === "en" ? "" : other + "/"}${slug}`;
+                return html.includes(`<a href="${target}" hreflang="${other}" lang="${other}">`);
+            });
+            check(langLinks, `pages: ${name} links to every language version`);
+            check(!html.includes('href="?import"'), `pages: ${name} does not expose ?import as a crawled link`);
             const description = html.match(/<meta name="description" content="([^"]+)"/);
             check(description !== null && description[1].length <= 160, `pages: the description of ${name} fits a search result`);
             check(!/@[A-Z0-9]+@/.test(html), `pages: ${name} has no unfilled marker`);
