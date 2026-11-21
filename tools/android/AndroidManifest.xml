@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- OpenBeach for Android (docs/build/android.md). tools/obl_android.py sets the SDK and version numbers when it links the APK. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="org.openbeach.game">
+    <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="35" />
     <uses-feature android:glEsVersion="0x00020000" />
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
     <!-- Native libraries are extracted on install, so the APK may compress them and still meet 16 KB page alignment. -->

@@ -79,6 +79,7 @@ def check_sdk_tools(apk_path, expected_version):
     checks = [
         f"name='{obl_android.PACKAGE}'",
         f"sdkVersion:'{obl_android.MIN_SDK}'",
+        f"targetSdkVersion:'{obl_android.TARGET_SDK}'",
         "native-code: 'arm64-v8a'",
         f"launchable-activity: name='{obl_android.PACKAGE}.LauncherActivity'",
     ]
@@ -87,7 +88,7 @@ def check_sdk_tools(apk_path, expected_version):
         checks.extend([f"versionCode='{code}'", f"versionName='{name}'"])
     for needle in checks:
         if needle not in badging:
-            raise ValueError(f"aapt2 dump badging missing {needle!r}")
+            raise ValueError(f"aapt2 dump badging missing {needle!r}\n{badging}")
 
 
 def main():

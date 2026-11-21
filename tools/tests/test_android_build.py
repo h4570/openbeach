@@ -36,6 +36,11 @@ class AndroidBuildTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             obl_android.parse_version("not-a-version")
 
+    def test_manifest_declares_uses_sdk_matching_build_script(self):
+        manifest = (ROOT / "tools" / "android" / "AndroidManifest.xml").read_text(encoding="utf-8")
+        self.assertIn(f'android:minSdkVersion="{obl_android.MIN_SDK}"', manifest)
+        self.assertIn(f'android:targetSdkVersion="{obl_android.TARGET_SDK}"', manifest)
+
     def test_stage_resources_copies_strings_shortcuts_and_icons(self):
         with tempfile.TemporaryDirectory() as tmp:
             res = Path(tmp) / "res"
