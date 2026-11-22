@@ -30,7 +30,8 @@ The game reads only converted data. The contract for every loader:
   `--game-dir` needs the same commands.
 - **Layers.** Loaders never build `packs/base/...` themselves: they ask `pack_path::Resolve(pack, "<logical path>")`
   (`core/pack_path.h`; `ResolveIn` for a loader handed one subdirectory such as `sprites/`). The first existing regular
-  file wins: 1. `<game dir>/mod/<logical path>` (user and mod files shadow), 2. `<game dir>/packs/<id>/<logical path>`,
+  file wins: 1. `<game dir>/mods/<id>/<logical path>` of the active mods, the last of the list first
+  ([../modding/mods.md](../modding/mods.md)), 2. `<game dir>/mod/<logical path>` (the legacy user layer), 3. `<game dir>/packs/<id>/<logical path>`,
   the pack `pack_path::Selected()` names (`OBL_PACK`, default `base`; maps-scenarios.md "The L0 scenario").
   Neither existing yields the pack path, so the error names the converted file. Resolved so far: text, scripts, the object and world script
   vocabularies, catalog,
@@ -40,7 +41,7 @@ The game reads only converted data. The contract for every loader:
   night stream (`media_pack.h` `TrackDirectory`/`TrackPath`; a saved playlist keeps the `packs/base/music/` name, the
   file is looked up in the layers when it is opened, read for its ID3 tag or its length, and checked). Unit tests:
   `pack_path_test`, `media_pack_test`, `sound_bank_test`. Music and the intro use the selected pack too; the saved playlist
-  directory is a logical alias, not a request to open the base pack. Sprite enumeration merges both layers in key order,
+  directory is a logical alias, not a request to open the base pack. Sprite enumeration merges all layers in key order,
   including mod-only sprites and listing shadowed names once. Save conversion and `obl.save` loading resolve catalog
   and text files through the same layers. `pack.json` remains the selected pack's identity and hash, read directly from
   that pack (also at startup); a mod does not replace its identity. Missing assets never fall back to another pack.

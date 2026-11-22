@@ -1,10 +1,18 @@
 #include "core/pack_path.h"
 
 #include "core/os.h"
+#include "core/sha256.h"
 
+#include <algorithm>
 #include <set>
 
 namespace obl::pack_path {
+
+namespace {
+
+std::vector<std::string> g_activeMods;
+
+} // namespace
 
 std::optional<std::filesystem::path> PackDirectory(std::string_view id)
 {
@@ -45,19 +53,93 @@ bool CheckSelected(const std::filesystem::path& gameDirectory, std::string& erro
     return true;
 }
 
-std::filesystem::path ModLayer(const std::filesystem::path& pack)
+std::filesystem::path GameDirectory(const std::filesystem::path& pack)
 {
-    // `packs/base` -> `mod`; a trailing separator (`packs/base/`) must not change the result.
+    // `packs/base` -> the directory above `packs`; a trailing separator (`packs/base/`) must not change the result.
     std::filesystem::path base = pack;
     if (!base.has_filename()) base = base.parent_path();
-    return base.parent_path().parent_path() / "mod";
+    return base.parent_path().parent_path();
+}
+
+std::filesystem::path ModLayer(const std::filesystem::path& pack)
+{
+    return GameDirectory(pack) / "mod";
+}
+
+std::optional<std::filesystem::path> ModDirectory(const std::filesystem::path& gameDirectory, std::string_view id)
+{
+    // The same character rules as a pack id, so an id can only name a directory under `mods/`.
+    const auto directory = PackDirectory(id);
+    if (!directory) return std::nullopt;
+    return gameDirectory / "mods" / std::string(id);
+}
+
+std::vector<std::string> ParseModList(std::string_view list)
+{
+    std::vector<std::string> ids;
+    while (!list.empty()) {
+        const size_t comma = list.find(',');
+        std::string_view item = list.substr(0, comma);
+        list = comma == std::string_view::npos ? std::string_view() : list.substr(comma + 1);
+        while (!item.empty() && (item.front() == ' ' || item.front() == '\t')) item.remove_prefix(1);
+        while (!item.empty() && (item.back() == ' ' || item.back() == '\t')) item.remove_suffix(1);
+        if (!item.empty()) ids.emplace_back(item);
+    }
+    return ids;
+}
+
+void SetActiveMods(std::vector<std::string> ids)
+{
+    g_activeMods = std::move(ids);
+}
+
+const std::vector<std::string>& ActiveMods()
+{
+    return g_activeMods;
+}
+
+std::vector<std::filesystem::path> Layers(const std::filesystem::path& pack)
+{
+    std::vector<std::filesystem::path> layers;
+    const auto game = GameDirectory(pack);
+    for (auto it = g_activeMods.rbegin(); it != g_activeMods.rend(); ++it)
+        // An id that is not valid is refused by the start-up check; here it simply names no layer.
+        if (const auto directory = ModDirectory(game, *it)) layers.push_back(*directory);
+    layers.push_back(game / "mod");
+    layers.push_back(pack);
+    return layers;
+}
+
+std::string ModContentHash(const std::filesystem::path& modDirectory)
+{
+    std::vector<std::filesystem::path> files;
+    std::error_code ec;
+    for (std::filesystem::recursive_directory_iterator it(modDirectory, ec), end; !ec && it != end; it.increment(ec)) {
+        std::error_code fileEc;
+        if (it->is_regular_file(fileEc)) files.push_back(it->path().lexically_relative(modDirectory));
+    }
+    if (ec) return {};
+    std::vector<std::string> names;
+    for (const auto& file : files) names.push_back(file.generic_string());
+    std::sort(names.begin(), names.end());
+    sha256::Hasher hasher;
+    for (const auto& name : names) {
+        const auto fileHash = sha256::OfFile(modDirectory / name);
+        if (!fileHash) return {};
+        const std::string line = name + '\n' + *fileHash + '\n';
+        hasher.Update({reinterpret_cast<const uint8_t*>(line.data()), line.size()});
+    }
+    return hasher.HexDigest();
 }
 
 std::filesystem::path Resolve(const std::filesystem::path& pack, const std::filesystem::path& logical)
 {
     std::error_code ec;
-    const auto modFile = ModLayer(pack) / logical;
-    if (std::filesystem::is_regular_file(modFile, ec)) return modFile;
+    for (const auto& layer : Layers(pack)) {
+        const auto file = layer / logical;
+        if (std::filesystem::is_regular_file(file, ec)) return file;
+    }
+    // No layer has it: the pack's path, so the loader names the converted file in its error.
     return pack / logical;
 }
 
@@ -72,7 +154,8 @@ std::vector<std::string> ListStems(const std::filesystem::path& pack, const std:
 {
     // A std::set keeps the names sorted and drops the duplicates a mod file shares with the pack.
     std::set<std::string> stems;
-    for (const auto& layer : {ModLayer(pack) / directory, pack / directory}) {
+    for (const auto& base : Layers(pack)) {
+        const auto layer = base / directory;
         std::error_code ec;
         for (std::filesystem::directory_iterator it(layer, ec), end; !ec && it != end; it.increment(ec)) {
             std::error_code fileEc;

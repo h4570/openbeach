@@ -373,7 +373,8 @@ void ConfigureSamples(const Text16& gameDirectory)
 {
     const auto pack = WidePath(gameDirectory) / pack_path::Selected();
     g_samplesDirectory = pack / "sounds";
-    g_samplesLayers = {pack_path::ModLayer(pack) / "sounds", g_samplesDirectory};
+    g_samplesLayers.clear();
+    for (const auto& layer : pack_path::Layers(pack)) g_samplesLayers.push_back(layer / "sounds");
     OBL_LOG("samples: backend SDL3 WAV / pack bank");
     OBL_LOG("samples: 3D backend SDL3 stereo spatializer");
 }

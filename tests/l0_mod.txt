@@ -1,0 +1,13 @@
+# A mod package for the own L0 pack (tests/mods/l0_test, laid out in run/mods/ by runtests.ps1): the text it replaces
+# shadows the pack's, the text it leaves out stays the pack's.
+# @env OBL_PACK=l0
+# @env OBL_MODS=l0_test
+# @timeout 120
+# @gameini Language.Language=5
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario 1
+await gameplay
+expect-text L0_PLAY_BUILDLIST Build (modded)
+expect-text L0_PLAY_CLOSEBUILDING Close shop
+quit

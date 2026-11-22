@@ -7,9 +7,10 @@
 #include <vector>
 
 // The one resolver for logical pack paths (`maps/1/map.json`, `gui/layouts.json`, ...). Layers, first match wins:
-//   1. `<game dir>/mod/<logical>`        user/mod files shadow the pack's,
-//   2. `<game dir>/packs/<id>/<logical>` the selected pack (`base`, the converted one, unless OBL_PACK names another).
-// `pack` is the pack directory (`<game dir>/packs/<id>`); the mod layer is `<pack>/../../mod`. Every loader of pack data
+//   1. `<game dir>/mods/<id>/<logical>`  the active mods, the last of the list first (docs/modding/mods.md),
+//   2. `<game dir>/mod/<logical>`        the legacy user layer,
+//   3. `<game dir>/packs/<id>/<logical>` the selected pack (`base`, the converted one, unless OBL_PACK names another).
+// `pack` is the pack directory (`<game dir>/packs/<id>`); the other layers hang off `<pack>/../..`. Every loader of pack data
 // builds its file names through this (docs/build/game-data.md). Pure logic: no Windows APIs.
 namespace obl::pack_path {
 
@@ -31,17 +32,38 @@ std::filesystem::path Selected();
 // default pack is not checked here: its loaders report a missing file themselves).
 bool CheckSelected(const std::filesystem::path& gameDirectory, std::string& error);
 
-// The mod layer directory belonging to `pack`.
+// The legacy mod layer directory (`<game dir>/mod`) belonging to `pack`.
 std::filesystem::path ModLayer(const std::filesystem::path& pack);
 
-// The file for `logical`: the mod layer's file when it exists as a regular file, otherwise the pack's (which may not exist;
+// The game directory `pack` lives in.
+std::filesystem::path GameDirectory(const std::filesystem::path& pack);
+
+// `<game dir>/mods/<id>`; nullopt when `id` is not a valid id (the rules of PackDirectory).
+std::optional<std::filesystem::path> ModDirectory(const std::filesystem::path& gameDirectory, std::string_view id);
+
+// The ids in a comma separated list (`a,b`), blanks around an id dropped, empty items skipped. Not validated.
+std::vector<std::string> ParseModList(std::string_view list);
+
+// The mods the game runs with, first to last in load order. The start-up sets them once (the `[Mods] Active` setting, or
+// OBL_MODS when it is set) and stops the game when the check (mod_pack::CheckActive) refuses them; the default is none.
+void SetActiveMods(std::vector<std::string> ids);
+const std::vector<std::string>& ActiveMods();
+
+// Every layer directory of `pack`, the one that wins first: active mods from last to first, the legacy `mod/`, then `pack`.
+std::vector<std::filesystem::path> Layers(const std::filesystem::path& pack);
+
+// A content hash of the directory `modDirectory`: SHA-256 over the sorted relative file names and the hash of each file.
+// Empty when a file cannot be read.
+std::string ModContentHash(const std::filesystem::path& modDirectory);
+
+// The file for `logical`: the first layer's regular file, otherwise the pack's (which may not exist;
 // the caller reports it). `logical` is relative and uses `/`.
 std::filesystem::path Resolve(const std::filesystem::path& pack, const std::filesystem::path& logical);
 
 // Resolve for a loader that is handed one pack subdirectory (`<pack>/sprites`) instead of the pack: `file` is relative to it.
 std::filesystem::path ResolveIn(const std::filesystem::path& directory, const std::filesystem::path& file);
 
-// The stems of the `extension` files (".json") in the logical directory `directory` (`fonts`) of both layers: each name once, sorted.
+// The stems of the `extension` files (".json") in the logical directory `directory` (`fonts`) of all layers: each name once, sorted.
 // A missing directory contributes nothing. Used by drivers that enumerate what the loaders would read.
 std::vector<std::string> ListStems(const std::filesystem::path& pack, const std::filesystem::path& directory, std::string_view extension);
 

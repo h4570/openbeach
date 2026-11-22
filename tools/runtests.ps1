@@ -151,6 +151,17 @@ if ($gameTests.Count -gt 0) {
     New-Item -ItemType Directory -Path (Join-Path $repo 'run\packs') -Force | Out-Null
     if (Test-Path -LiteralPath $l0Installed) { Remove-Item -LiteralPath $l0Installed -Recurse -Force }
     Copy-Item -LiteralPath $l0Source -Destination $l0Installed -Recurse -Force
+    # The test mods (own content, tests/mods/<id>) go to run/mods/; a script activates one with `# @env OBL_MODS=<id>`.
+    $modsSource = Join-Path $repo 'tests\mods'
+    $modsInstalled = Join-Path $repo 'run\mods'
+    if (Test-Path -LiteralPath $modsSource -PathType Container) {
+        New-Item -ItemType Directory -Path $modsInstalled -Force | Out-Null
+        foreach ($mod in Get-ChildItem -LiteralPath $modsSource -Directory) {
+            $target = Join-Path $modsInstalled $mod.Name
+            if (Test-Path -LiteralPath $target) { Remove-Item -LiteralPath $target -Recurse -Force }
+            Copy-Item -LiteralPath $mod.FullName -Destination $target -Recurse -Force
+        }
+    }
     # The public set needs no imported installation: a tree without one gets the settings Assert-TestGameIni expects.
     $gameIni = Join-Path $repo 'run\BeachLife.ini'
     if ($Pack -eq 'public' -and -not (Test-Path -LiteralPath $gameIni)) {

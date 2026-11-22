@@ -359,6 +359,7 @@ add_executable(obl_unit_tests
     script_pack_test.cpp
     map_pack_test.cpp
     media_pack_test.cpp
+    mod_pack_test.cpp
     sprite_pack_test.cpp
     convert_sound_test.cpp
     convert_sound_script_test.cpp

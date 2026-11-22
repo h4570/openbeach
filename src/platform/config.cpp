@@ -41,6 +41,7 @@ void Load(const Text16& gameDirectory)
     g_settings.confineMouse = ReadBool(path, "Display", "ConfineMouse", g_settings.confineMouse);
     g_settings.maxFps = ini::ReadInt(path, "Display", "MaxFps", g_settings.maxFps);
     g_settings.playIntroMovie = ReadBool(path, "Intro", "PlayMovie", g_settings.playIntroMovie);
+    g_settings.mods = ini::ReadString(path, "Mods", "Active", "", 1024);
 
     // Scripted test runs (OBL_SCRIPT) must be fast and start at the first frame: no intro movie, no frame cap. The
     // user's openbeach.ini stays untouched; OBL_MAXFPS / OBL_PLAYMOVIE (launcher --max-fps / --movie) override.

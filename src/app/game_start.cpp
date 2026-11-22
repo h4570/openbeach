@@ -6,6 +6,7 @@
 #include "runtime_reports.h"
 #include "core/wide_path.h"
 #include "core/pack_path.h"
+#include "formats/mod_pack.h"
 #include "game/ui/gui_content_runtime.h"
 #include "game/ui/gui_layouts_runtime.h"
 #include "game/ui/blit.h"
@@ -185,6 +186,11 @@ int obl::InitGame(const Text16& gameDir)
     // The pack every loader reads (OBL_PACK, default `base`); a wrong id or a missing pack stops the start before any loader.
     if (std::string packError; !pack_path::CheckSelected(WidePath(gameDir), packError)) {
         OBL_LOG("FatalError: pack: %s. Import the game data again", packError.c_str());
+        return 8;
+    }
+    // The active mods (the [Mods] setting or OBL_MODS) become layers above the pack; a missing or unfit one stops the start too.
+    if (std::string modError; !mod_pack::Activate(WidePath(gameDir), pack_path::SelectedId(), config::Get().mods, modError)) {
+        OBL_LOG("FatalError: %s", modError.c_str());
         return 8;
     }
     // Converted GUI tables and layouts (packs/base/gui/); missing files stop the game only when the GUI first needs them.
