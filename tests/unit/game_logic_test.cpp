@@ -94,7 +94,7 @@ OBL_TEST_CASE("Game logic resets progress from the campaign without a progress f
     OBL_CHECK(StateOf(game, 0) == State::AlwaysAvailable);
     OBL_CHECK(StateOf(game, 1) == State::Unlocked);
     OBL_CHECK(StateOf(game, 2) == State::Locked);
-    OBL_CHECK_EQ(game.m_lastUnlockedScenario, 0);
+    OBL_CHECK_EQ(obl::game::SelectedMenuSlot(game), 0);
 }
 
 OBL_TEST_CASE("Game logic saves completion and loads it back with the next scenario selected")
@@ -103,7 +103,7 @@ OBL_TEST_CASE("Game logic saves completion and loads it back with the next scena
     FakeEnv env;
     logic::ScanScenarios(game, logic::Campaign(env));
     logic::LoadProgress(game, env);
-    game.m_lastUnlockedScenario = 1;
+    obl::game::SelectMenuSlot(game, 1);
     logic::CompleteScenario(game, env);
     OBL_CHECK(env.files.count(obl::progress_file::kFileName) == 1);
     OBL_CHECK(DoneOf(game, 1));
@@ -113,11 +113,11 @@ OBL_TEST_CASE("Game logic saves completion and loads it back with the next scena
     logic::ScanScenarios(loaded, logic::Campaign(env));
     logic::LoadProgress(loaded, env);
     OBL_CHECK(loaded.m_scenarioProgress.ToJson() == game.m_scenarioProgress.ToJson());
-    OBL_CHECK_EQ(loaded.m_lastUnlockedScenario, 2);
+    OBL_CHECK_EQ(obl::game::SelectedMenuSlot(loaded), 2);
     // Sandbox mode always starts at the first entry.
     logic::SetSandbox(loaded, 1, env);
     OBL_CHECK_EQ(loaded.m_sandbox, 1);
-    OBL_CHECK_EQ(loaded.m_lastUnlockedScenario, 0);
+    OBL_CHECK_EQ(obl::game::SelectedMenuSlot(loaded), 0);
 }
 
 OBL_TEST_CASE("Game logic resets progress from a broken progress file")
@@ -163,6 +163,8 @@ OBL_TEST_CASE("Game logic answers the GUI variables")
     // A slot the registry does not know is not selectable (it used to index past the table).
     OBL_CHECK_EQ(Value(logic::GetVariable(game, "GAME_SCENARIO_SELECT_STATUS_3", env)), 0);
     OBL_CHECK_EQ(Value(logic::GetVariable(game, "GAME_SCENARIO_SELECT_STATUS_40", env)), 0);
+    OBL_CHECK_EQ(Value(logic::GetVariable(game, "GAME_SCENARIO_SELECT_STATUS_99999999999", env)), 0);
+    OBL_CHECK_EQ(Value(logic::GetVariable(game, "GAME_SCENARIO_SELECT_STATUS_-1", env)), 0);
     OBL_CHECK_EQ(Value(logic::GetVariable(game, "PLAYLIST_MODE", env)), 1);
     env.manual = 2;
     OBL_CHECK(!logic::GetVariable(game, "PLAYLIST_MODE", env));
@@ -196,10 +198,12 @@ OBL_TEST_CASE("Game logic stores GUI variables and forwards them")
 {
     Game game{};
     FakeVariables env;
+    FakeEnv scenarioEnv;
     logic::SetVariable(game, "GAME_SEA", 5, env);
     logic::SetVariable(game, "GAME_KEYLINES", 0, env);
     logic::SetVariable(game, "GAME_LIGHTS", 1, env);
-    logic::SetVariable(game, "GAME_SCENARIO_SELECT", 7, env);
+    logic::ScanScenarios(game, logic::Campaign(scenarioEnv));
+    logic::SetVariable(game, "GAME_SCENARIO_SELECT", 1, env);
     logic::SetVariable(game, "GAME_GAME_SPEED", 2, env);
     logic::SetVariable(game, "PLAYLIST_MODE", 0, env);
     logic::SetVariable(game, "PLAYLIST_MODE", 1, env);
@@ -207,7 +211,10 @@ OBL_TEST_CASE("Game logic stores GUI variables and forwards them")
     OBL_CHECK_EQ(env.settings.m_seaEffects, 1);
     OBL_CHECK_EQ(env.settings.m_keyline, 0);
     OBL_CHECK_EQ(env.settings.m_lightEffects, 1);
-    OBL_CHECK_EQ(game.m_lastUnlockedScenario, 7);
+    OBL_CHECK_EQ(obl::game::SelectedMenuSlot(game), 1);
+    // A slot the registry does not know selects nothing.
+    logic::SetVariable(game, "GAME_SCENARIO_SELECT", 40, env);
+    OBL_CHECK(!game.m_selectedScenario.IsValid());
     const std::vector<std::string> expected = {"sea 1", "keyline 0", "speed 2", "playlist 9", "playlist 8", "unrecognized BOGUS"};
     OBL_CHECK(env.calls == expected);
 }

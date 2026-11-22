@@ -279,13 +279,12 @@ void EnterWorld(WorldTestState* state)
     game::Game* game = GetGame();
     state->m_entered = 1;
     SetSoftwareCursor(false);
-    const auto kind = game->m_sandbox ? scenario_load::ScenarioKind::Sandbox : scenario_load::ScenarioKind::Campaign;
-    const auto ref = game->m_scenarioRegistry.FindByMenuSlot(game->m_lastUnlockedScenario, kind);
-    if (!ref) {
-        OBL_LOG("Scenario: unknown slot %d", game->m_lastUnlockedScenario);
+    const auto* selected = SelectedEntry(*game);
+    if (!selected) {
+        OBL_LOG("Scenario: none selected");
         std::abort();
     }
-    const std::string& scenarioId = game->m_scenarioRegistry.Get(*ref).id;
+    const std::string& scenarioId = selected->id;
     if (state->m_loadingSave) {
         char screen[128];
         ::obl::ui::host_text::PrintNarrow(screen, "data/screens/loading_%d.tga", Rand() % 2 + 1);

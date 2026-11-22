@@ -213,7 +213,7 @@ public:
     uint32_t ObjectiveStatus(uint32_t index) const override { return (&game::GetWorld()->m_objectiveStatus[0])[index]; }
     int WorldCounterValue(gui_variable::WorldCounter counter) const override { return *CounterSlot(game::GetWorld(), counter); }
     bool SandboxMode() const override { return game::GetGame()->m_sandbox != 0; }
-    int CurrentScenario() const override { return game::GetGame()->m_lastUnlockedScenario; }
+    int CurrentScenario() const override { return game::SelectedMenuSlot(*game::GetGame()); }
     bool ScenarioCompleted(int scenario) const override { return game::game_api::IsScenarioCompleted(scenario); }
     bool ScenarioAlwaysAvailable(int scenario) const override { return game::game_api::IsScenarioAlwaysAvailable(scenario); }
     int GuestCapacityOfLodgings() const override

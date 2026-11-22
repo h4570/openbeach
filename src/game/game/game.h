@@ -87,7 +87,8 @@ struct Game {
     Member<ui::SpriteBank> m_spriteBank; // registered in g_SpriteBank (GetSpriteBank)
     scenario_load::ScenarioRegistry m_scenarioRegistry;
     scenario_progress::ScenarioProgress m_scenarioProgress; // progress.json, seeded from sp.bin
-    int m_lastUnlockedScenario;
+    // The scenario the menu has picked, of the current mode's kind; invalid when the radio group names no registry entry.
+    scenario_load::ScenarioRef m_selectedScenario;
     uint8_t m_sandbox;
     std::vector<std::unique_ptr<save_slots::Slot>> m_saveSlots; // headers of savegames\save*.dat, newest first
     int m_loadSlot; // index in m_saveSlots to load from the menu, -1 none
@@ -96,6 +97,28 @@ struct Game {
     uint8_t m_returnToMainMenu; // after GameWon go to the main menu instead of ScenarioScreen
     uint8_t m_suspended; // The deactivate handler/OnActivate: window lost focus, sound muted and world paused
 };
+
+// The menu's radio group speaks in slots of the current mode; the selection itself is a registry ref (invalid for a slot the
+// registry does not know).
+inline scenario_load::ScenarioKind SelectionKind(const Game& game)
+{
+    return game.m_sandbox ? scenario_load::ScenarioKind::Sandbox : scenario_load::ScenarioKind::Campaign;
+}
+inline void SelectMenuSlot(Game& game, int slot)
+{
+    const auto ref = game.m_scenarioRegistry.FindByMenuSlot(slot, SelectionKind(game));
+    game.m_selectedScenario = ref ? *ref : scenario_load::ScenarioRef{};
+}
+inline const scenario_load::ScenarioRegistry::Entry* SelectedEntry(const Game& game)
+{
+    return game.m_scenarioRegistry.Find(game.m_selectedScenario);
+}
+// The slot the radio group shows; 0 without a selection.
+inline int SelectedMenuSlot(const Game& game)
+{
+    const auto* entry = SelectedEntry(game);
+    return entry ? entry->menuSlot : 0;
+}
 
 // Index of the current state in m_states, -1 if it is none of them.
 inline int CurrentStateIndex(const Game& game)

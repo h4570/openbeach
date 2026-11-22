@@ -239,13 +239,12 @@ bool WriteHeaderJson(const formats::SaveOrigin& origin, const world_save::JsonCo
 {
     const Game& game = *GetGame();
     const world::World& world = *GetWorld();
-    const auto kind = game.m_sandbox ? scenario_load::ScenarioKind::Sandbox : scenario_load::ScenarioKind::Campaign;
-    const auto ref = game.m_scenarioRegistry.FindByMenuSlot(game.m_lastUnlockedScenario, kind);
-    if (!ref) {
-        error = "header: unknown scenario slot " + std::to_string(game.m_lastUnlockedScenario);
+    const auto* selected = SelectedEntry(game);
+    if (!selected) {
+        error = "header: no scenario selected";
         return false;
     }
-    const auto& entry = game.m_scenarioRegistry.Get(*ref);
+    const auto& entry = *selected;
     h = nlohmann::ordered_json::object();
     h["saved_at"] = timestamp;
     h["scenario"] = entry.id;

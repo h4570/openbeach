@@ -166,11 +166,11 @@ void BootNewGame(game::Game& game, bool sandbox, int island)
 {
     NotifyWorldReloading();
     // The sandbox button / the island screen: sandbox flag (also reloads the scenario progress), selected
-    // scenario in Game::m_lastUnlockedScenario (0-based), then the start button's game_api::SetNextState(5 = LoadGame), which
+    // scenario in Game::m_selectedScenario (by menu slot, 0-based), then the start button's game_api::SetNextState(5 = LoadGame), which
     // enters WorldTest after 0.1 s. game_api::SetSandboxMode and game_api::SetNextState take their arguments the same way
     // (both checked by the state tests); the state switch itself happens at the top of game_api::Update.
     game::game_api::SetSandboxMode(sandbox);
-    game.m_lastUnlockedScenario = island - 1;
+    game::SelectMenuSlot(game, island - 1);
     game::game_api::SetNextState(static_cast<int>(game::GameStateId::LoadGame));
 }
 

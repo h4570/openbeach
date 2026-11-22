@@ -99,7 +99,7 @@ public:
     virtual uint32_t ObjectiveStatus(uint32_t index) const = 0; // World::m_objectiveStatus[index], 1 = done
     virtual int WorldCounterValue(WorldCounter counter) const = 0;
     virtual bool SandboxMode() const = 0; // Game::m_sandbox
-    virtual int CurrentScenario() const = 0; // Game::m_lastUnlockedScenario, 0-based
+    virtual int CurrentScenario() const = 0; // the selected scenario's menu slot, 0-based
     virtual bool ScenarioCompleted(int scenario) const = 0; // the player has completed that scenario
     virtual bool ScenarioAlwaysAvailable(int scenario) const = 0; // that scenario is marked as always available
     virtual int GuestCapacityOfLodgings() const = 0; // BuildingDef::m_GuestCapacity summed over ACCOMBLK and HOTEL objects

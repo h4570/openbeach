@@ -158,7 +158,11 @@ public:
     bool SandboxMode() const override { return game::GetGame()->m_sandbox != 0; }
     int Language() const override { return game::settings_store::Current().m_shownLanguage; }
     int SelectedSaveImage() const override { return ui::save_panel::SelectedImageId(); }
-    int ScenarioPicture() const override { return game::GetGame()->m_lastUnlockedScenario; }
+    int ScenarioPicture() const override
+    {
+        const auto* entry = game::SelectedEntry(*game::GetGame());
+        return entry ? entry->pictures.frame : 0;
+    }
     bool HasIdleBuilding(const char* name) const override
     {
         const auto found = object::object_manager::FindObjectsByName(game::GetObjectManager(), name);

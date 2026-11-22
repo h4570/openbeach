@@ -871,7 +871,7 @@ void CheckConstructed(const Game& game, const Game* result, HINSTANCE__*, void* 
     const size_t scenarios = campaign.campaign.size() + campaign.sandboxes.size();
     std::error_code error;
     check(game.m_scenarioRegistry.ListCount() == static_cast<int32_t>(scenarios) && scenarios > 0, "scenario count");
-    check(game.m_lastUnlockedScenario == game.m_scenarioProgress.SelectAfterLoad(false, CampaignCount()), "scenario selection");
+    check(game::SelectedMenuSlot(game) == game.m_scenarioProgress.SelectAfterLoad(false, CampaignCount()), "scenario selection");
     check(std::filesystem::is_directory(os::ResolvePath("photos"), error) &&
                     std::filesystem::is_directory(os::ResolvePath("SaveGames"), error),
             "directories");

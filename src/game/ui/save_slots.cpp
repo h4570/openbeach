@@ -277,7 +277,7 @@ void LoadWorld(game::Game* game, scenario_load::ScenarioRef scenario)
     game::game_api::LoadScenarioProgress();
     auto& worldTest = static_cast<game::WorldTestState&>(*game->m_states[static_cast<int>(game::GameStateId::WorldTest)]);
     game->m_currentState = game->m_nextState = &worldTest;
-    game->m_lastUnlockedScenario = entry.menuSlot;
+    game->m_selectedScenario = scenario;
     worldTest.m_loadingSave = 1;
     worldTest.Enter();
     obl::ui::renderer::SetGuiBarHeight(game::GetRenderer(), 0);
@@ -460,8 +460,8 @@ void DriveWrite(int count)
             if (slot->m_number == expectedNumber) written = slot.get();
         const auto* world = obl::game::GetWorld();
         char title[128];
-        std::snprintf(title, sizeof(title), "MAINSS_SANDBOX%d_TITLE", game.m_lastUnlockedScenario + 1);
-        g_checks.Record(written && written->m_scenario == game.m_lastUnlockedScenario && written->m_day == world->m_gameDay &&
+        std::snprintf(title, sizeof(title), "MAINSS_SANDBOX%d_TITLE", game::SelectedMenuSlot(game) + 1);
+        g_checks.Record(written && written->m_scenario == game::SelectedMenuSlot(game) && written->m_day == world->m_gameDay &&
                         written->m_hour == world->m_gameDayTime && written->m_cash == world->m_player->m_cash &&
                         written->m_guests == world->m_numGuests &&
                         !std::strcmp(written->m_title, game.m_sandbox ? title : world->m_scenarioTitle.c_str()),
@@ -657,7 +657,7 @@ void DriveLoad(int count)
         const auto* world = obl::game::GetWorld();
         const int day = world->m_gameDay, guests = world->m_numGuests;
         const float hour = world->m_gameDayTime, cash = world->m_player->m_cash;
-        const int scenario = game->m_lastUnlockedScenario;
+        const auto scenario = game->m_selectedScenario;
         const uint8_t sandbox = game->m_sandbox;
         Write(&copy);
         Release(&copy);
@@ -672,7 +672,7 @@ void DriveLoad(int count)
         world = obl::game::GetWorld();
         const bool equal = game->m_loadSlot == -1 && game->m_saveSlots.empty() && !game->m_loadListFilled &&
                 game->m_currentState == game->m_states[0].get() && game->m_nextState == game->m_states[0].get() &&
-                game->m_lastUnlockedScenario == scenario && game->m_sandbox == sandbox && world->m_gameDay == day &&
+                game->m_selectedScenario == scenario && game->m_sandbox == sandbox && world->m_gameDay == day &&
                 world->m_gameDayTime == hour && world->m_numGuests == guests && world->m_player->m_cash == cash;
         g_loadChecks.Record(equal, "world and state after full save load");
         g_checkLoadPendingSave.Record(equal, "world and state after full save load");
