@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.13.0](https://github.com/h4570/openbeach/compare/v1.12.5...v1.13.0) (2026-11-22)
+
+
+### Features
+
+* **platform:** add Android release APK, data importer and PC export ([f08be17](https://github.com/h4570/openbeach/commit/f08be17ddb0bbabcab21665d6cfc6caa84097251))
+* **platform:** add initial Android build and APK support ([616f216](https://github.com/h4570/openbeach/commit/616f2162b8bcfcb525f901e441645b6e38a1231f))
+
+
+### Bug Fixes
+
+* **platform:** accept minSdkVersion in Android smoke check ([#96](https://github.com/h4570/openbeach/issues/96)) ([25d2f51](https://github.com/h4570/openbeach/commit/25d2f51c17b1e5ea90efe1db1a0192ce872b5341))
+* **platform:** declare uses-sdk in Android manifest ([#95](https://github.com/h4570/openbeach/issues/95)) ([d210007](https://github.com/h4570/openbeach/commit/d210007954e8f12007b525e2794a0a1312245852))
+* **site:** add crawlable language links and drop ?import anchor ([#92](https://github.com/h4570/openbeach/issues/92)) ([ea340c2](https://github.com/h4570/openbeach/commit/ea340c27f82ed9c5c5b3bb8d647f402cf6c53a1d))
+
 ## [1.12.5](https://github.com/h4570/openbeach/compare/v1.12.4...v1.12.5) (2026-11-20)
 
 
