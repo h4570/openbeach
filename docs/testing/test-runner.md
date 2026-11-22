@@ -37,6 +37,7 @@ Before applying overrides, `autotest.ps1` validates the installation baseline: v
 playlist count (use the built-in soundtrack), or 11 complete saved track entries. An empty or partial saved playlist fails
 with `Damaged test INI` and the offending keys, before misleading GUI call-count or tick-0 hash errors.
 Deliberate test settings belong in `@gameini` headers.
+`./tests/tools/test_latin1_ini.ps1` checks the INI helpers in Windows PowerShell and PowerShell 7.
 `./tests/tools/test_ini_hygiene.ps1` covers these diagnostics and checks every INI byte after a direct hidden music-panel
 run, without a runner snapshot masking a persistent write. INI serialization itself remains covered by settings unit tests.
 

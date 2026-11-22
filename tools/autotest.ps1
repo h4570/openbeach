@@ -74,7 +74,7 @@ $envOverrides['OBL_UPDATE_GOLDEN'] = $(if ($UpdateGolden) { '1' } else { '0' })
 $iniPath = Join-Path $GameDir 'BeachLife.ini'
 Assert-TestGameIni $iniPath
 function Set-GameIniValue([string]$Section, [string]$Key, $Value) {  # untyped: [string] would turn $null (remove the key) into ""
-    $latin1 = [Text.Encoding]::Latin1
+    $latin1 = [Text.Encoding]::GetEncoding(28591)
     $lines = [Collections.Generic.List[string]]::new()
     if (Test-Path $iniPath) { $lines.AddRange([IO.File]::ReadAllLines($iniPath, $latin1)) }
     $inSection = $false; $sectionEnd = -1; $previous = $null; $found = $false
@@ -104,7 +104,7 @@ function Set-GameIniValue([string]$Section, [string]$Key, $Value) {  # untyped: 
 # Drops a whole [Section] (header and keys). Manual sessions save positions here; tests start without them.
 function Remove-GameIniSection([string]$Section) {
     if (-not (Test-Path $iniPath)) { return }
-    $latin1 = [Text.Encoding]::Latin1
+    $latin1 = [Text.Encoding]::GetEncoding(28591)
     $kept = [Collections.Generic.List[string]]::new()
     $skip = $false
     foreach ($line in [IO.File]::ReadAllLines($iniPath, $latin1)) {

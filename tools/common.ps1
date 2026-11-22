@@ -59,7 +59,7 @@ function Resolve-TestScript([string]$Script, [string]$GameDir) {
 function Assert-TestGameIni([string]$Path) {
     $values = @{}; $section = ''
     if (Test-Path -LiteralPath $Path) {
-        foreach ($line in [IO.File]::ReadAllLines($Path, [Text.Encoding]::Latin1)) {
+        foreach ($line in [IO.File]::ReadAllLines($Path, [Text.Encoding]::GetEncoding(28591))) {
             if ($line -match '^\s*\[([^]]+)\]\s*$') { $section = $Matches[1] }
             elseif ($line -match '^\s*([^=]+?)\s*=(.*)$') { $values["$section.$($Matches[1])"] = $Matches[2].Trim() }
         }
