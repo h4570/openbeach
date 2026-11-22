@@ -51,6 +51,18 @@ class AndroidBuildTests(unittest.TestCase):
             icons = list(res.glob("mipmap*/ic_launcher.png"))
             self.assertTrue(icons, "expected at least one launcher icon")
 
+    def test_smoke_badging_accepts_sdkversion_and_minsdkversion(self):
+        common = (
+            "package: name='org.openbeach.game' versionCode='11205' versionName='1.12.5-dev.abc'\n"
+            "targetSdkVersion:'35'\n"
+            "launchable-activity: name='org.openbeach.game.LauncherActivity'\n"
+            "native-code: 'arm64-v8a'\n"
+        )
+        android_smoke.check_badging(common + "sdkVersion:'26'\n", "1.12.5-dev.abc")
+        android_smoke.check_badging(common + "minSdkVersion:'26'\n", "1.12.5-dev.abc")
+        with self.assertRaises(ValueError):
+            android_smoke.check_badging(common, "1.12.5-dev.abc")
+
     def test_smoke_elf64_and_apk_contents(self):
         good_elf = make_elf64(android_smoke.EM_AARCH64, 16384)
         android_smoke.check_elf64_arm64_16k(good_elf)

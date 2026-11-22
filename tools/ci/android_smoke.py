@@ -67,18 +67,13 @@ def check_apk_contents(apk_path):
         check_elf64_arm64_16k(z.read("lib/arm64-v8a/libmain.so"))
 
 
-def check_sdk_tools(apk_path, expected_version):
-    sdk = obl_android.sdk_root()
-    tools = obl_android.newest(sdk / "build-tools")
-    subprocess.run([obl_android.tool(tools, "apksigner"), "verify", "--verbose", str(apk_path)], check=True)
-    subprocess.run([obl_android.tool(tools, "zipalign"), "-c", "-p", "4", str(apk_path)], check=True)
-    badging = subprocess.run(
-        [obl_android.tool(tools, "aapt2"), "dump", "badging", str(apk_path)],
-        check=True, capture_output=True, text=True, encoding="utf-8",
-    ).stdout
+def check_badging(badging, expected_version=None):
+    # build-tools 37+ prints minSdkVersion:'26'; earlier versions print sdkVersion:'26'.
+    min_sdk_tags = (f"minSdkVersion:'{obl_android.MIN_SDK}'", f"sdkVersion:'{obl_android.MIN_SDK}'")
+    if not any(tag in badging for tag in min_sdk_tags):
+        raise ValueError(f"aapt2 dump badging missing {' or '.join(min_sdk_tags)}\n{badging}")
     checks = [
         f"name='{obl_android.PACKAGE}'",
-        f"sdkVersion:'{obl_android.MIN_SDK}'",
         f"targetSdkVersion:'{obl_android.TARGET_SDK}'",
         "native-code: 'arm64-v8a'",
         f"launchable-activity: name='{obl_android.PACKAGE}.LauncherActivity'",
@@ -89,6 +84,18 @@ def check_sdk_tools(apk_path, expected_version):
     for needle in checks:
         if needle not in badging:
             raise ValueError(f"aapt2 dump badging missing {needle!r}\n{badging}")
+
+
+def check_sdk_tools(apk_path, expected_version):
+    sdk = obl_android.sdk_root()
+    tools = obl_android.newest(sdk / "build-tools")
+    subprocess.run([obl_android.tool(tools, "apksigner"), "verify", "--verbose", str(apk_path)], check=True)
+    subprocess.run([obl_android.tool(tools, "zipalign"), "-c", "-p", "4", str(apk_path)], check=True)
+    badging = subprocess.run(
+        [obl_android.tool(tools, "aapt2"), "dump", "badging", str(apk_path)],
+        check=True, capture_output=True, text=True, encoding="utf-8",
+    ).stdout
+    check_badging(badging, expected_version)
 
 
 def main():

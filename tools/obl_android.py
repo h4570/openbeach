@@ -154,7 +154,8 @@ def sign_apk(args, tools, jdk_bin, aligned, apk):
 def build_apk(args, sdk, library):
     build = Path(args.build_dir)
     tools = newest(sdk / "build-tools")
-    android_jar = newest(sdk / "platforms") / "android.jar"
+    preferred_platform = sdk / "platforms" / f"android-{TARGET_SDK}" / "android.jar"
+    android_jar = preferred_platform if preferred_platform.is_file() else newest(sdk / "platforms") / "android.jar"
     jdk_bin = Path(os.environ["JAVA_HOME"]) / "bin" if os.environ.get("JAVA_HOME") else Path(shutil.which("javac") or "javac").parent
     stage = build / "apk"
     shutil.rmtree(stage, ignore_errors=True)
