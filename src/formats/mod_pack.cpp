@@ -93,12 +93,14 @@ bool CheckActive(const std::filesystem::path& gameDirectory, std::string_view pa
         std::string reason;
         if (!ParseManifest(text, mod.manifest, reason)) return fail(reason);
         if (mod.manifest.id != id) return fail("mod.json names the id \"" + mod.manifest.id + "\"");
-        if (mod.manifest.pack != packId) return fail("made for the pack \"" + mod.manifest.pack + "\", not \"" + std::string(packId) + "\"");
+        if (mod.manifest.pack != packId)
+            return fail("made for the pack \"" + mod.manifest.pack + "\", not \"" + std::string(packId) + "\"");
         for (const std::string& need : mod.manifest.requiredMods) {
             const bool earlier = std::any_of(mods.begin(), mods.end(), [&](const ActiveMod& m) { return m.manifest.id == need; });
             if (!earlier) {
                 const bool later = std::find(active.begin(), active.end(), need) != active.end();
-                return fail(later ? "requires \"" + need + "\", which must come earlier in the list" : "requires \"" + need + "\", which is not active");
+                return fail(later ? "requires \"" + need + "\", which must come earlier in the list"
+                                  : "requires \"" + need + "\", which is not active");
             }
         }
         mod.hash = pack_path::ModContentHash(*directory);

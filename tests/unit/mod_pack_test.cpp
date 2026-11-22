@@ -22,8 +22,8 @@ void Write(const std::filesystem::path& file, const std::string& text)
 void MakeMod(const std::filesystem::path& game, const std::string& id, const std::string& pack = "l0", const std::string& needs = "")
 {
     Write(game / "mods" / id / "mod.json",
-            "{\"format\":\"obl.mod\",\"version\":1,\"id\":\"" + id + "\",\"title\":\"T\",\"mod_version\":\"1\",\"pack\":\"" + pack +
-                    "\"" + (needs.empty() ? "" : ",\"requires\":[" + needs + "]") + "}");
+            "{\"format\":\"obl.mod\",\"version\":1,\"id\":\"" + id + "\",\"title\":\"T\",\"mod_version\":\"1\",\"pack\":\"" + pack + "\"" +
+                    (needs.empty() ? "" : ",\"requires\":[" + needs + "]") + "}");
 }
 
 // Every test leaves no mod active for the next one.
