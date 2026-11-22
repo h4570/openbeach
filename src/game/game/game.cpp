@@ -163,13 +163,21 @@ const char16_t* Scenario(Game* game, int index)
 {
     return game->m_scenarioRegistry.ListName(index).c_str();
 }
+// The menu slot of the current mode (campaign or sandbox) as a registry ref; the table is shared by both modes.
+static std::optional<scenario_load::ScenarioRef> SlotRef(const Game* game, int index)
+{
+    return game->m_scenarioRegistry.FindByMenuSlot(
+            index, game->m_sandbox ? scenario_load::ScenarioKind::Sandbox : scenario_load::ScenarioKind::Campaign);
+}
 uint8_t Always(Game* game, int index)
 {
-    return (game->m_scenarioProgress[index] & 4) != 0;
+    const auto ref = SlotRef(game, index);
+    return ref && game->m_scenarioProgress.State(game->m_scenarioRegistry, *ref) == scenario_progress::ScenarioState::AlwaysAvailable;
 }
 uint8_t Completed(Game* game, int index)
 {
-    return (game->m_scenarioProgress[index] & 8) != 0;
+    const auto ref = SlotRef(game, index);
+    return ref && game->m_scenarioProgress.IsComplete(game->m_scenarioRegistry, *ref);
 }
 void NextState(Game* game, int state)
 {
@@ -600,7 +608,7 @@ void Update(Game* game)
     const ui::Input& input = *GetInput();
     if (InputKeyHeld(input, obl::input::KeyCode::LeftShift) && InputKeyPressed(input, obl::input::KeyCode::U) &&
             InputKeyHeld(input, obl::input::KeyCode::LeftAlt) && !GetWorld()) {
-        game_core::UnlockAll(game->m_scenarioProgress, game->m_sandbox != 0, CampaignCount());
+        game->m_scenarioProgress.UnlockAll(game->m_sandbox != 0, CampaignCount());
         Save(game);
     }
 }
@@ -863,7 +871,7 @@ void CheckConstructed(const Game& game, const Game* result, HINSTANCE__*, void* 
     const size_t scenarios = campaign.campaign.size() + campaign.sandboxes.size();
     std::error_code error;
     check(game.m_scenarioRegistry.ListCount() == static_cast<int32_t>(scenarios) && scenarios > 0, "scenario count");
-    check(game.m_lastUnlockedScenario == game_core::SelectAfterLoad(game.m_scenarioProgress, false, CampaignCount()), "scenario selection");
+    check(game.m_lastUnlockedScenario == game.m_scenarioProgress.SelectAfterLoad(false, CampaignCount()), "scenario selection");
     check(std::filesystem::is_directory(os::ResolvePath("photos"), error) &&
                     std::filesystem::is_directory(os::ResolvePath("SaveGames"), error),
             "directories");

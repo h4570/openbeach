@@ -9,6 +9,8 @@
 namespace {
 using obl::game::Game;
 namespace logic = obl::game_logic;
+using State = obl::scenario_progress::ScenarioState;
+using Kind = obl::scenario_load::ScenarioKind;
 
 // A three-scenario campaign with two sandboxes: entry 0 always open, entry 1 open at the start.
 struct FakeEnv {
@@ -70,15 +72,28 @@ int Value(std::optional<int> value)
 }
 } // namespace
 
+// The progress of campaign menu slot `slot` through the interface.
+static State StateOf(const Game& game, int slot)
+{
+    const auto ref = game.m_scenarioRegistry.FindByMenuSlot(slot, Kind::Campaign);
+    return ref ? game.m_scenarioProgress.State(game.m_scenarioRegistry, *ref) : State::Locked;
+}
+
+static bool DoneOf(const Game& game, int slot)
+{
+    const auto ref = game.m_scenarioRegistry.FindByMenuSlot(slot, Kind::Campaign);
+    return ref && game.m_scenarioProgress.IsComplete(game.m_scenarioRegistry, *ref);
+}
+
 OBL_TEST_CASE("Game logic resets progress from the campaign without a progress file")
 {
     Game game{};
     FakeEnv env;
+    logic::ScanScenarios(game, logic::Campaign(env));
     logic::LoadProgress(game, env);
-    OBL_CHECK_EQ(game.m_scenarioProgress[0], 4);
-    OBL_CHECK_EQ(game.m_scenarioProgress[1], 2);
-    OBL_CHECK_EQ(game.m_scenarioProgress[2], 1);
-    OBL_CHECK_EQ(game.m_scenarioProgress[11], 1);
+    OBL_CHECK(StateOf(game, 0) == State::AlwaysAvailable);
+    OBL_CHECK(StateOf(game, 1) == State::Unlocked);
+    OBL_CHECK(StateOf(game, 2) == State::Locked);
     OBL_CHECK_EQ(game.m_lastUnlockedScenario, 0);
 }
 
@@ -86,16 +101,18 @@ OBL_TEST_CASE("Game logic saves completion and loads it back with the next scena
 {
     Game game{};
     FakeEnv env;
+    logic::ScanScenarios(game, logic::Campaign(env));
     logic::LoadProgress(game, env);
     game.m_lastUnlockedScenario = 1;
     logic::CompleteScenario(game, env);
     OBL_CHECK(env.files.count(obl::progress_file::kFileName) == 1);
-    OBL_CHECK_EQ(game.m_scenarioProgress[1], 10);
-    OBL_CHECK_EQ(game.m_scenarioProgress[2], 2);
+    OBL_CHECK(DoneOf(game, 1));
+    OBL_CHECK(StateOf(game, 2) == State::Unlocked);
 
     Game loaded{};
+    logic::ScanScenarios(loaded, logic::Campaign(env));
     logic::LoadProgress(loaded, env);
-    for (int i = 0; i < 12; ++i) OBL_CHECK_EQ(loaded.m_scenarioProgress[i], game.m_scenarioProgress[i]);
+    OBL_CHECK(loaded.m_scenarioProgress.ToJson() == game.m_scenarioProgress.ToJson());
     OBL_CHECK_EQ(loaded.m_lastUnlockedScenario, 2);
     // Sandbox mode always starts at the first entry.
     logic::SetSandbox(loaded, 1, env);
@@ -108,9 +125,10 @@ OBL_TEST_CASE("Game logic resets progress from a broken progress file")
     Game game{};
     FakeEnv env;
     env.files[obl::progress_file::kFileName] = "not json";
+    logic::ScanScenarios(game, logic::Campaign(env));
     logic::LoadProgress(game, env);
-    OBL_CHECK_EQ(game.m_scenarioProgress[0], 4);
-    OBL_CHECK_EQ(game.m_scenarioProgress[1], 2);
+    OBL_CHECK(StateOf(game, 0) == State::AlwaysAvailable);
+    OBL_CHECK(StateOf(game, 1) == State::Unlocked);
 }
 
 OBL_TEST_CASE("Game logic lists campaign and sandbox scenarios in name order")
@@ -137,10 +155,14 @@ OBL_TEST_CASE("Game logic answers the GUI variables")
     env.speed = 3;
     OBL_CHECK_EQ(Value(logic::GetVariable(game, "GAME_GAME_SPEED", env)), 3);
     OBL_CHECK_EQ(Value(logic::GetVariable(game, "GAME_GAME_SPEED_STATUS_2", env)), 1);
-    game.m_scenarioProgress[4] = 2;
-    OBL_CHECK_EQ(Value(logic::GetVariable(game, "GAME_SCENARIO_SELECT_STATUS_4", env)), 1);
-    game.m_scenarioProgress[4] = 1;
-    OBL_CHECK_EQ(Value(logic::GetVariable(game, "GAME_SCENARIO_SELECT_STATUS_4", env)), 0);
+    FakeEnv campaignEnv;
+    logic::ScanScenarios(game, logic::Campaign(campaignEnv));
+    logic::LoadProgress(game, campaignEnv);
+    OBL_CHECK_EQ(Value(logic::GetVariable(game, "GAME_SCENARIO_SELECT_STATUS_1", env)), 1);
+    OBL_CHECK_EQ(Value(logic::GetVariable(game, "GAME_SCENARIO_SELECT_STATUS_2", env)), 0);
+    // A slot the registry does not know is not selectable (it used to index past the table).
+    OBL_CHECK_EQ(Value(logic::GetVariable(game, "GAME_SCENARIO_SELECT_STATUS_3", env)), 0);
+    OBL_CHECK_EQ(Value(logic::GetVariable(game, "GAME_SCENARIO_SELECT_STATUS_40", env)), 0);
     OBL_CHECK_EQ(Value(logic::GetVariable(game, "PLAYLIST_MODE", env)), 1);
     env.manual = 2;
     OBL_CHECK(!logic::GetVariable(game, "PLAYLIST_MODE", env));

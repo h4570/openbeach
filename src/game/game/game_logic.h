@@ -23,7 +23,8 @@ template<class Env> scenario_load::Campaign Campaign(Env& env)
 template<class Env> void ResetProgress(game::Game& game, Env& env)
 {
     const scenario_load::Campaign campaign = Campaign(env);
-    game_core::Reset(game.m_scenarioProgress, game.m_lastUnlockedScenario, campaign.initiallyAvailable, campaign.alwaysAvailable);
+    game.m_scenarioProgress.Reset(campaign.initiallyAvailable, campaign.alwaysAvailable);
+    game.m_lastUnlockedScenario = 0;
 }
 
 // progress.json first; sp.bin only seeds a user who has no progress.json yet (the next save rewrites it).
@@ -33,23 +34,24 @@ template<class Env> void LoadProgress(game::Game& game, Env& env)
     ResetProgress(game, env);
     std::string text;
     if (env.ReadFile(progress_file::kFileName, text)) {
-        if (!progress_file::FromJson(text, game.m_scenarioProgress)) ResetProgress(game, env);
+        if (!game.m_scenarioProgress.FromJson(text)) ResetProgress(game, env);
     } else if (env.ReadFile(progress_file::kSeedFileName, text)) {
-        if (!progress_file::FromSeedFile(text, game.m_scenarioProgress)) ResetProgress(game, env);
+        if (!game.m_scenarioProgress.FromSeedFile(text)) ResetProgress(game, env);
     }
     const auto count = static_cast<int32_t>(Campaign(env).campaign.size());
-    game.m_lastUnlockedScenario = game_core::SelectAfterLoad(game.m_scenarioProgress, game.m_sandbox != 0, count);
+    game.m_lastUnlockedScenario = game.m_scenarioProgress.SelectAfterLoad(game.m_sandbox != 0, count);
 }
 
 template<class Env> void SaveProgress(const game::Game& game, Env& env)
 {
-    env.WriteFile(progress_file::kFileName, progress_file::ToJson(game.m_scenarioProgress));
+    env.WriteFile(progress_file::kFileName, game.m_scenarioProgress.ToJson());
 }
 
 template<class Env> void CompleteScenario(game::Game& game, Env& env)
 {
     const auto count = static_cast<int32_t>(Campaign(env).campaign.size());
-    game_core::Complete(game.m_scenarioProgress, game.m_lastUnlockedScenario, count);
+    if (const auto ref = game.m_scenarioRegistry.FindByMenuSlot(game.m_lastUnlockedScenario, scenario_load::ScenarioKind::Campaign))
+        game.m_scenarioProgress.Complete(game.m_scenarioRegistry, *ref, count);
     SaveProgress(game, env);
 }
 
@@ -94,8 +96,13 @@ template<class Env> std::optional<int> GetVariable(const game::Game& game, const
         return value;
     }
     if (!std::strcmp(name, "GAME_SCENARIO_SELECT")) return game.m_lastUnlockedScenario;
-    if (!std::strncmp(name, "GAME_SCENARIO_SELECT_STATUS_", 28))
-        return game_core::Selectable(game.m_scenarioProgress[std::atoi(name + 28)], game.m_sandbox != 0);
+    if (!std::strncmp(name, "GAME_SCENARIO_SELECT_STATUS_", 28)) {
+        // A slot the registry does not know is not selectable.
+        const bool sandbox = game.m_sandbox != 0;
+        const auto ref = game.m_scenarioRegistry.FindByMenuSlot(
+                std::atoi(name + 28), sandbox ? scenario_load::ScenarioKind::Sandbox : scenario_load::ScenarioKind::Campaign);
+        return ref && game.m_scenarioProgress.IsSelectable(game.m_scenarioRegistry, *ref, sandbox);
+    }
     // The GUI can query the speed after unloading the old world, before loading the next one.
     if (!std::strcmp(name, "GAME_GAME_SPEED")) return env.GameSpeed().value_or(0);
     if (!std::strncmp(name, "GAME_GAME_SPEED_STATUS_", 23)) return 1;

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "game/game/scenario_progress.h"
 #include "game/ui/sprite.h"
 #include "game/game/game_state_base.h"
 #include "game/ui/save_slots.h"
@@ -85,7 +86,7 @@ struct Game {
     uint8_t m_guiReloadPending; // deferred GUI reload after a resolution change, served by the game render
     Member<ui::SpriteBank> m_spriteBank; // registered in g_SpriteBank (GetSpriteBank)
     scenario_load::ScenarioRegistry m_scenarioRegistry;
-    int m_scenarioProgress[12]; // sp.bin: 1 locked, 2 unlocked, 4 always available
+    scenario_progress::ScenarioProgress m_scenarioProgress; // progress.json, seeded from sp.bin
     int m_lastUnlockedScenario;
     uint8_t m_sandbox;
     std::vector<std::unique_ptr<save_slots::Slot>> m_saveSlots; // headers of savegames\save*.dat, newest first
