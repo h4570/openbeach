@@ -167,7 +167,7 @@ const BotInfo* FindBot(std::string_view id);
 // it may play and what it must reach.
 struct BotRun {
     std::string bot;
-    std::string start; // `start scenario <name>`, the names of command::ParseStartScenario
+    std::string start; // `start scenario <name>`, resolved by ScenarioRegistry::FindByStartName
     uint32_t seed = 1;
     float fixedDt = 0.02f;
     uint32_t maxTicks = 0;

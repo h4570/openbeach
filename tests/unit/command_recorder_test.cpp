@@ -194,15 +194,3 @@ OBL_TEST_CASE("command_recorder.checkpoint_section_digests_round_trip")
     OBL_CHECK_EQ(ReadError(kHeaderText + "@1 hash 0000000000000000 tourists=0000abcd/7\n"),
             std::string("line 6: unrecognized section 'tourists'"));
 }
-
-OBL_TEST_CASE("command_recorder.start_scenario_names")
-{
-    OBL_CHECK((ParseStartScenario("s1") == StartScenario{false, 1}));
-    OBL_CHECK((ParseStartScenario("s12") == StartScenario{false, 12}));
-    OBL_CHECK((ParseStartScenario("sandbox3") == StartScenario{true, 3}));
-    OBL_CHECK((ParseStartScenario("1") == StartScenario{false, 1}));
-    OBL_CHECK((ParseStartScenario("12") == StartScenario{false, 12}));
-    for (const char* bad :
-            {"", "s", "s0", "s01", "s-1", "s+1", "s1x", "sandbox", "sandbox0", "scenario1", "x1", "S1", "0", "01", "1x", "-1", "+1"})
-        OBL_CHECK(!ParseStartScenario(bad).has_value());
-}

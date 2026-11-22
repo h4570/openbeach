@@ -219,8 +219,8 @@ std::optional<BotRun> ReadBotRun(std::string_view text, std::string* error)
         } else if (word == "start") {
             duplicate = once(haveStart, word);
             const auto [kind, name] = SplitWord(rest);
-            if (!duplicate && (kind != "scenario" || !command::ParseStartScenario(name)))
-                return fail("expected 'start scenario s<n>|sandbox<n>'");
+            if (!duplicate && (kind != "scenario" || name.empty() || name.find(' ') != std::string_view::npos))
+                return fail("expected 'start scenario <name>'"); // the host resolves the name through the scenario registry
             run.start = name;
         } else if (word == "seed") {
             duplicate = once(haveSeed, word);

@@ -60,6 +60,11 @@ public:
     std::optional<ScenarioRef> FindById(std::string_view id) const;
     std::optional<ScenarioRef> FindById(std::string_view id, ScenarioKind kind) const;
     std::optional<ScenarioRef> FindByMenuSlot(int32_t slot, ScenarioKind kind) const;
+    // What `start scenario <name>` of a replay, bot or chaos file names: `<n>` or `s<n>` = campaign menu slot n (1-based),
+    // `sandbox<n>` = sandbox menu slot n, otherwise the id of a campaign entry, then of a sandbox entry. Nothing for an unknown name.
+    std::optional<ScenarioRef> FindByStartName(std::string_view name) const;
+    // The accepted forms of FindByStartName, for error messages.
+    static const char* StartNameForms() { return "<n>, s<n>, sandbox<n> or a scenario id"; }
 
 private:
     std::vector<Entry> m_entries;

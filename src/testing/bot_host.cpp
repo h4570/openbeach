@@ -473,9 +473,10 @@ int RunBot(game::Game& game)
     const std::optional<bot::BotRun> run = LoadBotRun();
     if (!run) return kExitHeadlessFailed;
     const bot::BotInfo* info = bot::FindBot(run->bot);
-    const auto start = command::ParseStartScenario(run->start);
+    const auto start = game.m_scenarioRegistry.FindByStartName(run->start);
     if (!info || !start) {
-        Report("FAILED bot %s or start %s unrecognized", run->bot.c_str(), run->start.c_str());
+        Report("FAILED bot %s or start %s unrecognized (start names: %s)", run->bot.c_str(), run->start.c_str(),
+                scenario_load::ScenarioRegistry::StartNameForms());
         return kExitHeadlessFailed;
     }
     Report("bot %s start %s seed=%u fixed-dt=%g max-ticks=%u expect=%s", run->bot.c_str(), run->start.c_str(), run->seed, run->fixedDt,
@@ -487,7 +488,7 @@ int RunBot(game::Game& game)
         return kExitHeadlessFailed;
     }
     SetFixedDt(run->fixedDt);
-    BootNewGame(game, start->sandbox, start->island);
+    BootNewGame(game, *start);
     int bootFrames = 0;
     for (; bootFrames < kMaxBootFrames && !WorldSettled(); ++bootFrames) Update(game);
     if (!WorldSettled()) {

@@ -221,24 +221,6 @@ std::optional<Recording> ReadReplay(std::string_view text, std::string* error)
     return recorder->Result();
 }
 
-std::optional<StartScenario> ParseStartScenario(std::string_view name)
-{
-    StartScenario start;
-    std::string_view number;
-    if (name.starts_with("sandbox")) {
-        start.sandbox = true;
-        number = name.substr(7);
-    } else if (name.starts_with("s")) {
-        number = name.substr(1);
-    } else if (!name.empty() && name.front() >= '1' && name.front() <= '9') {
-        number = name; // the script recorder's `start scenario <n>`
-    } else {
-        return std::nullopt;
-    }
-    if (number.empty() || number.front() == '0' || !ParseI32(number, start.island) || start.island < 1) return std::nullopt;
-    return start;
-}
-
 std::vector<Command> ReplayCursor::Due(uint32_t tick)
 {
     std::vector<Command> due;

@@ -80,15 +80,6 @@ std::string WriteReplay(const Recording& recording);
 // Parses and validates a replay file (same order rules as Recorder). On failure `error` says "line N: why".
 std::optional<Recording> ReadReplay(std::string_view text, std::string* error = nullptr);
 
-// The new game a `start scenario <name>` names: `s<n>` or `<n>` (what the script's `record` writes) = campaign scenario n,
-// `sandbox<n>` = sandbox island n (both 1-based, what `boot-gameplay scenario|sandbox n` starts). Nothing for any other name.
-struct StartScenario {
-    bool sandbox = false;
-    int32_t island = 0;
-    bool operator==(const StartScenario&) const = default;
-};
-std::optional<StartScenario> ParseStartScenario(std::string_view name);
-
 // Hands a recording's commands to the tick loop of a replay. The recording must outlive the cursor.
 class ReplayCursor {
 public:

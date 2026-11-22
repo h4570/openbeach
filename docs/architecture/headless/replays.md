@@ -5,7 +5,7 @@
 ## What a replay run does (`src/testing/headless_sim.cpp`)
 1. The C++ WinMain (`platform_main.cpp`) builds `Game` with a null HWND instead of creating the SDL window, calls
    `RunHeadless` instead of the message loop and returns its result. No `CoInitialize`, no intro movie, no frame cap.
-2. The replay header: `start scenario <n>` or `s<n>` (campaign scenario n) or `sandbox<n>` (sandbox island n), as
+2. The replay header: `start scenario <name>`: a scenario id, `<n>` or `s<n>` (campaign scenario n) or `sandbox<n>` (sandbox island n), as
    `boot-gameplay scenario|sandbox n`; or `start save <path>` (absolute or relative to the game directory). An `obl.save`
    (JSON, detected by content) loads through `load-obl-save`, an old binary `.dat` from its bytes in
    memory (the slot list reads only `obl.save`); neither needs a slot copy, and both load at the

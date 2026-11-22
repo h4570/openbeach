@@ -199,7 +199,7 @@ private:
 // A chaos run file (`.chaos`, docs/testing/chaos-bot.md "Running it"): the start and determinism settings of a replay, how long to
 // play, where the harness saves and reloads, and optionally a fixed command list instead of the generator (a shrunk finding).
 struct ChaosRun {
-    std::string start; // `start scenario <name>`, the names of command::ParseStartScenario
+    std::string start; // `start scenario <name>`, resolved by ScenarioRegistry::FindByStartName
     uint32_t seed = 1; // the game's rand() and the bot's generator
     float fixedDt = 0.02f;
     uint32_t maxTicks = 0;

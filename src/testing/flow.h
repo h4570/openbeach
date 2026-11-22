@@ -1,5 +1,7 @@
 #pragma once
 
+#include "game/world/scenario_registry.h"
+
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -13,6 +15,8 @@ namespace obl::test {
 // What the menu's new-game buttons do: sandbox or campaign mode, island/scenario `island` (1-based), then the LoadGame state, which
 // enters gameplay on a later game_api::Update.
 void BootNewGame(game::Game& game, bool sandbox, int island);
+// The same for a registry entry (its kind and menu slot).
+void BootNewGame(game::Game& game, scenario_load::ScenarioRef scenario);
 
 // Commands that drive the game flow: boot-gameplay, speed, speed-level, speed-table.
 bool ExecuteFlowCommand(const std::string& name, const std::vector<std::string>& args);

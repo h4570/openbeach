@@ -174,6 +174,12 @@ void BootNewGame(game::Game& game, bool sandbox, int island)
     game::game_api::SetNextState(static_cast<int>(game::GameStateId::LoadGame));
 }
 
+void BootNewGame(game::Game& game, scenario_load::ScenarioRef scenario)
+{
+    const auto& entry = game.m_scenarioRegistry.Get(scenario);
+    BootNewGame(game, entry.IsSandbox(), entry.menuSlot + 1);
+}
+
 int LastScenarioBoot()
 {
     return g_lastScenarioBoot;

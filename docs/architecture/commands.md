@@ -158,8 +158,8 @@ hash-schema 2
 @312 hash fedcba9876543210
 end 1000
 ```
-- Header lines in this order: format, start state (`scenario <name>` or `save <path>`; the name is `<n>` or `s<n>`
-  for campaign scenario n, `sandbox<n>` for sandbox island n, `ParseStartScenario`), `seed`, `fixed-dt`, `hash-schema`.
+- Header lines in this order: format, start state (`scenario <name>` or `save <path>`; the name is a registry id, or
+  `<n>` / `s<n>` for campaign menu slot n, `sandbox<n>` for sandbox slot n, `ScenarioRegistry::FindByStartName`), `seed`, `fixed-dt`, `hash-schema`.
 - Body lines `@T ...`: ticks never decrease; within a tick the checkpoint comes before the commands. A checkpoint
   `@T hash <16 hex>` may carry section digests after the hash (`guests=hhhhhhhh/fields ...`, non-empty sections in
   section order, [world-hashes.md](../testing/world-hashes.md#sections)); recordings write them, readers accept files

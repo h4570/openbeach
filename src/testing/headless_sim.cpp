@@ -197,9 +197,10 @@ int RunReplay(game::Game& game)
     if (!recording) return kExitHeadlessFailed;
     const command::ReplayHeader& header = recording->header;
     const bool fromSave = header.startKind == command::StartKind::Save;
-    const auto start = fromSave ? std::nullopt : command::ParseStartScenario(header.start);
+    const auto start = fromSave ? std::nullopt : game.m_scenarioRegistry.FindByStartName(header.start);
     if (!fromSave && !start) {
-        Report("FAILED start scenario %s: only `start scenario s<n>|sandbox<n>` or `start save <path>` is supported", header.start.c_str());
+        Report("FAILED start scenario %s: accepted names: %s, or `start save <path>`", header.start.c_str(),
+                scenario_load::ScenarioRegistry::StartNameForms());
         return kExitHeadlessFailed;
     }
     if (header.hashSchema != kWorldHashSchema) {
@@ -219,7 +220,7 @@ int RunReplay(game::Game& game)
     if (fromSave) {
         if (!save.Load(header.start)) return kExitHeadlessFailed;
     } else {
-        BootNewGame(game, start->sandbox, start->island);
+        BootNewGame(game, *start);
     }
     int bootFrames = 0;
     for (; bootFrames < kMaxBootFrames && !WorldSettled(); ++bootFrames) Update(game);

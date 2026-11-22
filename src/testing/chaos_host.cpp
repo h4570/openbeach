@@ -294,7 +294,11 @@ int RunChaos()
         Report("FAILED chaos run %s: %s", PathUtf8(runPath).c_str(), readable ? error.c_str() : "cannot read the file");
         return kExitHeadlessFailed;
     }
-    const auto start = command::ParseStartScenario(run->start);
+    const auto start = game.m_scenarioRegistry.FindByStartName(run->start);
+    if (!start) {
+        Report("FAILED start %s unrecognized (start names: %s)", run->start.c_str(), scenario_load::ScenarioRegistry::StartNameForms());
+        return kExitHeadlessFailed;
+    }
     // A fixed command list (a shrunk finding) replaces the generator; its own header and checkpoints are ignored.
     std::optional<command::Recording> fixed;
     if (!run->commands.empty()) {
@@ -315,7 +319,7 @@ int RunChaos()
         return kExitHeadlessFailed;
     }
     SetFixedDt(run->fixedDt);
-    BootNewGame(game, start->sandbox, start->island);
+    BootNewGame(game, *start);
     int bootFrames = 0;
     if (!Settle(game, bootFrames)) {
         Report("FAILED the world did not settle after %d frames", bootFrames);

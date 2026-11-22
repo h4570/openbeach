@@ -617,7 +617,8 @@ std::optional<ChaosRun> ReadChaosRun(std::string_view text, std::string* error)
         if (!seen.insert(std::string(word)).second) return fail("duplicate '" + std::string(word) + "'");
         if (word == "start") {
             const auto [kind, name] = SplitWord(rest);
-            if (kind != "scenario" || !command::ParseStartScenario(name)) return fail("expected 'start scenario s<n>|sandbox<n>'");
+            if (kind != "scenario" || name.empty() || name.find(' ') != std::string_view::npos)
+                return fail("expected 'start scenario <name>'"); // the host resolves the name through the scenario registry
             run.start = name;
         } else if (word == "seed") {
             if (!ParseNumber(rest, run.seed)) return fail("bad seed '" + std::string(rest) + "'");

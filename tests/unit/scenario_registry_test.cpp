@@ -82,3 +82,24 @@ OBL_TEST_CASE("scenario_registry.rejects_missing_campaign_file")
     OBL_CHECK(!sl::ScenarioRegistry::LoadFromPack(pack.root, registry, error));
     OBL_CHECK(!error.empty());
 }
+
+OBL_TEST_CASE("scenario_registry.resolves_start_names")
+{
+    sl::Campaign campaign;
+    campaign.campaign = {"s1", "s2", "lagoon"};
+    campaign.sandboxes = {"s1", "s2", "dunes"};
+    const auto registry = sl::ScenarioRegistry::FromCampaign(campaign);
+
+    const auto name = [&](std::string_view text) { return registry.FindByStartName(text); };
+    OBL_CHECK(name("s2") == registry.FindByMenuSlot(1, sl::ScenarioKind::Campaign));
+    OBL_CHECK(name("2") == name("s2"));
+    OBL_CHECK(name("sandbox3") == registry.FindByMenuSlot(2, sl::ScenarioKind::Sandbox));
+    OBL_CHECK(name("sandbox3") != name("3"));
+    OBL_CHECK(registry.Get(*name("lagoon")).id == "lagoon");
+    OBL_CHECK(!registry.Get(*name("lagoon")).IsSandbox());
+    OBL_CHECK(registry.Get(*name("dunes")).IsSandbox());
+    // Unknown ids and malformed or out-of-range numbers resolve to nothing.
+    for (const char* bad : {"", "s", "s0", "s01", "s-1", "s1x", "s4", "4", "sandbox", "sandbox0", "sandbox4", "S1", "x1", "mesa", "0", "01",
+                 "+1", "-1", "scenario1"})
+        OBL_CHECK(!name(bad).has_value());
+}

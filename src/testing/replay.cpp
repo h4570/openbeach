@@ -4,6 +4,7 @@
 #include "game/game/command_recorder.h"
 #include "determinism.h"
 #include "flow.h"
+#include "test_util.h"
 #include "building_events.h"
 #include "game/ui/save_slots.h"
 #include "game/ui/save_slot_header.h"
@@ -348,7 +349,9 @@ bool StartReplay(const std::vector<std::string>& args)
         return false;
     }
     const command::ReplayHeader& header = recording->header;
-    const auto start = header.startKind == command::StartKind::Scenario ? command::ParseStartScenario(header.start) : std::nullopt;
+    const game::Game* game = Game();
+    const auto start = game && header.startKind == command::StartKind::Scenario ? game->m_scenarioRegistry.FindByStartName(header.start)
+                                                                                : std::nullopt;
     const bool save = header.startKind == command::StartKind::Save;
     if ((!save && !start) || header.hashSchema != kWorldHashSchema || header.fixedDt <= 0 || recording->endTick == 0) {
         OBL_LOG("autotest: FAILED replay %s (needs a scenario or save start, hash-schema %d, fixed-dt > 0 and at least one "
@@ -367,7 +370,8 @@ bool StartReplay(const std::vector<std::string>& args)
             return false;
         }
     } else {
-        ExecuteFlowCommand("boot-gameplay", {start->sandbox ? "sandbox" : "scenario", std::to_string(start->island)});
+        const auto& entry = game->m_scenarioRegistry.Get(*start);
+        ExecuteFlowCommand("boot-gameplay", {entry.IsSandbox() ? "sandbox" : "scenario", std::to_string(entry.menuSlot + 1)});
     }
     g_session.Replay(file, std::move(*recording), allowMismatch);
     return true;

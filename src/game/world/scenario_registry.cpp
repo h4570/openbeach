@@ -77,4 +77,25 @@ std::optional<ScenarioRef> ScenarioRegistry::FindByMenuSlot(int32_t slot, Scenar
     return std::nullopt;
 }
 
+std::optional<ScenarioRef> ScenarioRegistry::FindByStartName(std::string_view name) const
+{
+    // A 1-based decimal without sign, zero or leading zeros ("s01" is not slot 1).
+    const auto slotOf = [](std::string_view digits) -> std::optional<int32_t> {
+        if (digits.empty() || digits.size() > 6 || digits.front() == '0') return std::nullopt;
+        int32_t value = 0;
+        for (const char c : digits) {
+            if (c < '0' || c > '9') return std::nullopt;
+            value = value * 10 + (c - '0');
+        }
+        return value - 1;
+    };
+    if (name.starts_with("sandbox")) {
+        if (const auto slot = slotOf(name.substr(7))) return FindByMenuSlot(*slot, ScenarioKind::Sandbox);
+    } else if (const auto slot = slotOf(name.starts_with('s') ? name.substr(1) : name)) {
+        return FindByMenuSlot(*slot, ScenarioKind::Campaign);
+    }
+    if (const auto ref = FindById(name, ScenarioKind::Campaign)) return ref;
+    return FindById(name, ScenarioKind::Sandbox);
+}
+
 } // namespace obl::scenario_load
