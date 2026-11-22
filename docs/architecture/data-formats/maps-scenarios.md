@@ -117,7 +117,7 @@ The engine reads the order from this file (`scenario_load::LoadCampaign`): the m
 availability lists as menu indices, and a world loads the scenario id it names. The file must hold 12 entries of each list
 (the progress table has 12 slots) and the availability lists must name campaign entries. The engine supports
 `unlock: sequential` and `sandbox_unlock: campaign_completed_or_always` only; their unlock rules stay code in `game_core`
-(`Selectable`, `Complete`), so a pack asking for another rule is refused. The save header keeps the menu index, not the id.
+(`Selectable`, `Complete`), so a pack asking for another rule is refused.
 `data.campaign_load_matches_engine` checks the file's order and start progress against the built-in order it replaced, and
 `data.campaign_order_comes_from_the_file` checks that a reordered campaign drives the engine instead.
 

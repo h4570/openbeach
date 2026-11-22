@@ -115,8 +115,7 @@ void Reset(Game* game)
 }
 int32_t CampaignCount()
 {
-    ProgressEnv env;
-    return static_cast<int32_t>(game_logic::Campaign(env).campaign.size());
+    return GetGame()->m_scenarioRegistry.CampaignCount();
 }
 void Load(Game* game)
 {
@@ -158,11 +157,11 @@ void SetReturn(Game* game, uint8_t value)
 }
 int Count(Game* game)
 {
-    return static_cast<int>(game->m_scenarios.size());
+    return game->m_scenarioRegistry.ListCount();
 }
 const char16_t* Scenario(Game* game, int index)
 {
-    return game->m_scenarios[index].c_str();
+    return game->m_scenarioRegistry.ListName(index).c_str();
 }
 uint8_t Always(Game* game, int index)
 {
@@ -863,7 +862,7 @@ void CheckConstructed(const Game& game, const Game* result, HINSTANCE__*, void* 
     LoadCampaignOrFatal(campaign);
     const size_t scenarios = campaign.campaign.size() + campaign.sandboxes.size();
     std::error_code error;
-    check(game.m_scenarios.size() == scenarios && scenarios > 0, "scenario count");
+    check(game.m_scenarioRegistry.ListCount() == static_cast<int32_t>(scenarios) && scenarios > 0, "scenario count");
     check(game.m_lastUnlockedScenario == game_core::SelectAfterLoad(game.m_scenarioProgress, false, CampaignCount()), "scenario selection");
     check(std::filesystem::is_directory(os::ResolvePath("photos"), error) &&
                     std::filesystem::is_directory(os::ResolvePath("SaveGames"), error),

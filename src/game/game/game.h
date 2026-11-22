@@ -4,6 +4,8 @@
 #include "game/game/game_state_base.h"
 #include "game/ui/save_slots.h"
 
+#include "game/world/scenario_registry.h"
+
 #include <array>
 #include <memory>
 #include <string>
@@ -82,7 +84,7 @@ struct Game {
     Member<Settings> m_settings; // settings_store::Create; the game destructor saves it first
     uint8_t m_guiReloadPending; // deferred GUI reload after a resolution change, served by the game render
     Member<ui::SpriteBank> m_spriteBank; // registered in g_SpriteBank (GetSpriteBank)
-    std::vector<std::u16string> m_scenarios;
+    scenario_load::ScenarioRegistry m_scenarioRegistry;
     int m_scenarioProgress[12]; // sp.bin: 1 locked, 2 unlocked, 4 always available
     int m_lastUnlockedScenario;
     uint8_t m_sandbox;

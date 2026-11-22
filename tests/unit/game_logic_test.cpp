@@ -117,12 +117,11 @@ OBL_TEST_CASE("Game logic lists campaign and sandbox scenarios in name order")
 {
     Game game{};
     FakeEnv env;
-    game.m_scenarios.push_back(u"stale");
     logic::ScanScenarios(game, logic::Campaign(env));
-    OBL_REQUIRE(game.m_scenarios.size() == 5);
-    OBL_CHECK(game.m_scenarios[0] == u"SandScenario1");
-    OBL_CHECK(game.m_scenarios[2] == u"Scenario1");
-    OBL_CHECK(game.m_scenarios[4] == u"Scenario3");
+    OBL_REQUIRE(game.m_scenarioRegistry.ListCount() == 5);
+    OBL_CHECK(game.m_scenarioRegistry.ListName(0) == u"SandScenario1");
+    OBL_CHECK(game.m_scenarioRegistry.ListName(2) == u"Scenario1");
+    OBL_CHECK(game.m_scenarioRegistry.ListName(4) == u"Scenario3");
 }
 
 OBL_TEST_CASE("Game logic answers the GUI variables")

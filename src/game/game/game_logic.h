@@ -63,10 +63,7 @@ template<class Env> void SetSandbox(game::Game& game, uint8_t sandbox, Env& env)
 // Data/Scenario tree. The names are ASCII, so widening is a plain cast.
 inline void ScanScenarios(game::Game& game, const scenario_load::Campaign& campaign)
 {
-    game.m_scenarios.clear();
-    for (const std::string& entry :
-            game_core::ScenarioListNames(static_cast<int32_t>(campaign.campaign.size()), static_cast<int32_t>(campaign.sandboxes.size())))
-        game.m_scenarios.emplace_back(entry.begin(), entry.end());
+    game.m_scenarioRegistry = scenario_load::ScenarioRegistry::FromCampaign(campaign);
 }
 
 // Variable env (Game::GetVariable):

@@ -11,6 +11,8 @@ add_library(obl_common STATIC
     objects/guest_sets.h
     world/scenario_load.cpp
     world/scenario_load.h
+    world/scenario_registry.cpp
+    world/scenario_registry.h
     ../platform/renderer_jpeg.cpp
     ui/gui_manager_dialogs.h
     ui/gui_manager_buttons.h

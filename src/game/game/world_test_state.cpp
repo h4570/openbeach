@@ -279,10 +279,13 @@ void EnterWorld(WorldTestState* state)
     game::Game* game = GetGame();
     state->m_entered = 1;
     SetSoftwareCursor(false);
-    // The scenario by its id (s3, sandbox3): the menu index the save holds names the entry of the campaign order the pack's campaign.json gives.
-    scenario_load::Campaign campaign;
-    LoadCampaignOrFatal(campaign);
-    const std::string scenarioId = campaign.Id(game->m_lastUnlockedScenario, game->m_sandbox != 0);
+    const auto kind = game->m_sandbox ? scenario_load::ScenarioKind::Sandbox : scenario_load::ScenarioKind::Campaign;
+    const auto ref = game->m_scenarioRegistry.FindByMenuSlot(game->m_lastUnlockedScenario, kind);
+    if (!ref) {
+        OBL_LOG("Scenario: unknown slot %d", game->m_lastUnlockedScenario);
+        std::abort();
+    }
+    const std::string& scenarioId = game->m_scenarioRegistry.Get(*ref).id;
     if (state->m_loadingSave) {
         char screen[128];
         ::obl::ui::host_text::PrintNarrow(screen, "data/screens/loading_%d.tga", Rand() % 2 + 1);

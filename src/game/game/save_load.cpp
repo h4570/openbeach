@@ -239,12 +239,18 @@ bool WriteHeaderJson(const formats::SaveOrigin& origin, const world_save::JsonCo
 {
     const Game& game = *GetGame();
     const world::World& world = *GetWorld();
-    const int scenario = game.m_lastUnlockedScenario;
+    const auto kind = game.m_sandbox ? scenario_load::ScenarioKind::Sandbox : scenario_load::ScenarioKind::Campaign;
+    const auto ref = game.m_scenarioRegistry.FindByMenuSlot(game.m_lastUnlockedScenario, kind);
+    if (!ref) {
+        error = "header: unknown scenario slot " + std::to_string(game.m_lastUnlockedScenario);
+        return false;
+    }
+    const auto& entry = game.m_scenarioRegistry.Get(*ref);
     h = nlohmann::ordered_json::object();
     h["saved_at"] = timestamp;
-    h["scenario"] = (game.m_sandbox ? "sandbox" : "s") + std::to_string(scenario + 1);
-    h["sandbox"] = game.m_sandbox != 0;
-    const std::string title = game.m_sandbox ? save_slots::SandboxTitleKey(scenario) : world.m_scenarioTitle;
+    h["scenario"] = entry.id;
+    h["sandbox"] = entry.IsSandbox();
+    const std::string title = entry.IsSandbox() ? entry.textKeys.title : world.m_scenarioTitle;
     const std::string_view stored = std::string_view(title).substr(0, title.find('\0'));
     const bool isKey = !stored.empty() && std::all_of(stored.begin(), stored.end(), [](char c) {
         return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_' || c == '.' || c == '-';
@@ -666,14 +672,15 @@ bool QueueOblSave(const std::filesystem::path& file, std::string& error)
     // Every section and object is read from the document (world::LoadFromSave); the header names the scenario.
     const nlohmann::json& header = load->document.at("header");
     const std::string scenario = header.at("scenario").get<std::string>();
-    const size_t digits = scenario.find_first_of("0123456789");
-    if (digits == std::string::npos) {
-        error = "header: scenario " + scenario + " has no number";
+    const bool sandbox = header.at("sandbox").get<bool>();
+    const auto kind = sandbox ? scenario_load::ScenarioKind::Sandbox : scenario_load::ScenarioKind::Campaign;
+    const auto ref = GetGame()->m_scenarioRegistry.FindById(scenario, kind);
+    if (!ref) {
+        error = "header: unknown scenario \"" + scenario + "\"";
         return false;
     }
     ui::PendingLoad pending;
-    pending.scenario = std::atoi(scenario.c_str() + digits) - 1;
-    pending.sandbox = header.at("sandbox").get<bool>();
+    pending.scenario = *ref;
     pending.beforeLoad = [load] { g_activeLoad = load; };
     pending.afterLoad = [load, fields = ReadDroppedFields(load->document)] {
         g_activeLoad = nullptr;

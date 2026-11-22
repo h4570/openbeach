@@ -1,6 +1,7 @@
 #pragma once
 
 #include "game/ui/gui_sort.h"
+#include "game/world/scenario_registry.h"
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
@@ -97,8 +98,7 @@ namespace obl::ui {
 bool RegisterSaveSlotDrivers();
 // Callbacks bracket world construction and restoration of the loaded objects.
 struct PendingLoad {
-    int scenario = 0;
-    bool sandbox = false;
+    scenario_load::ScenarioRef scenario;
     std::function<void()> beforeLoad, afterLoad;
 };
 void QueueSaveLoad(PendingLoad load);

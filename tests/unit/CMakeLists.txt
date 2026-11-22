@@ -347,6 +347,7 @@ add_executable(obl_unit_tests
     convert_save_stream_test.cpp
     convert_image_test.cpp
     convert_scenario_test.cpp
+    scenario_registry_test.cpp
     convert_map_test.cpp
     convert_map_decode_test.cpp
     convert_pack_test.cpp

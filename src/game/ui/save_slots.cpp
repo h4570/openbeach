@@ -243,7 +243,7 @@ void DeleteLoad(game::Game* game)
 
 // The obl.save load queued by QueueSaveLoad; LoadPending loads it instead of a slot file.
 std::optional<PendingLoad> g_pendingLoad;
-void LoadWorld(game::Game* game, int scenario, bool sandbox);
+void LoadWorld(game::Game* game, scenario_load::ScenarioRef scenario);
 void LoadPending(game::Game* game)
 {
     if (g_pendingLoad) {
@@ -252,7 +252,7 @@ void LoadPending(game::Game* game)
         Clear(game);
         game->m_loadSlot = -1;
         if (load.beforeLoad) load.beforeLoad();
-        LoadWorld(game, load.scenario, load.sandbox);
+        LoadWorld(game, load.scenario);
         if (load.afterLoad) load.afterLoad();
         return;
     }
@@ -269,14 +269,15 @@ void LoadPending(game::Game* game)
     }
     LoadPending(game);
 }
-void LoadWorld(game::Game* game, int scenario, bool sandbox)
+void LoadWorld(game::Game* game, scenario_load::ScenarioRef scenario)
 {
+    const auto& entry = game->m_scenarioRegistry.Get(scenario);
     game->m_currentState->Exit();
-    game->m_sandbox = sandbox;
+    game->m_sandbox = entry.IsSandbox() ? 1 : 0;
     game::game_api::LoadScenarioProgress();
     auto& worldTest = static_cast<game::WorldTestState&>(*game->m_states[static_cast<int>(game::GameStateId::WorldTest)]);
     game->m_currentState = game->m_nextState = &worldTest;
-    game->m_lastUnlockedScenario = scenario;
+    game->m_lastUnlockedScenario = entry.menuSlot;
     worldTest.m_loadingSave = 1;
     worldTest.Enter();
     obl::ui::renderer::SetGuiBarHeight(game::GetRenderer(), 0);
