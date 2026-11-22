@@ -1,1 +1,1 @@
-The rules for agents are in [CLAUDE.md](CLAUDE.md).
+Before doing any work, read [CLAUDE.md](CLAUDE.md) and, if it exists, `CLAUDE.local.md`.
