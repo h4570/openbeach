@@ -12,26 +12,44 @@ namespace obl::mod_pack {
 
 inline constexpr const char* kFormat = "obl.mod";
 inline constexpr int kVersion = 1;
+// The newest presentation script API the game offers (docs/modding/reference/scripting.md); a mod naming a newer one is refused.
+inline constexpr int kPresentationApi = 1;
+// Where a mod's presentation scripts live, relative to its directory.
+inline constexpr const char* kPresentationScripts = "scripts/presentation";
+
+// What a mod may change. A world mod is recorded in saves and replays; a presentation mod reaches the simulation only through
+// game commands, so it ships no data the simulation reads and saves and replays leave it out (docs/architecture/mods/index.md).
+enum class Scope { World, Presentation };
 
 struct Manifest {
     std::string id;
     std::string title;
     std::string modVersion;
-    std::string pack; // the pack id the mod was made for
+    std::vector<std::string> packs; // the pack ids the mod starts on (`pack` or `packs`)
     std::vector<std::string> requiredMods; // mod ids that must be active and earlier in the load order
+    Scope scope = Scope::World;
+    int api = 0; // the presentation API version the scripts were written for; 0 when the manifest names none
 };
 
 // What the start-up check learned about an active mod.
 struct ActiveMod {
     Manifest manifest;
     std::string hash; // pack_path::ModContentHash, computed once
+    std::filesystem::path directory; // `<game dir>/mods/<id>`
 };
+
+// Whether saves and replays record the mod: only world mods change what the simulation computes.
+inline bool Recorded(const ActiveMod& mod)
+{
+    return mod.manifest.scope == Scope::World;
+}
 
 // False with `error` when `text` is not a valid mod.json.
 bool ParseManifest(std::string_view text, Manifest& manifest, std::string& error);
 
 // Checks that every id in `active` names an existing mod directory with a valid manifest whose id is the directory name,
-// targets `packId`, and whose `requires` are active and earlier. On success `mods` holds them in load order; on failure
+// lists `packId`, and whose `requires` are active and earlier; a presentation mod ships only what that scope allows, and a mod
+// with presentation scripts names an API version the game has. On success `mods` holds them in load order; on failure
 // `error` names the mod and the reason.
 bool CheckActive(const std::filesystem::path& gameDirectory, std::string_view packId, std::span<const std::string> active,
         std::vector<ActiveMod>& mods, std::string& error);

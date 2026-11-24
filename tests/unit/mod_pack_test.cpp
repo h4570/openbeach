@@ -121,3 +121,103 @@ OBL_TEST_CASE("mod_pack.hash_follows_names_and_contents")
     Write(game.path / "m" / "c.txt", "");
     OBL_CHECK(pack_path::ModContentHash(game.path / "m") != first);
 }
+
+namespace {
+
+void WriteManifest(const std::filesystem::path& game, const std::string& id, const std::string& fields)
+{
+    Write(game / "mods" / id / "mod.json",
+            "{\"format\":\"obl.mod\",\"version\":1,\"id\":\"" + id + "\",\"title\":\"T\",\"mod_version\":\"1\"," + fields + "}");
+}
+
+bool Accepted(const std::filesystem::path& game, const std::string& pack, const std::string& id, std::string& error)
+{
+    std::vector<mod_pack::ActiveMod> mods;
+    const std::vector<std::string> list = {id};
+    return mod_pack::CheckActive(game, pack, list, mods, error);
+}
+
+} // namespace
+
+OBL_TEST_CASE("mod_pack.a_mod_listing_several_packs_starts_on_each")
+{
+    test::TempPath game("mod-packs");
+    WriteManifest(game.path, "any", "\"packs\":[\"base\",\"l0\"]");
+    std::string error;
+    OBL_CHECK(Accepted(game.path, "base", "any", error));
+    OBL_CHECK(Accepted(game.path, "l0", "any", error));
+    OBL_CHECK(!Accepted(game.path, "other", "any", error));
+    OBL_CHECK(error.find("\"base\", \"l0\"") != std::string::npos);
+
+    WriteManifest(game.path, "both", "\"pack\":\"l0\",\"packs\":[\"l0\"]");
+    OBL_CHECK(!Accepted(game.path, "l0", "both", error) && error.find("both") != std::string::npos);
+    WriteManifest(game.path, "none", "\"scope\":\"world\"");
+    OBL_CHECK(!Accepted(game.path, "l0", "none", error) && error.find("missing") != std::string::npos);
+    WriteManifest(game.path, "empty", "\"packs\":[]");
+    OBL_CHECK(!Accepted(game.path, "l0", "empty", error));
+    WriteManifest(game.path, "badscope", "\"pack\":\"l0\",\"scope\":\"sim\"");
+    OBL_CHECK(!Accepted(game.path, "l0", "badscope", error) && error.find("scope") != std::string::npos);
+}
+
+OBL_TEST_CASE("mod_pack.a_presentation_mod_ships_no_simulation_data")
+{
+    test::TempPath game("mod-scope");
+    const std::string fields = "\"packs\":[\"l0\"],\"scope\":\"presentation\",\"api\":1";
+    WriteManifest(game.path, "look", fields);
+    Write(game.path / "mods/look/scripts/presentation/main.lua", "");
+    Write(game.path / "mods/look/scripts/presentation/lib/util.lua", "");
+    Write(game.path / "mods/look/text/en.patch.json", "{}");
+    Write(game.path / "mods/look/README.md", "");
+    Write(game.path / "mods/look/LICENSE", "");
+    std::string error;
+    OBL_CHECK(Accepted(game.path, "l0", "look", error));
+    std::vector<mod_pack::ActiveMod> mods;
+    const std::vector<std::string> list = {"look"};
+    OBL_REQUIRE(mod_pack::CheckActive(game.path, "l0", list, mods, error));
+    OBL_CHECK(mods[0].manifest.scope == mod_pack::Scope::Presentation);
+    OBL_CHECK(!mod_pack::Recorded(mods[0])); // saves and replays leave it out
+    OBL_CHECK(mods[0].directory == game.path / "mods" / "look");
+
+    const auto refused = [&](const std::string& file) {
+        WriteManifest(game.path, "data", fields);
+        Write(game.path / "mods/data" / file, "{}");
+        const bool ok = Accepted(game.path, "l0", "data", error);
+        OBL_CHECK(!ok);
+        OBL_CHECK(error.find(file) != std::string::npos);
+        std::filesystem::remove_all(game.path / "mods/data");
+    };
+    refused("catalog/buildings/kiosk.json");
+    refused("catalog/index.patch.json");
+    refused("rules/world.json");
+    refused("scenarios/1/scenario.json");
+    refused("scripts/world/x.wsc");
+    refused("sprites/kiosk.json");
+    refused("text/en.json"); // a whole table could change existing texts
+    refused("text/sub/en.patch.json");
+
+    // A world mod (the default scope) may ship all of it and is recorded.
+    WriteManifest(game.path, "world", "\"pack\":\"l0\"");
+    Write(game.path / "mods/world/catalog/buildings/kiosk.json", "{}");
+    OBL_CHECK(Accepted(game.path, "l0", "world", error));
+}
+
+OBL_TEST_CASE("mod_pack.a_mod_needing_a_newer_api_is_refused")
+{
+    test::TempPath game("mod-api");
+    WriteManifest(
+            game.path, "future", "\"pack\":\"l0\",\"scope\":\"presentation\",\"api\":" + std::to_string(mod_pack::kPresentationApi + 1));
+    std::string error;
+    OBL_CHECK(!Accepted(game.path, "l0", "future", error));
+    OBL_CHECK(error.find("future") != std::string::npos);
+    OBL_CHECK(error.find("API " + std::to_string(mod_pack::kPresentationApi + 1)) != std::string::npos);
+
+    // Scripts need the version they were written for.
+    WriteManifest(game.path, "unversioned", "\"pack\":\"l0\",\"scope\":\"presentation\"");
+    Write(game.path / "mods/unversioned/scripts/presentation/main.lua", "");
+    OBL_CHECK(!Accepted(game.path, "l0", "unversioned", error) && error.find("api") != std::string::npos);
+    WriteManifest(game.path, "zero", "\"pack\":\"l0\",\"api\":0");
+    OBL_CHECK(!Accepted(game.path, "l0", "zero", error));
+    WriteManifest(game.path, "current", "\"pack\":\"l0\",\"api\":1");
+    Write(game.path / "mods/current/scripts/presentation/main.lua", "");
+    OBL_CHECK(Accepted(game.path, "l0", "current", error));
+}

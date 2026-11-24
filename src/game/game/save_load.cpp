@@ -655,7 +655,9 @@ bool ReadActiveSavePackOrigin(formats::SaveOrigin& origin, std::string& error)
 {
     if (!formats::ReadSavePackOrigin(PackRoot(), origin, error)) return false;
     origin.mods.clear();
-    for (const mod_pack::ActiveMod& mod : mod_pack::Active()) origin.mods.push_back({mod.manifest.id, mod.manifest.modVersion, mod.hash});
+    // Presentation mods change nothing the save holds, so a save neither records nor asks for them.
+    for (const mod_pack::ActiveMod& mod : mod_pack::Active())
+        if (mod_pack::Recorded(mod)) origin.mods.push_back({mod.manifest.id, mod.manifest.modVersion, mod.hash});
     return true;
 }
 

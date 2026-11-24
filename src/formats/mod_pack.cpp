@@ -28,6 +28,86 @@ bool ReadString(const nlohmann::json& doc, const char* key, std::string& out, st
     return true;
 }
 
+// The pack ids of `pack` (one) or `packs` (a list, for a mod that does not depend on content), never both.
+bool ReadPacks(const nlohmann::json& doc, std::vector<std::string>& packs, std::string& error)
+{
+    const auto one = doc.find("pack");
+    const auto many = doc.find("packs");
+    if (one != doc.end() && many != doc.end()) {
+        error = "names both \"pack\" and \"packs\"";
+        return false;
+    }
+    if (one != doc.end()) {
+        std::string pack;
+        if (!ReadString(doc, "pack", pack, error)) return false;
+        packs.push_back(pack);
+    } else if (many != doc.end()) {
+        if (!many->is_array() || many->empty()) {
+            error = "packs is not a non-empty array";
+            return false;
+        }
+        for (const auto& item : *many) {
+            if (!item.is_string()) {
+                error = "packs holds something that is not a pack id";
+                return false;
+            }
+            packs.push_back(item.get<std::string>());
+        }
+    } else {
+        error = "\"pack\" or \"packs\" is missing";
+        return false;
+    }
+    for (const std::string& pack : packs)
+        if (!pack_path::PackDirectory(pack)) {
+            error = "pack \"" + pack + "\" is not a pack id";
+            return false;
+        }
+    return true;
+}
+
+bool IsFile(const std::filesystem::path& path)
+{
+    std::error_code ec;
+    return std::filesystem::is_regular_file(path, ec);
+}
+
+// Whether `relative` (a generic path inside the mod) is a file a presentation mod may ship: the manifest, its scripts, text
+// patches (the text loader lets them only add keys) and documents at the top. Anything else may reach the simulation: a sprite's
+// frame count times an animation, a sound bank's size changes a random pick.
+bool PresentationMayShip(const std::string& relative)
+{
+    if (relative == "mod.json") return true;
+    if (relative.starts_with(std::string(kPresentationScripts) + "/")) return true;
+    if (relative.starts_with("text/") && relative.find('/', 5) == std::string::npos && relative.ends_with(".patch.json")) return true;
+    if (relative.find('/') == std::string::npos) {
+        const std::string extension = std::filesystem::path(relative).extension().string();
+        return extension.empty() || extension == ".md" || extension == ".txt";
+    }
+    return false;
+}
+
+// The first file of the mod a presentation mod may not ship, in name order; empty when there is none.
+std::string FirstRefusedFile(const std::filesystem::path& directory)
+{
+    std::vector<std::string> refused;
+    std::error_code ec;
+    for (std::filesystem::recursive_directory_iterator it(directory, ec), end; !ec && it != end; it.increment(ec)) {
+        if (it->is_directory(ec)) continue;
+        const std::string relative = it->path().lexically_relative(directory).generic_string();
+        if (!PresentationMayShip(relative)) refused.push_back(relative);
+    }
+    if (refused.empty()) return {};
+    return *std::min_element(refused.begin(), refused.end());
+}
+
+bool HasPresentationScripts(const std::filesystem::path& directory)
+{
+    std::error_code ec;
+    for (std::filesystem::directory_iterator it(directory / kPresentationScripts, ec), end; !ec && it != end; it.increment(ec))
+        if (it->path().extension() == ".lua" && IsFile(it->path())) return true;
+    return false;
+}
+
 } // namespace
 
 bool ParseManifest(std::string_view text, Manifest& manifest, std::string& error)
@@ -49,15 +129,27 @@ bool ParseManifest(std::string_view text, Manifest& manifest, std::string& error
     }
     Manifest m;
     if (!ReadString(doc, "id", m.id, error) || !ReadString(doc, "title", m.title, error) ||
-            !ReadString(doc, "mod_version", m.modVersion, error) || !ReadString(doc, "pack", m.pack, error))
+            !ReadString(doc, "mod_version", m.modVersion, error) || !ReadPacks(doc, m.packs, error))
         return false;
     if (!pack_path::PackDirectory(m.id)) {
         error = "id \"" + m.id + "\" is not a mod id (lowercase letters, digits, _ and -)";
         return false;
     }
-    if (!pack_path::PackDirectory(m.pack)) {
-        error = "pack \"" + m.pack + "\" is not a pack id";
-        return false;
+    if (const auto it = doc.find("scope"); it != doc.end()) {
+        const std::string scope = it->is_string() ? it->get<std::string>() : std::string();
+        if (scope == "presentation")
+            m.scope = Scope::Presentation;
+        else if (scope != "world") {
+            error = "scope is not \"world\" or \"presentation\"";
+            return false;
+        }
+    }
+    if (const auto it = doc.find("api"); it != doc.end()) {
+        if (!it->is_number_integer() || it->get<int64_t>() < 1 || it->get<int64_t>() > 1000000) {
+            error = "api is not a positive integer";
+            return false;
+        }
+        m.api = it->get<int>();
     }
     if (const auto it = doc.find("requires"); it != doc.end()) {
         if (!it->is_array()) {
@@ -95,8 +187,21 @@ bool CheckActive(const std::filesystem::path& gameDirectory, std::string_view pa
         std::string reason;
         if (!ParseManifest(text, mod.manifest, reason)) return fail(reason);
         if (mod.manifest.id != id) return fail("mod.json names the id \"" + mod.manifest.id + "\"");
-        if (mod.manifest.pack != packId)
-            return fail("made for the pack \"" + mod.manifest.pack + "\", not \"" + std::string(packId) + "\"");
+        const auto& packs = mod.manifest.packs;
+        if (std::find(packs.begin(), packs.end(), packId) == packs.end()) {
+            std::string names;
+            for (const std::string& pack : packs) names += (names.empty() ? "\"" : ", \"") + pack + "\"";
+            return fail("made for the pack " + names + ", not \"" + std::string(packId) + "\"");
+        }
+        if (mod.manifest.scope == Scope::Presentation)
+            if (const std::string file = FirstRefusedFile(*directory); !file.empty())
+                return fail("a presentation mod may not ship \"" + file +
+                        "\" (only scripts/presentation/, text/<lang>.patch.json and documents at the top)");
+        if (mod.manifest.api > kPresentationApi)
+            return fail("needs the presentation script API " + std::to_string(mod.manifest.api) + ", this game has " +
+                    std::to_string(kPresentationApi) + "; update the game");
+        if (mod.manifest.api == 0 && HasPresentationScripts(*directory))
+            return fail("ships presentation scripts but names no \"api\" in mod.json");
         for (const std::string& need : mod.manifest.requiredMods) {
             const bool earlier = std::any_of(mods.begin(), mods.end(), [&](const ActiveMod& m) { return m.manifest.id == need; });
             if (!earlier) {
@@ -105,6 +210,7 @@ bool CheckActive(const std::filesystem::path& gameDirectory, std::string_view pa
                                   : "requires \"" + need + "\", which is not active");
             }
         }
+        mod.directory = *directory;
         mod.hash = pack_path::ModContentHash(*directory);
         if (mod.hash.empty()) return fail("a file cannot be read");
         mods.push_back(std::move(mod));

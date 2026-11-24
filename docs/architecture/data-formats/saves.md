@@ -85,7 +85,8 @@ save written without mods is byte for byte what it was before mods existed.
   `QueueOblSave` fails with the message.
 - The game never turns mods on to match a save. The list a loaded save came with is not kept: the next save records the mods that are
   active then.
-- Mods that cannot change the simulation (a presentation-only scope, when manifests get one) do not belong in the list.
+- Presentation mods (`"scope": "presentation"`) cannot change the simulation and are not in the list (`mod_pack::Recorded`); a
+  save neither records nor asks for them.
 
 ## Initial schema and implementation boundary
 `data/schemas/save.schema.json` defines the envelope, pack identity, scalar world state, histories, grid arrays,

@@ -4,6 +4,7 @@
 
 #include "core/pack_path.h"
 #include "game/tables/text_load.h"
+#include "formats/mod_pack.h"
 #include "core/ini_file.h"
 #include "game/game/settings_ini.h"
 #include "temp_dir.h"
@@ -279,4 +280,29 @@ OBL_TEST_CASE("text_load.malformed_mod_patch_names_mod_file_and_key")
     Write(patch, R"({"format":"obl.text","version":1,"entries":{}})");
     OBL_CHECK(!text_load::LoadPack(pack, "en", entries, error));
     OBL_CHECK(error.find("unknown format") != std::string::npos);
+}
+
+OBL_TEST_CASE("text_load.presentation_mod_patch_only_adds_keys")
+{
+    ModsGuard guard;
+    const obl::test::TempPath game("obl_text_patch_presentation");
+    const auto pack = game.path / "packs" / "l0";
+    Write(pack / "text/en.json", R"({"format":"obl.text","version":1,"language":"en","entries":[["A","base a"]]})");
+    Write(game.path / "mods/look/text/en.patch.json", Patch(R"({"LOOK_NEW":"new"})"));
+    mod_pack::ActiveMod look;
+    look.manifest.id = "look";
+    look.manifest.scope = mod_pack::Scope::Presentation;
+    mod_pack::OverrideActive({look});
+    pack_path::SetActiveMods({"look"});
+    std::vector<text::Entry> entries;
+    std::string error;
+    OBL_CHECK(text_load::LoadPack(pack, "en", entries, error));
+    OBL_CHECK_EQ(entries.size(), 2u);
+
+    // Feedback messages keep their formatted text in the world hash: a presentation mod must not change an existing value.
+    Write(game.path / "mods/look/text/en.patch.json", Patch(R"({"a":"changed"})"));
+    OBL_CHECK(!text_load::LoadPack(pack, "en", entries, error));
+    OBL_CHECK(error.find("look") != std::string::npos);
+    OBL_CHECK(error.find("only add keys") != std::string::npos);
+    mod_pack::RestoreActive();
 }

@@ -3,6 +3,7 @@
 
 #include "unit_test.h"
 
+#include "formats/mod_pack.h"
 #include "game/game/command_recorder.h"
 
 using namespace obl::command;
@@ -241,4 +242,20 @@ OBL_TEST_CASE("command_recorder.check_replay_mods_names_the_difference")
     OBL_CHECK(CheckReplayMods(none, ab).find("mod b is active, the recording had no such mod") != std::string::npos);
     OBL_CHECK(CheckReplayMods(ab, {{"a", "01"}, {"b", "99"}}).find("mod b has other content") != std::string::npos);
     OBL_CHECK(CheckReplayMods(ab, {{"b", "02"}, {"a", "01"}}).find("another load order") != std::string::npos);
+}
+
+OBL_TEST_CASE("command_recorder.presentation_mods_stay_out_of_replays")
+{
+    // A presentation mod reaches the world only through commands, which the replay holds, so the replay must not need it.
+    obl::mod_pack::ActiveMod world, look;
+    world.manifest.id = "world_fix";
+    world.hash = std::string(64, 'a');
+    look.manifest.id = "look";
+    look.manifest.scope = obl::mod_pack::Scope::Presentation;
+    look.hash = std::string(64, 'b');
+    obl::mod_pack::OverrideActive({look, world});
+    const std::vector<ReplayMod> recorded = ActiveReplayMods();
+    obl::mod_pack::RestoreActive();
+    OBL_REQUIRE(recorded.size() == 1u);
+    OBL_CHECK_EQ(recorded[0].id, std::string("world_fix"));
 }

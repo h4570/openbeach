@@ -5,6 +5,7 @@
 #include "core/code_pages.h"
 #include "core/json_schema.h"
 #include "core/pack_path.h"
+#include "formats/mod_pack.h"
 
 #include <algorithm>
 #include <fstream>
@@ -89,9 +90,20 @@ std::string ModName(const std::filesystem::path& file)
     return file.parent_path().parent_path().filename().string();
 }
 
+// Whether the patch comes from a presentation mod: such a patch may only add keys. Feedback messages keep their formatted text and
+// the world hash covers it, so a changed value would make a replay depend on the mod.
+bool OnlyAdds(const std::filesystem::path& file)
+{
+    const std::string mod = ModName(file);
+    const auto& active = mod_pack::Active();
+    return std::any_of(active.begin(), active.end(),
+            [&](const mod_pack::ActiveMod& m) { return m.manifest.id == mod && m.manifest.scope == mod_pack::Scope::Presentation; });
+}
+
 void ApplyPatch(const std::filesystem::path& file, bool polish, std::vector<text::Entry>& entries, std::map<std::string, size_t>& index)
 {
     const std::string where = "mod " + ModName(file) + ": " + file.string();
+    const bool onlyAdds = OnlyAdds(file);
     std::ifstream stream(file, std::ios::binary);
     if (!stream) throw PatchFailure(where + ": cannot open");
     const json doc = json::parse(stream, nullptr, false);
@@ -113,6 +125,7 @@ void ApplyPatch(const std::filesystem::path& file, bool polish, std::vector<text
         // The table looks keys up ignoring case, so a patch for "Key" replaces "KEY".
         const auto found = index.find(LowerKey(key));
         if (found != index.end()) {
+            if (onlyAdds) throw PatchFailure(where + ": key " + key + ": a presentation mod may only add keys, and this one exists");
             entries[found->second].value = units;
             continue;
         }
