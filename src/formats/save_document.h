@@ -36,7 +36,7 @@ struct SaveOrigin {
     std::string packId = "beachlife-2002";
     std::string contentVersion = "1.0.0";
     std::string packHash; // 64 hex digits: SHA-256 of the pack's pack.json
-    // The active mods in load order (ReadSavePackOrigin fills them from mod_pack::Active()); a save writes them as header.mods,
+    // The active mods in load order (the game fills them from mod_pack::Active(); the converter writes none); a save writes them as header.mods,
     // a load compares them with the save's list.
     std::vector<SaveMod> mods;
     // The pack's default text language (pack.json `language`): narrow text of an old save is Windows-1250 for "pl",

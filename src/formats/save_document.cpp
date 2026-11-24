@@ -1,6 +1,5 @@
 #include "formats/save_document.h"
 #include "formats/cell_state.h"
-#include "formats/mod_pack.h"
 
 #include "core/json_float.h"
 #include "core/json_schema.h"
@@ -264,8 +263,6 @@ bool ReadSavePackOrigin(const std::filesystem::path& packRoot, SaveOrigin& origi
         return false;
     }
     origin.packHash = *hash;
-    origin.mods.clear();
-    for (const mod_pack::ActiveMod& mod : mod_pack::Active()) origin.mods.push_back({mod.manifest.id, mod.manifest.modVersion, mod.hash});
     const std::filesystem::path textPath = pack_path::Resolve(packRoot, "text/" + origin.language + ".json");
     const auto table = ReadJsonFile(textPath);
     if (!table || !table->contains("entries") || !(*table)["entries"].is_array()) {
