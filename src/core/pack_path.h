@@ -7,7 +7,7 @@
 #include <vector>
 
 // The one resolver for logical pack paths (`maps/1/map.json`, `gui/layouts.json`, ...). Layers, first match wins:
-//   1. `<game dir>/mods/<id>/<logical>`  the active mods, the last of the list first (docs/modding/mods.md),
+//   1. `<game dir>/mods/<id>/<logical>`  the active mods, the last of the list first (docs/modding/reference/mods.md),
 //   2. `<game dir>/mod/<logical>`        the legacy user layer,
 //   3. `<game dir>/packs/<id>/<logical>` the selected pack (`base`, the converted one, unless OBL_PACK names another).
 // `pack` is the pack directory (`<game dir>/packs/<id>`); the other layers hang off `<pack>/../..`. Every loader of pack data

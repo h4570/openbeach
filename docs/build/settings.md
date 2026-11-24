@@ -11,7 +11,7 @@ with defaults and comments when it is missing; the [settings window](settings-wi
 | `[Display] Scale` | 1 | `OBL_SCALE` | window size multiplier 1-4 (decimals allowed), capped at the monitor size |
 | `[Display] MaxFps` | 60 | `OBL_MAXFPS` | frame cap, 0 = unlimited (scripted runs: 0) |
 | `[Intro] PlayMovie` | 1 | `OBL_PLAYMOVIE` | Eidos intro movie (scripted runs: 0) |
-| `[Mods] Active` | empty | `OBL_MODS` | comma separated mod ids in load order, the last one wins ([../modding/mods.md](../modding/mods.md)); `OBL_MODS` replaces the setting, also when empty |
+| `[Mods] Active` | empty | `OBL_MODS` | comma separated mod ids in load order, the last one wins ([../modding/players/switching-mods.md](../modding/players/switching-mods.md)); `OBL_MODS` replaces the setting, also when empty |
 | `[Launcher] ShowSettings` | 1 | | the settings window before the game starts ([settings-window.md](settings-window.md)); `--settings` shows it anyway, `--no-settings` never |
 
 Other environment variables used by tools and tests: `OBL_HIDDEN` (hidden window), `OBL_SCRIPT` (scripted test run),

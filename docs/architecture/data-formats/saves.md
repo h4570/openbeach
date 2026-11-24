@@ -74,7 +74,7 @@ therefore come only from our own packs.
   ([../../testing/determinism.md](../../testing/determinism.md)); until then a loaded save continues as the source does.
 
 ## Mods
-`header.mods` lists the active mods ([../../modding/mods.md](../../modding/mods.md)) in load order: `id`, `mod_version` and
+`header.mods` lists the active mods ([../../modding/reference/mods.md](../../modding/reference/mods.md)) in load order: `id`, `mod_version` and
 `hash` (`pack_path::ModContentHash`, the same hash the replay header uses). The key is left out when no mod is active, so a
 save written without mods is byte for byte what it was before mods existed.
 - A load compares the list with the active mods (`CheckOblSaveDocument`, `OblSaveChecks::modIssues`): a mod the save names that

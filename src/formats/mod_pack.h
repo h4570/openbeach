@@ -6,7 +6,7 @@
 #include <string_view>
 #include <vector>
 
-// Mods as packages (docs/modding/mods.md): a directory `<game dir>/mods/<id>/` with a `mod.json` manifest next to the files
+// Mods as packages (docs/modding/reference/mods.md): a directory `<game dir>/mods/<id>/` with a `mod.json` manifest next to the files
 // it adds or replaces under their logical paths. Pure logic: no Windows APIs.
 namespace obl::mod_pack {
 

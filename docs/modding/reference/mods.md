@@ -20,10 +20,10 @@ same path below it. Text tables and the catalog's record list merge instead (see
 - `pack`: the id of the pack the mod was made for (`base`, `l0`); the mod only starts on that pack.
 - `requires` (optional): mod ids that must be active and earlier in the load order.
 
-## Switching mods on
+## Activation
 The active mods and their order come from the `Active` key of the `[Mods]` section in `openbeach.ini`, comma separated
-(`Active=first,second`). `OBL_MODS` (same format) replaces it for tests and tools, also when it is empty. The default is no
-mod. A later mod shadows an earlier one.
+(`Active=first,second`); the default is no mod, and a later mod shadows an earlier one. `OBL_MODS` (same format) replaces
+it for tests and tools, also when it is empty. For players, see [switching-mods.md](../players/switching-mods.md).
 
 ## Layers
 `pack_path` resolves a logical path through the first existing regular file of: the active mods from last to first,
@@ -68,7 +68,7 @@ without copying it, with `catalog/index.patch.json`:
 ## Saves and replays
 A save records the active mods in `header.mods` and a replay in its `mods` line (id and content hash, load order), only when a mod
 is active. Loading a save with other mods asks the player and names the mod; a replay with other mods is refused. Details:
-[saves](../architecture/data-formats/saves.md#mods) and [replay file](../architecture/commands.md#replay-file).
+[saves](../../architecture/data-formats/saves.md#mods) and [replay file](../../architecture/commands.md#replay-file).
 
 ## Tests
 `pack_path_test` and `mod_pack_test` (unit); `tests/l0_mod.txt` runs the L0 pack with the test mod `tests/mods/l0_test`, which
