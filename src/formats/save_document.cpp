@@ -1,5 +1,6 @@
 #include "formats/save_document.h"
 #include "formats/cell_state.h"
+#include "formats/mod_pack.h"
 
 #include "core/json_float.h"
 #include "core/json_schema.h"
@@ -52,6 +53,7 @@ public:
     void Run()
     {
         Packs();
+        Mods();
         Map();
         Ids();
         References();
@@ -80,6 +82,33 @@ private:
                 m_out.warnings.push_back("header.packs: " + id + " was saved with another pack.json (" + hash + ")");
         }
         if (!base) Refuse("header.packs: does not name the installed pack " + m_origin.packId);
+    }
+
+    // header.mods against the active mods: a missing mod, another build of one, a mod the save never had, or another order.
+    // Not a refusal: the player may load anyway (docs/architecture/data-formats/saves.md, "Mods").
+    void Mods()
+    {
+        std::vector<SaveMod> saved;
+        if (const json* list = Find(m_d, {"header", "mods"}))
+            for (const json& mod : *list) saved.push_back({mod["id"], mod["mod_version"], mod["hash"]});
+        const auto named = [](const std::vector<SaveMod>& mods, const std::string& id) {
+            return std::find_if(mods.begin(), mods.end(), [&](const SaveMod& m) { return m.id == id; });
+        };
+        auto& issues = m_out.modIssues;
+        for (const SaveMod& mod : saved) {
+            const auto active = named(m_origin.mods, mod.id);
+            if (active == m_origin.mods.end())
+                issues.push_back("the save was written with the mod " + mod.id + " " + mod.modVersion + ", which is not active");
+            else if (active->hash != mod.hash)
+                issues.push_back("the mod " + mod.id + " differs from the one the save was written with (saved " + mod.modVersion +
+                        ", active " + active->modVersion + ")");
+        }
+        for (const SaveMod& mod : m_origin.mods)
+            if (named(saved, mod.id) == saved.end())
+                issues.push_back("the mod " + mod.id + " " + mod.modVersion + " is active, but the save was written without it");
+        if (!issues.empty() || saved.size() != m_origin.mods.size()) return;
+        for (size_t i = 0; i < saved.size(); ++i)
+            if (saved[i].id != m_origin.mods[i].id) return issues.push_back("the mods are in another load order than the save's");
     }
 
     void Map()
@@ -207,6 +236,13 @@ std::optional<nlohmann::json> ReadJsonFile(const std::filesystem::path& path)
 }
 } // namespace
 
+nlohmann::ordered_json SaveModsJson(const std::vector<SaveMod>& mods)
+{
+    auto list = nlohmann::ordered_json::array();
+    for (const SaveMod& mod : mods) list.push_back({{"id", mod.id}, {"mod_version", mod.modVersion}, {"hash", mod.hash}});
+    return list;
+}
+
 bool ReadSavePackOrigin(const std::filesystem::path& packRoot, SaveOrigin& origin, std::string& error)
 {
     const std::filesystem::path manifestPath = packRoot / "pack.json";
@@ -228,6 +264,8 @@ bool ReadSavePackOrigin(const std::filesystem::path& packRoot, SaveOrigin& origi
         return false;
     }
     origin.packHash = *hash;
+    origin.mods.clear();
+    for (const mod_pack::ActiveMod& mod : mod_pack::Active()) origin.mods.push_back({mod.manifest.id, mod.manifest.modVersion, mod.hash});
     const std::filesystem::path textPath = pack_path::Resolve(packRoot, "text/" + origin.language + ".json");
     const auto table = ReadJsonFile(textPath);
     if (!table || !table->contains("entries") || !(*table)["entries"].is_array()) {
@@ -267,7 +305,7 @@ OblSaveChecks CheckOblSaveDocument(const json& document, const SaveOrigin& origi
 }
 
 bool ValidateOblSaveDocument(const json& document, const SaveOrigin& origin, const json_schema::Registry& schemas,
-        std::vector<std::string>& warnings, std::string& error, uint32_t gridSide)
+        std::vector<std::string>& warnings, std::string& error, uint32_t gridSide, std::vector<std::string>* modIssues)
 {
     // The schema first: the checks and the mapping read the required keys without testing for them.
     if (const auto errors = schemas.Validate("obl.save", document); !errors.empty()) {
@@ -277,6 +315,7 @@ bool ValidateOblSaveDocument(const json& document, const SaveOrigin& origin, con
     }
     OblSaveChecks checks = CheckOblSaveDocument(document, origin, gridSide);
     warnings.insert(warnings.end(), checks.warnings.begin(), checks.warnings.end());
+    if (modIssues) modIssues->insert(modIssues->end(), checks.modIssues.begin(), checks.modIssues.end());
     if (!checks.refusals.empty()) {
         error = checks.refusals.front();
         if (checks.refusals.size() > 1) error += " (and " + std::to_string(checks.refusals.size() - 1) + " more)";

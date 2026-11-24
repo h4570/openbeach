@@ -207,6 +207,10 @@ int RunReplay(game::Game& game)
         Report("FAILED hash-schema %d (this build hashes schema %d)", header.hashSchema, kWorldHashSchema);
         return kExitHeadlessFailed;
     }
+    if (const std::string why = command::CheckReplayMods(header.mods, command::ActiveReplayMods()); !why.empty()) {
+        Report("FAILED %s", why.c_str());
+        return kExitHeadlessFailed;
+    }
     Report("start %s%s seed=%u fixed-dt=%g end=%u commands=%zu checkpoints=%zu", fromSave ? "save " : "", header.start.c_str(), header.seed,
             header.fixedDt, recording->endTick, recording->commands.size(), recording->checkpoints.size());
 

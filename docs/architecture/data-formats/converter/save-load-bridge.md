@@ -27,7 +27,8 @@ lossless; the game loads `obl.save` with its own readers ([../save-switch.md](..
    header's scenario and sandbox flag (`QueueSaveLoad`, `save_slots.cpp`). `ui.save-slots-load-pending-save` takes a
    queued load before `m_loadSlot`, enters the world state as a slot load (`LoadWorld`) and builds the world from the
    document (`world::LoadFromSave`), in the same main-menu frame (`LoadPendingFor`). Test commands: `convert-save <old.dat>
-   <out>` (in-process `obl-convert save` against `packs/base`) and `load-obl-save <file>` (like `load-slot`).
+   <out>` (in-process `obl-convert save` against `packs/base`) and `load-obl-save <file>` (like `load-slot`). `expect-obl-save-refused <file> <text>` expects the load to be refused with a message
+   containing `<text>`, and `claim-mods none|<id>[@<hash>],...` makes saves and replays see another mod list (mods in saves.md).
 
 ## Writing from the live world
 `WriteOblSave` (`src/game/game/save_load.cpp`) is the game's `obl.save` writer: the save panel, `serial-save` and

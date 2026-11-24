@@ -310,6 +310,7 @@ void StartRecording(const std::vector<std::string>& args)
     header.seed = *seed;
     header.fixedDt = *fixedDt;
     header.hashSchema = kWorldHashSchema;
+    header.mods = command::ActiveReplayMods();
     const std::filesystem::path file = Resolve(g_gameDirectory, args[0]);
     if (save) {
         g_saveStart.emplace();
@@ -357,6 +358,10 @@ bool StartReplay(const std::vector<std::string>& args)
         OBL_LOG("autotest: FAILED replay %s (needs a scenario or save start, hash-schema %d, fixed-dt > 0 and at least one "
                 "tick)",
                 file.filename().string().c_str(), kWorldHashSchema);
+        return false;
+    }
+    if (const std::string why = command::CheckReplayMods(header.mods, command::ActiveReplayMods()); !why.empty()) {
+        OBL_LOG("autotest: FAILED replay %s (%s)", file.filename().string().c_str(), why.c_str());
         return false;
     }
     OBL_LOG("autotest: replay start=%s seed=%u ticks=%u file=%s", header.start.c_str(), header.seed, recording->endTick,

@@ -27,6 +27,7 @@ therefore come only from our own packs.
     "title": "<text key>", "title_text": "Resolved title at save time",
     "day": 12, "day_time": 0.4375, "cash": 10432.5, "guests": 92,
     "packs": [{ "id": "beachlife-2002", "content_version": "1.0.0", "pack_hash": "..." }],
+    "mods": [{ "id": "my_mod", "mod_version": "1.0.0", "hash": "..." }],
     "converted_from": null
   },
   "world": { "map_id": "scenario3", "game_time": 1234.5, "game_day": 12, "script_state": 3, "income_today": 410.25 },
@@ -42,7 +43,7 @@ therefore come only from our own packs.
 - **Header first.** The writer always emits `format`, `version`, `header` first; the slot list reads with a streaming
   (SAX) parser and stops after `header`. `title_text` lets the list show a title when the text table is missing;
   `packs` names the content the save needs (a different catalog warns, a missing pack fails with the pack's name).
-  `converted_from` is `{"format": "beachlife-1.6", "file": "save3.dat"}` for a converted old save.
+  `mods` is optional (see "Mods" below). `converted_from` is `{"format": "beachlife-1.6", "file": "save3.dat"}` for a converted old save.
 - **Exact numbers.** `f32` fields use the float rule of [principles.md](principles.md#conventions): the shortest
   decimal that round-trips to the same bits, parsed from the raw token with `std::from_chars` into `float` (nlohmann's
   SAX interface passes the token text), never through `double`. `-0.0` is written as `-0.0`. Values JSON cannot hold
@@ -71,6 +72,20 @@ therefore come only from our own packs.
   a new name; `version` changes only when the document structure changes.
 - Determinism: the RNG state becomes part of the save once the engine owns its RNG
   ([../../testing/determinism.md](../../testing/determinism.md)); until then a loaded save continues as the source does.
+
+## Mods
+`header.mods` lists the active mods ([../../modding/mods.md](../../modding/mods.md)) in load order: `id`, `mod_version` and
+`hash` (`pack_path::ModContentHash`, the same hash the replay header uses). The key is left out when no mod is active, so a
+save written without mods is byte for byte what it was before mods existed.
+- A load compares the list with the active mods (`CheckOblSaveDocument`, `OblSaveChecks::modIssues`): a mod the save names that
+  is not active, another build of one (different hash), an active mod the save was written without, or another order. Each
+  difference is one message that names the mod. A save without `mods` counts as "written without mods".
+- Mod differences are not refusals. `QueueOblSave` asks the player (`ConfirmNotice`: a message box on Windows, `confirm` in
+  the browser) and loads only on a yes; a host without a dialog, a test script (`OBL_SCRIPT`) and the headless host answer no, and
+  `QueueOblSave` fails with the message.
+- The game never turns mods on to match a save. The list a loaded save came with is not kept: the next save records the mods that are
+  active then.
+- Mods that cannot change the simulation (a presentation-only scope, when manifests get one) do not belong in the list.
 
 ## Initial schema and implementation boundary
 `data/schemas/save.schema.json` defines the envelope, pack identity, scalar world state, histories, grid arrays,

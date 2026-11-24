@@ -194,3 +194,51 @@ OBL_TEST_CASE("command_recorder.checkpoint_section_digests_round_trip")
     OBL_CHECK_EQ(ReadError(kHeaderText + "@1 hash 0000000000000000 tourists=0000abcd/7\n"),
             std::string("line 6: unrecognized section 'tourists'"));
 }
+
+OBL_TEST_CASE("command_recorder.mods_line_round_trips_after_hash_schema")
+{
+    ReplayHeader header = Header();
+    header.mods = {{"first", std::string(64, 'a')}, {"second_mod", "0123"}};
+    Recorder recorder(header);
+    OBL_REQUIRE(recorder.Record(0, SetGameSpeed{2}));
+    OBL_REQUIRE(recorder.Finish(10));
+    const std::string text = WriteReplay(recorder.Result());
+    const std::string expected = "OBL-replay 1\nstart scenario s3\nseed 1\nfixed-dt 0.02\nhash-schema 2\nmods first@" +
+            std::string(64, 'a') + ",second_mod@0123\n@0 set-game-speed level=2\nend 10\n";
+    OBL_CHECK_EQ(text, expected);
+    const auto read = ReadReplay(text);
+    OBL_REQUIRE(read.has_value());
+    OBL_CHECK(*read == recorder.Result());
+}
+
+OBL_TEST_CASE("command_recorder.replay_without_a_mods_line_means_no_mods")
+{
+    const auto read = ReadReplay(std::string(kSampleText));
+    OBL_REQUIRE(read.has_value());
+    OBL_CHECK(read->header.mods.empty());
+    OBL_CHECK(WriteReplay(*read).find("mods") == std::string::npos); // no mods: the file is as it was before mods existed
+}
+
+OBL_TEST_CASE("command_recorder.bad_mods_lines_are_refused")
+{
+    const std::string tail = "\nend 1\n";
+    OBL_CHECK_EQ(
+            ReadError(kHeaderText + "mods first" + tail), std::string("line 6: expected 'mods <id>@<hash>,...' (lowercase hex hashes)"));
+    OBL_CHECK_EQ(ReadError(kHeaderText + "mods first@XYZ" + tail),
+            std::string("line 6: expected 'mods <id>@<hash>,...' (lowercase hex hashes)"));
+    OBL_CHECK_EQ(
+            ReadError(kHeaderText + "mods a@01,@02" + tail), std::string("line 6: expected 'mods <id>@<hash>,...' (lowercase hex hashes)"));
+    OBL_CHECK_EQ(ReadError(kHeaderText + "mods a@01,a@02" + tail), std::string("line 6: mod a listed twice"));
+}
+
+OBL_TEST_CASE("command_recorder.check_replay_mods_names_the_difference")
+{
+    const std::vector<ReplayMod> none;
+    const std::vector<ReplayMod> ab = {{"a", "01"}, {"b", "02"}};
+    OBL_CHECK(CheckReplayMods(none, none).empty());
+    OBL_CHECK(CheckReplayMods(ab, ab).empty());
+    OBL_CHECK(CheckReplayMods(ab, none).find("mod a was active when it was recorded and is not") != std::string::npos);
+    OBL_CHECK(CheckReplayMods(none, ab).find("mod b is active, the recording had no such mod") != std::string::npos);
+    OBL_CHECK(CheckReplayMods(ab, {{"a", "01"}, {"b", "99"}}).find("mod b has other content") != std::string::npos);
+    OBL_CHECK(CheckReplayMods(ab, {{"b", "02"}, {"a", "01"}}).find("another load order") != std::string::npos);
+}

@@ -38,6 +38,10 @@ bool CheckActive(const std::filesystem::path& gameDirectory, std::string_view pa
 
 // The result of the last successful start-up check (SetActive), in load order.
 const std::vector<ActiveMod>& Active();
+// Test support (`claim-mods`): replaces what saves and replays record and compare as the active mods, without touching the
+// layers. RestoreActive brings back the start-up check's own result.
+void OverrideActive(std::vector<ActiveMod> mods);
+void RestoreActive();
 
 // The start-up step: reads the mod list (OBL_MODS, else `configured`), checks it, and makes the mods layers of pack_path.
 // False with `error` when the check fails; the game stops then.

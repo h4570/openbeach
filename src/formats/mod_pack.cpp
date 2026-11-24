@@ -8,12 +8,14 @@
 #include <algorithm>
 #include <fstream>
 #include <iterator>
+#include <optional>
 
 namespace obl::mod_pack {
 
 namespace {
 
 std::vector<ActiveMod> g_active;
+std::optional<std::vector<ActiveMod>> g_override; // test support: what saves and replays see instead of g_active
 
 bool ReadString(const nlohmann::json& doc, const char* key, std::string& out, std::string& error)
 {
@@ -112,7 +114,17 @@ bool CheckActive(const std::filesystem::path& gameDirectory, std::string_view pa
 
 const std::vector<ActiveMod>& Active()
 {
-    return g_active;
+    return g_override ? *g_override : g_active;
+}
+
+void OverrideActive(std::vector<ActiveMod> mods)
+{
+    g_override = std::move(mods);
+}
+
+void RestoreActive()
+{
+    g_override.reset();
 }
 
 bool Activate(const std::filesystem::path& gameDirectory, std::string_view packId, std::string_view configured, std::string& error)

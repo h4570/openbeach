@@ -11,6 +11,9 @@ void ShowErrorAndExit(void* owner, const Char16* text);
 // A message box owned by `owner` (an opaque window handle) that the player confirms; the game continues afterwards.
 // `information` adds the information icon. Hosts without dialogs (the Linux obl-sim) only log it.
 void ShowNotice(void* owner, const char* text, const char* caption, bool information);
+// A yes/no question owned by `owner`; true when the player agrees. Windows asks with a message box, the browser with
+// `confirm`; a host without a dialog (the Linux obl-sim) logs the question and answers no.
+bool ConfirmNotice(void* owner, const char* text, const char* caption);
 // Ends the process with a write access violation at address 0 (Windows: a raised exception the crash handler
 // reports like the real one).
 [[noreturn]] void RaiseAccessViolation();

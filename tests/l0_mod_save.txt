@@ -1,0 +1,20 @@
+# A save written with a mod records it (header.mods) and loads with it; with another mod list the load is refused with a message that
+# names the mod (docs/architecture/data-formats/saves.md, "Mods"). A script has no player to ask, so a difference always refuses.
+# @env OBL_PACK=l0
+# @env OBL_MODS=l0_test
+# @timeout 120
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario 1
+await gameplay
+save-obl testlogs/l0_mod_save.obl.save
+load-obl-save testlogs/l0_mod_save.obl.save
+await world-loaded
+claim-mods none
+expect-obl-save-refused testlogs/l0_mod_save.obl.save l0_test
+claim-mods l0_test@0000000000000000000000000000000000000000000000000000000000000000
+expect-obl-save-refused testlogs/l0_mod_save.obl.save differs
+claim-mods l0_test
+load-obl-save testlogs/l0_mod_save.obl.save
+await world-loaded
+quit

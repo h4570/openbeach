@@ -1,5 +1,7 @@
 #include "game/game/command_recorder.h"
 
+#include "formats/mod_pack.h"
+
 #include <algorithm>
 #include <charconv>
 #include <system_error>
@@ -56,7 +58,58 @@ std::string_view TrimLine(std::string_view line)
     return line;
 }
 
+// "id@hash,id@hash": non-empty ids and lowercase hex hashes, no id twice.
+bool ParseMods(std::string_view text, std::vector<ReplayMod>& mods, std::string& why)
+{
+    why = "expected 'mods <id>@<hash>,...' (lowercase hex hashes)";
+    mods.clear();
+    while (true) {
+        const size_t comma = text.find(',');
+        const std::string_view item = text.substr(0, comma);
+        const size_t at = item.find('@');
+        if (at == std::string_view::npos || at == 0 || at + 1 == item.size()) return false;
+        ReplayMod mod{std::string(item.substr(0, at)), std::string(item.substr(at + 1))};
+        const auto hex = [](char c) { return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'); };
+        if (!std::all_of(mod.hash.begin(), mod.hash.end(), hex)) return false;
+        if (std::any_of(mods.begin(), mods.end(), [&](const ReplayMod& m) { return m.id == mod.id; })) {
+            why = "mod " + mod.id + " listed twice";
+            return false;
+        }
+        mods.push_back(std::move(mod));
+        if (comma == std::string_view::npos) return true;
+        text.remove_prefix(comma + 1);
+    }
+}
+
 } // namespace
+
+std::vector<ReplayMod> ActiveReplayMods()
+{
+    std::vector<ReplayMod> mods;
+    for (const mod_pack::ActiveMod& mod : mod_pack::Active()) mods.push_back({mod.manifest.id, mod.hash});
+    return mods;
+}
+
+std::string CheckReplayMods(const std::vector<ReplayMod>& recorded, const std::vector<ReplayMod>& active)
+{
+    if (recorded == active) return {};
+    const auto find = [](const std::vector<ReplayMod>& list, const std::string& id) {
+        return std::find_if(list.begin(), list.end(), [&](const ReplayMod& m) { return m.id == id; });
+    };
+    std::string why;
+    const auto add = [&](const std::string& text) { why += (why.empty() ? "" : "; ") + text; };
+    for (const ReplayMod& mod : recorded) {
+        const auto now = find(active, mod.id);
+        if (now == active.end())
+            add("mod " + mod.id + " was active when it was recorded and is not");
+        else if (now->hash != mod.hash)
+            add("mod " + mod.id + " has other content than when it was recorded");
+    }
+    for (const ReplayMod& mod : active)
+        if (find(recorded, mod.id) == recorded.end()) add("mod " + mod.id + " is active, the recording had no such mod");
+    if (why.empty()) why = "the mods are in another load order than when it was recorded";
+    return "replay mods differ: " + why;
+}
 
 bool Recorder::Record(uint32_t tick, const Command& command)
 {
@@ -97,6 +150,11 @@ std::string WriteReplay(const Recording& recording)
     text += "seed " + std::to_string(header.seed) + '\n';
     text += "fixed-dt " + FormatFloat(header.fixedDt) + '\n';
     text += "hash-schema " + std::to_string(header.hashSchema) + '\n';
+    if (!header.mods.empty()) {
+        text += "mods ";
+        for (size_t i = 0; i < header.mods.size(); ++i) text += (i ? "," : "") + header.mods[i].id + '@' + header.mods[i].hash;
+        text += '\n';
+    }
     // At equal ticks the checkpoint goes first: it is the state before that tick's commands.
     size_t c = 0;
     size_t h = 0;
@@ -129,7 +187,7 @@ std::optional<Recording> ReadReplay(std::string_view text, std::string* error)
     };
 
     // Header lines in their fixed order, then the body.
-    enum class Expect : uint8_t { Magic, Start, Seed, FixedDt, HashSchema, Body, Done };
+    enum class Expect : uint8_t { Magic, Start, Seed, FixedDt, HashSchema, Mods, Body, Done };
     Expect expect = Expect::Magic;
     ReplayHeader header;
     std::optional<Recorder> recorder;
@@ -180,9 +238,18 @@ std::optional<Recording> ReadReplay(std::string_view text, std::string* error)
         }
         case Expect::HashSchema:
             if (word != "hash-schema" || !ParseI32(rest, header.hashSchema)) return fail("expected 'hash-schema <n>'");
-            recorder.emplace(header);
-            expect = Expect::Body;
+            expect = Expect::Mods;
             break;
+        case Expect::Mods: // the optional `mods` line; any other line starts the body
+            expect = Expect::Body;
+            if (word == "mods") {
+                std::string why;
+                if (!ParseMods(rest, header.mods, why)) return fail(why);
+                recorder.emplace(header);
+                break;
+            }
+            recorder.emplace(header);
+            [[fallthrough]];
         case Expect::Body: {
             if (word == "end") {
                 uint32_t endTick = 0;

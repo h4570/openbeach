@@ -23,12 +23,22 @@ class Registry;
 
 namespace obl::formats {
 
+// A mod a save was written with (header.mods), in load order.
+struct SaveMod {
+    std::string id;
+    std::string modVersion;
+    std::string hash; // pack_path::ModContentHash
+};
+
 // What the document names besides the save itself: the pack the keys come from and the converted file.
 struct SaveOrigin {
     std::string file; // old slot file name, `converted_from.file`
     std::string packId = "beachlife-2002";
     std::string contentVersion = "1.0.0";
     std::string packHash; // 64 hex digits: SHA-256 of the pack's pack.json
+    // The active mods in load order (ReadSavePackOrigin fills them from mod_pack::Active()); a save writes them as header.mods,
+    // a load compares them with the save's list.
+    std::vector<SaveMod> mods;
     // The pack's default text language (pack.json `language`): narrow text of an old save is Windows-1250 for "pl",
     // Windows-1252 otherwise.
     std::string language;
@@ -58,14 +68,21 @@ constexpr uint32_t kGameGridSide = 128;
 struct OblSaveChecks {
     std::vector<std::string> refusals; // the document must not load
     std::vector<std::string> warnings; // it loads, with a log line (another build of the same pack)
+    // The save's mod list differs from the active one, one reason per mod naming it. The save loads only when the player
+    // agrees (docs/architecture/data-formats/saves.md, "Mods").
+    std::vector<std::string> modIssues;
 };
 
 // The semantic checks of a schema-valid document. `gridSide` 0 accepts any square grid (synthetic test saves).
 OblSaveChecks CheckOblSaveDocument(const nlohmann::json& document, const SaveOrigin& origin, uint32_t gridSide = kGameGridSide);
 
 // The game's document step: schema `obl.save`, then CheckOblSaveDocument. False with the first refusal in `error`;
-// warnings are appended to `warnings`.
+// warnings are appended to `warnings`, mod differences to `modIssues` (when given; they are not refusals).
 bool ValidateOblSaveDocument(const nlohmann::json& document, const SaveOrigin& origin, const json_schema::Registry& schemas,
-        std::vector<std::string>& warnings, std::string& error, uint32_t gridSide = kGameGridSide);
+        std::vector<std::string>& warnings, std::string& error, uint32_t gridSide = kGameGridSide,
+        std::vector<std::string>* modIssues = nullptr);
+
+// The header.mods array of `mods`. A save without mods leaves the key out, so it stays as it was before mods existed.
+nlohmann::ordered_json SaveModsJson(const std::vector<SaveMod>& mods);
 
 } // namespace obl::formats

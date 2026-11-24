@@ -11,6 +11,7 @@
 #include "formats/schemas.h"
 #include "core/json_schema.h"
 #include "core/pack_path.h"
+#include "formats/mod_pack.h"
 #include "game/objects/building_events_trace.h"
 #include "game/game/save_load.h"
 #include "game/ui/save_slots.h"
@@ -200,6 +201,50 @@ bool LoadOblSave(const std::string& path)
     return true;
 }
 
+namespace {
+// `claim-mods none|<id>[@<hash>],...`: from now on saves and replays see these as the active mods, in this order (the layers stay
+// as the start-up made them). A mod without a hash keeps the hash of the really active mod of that id, else all zeros.
+bool ClaimMods(const std::string& list)
+{
+    mod_pack::RestoreActive();
+    const std::vector<mod_pack::ActiveMod> real = mod_pack::Active();
+    std::vector<mod_pack::ActiveMod> claimed;
+    for (const std::string& item : pack_path::ParseModList(list == "none" ? "" : list)) {
+        const size_t at = item.find('@');
+        mod_pack::ActiveMod mod;
+        mod.manifest.id = item.substr(0, at);
+        mod.manifest.modVersion = "claimed";
+        mod.hash = std::string(64, '0');
+        for (const auto& r : real)
+            if (r.manifest.id == mod.manifest.id) mod = r;
+        if (at != std::string::npos) mod.hash = item.substr(at + 1);
+        claimed.push_back(std::move(mod));
+    }
+    mod_pack::OverrideActive(std::move(claimed));
+    OBL_LOG("autotest: claim-mods %s", list.c_str());
+    return true;
+}
+
+// `expect-obl-save-refused <file> <text>`: the load of this obl.save must be refused with a message that contains <text>
+// (a mod id, for the mods check); nothing is queued.
+bool ExpectOblSaveRefused(const std::string& path, const std::string& text)
+{
+    std::string error;
+    if (game::QueueOblSave(os::ResolvePath(path), error)) {
+        OBL_LOG("autotest: FAILED expect-obl-save-refused %s: the load was queued", path.c_str());
+        return false;
+    }
+    if (error.find(text) == std::string::npos) {
+        OBL_LOG("autotest: FAILED expect-obl-save-refused %s: the refusal does not contain \"%s\": %s", path.c_str(), text.c_str(),
+                error.c_str());
+        return false;
+    }
+    OBL_LOG("autotest: expect-obl-save-refused %s: %s", path.c_str(), error.c_str());
+    return true;
+}
+
+} // namespace
+
 bool LoadOldSaveFile(const std::string& path)
 {
     // The game reads no old bytes itself (save-switch.md): the file is converted as the first start converts the
@@ -254,6 +299,7 @@ void ForgetBuildingEvents()
 
 void ResetBuildingEvents()
 {
+    mod_pack::RestoreActive(); // `claim-mods` ends with its script
     g_savedSlot = -1;
     ForgetBuildingEvents();
 }
@@ -262,10 +308,11 @@ bool ExecuteBuildingEventCommand(const std::string& name, const std::vector<std:
 {
     if (name != "event-build" && name != "event-state" && name != "hour" && name != "event-guests" && name != "event-slot" &&
             name != "save-panel" && name != "save-confirm" && name != "load-slot" && name != "convert-save" && name != "load-obl-save" &&
-            name != "save-obl" && name != "event-expect" && name != "event-load-index" && name != "event-focus" && name != "event-tick" &&
-            name != "event-select" && name != "event-rotate" && name != "event-cancel" && name != "event-advance" &&
-            name != "event-visible" && name != "event-check-actors" && name != "event-delay" && name != "event-open" &&
-            name != "event-normalize" && name != "event-synthetic")
+            name != "save-obl" && name != "claim-mods" && name != "expect-obl-save-refused" && name != "event-expect" &&
+            name != "event-load-index" && name != "event-focus" && name != "event-tick" && name != "event-select" &&
+            name != "event-rotate" && name != "event-cancel" && name != "event-advance" && name != "event-visible" &&
+            name != "event-check-actors" && name != "event-delay" && name != "event-open" && name != "event-normalize" &&
+            name != "event-synthetic")
         return false;
     if (name == "load-slot" && args.size() == 1) {
         LoadSaveSlot(args[0]); // works without a world (before the first frame of gameplay)
@@ -277,6 +324,14 @@ bool ExecuteBuildingEventCommand(const std::string& name, const std::vector<std:
     }
     if (name == "save-obl" && args.size() == 1) {
         SaveObl(args[0]);
+        return true;
+    }
+    if (name == "claim-mods" && args.size() == 1) {
+        ClaimMods(args[0]);
+        return true;
+    }
+    if (name == "expect-obl-save-refused" && args.size() == 2) {
+        ExpectOblSaveRefused(args[0], args[1]);
         return true;
     }
     if (name == "load-obl-save" && args.size() == 1) {
