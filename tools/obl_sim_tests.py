@@ -380,7 +380,14 @@ def replay_entries() -> list[Entry]:
     return [Entry(f"replay_{p.stem}", TESTS / f"replay_{p.stem}.txt", script_passes, 300)
             if "start save " in p.read_text(encoding="utf-8") else
             Entry(f"replay_{p.stem}", p, replay_passes, env={"OBL_PACK": "l0"} if p.stem.startswith("l0_") else {})
-            for p in sorted(REPLAYS.glob("*.replay")) if not p.stem.startswith("headless_") and "mismatch" not in p.stem]
+            for p in sorted(REPLAYS.glob("*.replay"))
+            if not p.stem.startswith("headless_") and "mismatch" not in p.stem and not records_mods(p)]
+
+
+def records_mods(replay: Path) -> bool:
+    """A replay recorded with world mods (a `mods` header line) plays only with them; its own game test activates them
+    (tests/l0_mod_rule_replay.txt), so it is not a reference replay of the bare pack."""
+    return any(line.startswith("mods ") for line in replay.read_text(encoding="utf-8").splitlines()[:12])
 
 
 def bot_passes(code: int, out: str, lines: list[str]) -> str:

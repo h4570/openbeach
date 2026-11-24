@@ -17,6 +17,7 @@
 #include "game/ui/sprite.h"
 #include "core/log.h"
 #include "core/call_counter.h"
+#include "formats/data_patch.h"
 
 #include <cstdint>
 #include <fstream>
@@ -316,8 +317,7 @@ const Char16* Feedback::NextHistory(float* hour, uint32_t* day, uint32_t* object
 
 bool LoadFeedbackVocabulary(const Text16& gameDirectory)
 {
-    std::ifstream file(
-            pack_path::Resolve(WidePath(gameDirectory) / pack_path::Selected(), "scripts/feedback_vocabulary.json"), std::ios::binary);
+    data_patch::Input file(pack_path::Resolve(WidePath(gameDirectory) / pack_path::Selected(), "scripts/feedback_vocabulary.json"));
     const std::string json{std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()};
     feedback::Vocabulary vocabulary;
     std::string error;

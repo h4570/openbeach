@@ -9,6 +9,7 @@
 #include "game/tables/world_params_tables.h"
 #include "core/file_io.h"
 #include "core/log.h"
+#include "formats/data_patch.h"
 #include "formats/script_pack.h"
 #include "core/call_counter.h"
 #include "core/wide_path.h"
@@ -123,7 +124,7 @@ bool GetLastWorldScriptLoadSize(uint32_t& size)
 bool LoadWorldScriptVocabulary(const Text16& gameDirectory)
 {
     g_packDirectory = WidePath(gameDirectory) / pack_path::Selected();
-    std::ifstream file(pack_path::Resolve(g_packDirectory, "scripts/world_vocabulary.json"), std::ios::binary);
+    data_patch::Input file(pack_path::Resolve(g_packDirectory, "scripts/world_vocabulary.json"));
     std::string json{std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()};
     g_vocabularyOk = ParseWorldScriptIds(json, g_vocabulary, g_error);
     OBL_LOG("world script parser: vocabulary %s (%s)", g_vocabularyOk ? "loaded" : "unavailable", g_error.c_str());

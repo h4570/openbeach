@@ -9,6 +9,7 @@
 #include "game/ui/map_view.h"
 #include "game/world/world_state.h"
 #include "core/call_counter.h"
+#include "formats/data_patch.h"
 #include "game/weather/weather_lifecycle.h"
 #include "game/weather/weather_save.h"
 #include "game/weather/weather_update.h"
@@ -78,7 +79,7 @@ Weather* Create()
     Parameters parameters;
     std::string error;
     const char* path = "rules/weather_parameters.json";
-    std::ifstream file(pack_path::Resolve(pack_path::Selected(), path), std::ios::binary);
+    data_patch::Input file(pack_path::Resolve(pack_path::Selected(), path));
     const auto document = file ? nlohmann::ordered_json::parse(file, nullptr, false) : nlohmann::ordered_json();
     if (!ReadParameters(document, parameters, error)) {
         game::FatalError("Cannot load %s (%s). Import the game data again", path, error.c_str());

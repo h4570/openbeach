@@ -3,6 +3,7 @@
 #include "core/code_pages.h"
 #include "core/pack_path.h"
 #include "core/png_read.h"
+#include "formats/data_patch.h"
 #include <nlohmann/json.hpp>
 #include <cstdio>
 #include <fstream>
@@ -22,7 +23,7 @@ bool ReadFont(const std::filesystem::path& pack, std::string_view name, Font& fo
     auto file = pack_path::Resolve(pack, "fonts/" + id + ".json");
     try {
         auto read = [&](const std::filesystem::path& path) {
-            std::ifstream in(path, std::ios::binary);
+            data_patch::Input in(path);
             if (!in) throw std::runtime_error("cannot open (Import the game data again)");
             return std::vector<uint8_t>(std::istreambuf_iterator<char>(in), {});
         };

@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "obl.feedback_vocabulary",
+  "type": "object",
+  "properties": {
+    "format": {
+      "const": "obl.feedback_vocabulary"
+    },
+    "version": {
+      "const": 1
+    },
+    "commodity_keys": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 26,
+      "maxItems": 26
+    },
+    "message_types": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "word": {
+                "type": "string",
+                "minLength": 1
+              },
+              "type": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "word",
+              "type"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "word": {
+                "type": "string",
+                "minLength": 1
+              },
+              "silences": {
+                "enum": [
+                  "world",
+                  "object"
+                ]
+              }
+            },
+            "required": [
+              "word",
+              "silences"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
+    "missing_staff": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1
+          },
+          "type": {
+            "type": "string",
+            "minLength": 1
+          },
+          "class": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "key",
+          "type",
+          "class"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "professions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "hire_type": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5
+          }
+        },
+        "required": [
+          "name",
+          "hire_type"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "format",
+    "version",
+    "commodity_keys",
+    "message_types",
+    "missing_staff",
+    "professions"
+  ],
+  "additionalProperties": false
+}

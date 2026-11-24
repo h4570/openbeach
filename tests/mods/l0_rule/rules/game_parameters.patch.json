@@ -1,0 +1,11 @@
+{
+  "format": "obl.json_patch",
+  "version": 1,
+  "ops": [
+    {
+      "op": "set",
+      "path": "/parameters/day_length_in_seconds",
+      "value": 60
+    }
+  ]
+}

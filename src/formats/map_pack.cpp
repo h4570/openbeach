@@ -3,6 +3,7 @@
 #include "core/ascii_case.h"
 #include "core/pack_path.h"
 #include "core/png_read.h"
+#include "formats/data_patch.h"
 
 #include <nlohmann/json.hpp>
 
@@ -39,7 +40,7 @@ bool MapFile(const std::filesystem::path& packDir, std::string_view gridPath, st
 // "No fallback").
 bool ReadPackFile(const std::filesystem::path& file, std::vector<uint8_t>& bytes, std::string& error)
 {
-    std::ifstream in(file, std::ios::binary);
+    data_patch::Input in(file);
     if (!in) {
         error = file.string() + ": cannot open (Import the game data again)";
         return false;

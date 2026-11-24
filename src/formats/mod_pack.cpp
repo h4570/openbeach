@@ -1,7 +1,9 @@
 #include "formats/mod_pack.h"
 
+#include "core/log.h"
 #include "core/os.h"
 #include "core/pack_path.h"
+#include "formats/data_patch.h"
 
 #include <nlohmann/json.hpp>
 
@@ -240,6 +242,14 @@ bool Activate(const std::filesystem::path& gameDirectory, std::string_view packI
     const std::vector<std::string> ids = pack_path::ParseModList(env ? std::string_view(*env) : configured);
     std::vector<ActiveMod> mods;
     if (!CheckActive(gameDirectory, packId, ids, mods, error)) return false;
+    std::vector<std::string> conflicts;
+    const auto pack = pack_path::PackDirectory(packId);
+    if (!pack) {
+        error = "invalid pack id";
+        return false;
+    }
+    if (!data_patch::Prepare(gameDirectory / *pack, ids, conflicts, error)) return false;
+    for (const auto& conflict : conflicts) OBL_LOG("mod patch: %s", conflict.c_str());
     g_active = std::move(mods);
     pack_path::SetActiveMods(ids);
     return true;

@@ -2,6 +2,7 @@
 
 #include <filesystem>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -59,6 +60,8 @@ std::string ModContentHash(const std::filesystem::path& modDirectory);
 // The file for `logical`: the first layer's regular file, otherwise the pack's (which may not exist;
 // the caller reports it). `logical` is relative and uses `/`.
 std::filesystem::path Resolve(const std::filesystem::path& pack, const std::filesystem::path& logical);
+// Resolve while checking a proposed mod list, before publishing it.
+std::filesystem::path Resolve(const std::filesystem::path& pack, const std::filesystem::path& logical, std::span<const std::string> mods);
 
 // Resolve for a loader that is handed one pack subdirectory (`<pack>/sprites`) instead of the pack: `file` is relative to it.
 std::filesystem::path ResolveIn(const std::filesystem::path& directory, const std::filesystem::path& file);

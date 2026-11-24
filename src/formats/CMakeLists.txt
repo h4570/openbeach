@@ -4,6 +4,8 @@
 add_library(obl_formats STATIC
     cell_state.cpp
     cell_state.h
+    data_patch.cpp
+    data_patch.h
     gui_content.cpp
     gui_content.h
     mod_pack.cpp

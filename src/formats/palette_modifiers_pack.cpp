@@ -2,6 +2,7 @@
 
 #include "core/pack_path.h"
 #include "core/png_read.h"
+#include "formats/data_patch.h"
 
 #include <nlohmann/json.hpp>
 
@@ -26,7 +27,7 @@ bool LoadPack(const std::filesystem::path& pack, bool rgb565, uint16_t* tables, 
     std::filesystem::path file = pack_path::Resolve(pack, "sprites/palette_modifiers.json");
     try {
         auto read = [](const std::filesystem::path& path) {
-            std::ifstream in(path, std::ios::binary);
+            data_patch::Input in(path);
             if (!in) throw std::runtime_error("cannot open (Import the game data again)");
             return std::vector<uint8_t>(std::istreambuf_iterator<char>(in), {});
         };

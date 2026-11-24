@@ -98,16 +98,21 @@ const std::vector<std::string>& ActiveMods()
     return g_activeMods;
 }
 
-std::vector<std::filesystem::path> Layers(const std::filesystem::path& pack)
+static std::vector<std::filesystem::path> Layers(const std::filesystem::path& pack, std::span<const std::string> mods)
 {
     std::vector<std::filesystem::path> layers;
     const auto game = GameDirectory(pack);
-    for (auto it = g_activeMods.rbegin(); it != g_activeMods.rend(); ++it)
+    for (auto it = mods.rbegin(); it != mods.rend(); ++it)
         // An id that is not valid is refused by the start-up check; here it simply names no layer.
         if (const auto directory = ModDirectory(game, *it)) layers.push_back(*directory);
     layers.push_back(game / "mod");
     layers.push_back(pack);
     return layers;
+}
+
+std::vector<std::filesystem::path> Layers(const std::filesystem::path& pack)
+{
+    return Layers(pack, g_activeMods);
 }
 
 std::string ModContentHash(const std::filesystem::path& modDirectory)
@@ -132,15 +137,20 @@ std::string ModContentHash(const std::filesystem::path& modDirectory)
     return hasher.HexDigest();
 }
 
-std::filesystem::path Resolve(const std::filesystem::path& pack, const std::filesystem::path& logical)
+std::filesystem::path Resolve(const std::filesystem::path& pack, const std::filesystem::path& logical, std::span<const std::string> mods)
 {
     std::error_code ec;
-    for (const auto& layer : Layers(pack)) {
+    for (const auto& layer : Layers(pack, mods)) {
         const auto file = layer / logical;
         if (std::filesystem::is_regular_file(file, ec)) return file;
     }
     // No layer has it: the pack's path, so the loader names the converted file in its error.
     return pack / logical;
+}
+
+std::filesystem::path Resolve(const std::filesystem::path& pack, const std::filesystem::path& logical)
+{
+    return Resolve(pack, logical, g_activeMods);
 }
 
 std::filesystem::path ResolveIn(const std::filesystem::path& directory, const std::filesystem::path& file)
@@ -159,7 +169,9 @@ std::vector<std::string> ListStems(const std::filesystem::path& pack, const std:
         std::error_code ec;
         for (std::filesystem::directory_iterator it(layer, ec), end; !ec && it != end; it.increment(ec)) {
             std::error_code fileEc;
-            if (it->path().extension() == extension && it->is_regular_file(fileEc)) stems.insert(it->path().stem().string());
+            if (!(extension == ".json" && it->path().filename().string().ends_with(".patch.json")) && it->path().extension() == extension &&
+                    it->is_regular_file(fileEc))
+                stems.insert(it->path().stem().string());
         }
     }
     return {stems.begin(), stems.end()};

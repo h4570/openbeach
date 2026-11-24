@@ -52,7 +52,8 @@ void FindObject(const std::vector<std::string>& args)
     auto* manager = game::GetObjectManager();
     const size_t index = args.size() == 3 ? std::strtoul(args[2].c_str(), nullptr, 10) : 0;
     if (!manager || (args.size() != 2 && args.size() != 3)) {
-        OBL_LOG("autotest: FAILED object-find (needs a world and `building|scenery <KEY> [n]`, `staff <Class> [n]` or `guest * [n]`)");
+        OBL_LOG("autotest: FAILED object-find (needs a world and `building|scenery <KEY> [n]`, `staff <Class> [n]` or `guest <key>|* "
+                "[n]`)");
         return;
     }
     object::object_manager::ObjectList list;
@@ -67,6 +68,11 @@ void FindObject(const std::vector<std::string>& args)
         list = object::object_manager::GetListByClass(manager, static_cast<int>(found->type));
     } else if (args[0] == "guest") {
         list = manager->m_guests;
+        if (args[1] != "*")
+            std::erase_if(list, [&](const object::Base* object) {
+                const auto* guest = static_cast<const object::Guest*>(object);
+                return guest->m_definition->m_key != args[1];
+            });
     } else if (args[0] == "building" || args[0] == "scenery") {
         list = object::object_manager::FindObjectsByName(manager, args[1].c_str());
         // Buildings and scenery may share a name; keep the asked kind.

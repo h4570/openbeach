@@ -4,6 +4,7 @@
 #include "core/code_pages.h"
 #include "core/json_schema.h"
 #include "core/pack_path.h"
+#include "formats/data_patch.h"
 
 #include <fstream>
 #include <iterator>
@@ -21,7 +22,7 @@ constexpr std::string_view kPolish = "pl";
 
 bool ReadFile(const std::filesystem::path& path, std::string& text, std::string& error)
 {
-    std::ifstream file(path, std::ios::binary);
+    data_patch::Input file(path);
     if (!file) {
         error = "cannot open " + path.string();
         return false;

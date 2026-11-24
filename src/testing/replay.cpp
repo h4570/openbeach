@@ -327,8 +327,9 @@ void StartRecording(const std::vector<std::string>& args)
 bool StartReplay(const std::vector<std::string>& args)
 {
     const bool allowMismatch = args.size() == 2 && args[1] == "allow-mismatch";
-    if (args.empty() || args.size() > 2 || (args.size() == 2 && !allowMismatch)) {
-        OBL_LOG("autotest: FAILED replay (expected `replay <file> [allow-mismatch]`)");
+    const bool expectModMismatch = args.size() == 2 && args[1] == "expect-mod-mismatch";
+    if (args.empty() || args.size() > 2 || (args.size() == 2 && !allowMismatch && !expectModMismatch)) {
+        OBL_LOG("autotest: FAILED replay (expected `replay <file> [allow-mismatch|expect-mod-mismatch]`)");
         return false;
     }
     if (g_session.Active()) {
@@ -361,7 +362,15 @@ bool StartReplay(const std::vector<std::string>& args)
         return false;
     }
     if (const std::string why = command::CheckReplayMods(header.mods, command::ActiveReplayMods()); !why.empty()) {
+        if (expectModMismatch) {
+            OBL_LOG("autotest: replay refused: %s", why.c_str());
+            return false;
+        }
         OBL_LOG("autotest: FAILED replay %s (%s)", file.filename().string().c_str(), why.c_str());
+        return false;
+    }
+    if (expectModMismatch) {
+        OBL_LOG("autotest: FAILED replay accepted different mods");
         return false;
     }
     OBL_LOG("autotest: replay start=%s seed=%u ticks=%u file=%s", header.start.c_str(), header.seed, recording->endTick,

@@ -1,0 +1,6 @@
+# @env OBL_PACK=l0
+# @timeout 180
+# @env OBL_MODS=l0_rule
+replay replays/l0_rule.replay
+expect-last mismatches 0
+quit

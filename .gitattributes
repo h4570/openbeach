@@ -3,6 +3,8 @@
 tools/ci/release/macos/openbeach-launcher text eol=lf
 # Pack data is read byte for byte (the GUI layout header ends in a bare LF, file hashes): no CRLF conversion on checkout.
 data/packs/** -text
+# The replay header hashes these mod files byte for byte.
+tests/mods/l0_rule/** text eol=lf
 # Binary references: a line-ending rewrite must never touch them.
 *.png binary
 # cmd.exe misreads labels and blocks of a batch file with bare LF endings.
