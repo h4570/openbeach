@@ -1,5 +1,10 @@
 # Modding
 
-| Topic | What it covers |
+Mods are optional packages that change the game's content (texts, catalog, layers of files) without touching the
+engine. Each subdirectory has its own index:
+
+| Category | What it covers |
 |---|---|
-| [mods.md](mods.md) | Mods as packages: the `mod.json` manifest, where mods live, how they are switched on and ordered, the layers they add to the resolver and the start-up check. |
+| [guides/](guides/index.md) | Step-by-step guides for mod authors, from nothing to a working mod. |
+| [reference/](reference/index.md) | Exact contracts: the mod manifest, the layers, the patch formats, the start-up check, saves and replays. |
+| [players/](players/index.md) | For players: switching mods on and off, their order, and what to do when a mod stops the game. |

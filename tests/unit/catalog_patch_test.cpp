@@ -1,4 +1,4 @@
-// A mod's catalog/index.patch.json appends records to the pack's catalog (src/game/tables/catalog_load.cpp, docs/modding/mods.md).
+// A mod's catalog/index.patch.json appends records to the pack's catalog (src/game/tables/catalog_load.cpp, docs/modding/reference/mods.md).
 
 #include "unit_test.h"
 

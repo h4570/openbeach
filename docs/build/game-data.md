@@ -31,7 +31,7 @@ The game reads only converted data. The contract for every loader:
 - **Layers.** Loaders never build `packs/base/...` themselves: they ask `pack_path::Resolve(pack, "<logical path>")`
   (`core/pack_path.h`; `ResolveIn` for a loader handed one subdirectory such as `sprites/`). The first existing regular
   file wins: 1. `<game dir>/mods/<id>/<logical path>` of the active mods, the last of the list first
-  ([../modding/mods.md](../modding/mods.md)), 2. `<game dir>/mod/<logical path>` (the legacy user layer), 3. `<game dir>/packs/<id>/<logical path>`,
+  ([../modding/reference/mods.md](../modding/reference/mods.md)), 2. `<game dir>/mod/<logical path>` (the legacy user layer), 3. `<game dir>/packs/<id>/<logical path>`,
   the pack `pack_path::Selected()` names (`OBL_PACK`, default `base`; maps-scenarios.md "The L0 scenario").
   Neither existing yields the pack path, so the error names the converted file. Resolved so far: text, scripts, the object and world script
   vocabularies, catalog,

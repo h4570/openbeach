@@ -23,8 +23,8 @@ Formats with a schema (the page that explains each):
 | `obl.image` | `images/cursor.json` | [assets.md](assets.md#other-images) |
 | `obl.font` | `fonts/<name>.json` | [assets.md](assets.md#fonts) |
 | `obl.text` | `text/<lang>.json` | [assets.md](assets.md#texts) |
-| `obl.text_patch` | `text/<lang>.patch.json` (a mod) | [mods.md](../../modding/mods.md#text-patches) |
-| `obl.catalog_index_patch` | `catalog/index.patch.json` (a mod) | [mods.md](../../modding/mods.md#catalog-patches) |
+| `obl.text_patch` | `text/<lang>.patch.json` (a mod) | [mods.md](../../modding/reference/mods.md#text-patches) |
+| `obl.catalog_index_patch` | `catalog/index.patch.json` (a mod) | [mods.md](../../modding/reference/mods.md#catalog-patches) |
 | `obl.sound_script` | `sounds/sound_script.json` | [assets.md](assets.md#sounds) |
 | `obl.water_anim` | `maps/water/<k>.json` | [maps-scenarios.md](maps-scenarios.md#water-shimmer) |
 | `obl.game_parameters` | `rules/game_parameters.json` | [game-data.md](game-data.md#game-parameters-and-rule-constants) |
