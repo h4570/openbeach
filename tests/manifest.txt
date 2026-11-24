@@ -28,6 +28,7 @@ l0_fullscreen_toggle.txt @hidden @l0
 l0_ultrawide_zoom.txt @hidden @l0
 l0_guests.txt @headless @l0
 l0_mod.txt @l0
+l0_mod_text_patch.txt @l0
 golden_hash_l0_s1.golden @l0
 gui_image_bar_l0.txt @hidden @l0
 replay_mismatch.txt @l0

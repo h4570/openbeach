@@ -6,8 +6,10 @@
 #include "core/json_schema.h"
 #include "core/pack_path.h"
 
+#include <algorithm>
 #include <fstream>
 #include <iterator>
+#include <map>
 #include <stdexcept>
 
 namespace obl::text_load {
@@ -39,6 +41,101 @@ json ReadDocument(const std::filesystem::path& path, const json_schema::Registry
     return doc;
 }
 
+// A refused mod patch: the message already names the mod, the file and the key, so LoadPack reports it as it is.
+struct PatchFailure : std::runtime_error {
+    using std::runtime_error::runtime_error;
+};
+
+std::string PatchPath(std::string_view language)
+{
+    return "text/" + std::string(language) + ".patch.json";
+}
+
+bool IsFile(const std::filesystem::path& file)
+{
+    std::error_code ec;
+    return std::filesystem::is_regular_file(file, ec);
+}
+
+// The patch files of a language, in load order: the pack's layers from the bottom up, so a later mod overrides an earlier one.
+std::vector<std::filesystem::path> PatchFiles(const std::filesystem::path& pack, std::string_view language)
+{
+    std::vector<std::filesystem::path> files;
+    const auto layers = pack_path::Layers(pack);
+    for (auto layer = layers.rbegin(); layer != layers.rend(); ++layer) {
+        const auto file = *layer / PatchPath(language);
+        if (IsFile(file)) files.push_back(file);
+    }
+    return files;
+}
+
+// A language is there when a full table or a mod's patch exists: a patch of a language the pack lacks still shows text.
+bool HasLanguage(const std::filesystem::path& pack, std::string_view language)
+{
+    return IsFile(pack_path::Resolve(pack, PackPath(language))) || !PatchFiles(pack, language).empty();
+}
+
+std::string LowerKey(const std::string& key)
+{
+    std::string lower = key;
+    std::transform(lower.begin(), lower.end(), lower.begin(),
+            [](unsigned char c) { return static_cast<char>(c >= 'A' && c <= 'Z' ? c + 32 : c); });
+    return lower;
+}
+
+// The mod a patch file belongs to, for messages: `<game dir>/mods/<id>/text/<lang>.patch.json` is `<id>`.
+std::string ModName(const std::filesystem::path& file)
+{
+    return file.parent_path().parent_path().filename().string();
+}
+
+void ApplyPatch(const std::filesystem::path& file, bool polish, std::vector<text::Entry>& entries, std::map<std::string, size_t>& index)
+{
+    const std::string where = "mod " + ModName(file) + ": " + file.string();
+    std::ifstream stream(file, std::ios::binary);
+    if (!stream) throw PatchFailure(where + ": cannot open");
+    const json doc = json::parse(stream, nullptr, false);
+    if (doc.is_discarded()) throw PatchFailure(where + ": invalid JSON");
+    if (!doc.is_object()) throw PatchFailure(where + ": not an object");
+    const auto format = doc.find("format");
+    if (format == doc.end() || !format->is_string() || format->get<std::string>() != "obl.text_patch")
+        throw PatchFailure(where + ": unknown format (expected obl.text_patch)");
+    const auto version = doc.find("version");
+    if (version == doc.end() || !version->is_number_integer() || version->get<int>() != 1)
+        throw PatchFailure(where + ": unsupported version");
+    const auto table = doc.find("entries");
+    if (table == doc.end() || !table->is_object()) throw PatchFailure(where + ": entries is not an object");
+    for (const auto& [key, value] : table->items()) {
+        if (!value.is_string()) throw PatchFailure(where + ": key " + key + ": value is not a string");
+        for (char c : key)
+            if (static_cast<unsigned char>(c) >= 0x80) throw PatchFailure(where + ": key " + key + ": not ASCII");
+        const std::u16string units = EngineValue(code_page::Utf8ToUtf16(value.get<std::string>()), polish);
+        // The table looks keys up ignoring case, so a patch for "Key" replaces "KEY".
+        const auto found = index.find(LowerKey(key));
+        if (found != index.end()) {
+            entries[found->second].value = units;
+            continue;
+        }
+        index[LowerKey(key)] = entries.size();
+        entries.push_back({key, units});
+    }
+}
+
+bool ReadBase(const std::filesystem::path& file, std::string_view language, const json_schema::Registry& schemas,
+        std::vector<text::Entry>& entries)
+{
+    if (!IsFile(file)) return false;
+    const json document = ReadDocument(file, schemas);
+    const bool polish = language == "pl";
+    for (const json& pair : document.at("entries")) {
+        text::Entry entry;
+        entry.key = AsciiKey(pair.at(0));
+        entry.value = EngineValue(code_page::Utf8ToUtf16(pair.at(1).get<std::string>()), polish);
+        entries.push_back(std::move(entry));
+    }
+    return true;
+}
+
 } // namespace
 
 const char* LanguageCode(unsigned index)
@@ -67,9 +164,7 @@ bool LanguageSelection::Select(
     notice.clear();
     error.clear();
     const std::string requested = LanguageCode(index);
-    const auto available = [&](unsigned candidate) {
-        return std::filesystem::is_regular_file(pack_path::Resolve(pack, PackPath(LanguageCode(candidate))));
-    };
+    const auto available = [&](unsigned candidate) { return HasLanguage(pack, LanguageCode(candidate)); };
     if (available(index)) return true;
     // The pack's own language comes first, so a copy without the requested table still gets the language it was imported in.
     unsigned order[std::size(kLanguages)];
@@ -110,21 +205,35 @@ bool LoadPack(const std::filesystem::path& pack, std::string_view language, std:
     error.clear();
     entries.clear();
     const auto file = pack_path::Resolve(pack, PackPath(language));
-    if (!std::filesystem::exists(file)) return true;
+    const auto patches = PatchFiles(pack, language);
+    if (!IsFile(file) && patches.empty()) return true;
     try {
         json_schema::Registry schemas;
         std::string schemaError;
         for (const char* schema : catalog::kSchemas)
             if (!schemas.Add(json::parse(schema), schemaError)) throw std::runtime_error(schemaError);
-        const json document = ReadDocument(file, schemas);
-        const bool polish = language == "pl";
-        for (const json& pair : document.at("entries")) {
-            text::Entry entry;
-            entry.key = AsciiKey(pair.at(0));
-            entry.value = EngineValue(code_page::Utf8ToUtf16(pair.at(1).get<std::string>()), polish);
-            entries.push_back(std::move(entry));
+        if (!ReadBase(file, language, schemas, entries)) {
+            // A language only a mod has: its patches go on top of the pack's own language (else the first table in settings
+            // order), so keys the mod does not translate still show text.
+            std::vector<std::string_view> order;
+            const std::string own = PackLanguage(pack);
+            order.push_back(own);
+            for (const char* candidate : kLanguages) order.push_back(candidate);
+            for (std::string_view candidate : order) {
+                if (candidate.empty() || candidate == language) continue;
+                const auto fallback = pack_path::Resolve(pack, PackPath(candidate));
+                if (ReadBase(fallback, candidate, schemas, entries)) break;
+            }
         }
+        std::map<std::string, size_t> index;
+        // The first of equal keys is the one a lookup finds, so a patch changes that one.
+        for (size_t at = 0; at < entries.size(); ++at) index.emplace(LowerKey(entries[at].key), at);
+        for (const auto& patch : patches) ApplyPatch(patch, language == "pl", entries, index);
         return true;
+    } catch (const PatchFailure& failure) {
+        entries.clear();
+        error = failure.what();
+        return false;
     } catch (const std::exception& failure) {
         entries.clear();
         error = file.string() + ": " + failure.what();
