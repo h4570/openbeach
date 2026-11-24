@@ -1,0 +1,9 @@
+{
+  "format": "obl.mod",
+  "version": 1,
+  "id": "l0_gui_patch_second",
+  "title": "L0 GUI patch second test mod",
+  "mod_version": "1.0.0",
+  "pack": "l0",
+  "requires": ["l0_gui_patch"]
+}

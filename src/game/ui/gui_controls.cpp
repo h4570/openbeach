@@ -28,6 +28,7 @@
 #include "game/ui/gui_widgets.h"
 #include "game/ui/gui_widgets_image_bar.h"
 #include "game/ui/gui_containers.h"
+#include "game/ui/gui_patch_runtime.h"
 #include "core/ascii_case.h"
 #include "core/log.h"
 #include "core/call_counter.h"
@@ -321,6 +322,8 @@ void ButtonDestruct(Button* w)
     w->SetVisibleBase(0);
     if (w->m_text) Delete(w->m_text);
     if (w->m_graphic) Delete(w->m_graphic);
+    if (w->m_leftModAction) Delete(w->m_leftModAction);
+    if (w->m_rightModAction) Delete(w->m_rightModAction);
 }
 void ButtonVisible(Button* w, uint32_t visible)
 {
@@ -360,7 +363,14 @@ struct ButtonHost {
     bool Busy() { return w->IsHeld(); }
     void Invalidate() { w->Invalidate(); }
     float Now() { return gui::Now(); }
-    void Fire(bool right) { (right ? w->m_rightAction : w->m_leftAction)(w->m_id); }
+    void Fire(bool right)
+    {
+        if (const char* modAction = right ? w->m_rightModAction : w->m_leftModAction) {
+            gui_patch_runtime::DispatchModAction(modAction);
+            return;
+        }
+        if (ui::GuiAction action = right ? w->m_rightAction : w->m_leftAction) action(w->m_id);
+    }
     void Click(bool right)
     {
         PlayClick();

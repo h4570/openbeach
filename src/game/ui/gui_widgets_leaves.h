@@ -104,7 +104,14 @@ template<class Env> void SetTgaVisible(ui::GuiTgaData& w, uint32_t visible, Env&
 
 template<class Env> void DrawTga(const ui::GuiTgaData& w, Env& env)
 {
-    env.DrawImage(w.m_image, 0, 0, 0, 0, 800, 600, 0, 0, 0);
+    const int width = Sub(w.m_x1, w.m_x0);
+    const int height = Sub(w.m_y1, w.m_y0);
+    // A base layout's TGA always fills the 800x600 screen whatever its rectangle says, so layouts without patches draw as
+    // before; only a TGA a patch added is drawn into its own (anchored or stretched) rectangle.
+    if (!w.m_modAdded || width <= 0 || height <= 0)
+        env.DrawImage(w.m_image, 0, 0, 0, 0, 800, 600, 0, 0, 0);
+    else
+        env.DrawImage(w.m_image, w.m_x0, w.m_y0, 0, 0, width, height, 0, 0, 0);
 }
 
 } // namespace obl::gui_widgets

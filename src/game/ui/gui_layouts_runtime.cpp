@@ -13,6 +13,7 @@
 #include <cstdlib>
 #include <filesystem>
 #include <string>
+#include <unordered_map>
 
 namespace obl::gui::gui_layouts {
 
@@ -22,6 +23,7 @@ obl::gui_layouts::Layouts g_layouts;
 std::filesystem::path g_pack;
 std::string g_error = "not loaded";
 bool g_loaded = false;
+std::unordered_map<std::string, std::string> g_fileLayout;
 
 // Headless runs never reach the GUI, so they start without the files; a windowed game stops with the reason.
 [[noreturn]] void Require(const std::string& reason)
@@ -52,6 +54,7 @@ const char* FileFor(const char* layout, int language)
     if (!g_loaded) Require(g_error);
     const obl::gui_layouts::Choice* choice = obl::gui_layouts::Resolve(g_layouts, layout, language);
     if (!choice) Require(std::string("no file for layout ") + layout);
+    g_fileLayout[choice->file] = layout;
     return choice->file.c_str();
 }
 
@@ -63,6 +66,36 @@ std::string ReadScript(const char* file)
     std::string bytes, error;
     if (!obl::gui_layouts::ReadText(g_pack, *choice, bytes, error)) Require(error);
     return bytes;
+}
+
+std::string ReadPatchedScript(const char* file, int screenWidth, int screenHeight, std::vector<gui_patch::ControlBinding>& bindings)
+{
+    bindings.clear();
+    std::string base = ReadScript(file);
+    if (!file) return base;
+    std::string layout;
+    if (const auto it = g_fileLayout.find(file); it != g_fileLayout.end()) {
+        layout = it->second;
+    } else {
+        for (const auto& [key, choices] : g_layouts) {
+            for (const auto& [lang, choice] : choices) {
+                if (choice.file == file) {
+                    layout = key;
+                    break;
+                }
+            }
+            if (!layout.empty()) break;
+        }
+    }
+    if (layout.empty()) return base;
+    const auto patchFiles = obl::gui_patch::FindPatchFiles(g_pack, layout);
+    if (patchFiles.empty()) return base;
+    obl::gui_patch::ApplyResult result;
+    std::string error;
+    if (!obl::gui_patch::ApplyPackPatches(g_pack, layout, base, obl::pack_path::ActiveMods(), screenWidth, screenHeight, result, error))
+        Require(error);
+    bindings = std::move(result.bindings);
+    return result.scriptText;
 }
 
 } // namespace obl::gui::gui_layouts

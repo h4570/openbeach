@@ -216,3 +216,15 @@ OBL_TEST_CASE("data_patch.classifies_simulation_inputs")
     OBL_CHECK(!IsSimulationDataPath("fonts/GuiFont8b.json"));
     OBL_CHECK(!IsSimulationDataPath("sprites/palette_modifiers.json"));
 }
+
+OBL_TEST_CASE("data_patch.leaves_gui_layout_patches_to_the_gui")
+{
+    // gui/main_menu.patch.json patches the .gui layout (game/ui/gui_patch), so no JSON base file is looked for.
+    PatchGame game;
+    PatchGame::File(game.game.path / "mods" / "early" / "gui/main_menu.patch.json",
+            {{"format", obl::data_patch::kGuiPatchFormat}, {"version", 1}, {"ops", Json::array()}});
+    OBL_CHECK(game.Prepare());
+    OBL_CHECK(game.error.empty());
+    OBL_CHECK(obl::data_patch::PatchFormat(game.game.path / "mods" / "early" / "gui/main_menu.patch.json") ==
+            obl::data_patch::kGuiPatchFormat);
+}

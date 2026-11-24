@@ -1,0 +1,37 @@
+# GUI layout patches from two active mods on L0: slot layout across two mods, mod button actions (Mod:<id>.<event>), and add_dialog.
+# @env OBL_PACK=l0
+# @env OBL_MODS=l0_gui_patch,l0_gui_patch_second
+# @env OBL_WINDOWED=1
+# @gameini Language.Language=0
+# @gameini Sound.PlayListCount=0
+# @timeout 120
+seed 1
+fixed-dt 0.02
+await state == 1
+await frames 20
+await gui-animating == 0
+gui-state MainMenu
+expect-last visible 1
+expect gui-mod-action-count 0
+# First mod's button in the shared row slot triggers Mod:l0_gui_patch.ping.
+gui-click MainMenu id mod_ping_btn
+await frames 15
+expect gui-mod-action-count 1
+gui-mod-action Mod:l0_gui_patch.ping
+# Second mod's button in the same slot sits beside it and triggers Mod:l0_gui_patch_second.pong.
+gui-click MainMenu id mod_second_btn
+await frames 15
+expect gui-mod-action-count 2
+gui-mod-action Mod:l0_gui_patch_second.pong
+# The mod's added dialog opens and closes via its ExitDialog button.
+gui-open ModTestDialog
+await frames 10
+await gui-animating == 0
+gui-state ModTestDialog
+expect-last visible 1
+gui-click ModTestDialog id ModTestDialog.Button.ExitDialog
+await frames 10
+await gui-animating == 0
+gui-state ModTestDialog
+expect-last visible 0
+quit

@@ -335,6 +335,8 @@ add_library(openbeach OBJECT
     ${PROJECT_SOURCE_DIR}/src/platform/windowed_display.cpp
     ../game/ui/gui_content_runtime.cpp
     ../game/ui/gui_layouts_runtime.cpp
+    ../game/ui/gui_patch_runtime.cpp
+    ../game/ui/gui_patch_runtime.h
     ../game/world/world_params_process.cpp
     ../game/world/world_params_queries.cpp
     ../game/objects/building_events.cpp

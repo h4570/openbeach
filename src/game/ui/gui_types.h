@@ -78,6 +78,8 @@ struct GuiWidget {
     uint8_t m_held = 0; // button held over the widget (state 2)
     uint8_t m_clicked = 0; // click pending, the consumer clears it
     uint8_t m_dirty = 0; // redraw wanted: Draw does nothing while it is 0 (GuiVariableImage::Draw clears it)
+    uint8_t m_modHidden = 0; // hidden at runtime by a mod script (gui_patch_runtime::SetControlVisible)
+    uint8_t m_modAdded = 0; // added by a GUI patch (gui_patch_runtime::BindLayout); base controls keep their drawing
 
     // Base behavior shared by every widget (gui_widgets.cpp over the field logic in gui_widgets.h); the derived widgets call these.
     void SetVisibleBase(uint32_t visible); // only the low byte is stored

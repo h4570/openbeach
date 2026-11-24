@@ -78,6 +78,7 @@ add_executable(obl_portable_tests
     tests/unit/file_io_test.cpp
     tests/unit/float_to_int_test.cpp
     tests/unit/gui_content_test.cpp
+    tests/unit/gui_patch_test.cpp
     tests/unit/hash_prime_test.cpp
     tests/unit/id3tag_test.cpp
     tests/unit/image_decode_reject_test.cpp

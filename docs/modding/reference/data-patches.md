@@ -39,6 +39,6 @@ A patch whose target file does not exist, invalid JSON, an unknown operation, a 
 | `gui/object_browser.json`, `gui/credits.json`, `gui/layouts.json`, `fonts/*.json`, `sprites/palette_modifiers.json` | Presentation data. These describe lists, text rendering, layout choices and color tables. |
 | `text/<language>.patch.json`, `catalog/index.patch.json` | Use the existing text-entry and catalog-name append formats. [Package reference](mods.md) |
 | Manifests, saves and player progress | These have their own readers and do not accept generic pack patches. |
-| Images, sound samples, script source and `.gui` files | These are outside the JSON format. |
+| Images, sound samples, script source and `.gui` files | These are outside the JSON format. A `.gui` layout takes a [GUI patch](gui-patches.md), also named `gui/<layout>.patch.json`: the two loaders tell the files apart by their `format` (`obl.gui_patch` or `obl.json_patch`). |
 
 World mods are recorded in saves and replays in load order. Changing a patch changes its mod's content hash. Replay playback requires the recorded mods and matching hashes.

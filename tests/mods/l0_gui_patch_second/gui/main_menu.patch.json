@@ -1,0 +1,13 @@
+{
+  "format": "obl.gui_patch",
+  "version": 1,
+  "ops": [
+    {
+      "op": "add_control",
+      "dialog": "MainMenu",
+      "slot": "mod_bar",
+      "id": "mod_second_btn",
+      "control": "Button(0, 0, 180, 40, l0_menu_extras, None, Mod:l0_gui_patch_second.pong, None, L0_MENU_TIP_OPTIONS)"
+    }
+  ]
+}

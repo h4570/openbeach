@@ -263,6 +263,8 @@ void ConstructButton(ui::GuiButtonData& w, const char* graphic, const char* text
     w.m_instance = nullptr;
     w.m_leftAction = env.FindAction(left);
     w.m_rightAction = env.FindAction(right);
+    w.m_leftModAction = (left && std::strncmp(left, "Mod:", 4) == 0) ? env.CopyString(left) : nullptr;
+    w.m_rightModAction = (right && std::strncmp(right, "Mod:", 4) == 0) ? env.CopyString(right) : nullptr;
     w.m_repeat = 0;
     w.m_drawnState = 3;
     if (!ascii::EqualsNoCase(text, "None")) {

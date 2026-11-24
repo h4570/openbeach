@@ -1,0 +1,26 @@
+{
+  "format": "obl.gui_patch",
+  "version": 1,
+  "ops": [
+    {
+      "op": "add_slot",
+      "dialog": "MainMenu",
+      "slot": "mod_bar",
+      "bounds": [20, 534, 780, 574],
+      "direction": "row",
+      "spacing": 8
+    },
+    {
+      "op": "add_control",
+      "dialog": "MainMenu",
+      "slot": "mod_bar",
+      "id": "mod_ping_btn",
+      "control": "Button(0, 0, 180, 40, l0_menu_start, None, Mod:l0_gui_patch.ping, None, L0_MENU_TIP_START)"
+    },
+    {
+      "op": "add_dialog",
+      "dialog": "DialogItem ModTestDialog(0, 0, 380, 260, l0_play_panel, 25, 0) { Button(140, 200, 240, 224, l0_play_button, L0_RESET_NO, ExitDialog, None, L0_RESET_NO) }",
+      "anchor": "center"
+    }
+  ]
+}

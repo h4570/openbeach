@@ -24,6 +24,12 @@ private:
 // mod; the start-up scope check of presentation mods uses this list.
 bool IsSimulationDataPath(const std::filesystem::path& logical);
 
+// The `format` of a patch file, empty when it cannot be read or names none. `gui/<layout>.patch.json` is a JSON data patch
+// (`obl.json_patch`) when it patches a JSON file such as `gui/object_browser.json`, and a GUI layout patch (`obl.gui_patch`,
+// game/ui/gui_patch.h) when it patches a `.gui` layout: the two loaders tell them apart by this field, not by the path.
+std::string PatchFormat(const std::filesystem::path& file);
+inline constexpr const char* kGuiPatchFormat = "obl.gui_patch";
+
 // Applies the `<logical>.patch.json` files of `mods` (load order) to the files they name and checks each result against
 // its schema. All documents are built before any is published, so a failure keeps the previous state. `conflicts` lists
 // each value a later mod sets over an earlier one's, naming both; `error` names the mod, the file, the op and the path.
