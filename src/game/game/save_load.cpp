@@ -1,6 +1,7 @@
 #include "game/game/save_load.h"
 #include "game/map/path_queries.h"
 
+#include "formats/mod_pack.h"
 #include "formats/save_document.h"
 #include "formats/save_records.h"
 #include "formats/schemas.h"
@@ -649,6 +650,15 @@ void ReadManager(std::string_view kind, obl::world::World& world)
 } // namespace obl_load
 
 namespace {
+// The pack identity of the game's pack plus the active mods (the converter's origin has no mods).
+bool ReadActiveSavePackOrigin(formats::SaveOrigin& origin, std::string& error)
+{
+    if (!formats::ReadSavePackOrigin(PackRoot(), origin, error)) return false;
+    origin.mods.clear();
+    for (const mod_pack::ActiveMod& mod : mod_pack::Active()) origin.mods.push_back({mod.manifest.id, mod.manifest.modVersion, mod.hash});
+    return true;
+}
+
 // The save's mods differ from the active ones (header.mods): the player decides, and a run without a player (test script,
 // headless host) always refuses, since a dialog would block it. The message names every mod. On a refusal `error` holds it.
 bool ConfirmModDifferences(const std::filesystem::path& file, const std::vector<std::string>& issues, std::string& error)
@@ -676,8 +686,8 @@ bool QueueOblSave(const std::filesystem::path& file, std::string& error)
     nlohmann::json document;
     std::vector<std::string> warnings;
     std::vector<std::string> modIssues;
-    if (!formats::ReadSavePackOrigin(PackRoot(), origin, error) ||
-            !ReadJson(pack_path::Resolve(PackRoot(), "catalog/index.json"), index, error) || !ReadJson(file, document, error))
+    if (!ReadActiveSavePackOrigin(origin, error) || !ReadJson(pack_path::Resolve(PackRoot(), "catalog/index.json"), index, error) ||
+            !ReadJson(file, document, error))
         return false;
     const bool loaded = formats::ValidateOblSaveDocument(document, origin, *schemas, warnings, error, formats::kGameGridSide, &modIssues);
     for (const std::string& warning : warnings) OBL_LOG("obl.save %s: %s", file.generic_string().c_str(), warning.c_str());
@@ -717,7 +727,7 @@ bool WriteOblSave(const std::filesystem::path& file, uint32_t timestamp, std::st
     json_schema::Registry* schemas = nullptr;
     if (!LoadSchemas(schemas, error)) return false;
     formats::SaveOrigin origin;
-    if (!formats::ReadSavePackOrigin(PackRoot(), origin, error)) return false;
+    if (!ReadActiveSavePackOrigin(origin, error)) return false;
     nlohmann::ordered_json document;
     size_t written = 0;
     if (!WriteDocument(origin, timestamp, document, written, error)) return false;
