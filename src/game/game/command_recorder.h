@@ -21,12 +21,20 @@ enum class StartKind : uint8_t {
     Save, // `start` is a save file path
 };
 
+// A mod the recording was made with: its id and content hash (pack_path::ModContentHash), in load order.
+struct ReplayMod {
+    std::string id;
+    std::string hash;
+    bool operator==(const ReplayMod&) const = default;
+};
+
 struct ReplayHeader {
     StartKind startKind = StartKind::Scenario;
     std::string start;
     uint32_t seed = 0;
     float fixedDt = 0.0f;
     int32_t hashSchema = 0; // world-hash schema of the checkpoints (docs/testing/world-hashes.md)
+    std::vector<ReplayMod> mods; // the active mods; empty is "no mods" and writes no line
     bool operator==(const ReplayHeader&) const = default;
 };
 
@@ -79,6 +87,13 @@ private:
 std::string WriteReplay(const Recording& recording);
 // Parses and validates a replay file (same order rules as Recorder). On failure `error` says "line N: why".
 std::optional<Recording> ReadReplay(std::string_view text, std::string* error = nullptr);
+
+// The mods the game runs with (formats/mod_pack.h), in load order: what a recording writes and a replay compares.
+std::vector<ReplayMod> ActiveReplayMods();
+
+// Empty when `recorded` equals the `active` mods (same ids, hashes and order), else why a replay cannot run: the hashes of
+// a world built with other mods cannot match, so the caller refuses the replay.
+std::string CheckReplayMods(const std::vector<ReplayMod>& recorded, const std::vector<ReplayMod>& active);
 
 // Hands a recording's commands to the tick loop of a replay. The recording must outlive the cursor.
 class ReplayCursor {

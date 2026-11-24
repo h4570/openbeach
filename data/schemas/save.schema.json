@@ -50,6 +50,14 @@
           },
           "minItems": 1
         },
+        "mods": {
+          "description": "The active mods in load order; left out when none were active.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/mod"
+          },
+          "minItems": 1
+        },
         "converted_from": {
           "oneOf": [
             {
@@ -1467,6 +1475,27 @@
         "id",
         "content_version",
         "pack_hash"
+      ],
+      "additionalProperties": false
+    },
+    "mod": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "obl.common#/$defs/pack_id"
+        },
+        "mod_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "hash": {
+          "$ref": "obl.common#/$defs/sha256"
+        }
+      },
+      "required": [
+        "id",
+        "mod_version",
+        "hash"
       ],
       "additionalProperties": false
     },

@@ -132,6 +132,47 @@ OBL_TEST_CASE("convert.save_checks_refuse_other_packs_and_warn_on_another_build"
     OBL_CHECK(checks.warnings[0].find("saved with beachlife-2002 0.9.0, the installed pack is 1.0.0") != std::string::npos);
 }
 
+OBL_TEST_CASE("convert.save_checks_report_mod_differences_without_refusing")
+{
+    obl::formats::SaveOrigin origin = Origin();
+    json d = Document();
+    // No mods on either side: nothing to report, and the save written without mods has no header.mods key.
+    OBL_CHECK(!d["header"].contains("mods"));
+    OBL_CHECK(obl::formats::CheckOblSaveDocument(d, origin, 2).modIssues.empty());
+
+    d["header"]["mods"] = obl::formats::SaveModsJson({{"first", "1.0.0", std::string(64, 'a')}, {"second", "2.0.0", std::string(64, 'b')}});
+    origin.mods = {{"first", "1.0.0", std::string(64, 'a')}, {"second", "2.0.0", std::string(64, 'b')}};
+    OBL_CHECK(obl::formats::CheckOblSaveDocument(d, origin, 2).modIssues.empty());
+
+    origin.mods = {{"first", "1.0.0", std::string(64, 'a')}};
+    auto checks = obl::formats::CheckOblSaveDocument(d, origin, 2);
+    OBL_CHECK(checks.refusals.empty());
+    OBL_REQUIRE(checks.modIssues.size() == 1);
+    OBL_CHECK(checks.modIssues[0].find("the mod second 2.0.0, which is not active") != std::string::npos);
+
+    origin.mods = {{"first", "1.0.0", std::string(64, 'a')}, {"second", "2.1.0", std::string(64, 'c')}};
+    checks = obl::formats::CheckOblSaveDocument(d, origin, 2);
+    OBL_REQUIRE(checks.modIssues.size() == 1);
+    OBL_CHECK(checks.modIssues[0].find("the mod second differs") != std::string::npos);
+
+    origin.mods = {{"second", "2.0.0", std::string(64, 'b')}, {"first", "1.0.0", std::string(64, 'a')}};
+    checks = obl::formats::CheckOblSaveDocument(d, origin, 2);
+    OBL_REQUIRE(checks.modIssues.size() == 1);
+    OBL_CHECK(checks.modIssues[0].find("another load order") != std::string::npos);
+
+    origin.mods = {
+            {"first", "1.0.0", std::string(64, 'a')}, {"second", "2.0.0", std::string(64, 'b')}, {"third", "1", std::string(64, 'd')}};
+    checks = obl::formats::CheckOblSaveDocument(d, origin, 2);
+    OBL_REQUIRE(checks.modIssues.size() == 1);
+    OBL_CHECK(checks.modIssues[0].find("the mod third 1 is active, but the save was written without it") != std::string::npos);
+
+    obl::json_schema::Registry schemas;
+    OBL_REQUIRE(LoadRepoSchemas(schemas));
+    OBL_CHECK(schemas.Validate("obl.save", d).empty());
+    d["header"]["mods"][0]["hash"] = "short";
+    OBL_CHECK(!schemas.Validate("obl.save", d).empty());
+}
+
 OBL_TEST_CASE("convert.save_checks_refuse_a_map_of_another_size")
 {
     json d = Document();

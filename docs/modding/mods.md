@@ -65,8 +65,15 @@ without copying it, with `catalog/index.patch.json`:
   engine's limit for the category (`WorldParams::kMaxBuildings`, ...), or a malformed patch (format, version, `add`).
 - Removing, reordering or renaming records is not supported, and neither are GUI entries for new buildings.
 
+## Saves and replays
+A save records the active mods in `header.mods` and a replay in its `mods` line (id and content hash, load order), only when a mod
+is active. Loading a save with other mods asks the player and names the mod; a replay with other mods is refused. Details:
+[saves](../architecture/data-formats/saves.md#mods) and [replay file](../architecture/commands.md#replay-file).
+
 ## Tests
 `pack_path_test` and `mod_pack_test` (unit); `tests/l0_mod.txt` runs the L0 pack with the test mod `tests/mods/l0_test`, which
 `tools/runtests.ps1` copies to `run/mods/`. `text_load_test` covers the text patches; `tests/l0_mod_text_patch.txt` runs the mod
 `tests/mods/l0_patch`. `catalog_patch_test` covers the catalog patches; `tests/l0_mod_catalog_patch.txt` builds the
-building that the mod `tests/mods/l0_catalog` adds.
+building that the mod `tests/mods/l0_catalog` adds. `convert_save_checks_test` and `command_recorder_test` cover the mod lists of
+saves and replays; `tests/l0_mod_save.txt` saves with the test mod, reloads with it, and is refused with another mod list (`claim-mods`,
+`expect-obl-save-refused`).

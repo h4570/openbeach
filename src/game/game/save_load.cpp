@@ -54,6 +54,8 @@
 #include "core/pack_path.h"
 #include "game/objects/script_types.h"
 #include "game/world/world_script_types.h"
+#include "core/config.h"
+#include "core/os.h"
 #include "core/log.h"
 #include "core/watchdog.h"
 
@@ -267,6 +269,7 @@ bool WriteHeaderJson(const formats::SaveOrigin& origin, const world_save::JsonCo
     h["guests"] = world.m_numGuests;
     h["packs"] = nlohmann::ordered_json::array(
             {nlohmann::ordered_json{{"id", origin.packId}, {"content_version", origin.contentVersion}, {"pack_hash", origin.packHash}}});
+    if (!origin.mods.empty()) h["mods"] = formats::SaveModsJson(origin.mods); // none: a save stays as it was before mods
     h["converted_from"] = nullptr;
     return true;
 }
@@ -645,6 +648,23 @@ void ReadManager(std::string_view kind, obl::world::World& world)
 }
 } // namespace obl_load
 
+namespace {
+// The save's mods differ from the active ones (header.mods): the player decides, and a run without a player (test script,
+// headless host) always refuses, since a dialog would block it. The message names every mod. On a refusal `error` holds it.
+bool ConfirmModDifferences(const std::filesystem::path& file, const std::vector<std::string>& issues, std::string& error)
+{
+    std::string message = "This save was written with other mods than the active ones:";
+    for (const std::string& issue : issues) message += "\n- " + issue;
+    for (const std::string& issue : issues) OBL_LOG("obl.save %s: %s", file.generic_string().c_str(), issue.c_str());
+    const bool unattended = config::Get().headless || os::HasEnv("OBL_SCRIPT");
+    if (!unattended &&
+            ConfirmNotice(GetGameWindow(), (message + "\n\nLoad it anyway? The game may play differently.").c_str(), "OpenBeach"))
+        return true;
+    error = message;
+    return false;
+}
+} // namespace
+
 bool QueueOblSave(const std::filesystem::path& file, std::string& error)
 {
     // Mapping a whole document runs inside one frame and takes over 20 s on a loaded PC: give it the save load's limit.
@@ -655,12 +675,14 @@ bool QueueOblSave(const std::filesystem::path& file, std::string& error)
     nlohmann::json index;
     nlohmann::json document;
     std::vector<std::string> warnings;
+    std::vector<std::string> modIssues;
     if (!formats::ReadSavePackOrigin(PackRoot(), origin, error) ||
             !ReadJson(pack_path::Resolve(PackRoot(), "catalog/index.json"), index, error) || !ReadJson(file, document, error))
         return false;
-    const bool loaded = formats::ValidateOblSaveDocument(document, origin, *schemas, warnings, error);
+    const bool loaded = formats::ValidateOblSaveDocument(document, origin, *schemas, warnings, error, formats::kGameGridSide, &modIssues);
     for (const std::string& warning : warnings) OBL_LOG("obl.save %s: %s", file.generic_string().c_str(), warning.c_str());
     if (!loaded) return false;
+    if (!modIssues.empty() && !ConfirmModDifferences(file, modIssues, error)) return false;
     formats::FillSaveDefaults(document, *schemas);
     formats::RecordsToSlots(document);
     auto load = std::make_shared<QueuedLoad>();

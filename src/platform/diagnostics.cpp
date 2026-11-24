@@ -113,6 +113,20 @@ void ShowErrorAndExit(void* owner, const Char16* text)
     GameExit("ShowErrorAndExit", "error", message);
 }
 
+bool ConfirmNotice(void* owner, const char* text, const char* caption)
+{
+#ifdef _WIN32
+    return MessageBoxA(platform::GetWin32Window(owner), text, caption, MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON2) == IDYES;
+#elif defined(__EMSCRIPTEN__)
+    (void)owner, (void)caption;
+    return EM_ASM_INT({ return confirm(UTF8ToString($0)) ? 1 : 0; }, text) != 0;
+#else
+    (void)owner;
+    OBL_LOG("%s: %s (no dialog here, answered no)", caption, text);
+    return false;
+#endif
+}
+
 void ShowNotice(void* owner, const char* text, const char* caption, bool information)
 {
 #ifdef _WIN32

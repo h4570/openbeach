@@ -152,6 +152,7 @@ start scenario s3
 seed 1
 fixed-dt 0.02
 hash-schema 2
+mods my_mod@<64 hex>
 @0 hash 0123456789abcdef
 @0 set-game-speed level=2
 @120 place-building key=BeachBar x=40 y=52 dir=2
@@ -159,7 +160,11 @@ hash-schema 2
 end 1000
 ```
 - Header lines in this order: format, start state (`scenario <name>` or `save <path>`; the name is a registry id, or
-  `<n>` / `s<n>` for campaign menu slot n, `sandbox<n>` for sandbox slot n, `ScenarioRegistry::FindByStartName`), `seed`, `fixed-dt`, `hash-schema`.
+  `<n>` / `s<n>` for campaign menu slot n, `sandbox<n>` for sandbox slot n, `ScenarioRegistry::FindByStartName`), `seed`, `fixed-dt`, `hash-schema`, then an optional `mods <id>@<hash>,...` line.
+- `mods` lists the active mods in load order with their content hashes ([../modding/mods.md](../modding/mods.md)); it is written
+  only when a mod is active, and a replay without the line means "no mods", so older replays stay valid. A replay (in the game
+  and headless) whose list differs from the active mods is an error that names the mod, not a warning: the world hashes cannot
+  match. A bot run records the active mods the same way.
 - Body lines `@T ...`: ticks never decrease; within a tick the checkpoint comes before the commands. A checkpoint
   `@T hash <16 hex>` may carry section digests after the hash (`guests=hhhhhhhh/fields ...`, non-empty sections in
   section order, [world-hashes.md](../testing/world-hashes.md#sections)); recordings write them, readers accept files

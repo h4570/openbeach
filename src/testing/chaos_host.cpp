@@ -328,7 +328,8 @@ int RunChaos()
     const auto booted = std::chrono::steady_clock::now();
     Report("boot frames=%d ms=%.0f", bootFrames, Milliseconds(started, booted));
 
-    command::Recorder recorder({command::StartKind::Scenario, run->start, run->seed, run->fixedDt, kWorldHashSchema});
+    command::Recorder recorder(
+            {command::StartKind::Scenario, run->start, run->seed, run->fixedDt, kWorldHashSchema, command::ActiveReplayMods()});
     Watch watch;
     watch.recorder = &recorder;
     watch.budget = run->checkRejected;
