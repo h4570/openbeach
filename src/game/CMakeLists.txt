@@ -80,6 +80,8 @@ add_library(obl_common STATIC
     ui/sprite_animation.cpp
     ui/sprite_animation.h
     ui/gui_layouts.cpp
+    ui/gui_patch.cpp
+    ui/gui_patch.h
     ui/own_controls.cpp
     ui/own_controls.h
     ui/gui_layouts.h

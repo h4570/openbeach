@@ -2,8 +2,8 @@
 
 A mod is a directory `<game dir>/mods/<id>/` with a `mod.json` manifest. Next to it sit the mod's files under their logical
 paths (`catalog/...`, `text/...`, `sprites/...`), the same paths a pack uses. A file in a mod replaces the whole file of the
-same path below it. Text tables and the catalog's record list merge instead (see "Text patches" and "Catalog patches"); every
-other JSON data file takes a [JSON data patch](data-patches.md).
+same path below it. Text tables, the catalog's record list and GUI layouts merge instead (see "Text patches", "Catalog patches"
+and [gui-patches.md](gui-patches.md)); every other JSON data file takes a [JSON data patch](data-patches.md).
 
 ## mod.json
 ```json

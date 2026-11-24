@@ -6,6 +6,7 @@
 
 #include "game/ui/gui_manager_dialogs.h"
 #include "game/ui/gui_modes_tools.h"
+#include "game/ui/gui_patch_runtime.h"
 #include "game/ui/input.h"
 #include "gui_tree.h"
 #include "game/ui/gui_modes_types.h"
@@ -115,6 +116,11 @@ template<class Callback> bool Walk(const GuiWidget& root, Callback&& visit)
 const GuiWidget* FindWidget(const GuiWidget& dialog, const std::vector<std::string>& selector, std::string& why)
 {
     const GuiWidget* found = nullptr;
+    if (selector.size() == 2 && ascii::EqualsNoCase(selector[0], "id")) {
+        found = gui_patch_runtime::FindControl(selector[1]);
+        if (!found) why = "no widget with id " + selector[1];
+        return found;
+    }
     if (selector.size() == 2 && ascii::EqualsNoCase(selector[0], "tip")) {
         Walk(dialog, [&](const GuiWidget& w) {
             std::string tip;
@@ -213,6 +219,8 @@ bool ReadGuiProbe(const std::string& name, double& out)
         out = gui->m_selection;
     else if (name == "gui-hash")
         out = state.hash;
+    else if (name == "gui-mod-action-count")
+        out = gui_patch_runtime::ModActionCount();
     else if (name.compare(0, 12, "gui-context-") == 0) {
         const int index = std::atoi(name.c_str() + 12);
         if (index < 0 || index >= 13) return false;
@@ -224,6 +232,18 @@ bool ReadGuiProbe(const std::string& name, double& out)
 
 bool ExecuteGuiControlCommand(const std::string& name, const std::vector<std::string>& args)
 {
+    if (name == "gui-mod-action") {
+        if (args.empty()) {
+            OBL_LOG("autotest: FAILED gui-mod-action needs an expected action");
+            return true;
+        }
+        const std::string& actual = gui_patch_runtime::LastModAction();
+        if (actual == args[0])
+            OBL_LOG("autotest: PASSED gui-mod-action == %s", actual.c_str());
+        else
+            OBL_LOG("autotest: FAILED gui-mod-action expected=%s actual=%s", args[0].c_str(), actual.c_str());
+        return true;
+    }
     if (name != "gui-open" && name != "gui-close" && name != "gui-move" && name != "gui-state" && name != "gui-animate" &&
             name != "gui-close-all")
         return false;

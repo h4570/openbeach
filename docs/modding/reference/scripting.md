@@ -30,10 +30,12 @@ A `"presentation"` mod changes nothing the simulation reads, so saves and replay
 presentation mod that ships anything but:
 - `mod.json`, the files under `scripts/presentation/`, documents at the top (`README.md`, `LICENSE`, `*.txt`);
 - text patches `text/<lang>.patch.json` that only add keys: feedback messages keep their formatted text in the world, so a
-  changed value of an existing key would make replays depend on the mod. The text loader refuses such a patch.
+  changed value of an existing key would make replays depend on the mod. The text loader refuses such a patch;
+- `gui/<name>.patch.json`: a GUI layout patch ([gui-patches.md](gui-patches.md)), or a JSON data patch of a presentation file
+  ([data-patches.md](data-patches.md), such as `gui/object_browser.patch.json`).
 
 Catalog records, rules, scenarios, world and object scripts, sprites, sounds and whole files of the pack are for world mods.
-Later API blocks (GUI patches, assets built by recipe) add to this list.
+Later API blocks (assets built by recipe) add to this list.
 
 ## Lifecycle
 The runtime starts with the first game frame after the start-up check. Every function is an optional global of the mod.

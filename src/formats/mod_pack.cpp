@@ -76,9 +76,14 @@ bool IsFile(const std::filesystem::path& path)
 // Whether `relative` (a generic path inside the mod) is a file a presentation mod may ship: the manifest, its scripts, text
 // patches (the text loader lets them only add keys) and documents at the top. Anything else may reach the simulation: a sprite's
 // frame count times an animation, a sound bank's size changes a random pick.
-bool PresentationMayShip(const std::string& relative)
+bool PresentationMayShip(const std::filesystem::path& file, const std::string& relative)
 {
     if (relative == "mod.json") return true;
+    // A GUI layout patch changes only what the screen shows; a JSON data patch under gui/ is judged by its target below.
+    if (relative.starts_with("gui/") && relative.find('/', 4) == std::string::npos && relative.ends_with(".patch.json")) {
+        if (data_patch::PatchFormat(file) == data_patch::kGuiPatchFormat) return true;
+        return !data_patch::IsSimulationDataPath(relative.substr(0, relative.size() - 11) + ".json");
+    }
     if (relative.starts_with(std::string(kPresentationScripts) + "/")) return true;
     if (relative.starts_with("text/") && relative.find('/', 5) == std::string::npos && relative.ends_with(".patch.json")) return true;
     if (relative.find('/') == std::string::npos) {
@@ -96,7 +101,7 @@ std::string FirstRefusedFile(const std::filesystem::path& directory)
     for (std::filesystem::recursive_directory_iterator it(directory, ec), end; !ec && it != end; it.increment(ec)) {
         if (it->is_directory(ec)) continue;
         const std::string relative = it->path().lexically_relative(directory).generic_string();
-        if (!PresentationMayShip(relative)) refused.push_back(relative);
+        if (!PresentationMayShip(it->path(), relative)) refused.push_back(relative);
     }
     if (refused.empty()) return {};
     return *std::min_element(refused.begin(), refused.end());
@@ -198,7 +203,8 @@ bool CheckActive(const std::filesystem::path& gameDirectory, std::string_view pa
         if (mod.manifest.scope == Scope::Presentation)
             if (const std::string file = FirstRefusedFile(*directory); !file.empty())
                 return fail("a presentation mod may not ship \"" + file +
-                        "\" (only scripts/presentation/, text/<lang>.patch.json and documents at the top)");
+                        "\" (only scripts/presentation/, text/<lang>.patch.json, gui/<name>.patch.json of presentation data and documents "
+                        "at the top)");
         if (mod.manifest.api > kPresentationApi)
             return fail("needs the presentation script API " + std::to_string(mod.manifest.api) + ", this game has " +
                     std::to_string(kPresentationApi) + "; update the game");

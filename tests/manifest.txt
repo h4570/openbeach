@@ -34,6 +34,7 @@ l0_mod_rule.txt @l0
 l0_mod_guests.txt @l0
 l0_mod_rule_replay.txt @l0
 l0_mod_rule_replay_refused.txt @l0
+l0_mod_gui_patch.txt @hidden @l0
 l0_mod_save.txt @l0
 l0_mod_script.txt @l0
 l0_mods_mixed.txt @l0

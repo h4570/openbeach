@@ -194,6 +194,13 @@ OBL_TEST_CASE("mod_pack.a_presentation_mod_ships_no_simulation_data")
     refused("sprites/kiosk.json");
     refused("text/en.json"); // a whole table could change existing texts
     refused("text/sub/en.patch.json");
+    refused("gui/sim_list.patch.json"); // a JSON data patch of a gui/ file that is not on the presentation list
+
+    // A GUI layout patch and a JSON data patch of a presentation file are presentation data.
+    WriteManifest(game.path, "layout", fields);
+    Write(game.path / "mods/layout/gui/main_menu.patch.json", R"({"format":"obl.gui_patch","version":1,"ops":[]})");
+    Write(game.path / "mods/layout/gui/object_browser.patch.json", R"({"format":"obl.json_patch","version":1,"ops":[]})");
+    OBL_CHECK(Accepted(game.path, "l0", "layout", error));
 
     // A world mod (the default scope) may ship all of it and is recorded.
     WriteManifest(game.path, "world", "\"pack\":\"l0\"");

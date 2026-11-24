@@ -68,7 +68,7 @@ template<class Env> void DialogSetVisible(Dialog& dialog, uint32_t visible, Env&
 {
     env.BaseSetVisible(dialog, visible);
     if (static_cast<uint8_t>(visible)) dialog.m_minimized = 0;
-    ForEachChild(dialog.m_children, [&](Widget& w) { env.SetVisible(w, visible); });
+    ForEachChild(dialog.m_children, [&](Widget& w) { env.SetVisible(w, w.m_modHidden ? 0u : visible); });
 }
 
 template<class Env> uint8_t DialogOnMouseWheel(Dialog& dialog, int x, int y, int delta, Env& env)
@@ -113,7 +113,9 @@ template<class Env> void DialogInvalidate(Dialog& dialog, Env& env)
 
 template<class Env> void DialogDrawOverlay(Dialog& dialog, Env& env)
 {
-    ForEachChildListsLast(dialog.m_children, [&](Widget& w) { env.DrawOverlay(w); });
+    ForEachChildListsLast(dialog.m_children, [&](Widget& w) {
+        if (!w.m_modHidden) env.DrawOverlay(w);
+    });
 }
 
 // The background is painted once per invalidation (a sprite at depth 0xfff, or white unless the script said "CLEAR"); the children draw every
@@ -127,7 +129,9 @@ template<class Env> void DialogDraw(Dialog& dialog, gui_canvas::Canvas& canvas, 
             canvas.FillRect(dialog.m_x0, dialog.m_y0, Sub(dialog.m_x1, 1), Sub(dialog.m_y1, 1), kClearColor);
         dialog.m_dirty = 0;
     }
-    ForEachChildListsLast(dialog.m_children, [&](Widget& w) { env.Draw(w); });
+    ForEachChildListsLast(dialog.m_children, [&](Widget& w) {
+        if (!w.m_modHidden) env.Draw(w);
+    });
 }
 
 template<class Env> void DialogAddChild(Dialog& dialog, Widget* child, Env& env)
@@ -247,7 +251,8 @@ template<class Env> uint8_t DialogOnMouseLeft(Dialog& dialog, int x, int y, int 
     env.HitTest(dialog, x, y);
     if (state == 1) {
         if (!dialog.m_animating) {
-            taken = FirstChildAnswer(dialog.m_children, [&](Widget& w) { return env.OnMouseLeft(w, x, y, 1); });
+            taken = FirstChildAnswer(
+                    dialog.m_children, [&](Widget& w) { return w.m_modHidden ? uint8_t(0) : env.OnMouseLeft(w, x, y, 1); });
             if (!taken && env.HitTest(*dialog.m_caption, x, y) && !dialog.m_modal && dialog.m_movable) {
                 dialog.m_dragging = 1;
                 taken = 1;
@@ -258,10 +263,13 @@ template<class Env> uint8_t DialogOnMouseLeft(Dialog& dialog, int x, int y, int 
             DragStep(dialog, x, y, env);
             taken = 1;
         } else if (!dialog.m_animating) {
-            taken = FirstChildAnswer(dialog.m_children, [&](Widget& w) { return env.OnMouseLeft(w, x, y, 2); });
+            taken = FirstChildAnswer(
+                    dialog.m_children, [&](Widget& w) { return w.m_modHidden ? uint8_t(0) : env.OnMouseLeft(w, x, y, 2); });
         }
     } else {
-        if (!dialog.m_animating) taken = FirstChildAnswer(dialog.m_children, [&](Widget& w) { return env.OnMouseLeft(w, x, y, state); });
+        if (!dialog.m_animating)
+            taken = FirstChildAnswer(
+                    dialog.m_children, [&](Widget& w) { return w.m_modHidden ? uint8_t(0) : env.OnMouseLeft(w, x, y, state); });
         dialog.m_dragging = 0;
     }
     if (!dialog.m_dragging) {

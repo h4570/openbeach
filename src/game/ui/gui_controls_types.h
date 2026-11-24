@@ -27,6 +27,8 @@ struct GuiButtonData : GuiWidget {
     SpriteInstance* m_instance = nullptr;
     int32_t m_textSource = 0;
     uint8_t m_flashing = 0, m_rightClick = 0;
+    char* m_leftModAction = nullptr;
+    char* m_rightModAction = nullptr;
 };
 
 // gui_controls.cpp

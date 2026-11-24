@@ -34,6 +34,7 @@
 #include "game/ui/map_view_access.h"
 #include "game/ui/gui_content_runtime.h"
 #include "game/ui/gui_layouts_runtime.h"
+#include "game/ui/gui_patch_runtime.h"
 #include "game/ui/gui_definitions.h"
 #include "game/tables/building_behavior.h"
 #include "game/objects/object_manager_queries.h"
@@ -399,11 +400,17 @@ struct GameEnv {
     void DestroyListNode(void* node) { DestroyListNodeCall(node); }
     void ReleaseFont(const void* font) { ReleaseFontCall(font); }
 
+    std::vector<gui_patch::ControlBinding> pendingBindings;
+
     void* ReadLayout(const char* file, uint32_t& size)
     {
         size = 0;
+        pendingBindings.clear();
         if (!file) return nullptr;
-        const std::string bytes = own_controls::Apply(gui_layouts::ReadScript(file));
+        const auto* renderer = game::GetRenderer();
+        const int screenW = renderer && renderer->m_width > 0 ? renderer->m_width : gui_patch::kReferenceWidth;
+        const int screenH = renderer && renderer->m_height > 0 ? renderer->m_height : gui_patch::kReferenceHeight;
+        const std::string bytes = own_controls::Apply(gui_layouts::ReadPatchedScript(file, screenW, screenH, pendingBindings));
         auto* text = static_cast<uint8_t*>(::operator new(bytes.size() + 1));
         std::memcpy(text, bytes.data(), bytes.size());
         text[bytes.size()] = file_io::kTerminator;
@@ -579,6 +586,7 @@ void GuiManager::LoadScript(const char* path)
     gui::g_counter.Count();
     gui::GameEnv env;
     gui_manager_frame::LoadScript(env, this, path);
+    gui_patch_runtime::BindLayout(this, env.pendingBindings);
 }
 void GuiManager::Update(float dt)
 {

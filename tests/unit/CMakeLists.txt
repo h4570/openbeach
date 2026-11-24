@@ -336,6 +336,7 @@ add_executable(obl_unit_tests
     convert_script_vocabulary_test.cpp
     gui_content_test.cpp
     gui_layouts_test.cpp
+    gui_patch_test.cpp
     own_credits_test.cpp
     own_controls_test.cpp
     convert_gui_tables_test.cpp

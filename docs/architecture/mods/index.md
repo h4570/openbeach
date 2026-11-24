@@ -33,7 +33,8 @@ a fake host. The interpreter comes from `cmake/lua.cmake`, linked into `obl_comm
   mods is refused.
 - A presentation mod reaches the simulation only through the commands open to scripts, which the replay records, so a replay
   never needs it (`mod_pack::Recorded`, used by `ActiveReplayMods` and the save writer). For that to hold, the start-up check
-  allows it only a list of files: `mod.json`, `scripts/presentation/`, documents at the top, and text patches that only add keys
+  allows it only a list of files: `mod.json`, `scripts/presentation/`, documents at the top, `gui/<name>.patch.json` (a GUI
+  layout patch, or a JSON data patch of a presentation file), and text patches that only add keys
   (feedback messages keep their formatted text in the world hash, so a changed text would reach it). Sprites, sounds and other pack
   files are not on the list, since a frame count or the size of a sound bank can steer the simulation.
 - Every later block that lets presentation mods ship a new kind of file (GUI patches, assets built by recipe) extends that list in
