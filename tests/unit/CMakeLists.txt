@@ -331,6 +331,7 @@ add_executable(obl_unit_tests
     json_schema_test.cpp
     convert_cabinet_test.cpp
     convert_catalog_test.cpp
+    catalog_patch_test.cpp
     convert_exe_tables_test.cpp
     convert_script_vocabulary_test.cpp
     gui_content_test.cpp

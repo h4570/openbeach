@@ -34,6 +34,11 @@ constexpr Kind kKinds[] = {{"commodity_families", "obl.commodity_family", WorldP
         {"tables", "obl.table", WorldParams::kMaxTables}, {"scenery", "obl.scenery", WorldParams::kMaxScenery},
         {"buildings", "obl.building", WorldParams::kMaxBuildings}};
 
+// A refused mod patch: the message names the mod and the record already, so LoadPack reports it as it is.
+struct PatchFailure : std::runtime_error {
+    using std::runtime_error::runtime_error;
+};
+
 class Reader {
 public:
     explicit Reader(const std::filesystem::path& pack) : m_root(pack), m_params(std::make_unique<WorldParams>()) {}
@@ -59,11 +64,63 @@ public:
                 docs.push_back(std::move(doc));
             }
         }
+        ApplyPatches(schemas);
         Populate();
         out = std::move(*m_params);
     }
 
 private:
+    // The `catalog/index.patch.json` of every layer that has one, from the bottom up, so the records of mods land in load order.
+    // Each `add` name is appended to its category: existing records keep their indices, new ones get the next.
+    void ApplyPatches(const json_schema::Registry& schemas)
+    {
+        const auto layers = pack_path::Layers(m_root);
+        for (auto layer = layers.rbegin(); layer != layers.rend(); ++layer) {
+            const auto file = *layer / "catalog" / "index.patch.json";
+            std::error_code ec;
+            if (!std::filesystem::is_regular_file(file, ec)) continue;
+            ApplyPatch(file, schemas);
+        }
+    }
+    void ApplyPatch(const std::filesystem::path& file, const json_schema::Registry& schemas)
+    {
+        const std::string mod = file.parent_path().parent_path().filename().string();
+        const std::string where = "mod " + mod + ": " + file.string();
+        std::ifstream stream(file, std::ios::binary);
+        if (!stream) throw PatchFailure(where + ": cannot open");
+        const json doc = json::parse(stream, nullptr, false);
+        if (doc.is_discarded()) throw PatchFailure(where + ": invalid JSON");
+        if (!doc.is_object()) throw PatchFailure(where + ": not an object");
+        const auto format = doc.find("format");
+        if (format == doc.end() || !format->is_string() || format->get<std::string>() != "obl.catalog_index_patch")
+            throw PatchFailure(where + ": unknown format (expected obl.catalog_index_patch)");
+        const auto version = doc.find("version");
+        if (version == doc.end() || !version->is_number_integer() || version->get<int>() != 1)
+            throw PatchFailure(where + ": unsupported version");
+        const auto add = doc.find("add");
+        if (add == doc.end() || !add->is_object()) throw PatchFailure(where + ": add is not an object");
+        for (const Kind& kind : kKinds) {
+            const auto names = add->find(kind.name);
+            if (names == add->end()) continue;
+            if (!names->is_array()) throw PatchFailure(where + ": add." + kind.name + " is not a list");
+            auto& docs = m_docs[kind.name];
+            for (const auto& name : *names) {
+                if (!name.is_string()) throw PatchFailure(where + ": add." + kind.name + ": a name is not a string");
+                const std::string key = name.get<std::string>();
+                const std::string record = "mod " + mod + ": " + kind.name + " record " + key;
+                for (const auto& existing : docs)
+                    if (existing.at("key") == name) throw PatchFailure(record + ": already exists");
+                if (docs.size() >= kind.capacity) throw PatchFailure(record + ": engine capacity exceeded");
+                const auto recordFile = pack_path::Resolve(m_root, std::filesystem::path("catalog") / kind.name / (key + ".json"));
+                std::error_code ec;
+                if (!std::filesystem::is_regular_file(recordFile, ec)) throw PatchFailure(record + ": missing file " + recordFile.string());
+                m_current = recordFile.string();
+                json record_doc = Read(recordFile, kind.format, schemas);
+                if (record_doc.at("key") != name) throw PatchFailure(record + ": key differs from the name added");
+                docs.push_back(std::move(record_doc));
+            }
+        }
+    }
     static json Read(const std::filesystem::path& path, const char* format, const json_schema::Registry& schemas)
     {
         std::ifstream file(path, std::ios::binary);
@@ -457,6 +514,9 @@ bool LoadPack(const std::filesystem::path& pack, WorldParams& out, std::string& 
     try {
         reader.Run(out);
         return true;
+    } catch (const PatchFailure& failure) {
+        error = failure.what();
+        return false;
     } catch (const std::exception& failure) {
         error = (reader.m_current.empty() ? (pack / "catalog").string() : reader.m_current) + ": " + failure.what();
         return false;
