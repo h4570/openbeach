@@ -1,0 +1,21 @@
+# A world mod and a presentation mod at once (docs/architecture/mods/index.md): the world mod's text patch and the presentation mod's
+# added key both load, the script's commands reach the world, and a save records only the world mod.
+# @env OBL_PACK=l0
+# @env OBL_MODS=l0_patch,l0_script
+# @timeout 120
+# @gameini Language.Language=5
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario 1
+await gameplay
+expect-text L0_PLAY_BUILDLIST Build (patched)
+expect-text L0_SCRIPT_HELLO Text from a presentation mod
+await speed-level == 2 10000
+save-obl testlogs/l0_mods_mixed.obl.save
+# Claiming the world mod alone matches the save, so the presentation mod is not in it.
+claim-mods l0_patch
+load-obl-save testlogs/l0_mods_mixed.obl.save
+await world-loaded
+claim-mods none
+expect-obl-save-refused testlogs/l0_mods_mixed.obl.save l0_patch
+quit

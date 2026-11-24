@@ -18,6 +18,7 @@ under GPL-3.0-or-later. The full licence text of each component is in its source
 | [SDL3](https://github.com/libsdl-org/SDL) | release-3.4.16 | zlib | window, input, audio and the Emscripten backend of the browser build; linked statically |
 | [nlohmann/json](https://github.com/nlohmann/json) | v3.11.3 | MIT | JSON data, scenario and settings files |
 | [zlib](https://github.com/madler/zlib) | v1.3.1 | zlib | inflate for pack and import code |
+| [Lua](https://www.lua.org) | 5.4.9 | MIT | the interpreter of the presentation scripts of mods; linked statically |
 | [pl_mpeg](https://github.com/phoboslab/pl_mpeg) | commit `c871f2b` | MIT | MPEG video decoding (`pl_mpeg.h`) |
 | [dr_mp3](https://github.com/mackron/dr_libs) | commit `dfe8377` | public domain or MIT-0, at your choice | MP3 decoding (`dr_mp3.h`) |
 

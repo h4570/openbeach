@@ -60,6 +60,7 @@ FetchContent_Declare(dr_mp3
 FetchContent_MakeAvailable(dr_mp3)
 
 include(cmake/zlib_inflate.cmake)
+include(cmake/lua.cmake)
 
 add_compile_definitions(WIN32_LEAN_AND_MEAN NOMINMAX UNICODE _UNICODE _CRT_SECURE_NO_WARNINGS)
 if(MSVC)

@@ -1,0 +1,23 @@
+# A presentation mod's script reaches the world through game commands (docs/modding/reference/scripting.md): the test mod
+# tests/mods/l0_script sets the game speed and pauses at fixed gameplay frames, and sees the mouse button.
+# @env OBL_PACK=l0
+# @env OBL_MODS=l0_script
+# @timeout 120
+# @expect-log presentation scripts: mod "l0_script" loaded 1 file
+# @expect-log mod l0_script: started, api 1
+# @expect-log mod l0_script: mouse down left
+# @expect-log mod l0_script: mouse up left
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario 1
+await gameplay
+await speed-level == 2 10000
+await paused == 1 10000
+await paused == 0 10000
+await speed-level == 0 10000
+step 5
+command-report
+expect-last applied 4
+click 400 300
+step 5
+quit

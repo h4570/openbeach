@@ -30,6 +30,7 @@
 #include "game/game/settings_store.h"
 #include "game/game/game_api.h"
 #include "game/game/command_loop.h"
+#include "game/mods/presentation_scripts.h"
 #include "core/config.h"
 #include "game/game/game_core.h"
 #include "game/game/game_parameters_construct.h"
@@ -351,6 +352,7 @@ template<class T> void End(game::Member<T>& member)
 
 void Destruct(Game* game)
 {
+    mods::StopPresentationScripts();
     Save(game);
     // The final save, then the settings object.
     settings_store::Save(*game->m_settings);
@@ -604,6 +606,8 @@ void Update(Game* game)
     if (!g_staleGameplayGui) game->m_guiManager.get()->Update(dt);
     game->m_sound.get()->Update(dt);
     game->m_loopSounds->UpdateFrame(dt);
+    // The mods' presentation scripts after the state's update: a command they submit runs at the next tick, like a GUI click.
+    mods::PresentationFrame(dt, GetInput());
     // Left Shift held, U pressed, left Alt held (physical keys), only outside a world.
     const ui::Input& input = *GetInput();
     if (InputKeyHeld(input, obl::input::KeyCode::LeftShift) && InputKeyPressed(input, obl::input::KeyCode::U) &&

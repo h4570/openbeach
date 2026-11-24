@@ -59,6 +59,7 @@ FetchContent_Declare(nlohmann_json
     DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
 FetchContent_MakeAvailable(nlohmann_json)
 include(${REPO}/cmake/zlib_inflate.cmake)
+include(${REPO}/cmake/lua.cmake)
 # The runtime loads converted GUI tables even in headless scripts that exercise GUI containers.
 # Build the portable converter without the simulation's MSVC ABI compatibility flags.
 file(GLOB_RECURSE CONVERT_SOURCES CONFIGURE_DEPENDS ${REPO}/importer/src/*.cpp)
@@ -259,7 +260,7 @@ include(${REPO}/cmake/embedded_icon.cmake)
 foreach(target ${GAME_TARGETS})
     target_include_directories(${target} PRIVATE ${REPO}/src ${REPO} ${REPO}/importer/include ${REPO}/tests/unit/linux
         ${pl_mpeg_SOURCE_DIR} ${dr_mp3_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/win_types)
-    target_link_libraries(${target} PRIVATE nlohmann_json::nlohmann_json SDL3::SDL3-static obl_zlib)
+    target_link_libraries(${target} PRIVATE nlohmann_json::nlohmann_json SDL3::SDL3-static obl_zlib obl_lua)
     # The convert-save test command calls the converter in process (native saves do not, obl_formats serves them): its
     # portable sources compile into the game with the simulation's flags, since they share json_schema and nlohmann types.
     obl_embedded_schemas(${target})

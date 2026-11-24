@@ -10,6 +10,7 @@ the contracts between them.
 | [commands.md](commands.md) | The command layer: player input as semantic commands applied at a tick, the text form, the replay file with world-hash checkpoints, and how recorder, replay and headless `obl-sim` share it. |
 | [headless/](headless/index.md) | Headless invocation, test-script and batch contracts, replay and save lifecycle, and platform switches and import inventory. The Windows and Linux hosts share the simulation without window, audio or input devices. |
 | [input.md](input.md) | The Input object shared by the Windows host and the Linux `obl-sim`: pure state in `src/game/ui/input_state.h`, the `Input_*` functions in `input_ops.cpp`, and the device backends (SDL on Windows, none headless). |
+| [mods/](mods/index.md) | The mod system for engine work: layers and patches, the two kinds of scripts, the scope rule, the input path, saves and replays. |
 | [map.md](map.md) | The map module (`src/game/map/`): the grid, its cells, areas and boat route, the route search and routes, the path tiles, the sea animation, their lifetimes and tests. |
 | [game.md](game.md) | `Game`, its `Settings` and the game state machine: the `Game` record (`src/game/game/game.h`), `game_states.h` and what the Game owns. |
 | [presentation.md](presentation.md) | Presentation: sprites, map view, renderer, GUI, fonts, cursor and audio, their records and boundaries; golden images and map hashes as the tests. |

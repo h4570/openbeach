@@ -31,6 +31,8 @@ l0_mod.txt @l0
 l0_mod_text_patch.txt @l0
 l0_mod_catalog_patch.txt @l0
 l0_mod_save.txt @l0
+l0_mod_script.txt @l0
+l0_mods_mixed.txt @l0
 golden_hash_l0_s1.golden @l0
 gui_image_bar_l0.txt @hidden @l0
 replay_mismatch.txt @l0
@@ -38,3 +40,4 @@ replay_l0_commands.txt @l0
 replay_l0_construction.txt @l0
 replay_l0_gui.txt @l0
 replay_l0_rejected.txt @l0
+replay_l0_mod_script.txt @l0

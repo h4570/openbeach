@@ -1,4 +1,10 @@
 add_library(obl_common STATIC
+    mods/key_names.cpp
+    mods/key_names.h
+    mods/presentation_scripts.cpp
+    mods/presentation_scripts.h
+    mods/script_runtime.cpp
+    mods/script_runtime.h
     ui/palette_modifiers.cpp
     ui/palette_modifiers.h
     game/rng.cpp
@@ -184,7 +190,7 @@ add_library(obl_common STATIC
     game/game_states.h
     game/game_states_logic.h)
 target_include_directories(obl_common PUBLIC ${CMAKE_SOURCE_DIR}/src)
-target_link_libraries(obl_common PUBLIC SDL3::SDL3-static nlohmann_json::nlohmann_json obl_core obl_formats obl_json_schema)
+target_link_libraries(obl_common PUBLIC SDL3::SDL3-static nlohmann_json::nlohmann_json obl_core obl_formats obl_json_schema obl_lua)
 # All project targets share one float contract: AVX2 scalar math, no FMA contraction
 # (/fp:precise without /fp:contract); keep external libraries on their own flags.
 if(MSVC)
