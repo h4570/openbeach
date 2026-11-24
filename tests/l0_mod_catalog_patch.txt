@@ -1,0 +1,23 @@
+# A mod's catalog/index.patch.json appends a building to the pack's list: the pack's records keep their indices and the new
+# one is built like any other (the mod shadows the scenario file only to list the building as available).
+# @env OBL_PACK=l0
+# @env OBL_MODS=l0_catalog
+# @timeout 120
+# @gameini Language.Language=5
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario 1
+await gameplay
+step 50
+expect cash 20000
+expect buildings 3
+place-find building MOD_KIOSK
+command place-building key=MOD_KIOSK x=$x y=$y dir=0
+step 1
+command-report
+expect cash 19300
+object-find building MOD_KIOSK
+expect-last count 1
+step 500
+expect buildings 4
+quit

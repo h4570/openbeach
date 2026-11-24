@@ -2,7 +2,7 @@
 
 A mod is a directory `<game dir>/mods/<id>/` with a `mod.json` manifest. Next to it sit the mod's files under their logical
 paths (`catalog/...`, `text/...`, `sprites/...`), the same paths a pack uses. A file in a mod replaces the whole file of the
-same path below it. Text tables merge instead (see "Text patches"); merging catalog records is not done yet.
+same path below it. Text tables and the catalog's record list merge instead (see "Text patches" and "Catalog patches").
 
 ## mod.json
 ```json
@@ -49,7 +49,24 @@ A mod may ship `text/<lang>.patch.json` instead of a whole table:
 - A malformed patch stops the loading with an error naming the mod, the file and the key: invalid JSON, an unknown format
   or version, an `entries` that is not an object, a value that is not a string, a key that is not ASCII.
 
+## Catalog patches
+`catalog/index.json` lists the records of each category, and that order gives the records their indices. A mod adds records
+without copying it, with `catalog/index.patch.json`:
+```json
+{ "format": "obl.catalog_index_patch", "version": 1, "add": { "buildings": ["my_kiosk"], "commodities": ["my_soda"] } }
+```
+- The record files sit at the usual `catalog/<category>/<name>.json` of the mod. The loader reads the pack's `index.json`
+  (or a full replacement from a layer), then appends the `add` names of each active mod in load order: existing records
+  keep their indices, mod records get the next ones.
+- References between records resolve by name across the merged list, so a mod building may use a mod commodity.
+- Changing an existing record is a whole-file shadow of its `catalog/<category>/<name>.json`.
+- A refused patch stops the loading with an error naming the mod and the record: a name that already exists (in the pack,
+  an earlier mod or the same patch), a missing record file, a record whose `key` differs from its name, more records than the
+  engine's limit for the category (`WorldParams::kMaxBuildings`, ...), or a malformed patch (format, version, `add`).
+- Removing, reordering or renaming records is not supported, and neither are GUI entries for new buildings.
+
 ## Tests
 `pack_path_test` and `mod_pack_test` (unit); `tests/l0_mod.txt` runs the L0 pack with the test mod `tests/mods/l0_test`, which
 `tools/runtests.ps1` copies to `run/mods/`. `text_load_test` covers the text patches; `tests/l0_mod_text_patch.txt` runs the mod
-`tests/mods/l0_patch`.
+`tests/mods/l0_patch`. `catalog_patch_test` covers the catalog patches; `tests/l0_mod_catalog_patch.txt` builds the
+building that the mod `tests/mods/l0_catalog` adds.
