@@ -3,6 +3,7 @@
 #include "core/call_counter.h"
 #include "core/log.h"
 #include "core/pack_path.h"
+#include "formats/data_patch.h"
 #include "game/game/diagnostics.h"
 #include "game/game/game_context.h"
 #include "game/game/game_api.h"
@@ -58,7 +59,7 @@ void* Construct(void* block, const char* /*path*/)
     SetCurrent(list);
     list->m_first = nullptr;
     std::string error;
-    std::ifstream file(pack_path::Resolve(pack_path::Selected(), kGameParametersJson), std::ios::binary);
+    data_patch::Input file(pack_path::Resolve(pack_path::Selected(), kGameParametersJson));
     const auto document = file ? nlohmann::ordered_json::parse(file, nullptr, false) : nlohmann::ordered_json();
     if (!file)
         error = "cannot open";

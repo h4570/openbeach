@@ -1,0 +1,32 @@
+#pragma once
+
+#include <filesystem>
+#include <fstream>
+#include <sstream>
+#include <span>
+#include <string>
+#include <vector>
+
+namespace obl::data_patch {
+
+// Opens a resolved pack file for a loader: the patched copy Prepare built for it, else the file itself, so with no
+// patches every loader reads the same bytes as before.
+class Input : public std::istream {
+public:
+    explicit Input(const std::filesystem::path& file);
+
+private:
+    std::filebuf m_file;
+    std::stringbuf m_text;
+};
+
+// Whether a logical pack path (`rules/game_parameters.json`) feeds the world. Patching such a file makes a mod a world
+// mod; the start-up scope check of presentation mods uses this list.
+bool IsSimulationDataPath(const std::filesystem::path& logical);
+
+// Applies the `<logical>.patch.json` files of `mods` (load order) to the files they name and checks each result against
+// its schema. All documents are built before any is published, so a failure keeps the previous state. `conflicts` lists
+// each value a later mod sets over an earlier one's, naming both; `error` names the mod, the file, the op and the path.
+bool Prepare(const std::filesystem::path& pack, std::span<const std::string> mods, std::vector<std::string>& conflicts, std::string& error);
+
+} // namespace obl::data_patch

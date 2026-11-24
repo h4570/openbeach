@@ -1,0 +1,12 @@
+OBL-replay 1
+start scenario 1
+seed 1
+fixed-dt 0.02
+hash-schema 3
+mods l0_rule@7bdccd58404cfc7d098b9a28ae1e0fce1de509c71ab029747f22a446bd9cd1f5
+@0 hash 5343f8fd3a72c43d world=3d5372bd/55 economy=789a9828/18 map=d35709af/32772 objects=3f3f5aaa/7 buildings=36b3a59b/195 staff=6505eb0a/84 ferry=09f31930/40 repair=216add6a/7 feedback=551ff0d4/15 messages=04f668da/2 cleaning=c75fa4ba/5 construction=a771e050/14 weather=585424b3/28 rng=511f88fc/2
+@25 hash 785fbc4ce91a5e99 world=92d50cb2/55 economy=789a9828/18 map=d35709af/32772 objects=3f3f5aaa/7 buildings=36b3a59b/195 staff=cfcebe1e/84 ferry=09f31930/40 repair=216add6a/7 feedback=551ff0d4/15 messages=04f668da/2 cleaning=c75fa4ba/5 construction=a771e050/14 weather=585424b3/28 rng=55d32789/2
+@50 hash 328ab715abebf2f0 world=3898aee9/55 economy=789a9828/18 map=d35709af/32772 objects=3f3f5aaa/7 buildings=36b3a59b/195 staff=fba9df42/84 ferry=09f31930/40 repair=216add6a/7 feedback=551ff0d4/15 messages=04f668da/2 cleaning=c75fa4ba/5 construction=a771e050/14 weather=585424b3/28 rng=052ce8c9/2
+@75 hash 51aa63340cac397f world=1b40c243/55 economy=789a9828/18 map=d35709af/32772 objects=3f3f5aaa/7 buildings=36b3a59b/195 staff=292a6102/84 ferry=09f31930/40 repair=216add6a/7 feedback=b2408d8c/15 messages=04f668da/2 cleaning=c75fa4ba/5 construction=a771e050/14 weather=585424b3/28 rng=06b853fc/2
+@100 hash 7cbe72693fa8afea world=7c0b5221/55 economy=789a9828/18 map=d35709af/32772 objects=3f3f5aaa/7 buildings=36b3a59b/195 staff=56e4f97a/84 ferry=09f31930/40 repair=216add6a/7 feedback=b2408d8c/15 messages=04f668da/2 cleaning=c75fa4ba/5 construction=a771e050/14 weather=585424b3/28 rng=6b863263/2
+end 100

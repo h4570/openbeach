@@ -1,0 +1,23 @@
+{
+  "format": "obl.json_patch",
+  "version": 1,
+  "ops": [
+    {
+      "op": "append",
+      "path": "/types",
+      "items": [
+        {
+          "key": "swimmer",
+          "name": "Swimmer",
+          "gender": "m",
+          "sprite": "dummy",
+          "money": 200,
+          "nights": [
+            1,
+            2
+          ]
+        }
+      ]
+    }
+  ]
+}

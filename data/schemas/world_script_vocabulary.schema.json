@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "obl.world_script_vocabulary",
+  "type": "object",
+  "properties": {
+    "format": {
+      "const": "obl.world_script_vocabulary"
+    },
+    "version": {
+      "const": 1
+    },
+    "messages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 108,
+      "maxItems": 108
+    }
+  },
+  "required": [
+    "format",
+    "version",
+    "messages"
+  ],
+  "additionalProperties": false
+}

@@ -9,7 +9,7 @@ namespace obl::test {
 //   command <text>       submits one command in its text form (docs/architecture/commands.md) to the game loop's queue; it runs at the start
 //                        of the next gameplay game_api::Update. A text that does not parse is FAILED.
 //   command-report       `command-report tick= applied= rejected= dropped= pending= last-applied= in-world=` (totals of the process)
-//   object-find building|scenery <KEY> [n] / object-find staff <Class> [n]   the n-th (default 0) such object: `object-find id= count=`
+//   object-find building|scenery <KEY> [n] / object-find staff <Class> [n] / object-find guest <key>|* [n]   the n-th (default 0) such object: `object-find id= count=`
 //                        (id -1 when there is none); Class is Lifeguard, Mechanic, Rep, Builder, Cleaner or SecurityGuard
 //   place-find building|scenery <KEY> [dir]   the first footprint origin (top row first) where the place mode's fit check passes:
 //                        `place-find found= x= y=` (x/y -1 when none), for `command place-building key=<KEY> x=$x y=$y dir=<dir>`

@@ -1,0 +1,6 @@
+# @env OBL_PACK=l0
+# @timeout 180
+# @env OBL_MODS=
+# @expect-log replay refused: .*l0_rule
+replay replays/l0_rule.replay expect-mod-mismatch
+quit

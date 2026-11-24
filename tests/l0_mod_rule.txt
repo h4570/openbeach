@@ -1,0 +1,11 @@
+# @env OBL_PACK=l0
+# @timeout 180
+# @env OBL_MODS=l0_rule
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario 1
+await gameplay
+set-hour 9
+step 100
+expect-range hour 9.7 9.9
+quit

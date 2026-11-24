@@ -5,6 +5,7 @@
 #include "core/json_schema.h"
 #include "core/pack_path.h"
 #include "core/sha256.h"
+#include "formats/data_patch.h"
 #include "formats/schemas.h"
 
 #include <algorithm>
@@ -227,7 +228,7 @@ std::optional<uint32_t> SaveFloatBits(const nlohmann::json& value)
 namespace {
 std::optional<nlohmann::json> ReadJsonFile(const std::filesystem::path& path)
 {
-    std::ifstream in(path, std::ios::binary);
+    data_patch::Input in(path);
     if (!in) return std::nullopt;
     nlohmann::json value = nlohmann::json::parse(in, nullptr, false);
     if (value.is_discarded() || !value.is_object()) return std::nullopt;

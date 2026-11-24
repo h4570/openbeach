@@ -2,6 +2,7 @@
 #include "catalog_schemas.h"
 #include "core/json_schema.h"
 #include "core/pack_path.h"
+#include "formats/data_patch.h"
 
 #include <algorithm>
 #include <fstream>
@@ -19,7 +20,7 @@ std::string MapPath(const std::string& map, std::string_view suffix)
 
 json ReadDocument(const std::filesystem::path& path, const json_schema::Registry& schemas, const char* schema)
 {
-    std::ifstream file(path, std::ios::binary);
+    data_patch::Input file(path);
     if (!file) throw std::runtime_error("cannot open " + path.string());
     json doc = json::parse(file, nullptr, false);
     if (doc.is_discarded()) throw std::runtime_error(path.string() + ": invalid JSON");

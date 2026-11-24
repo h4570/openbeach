@@ -1,0 +1,16 @@
+# @env OBL_PACK=l0
+# @timeout 180
+# @env OBL_MODS=l0_surfer,l0_swimmer
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario 1
+await gameplay
+step 50
+set-hour 13.99
+step 300
+expect guests-arrived-total 6
+object-find guest surfer
+expect-last-range count 1 6
+object-find guest swimmer
+expect-last-range count 1 6
+quit

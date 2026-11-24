@@ -16,6 +16,7 @@
 #include "core/ascii_case.h"
 #include "core/call_counter.h"
 #include "core/wide_path.h"
+#include "formats/data_patch.h"
 #include "game/game/diagnostics.h"
 #include <cstdlib>
 #include <cstring>
@@ -172,7 +173,7 @@ void ScriptedSound::Load(const char*)
 {
     Host host(false);
     const auto path = pack_path::Resolve(g_packDirectory, "sounds/sound_script.json");
-    std::ifstream file(path, std::ios::binary);
+    data_patch::Input file(path);
     if (!file) {
         Fatal("cannot read " + path.string());
         return;

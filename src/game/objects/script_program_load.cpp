@@ -8,6 +8,7 @@
 #include "core/file_io.h"
 #include "core/log.h"
 #include "game/objects/script_program.h"
+#include "formats/data_patch.h"
 #include "formats/script_pack.h"
 #include "core/call_counter.h"
 #include "core/wide_path.h"
@@ -63,7 +64,7 @@ ScriptProgram* Construct(ScriptProgram* objectScript)
 
 bool LoadVocabulary(const std::filesystem::path& path)
 {
-    std::ifstream file(path, std::ios::binary);
+    data_patch::Input file(path);
     if (!file) {
         g_loadError = "file not found";
         return false;

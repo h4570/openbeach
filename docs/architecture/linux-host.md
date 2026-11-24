@@ -36,7 +36,7 @@ Builds `obl-sim` (`tools/obl_sim_linux.sh`, into `$OBL_SIM_BUILD` or `build/linu
   `headless_save_reload`, `headless_biz_map`, `headless_batch`), plus `headless_missing_image` (a linked
   copy of the game directory without `packs/base/images/cursor.png` must stop with a `FatalError` naming it, exit 5,
   in both stdout and the log; the Windows manifest runs the same check through ctest);
-- `replay_<name>`: every reference replay of `tests/replays` (all but the `headless_*` and `mismatch` fixtures);
+- `replay_<name>`: every reference replay of `tests/replays` (all but the `headless_*` and `mismatch` fixtures and replays recorded with world mods, a `mods` header line, which their own game test plays with the mods);
 - the `.golden` entries of the default run (`golden_hash_s1/s3/s12`): the `{scenario}` template instantiated under
   `<game dir>/testlogs/linux/scripts`, its `world-hash` lines compared with `tests/golden-hashes/<name>.tsv`;
 - the `@headless` scripts of `tests/manifest.txt` but those with a `# @windows-only` header (`crash_handled.txt`: SEH): 12 per process (script lists) as `runtests.ps1` does, scripts with a
