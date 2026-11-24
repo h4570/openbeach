@@ -1,0 +1,6 @@
+# The replay of l0_mod_script.replay (docs/modding/reference/scripting.md), recorded with the presentation mod l0_script, played
+# back without any mod: the script's commands are in the replay, and the world hashes match.
+# @env OBL_PACK=l0
+# @timeout 180
+replay replays/l0_mod_script.replay
+quit

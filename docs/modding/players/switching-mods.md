@@ -23,13 +23,19 @@ The game stops at start-up and names the mod and the reason when a listed mod:
 - has a folder name that differs from its `id`;
 - was made for another pack;
 - is listed twice;
-- needs another mod that is not in the list, or that comes after it.
+- needs another mod that is not in the list, or that comes after it;
+- needs a newer version of the game (its script API).
 
 To get the game running again, remove that mod's id from `Active` (or fix the order or the missing mod it names), then start
 the game again.
 
+## A mod whose script fails
+A mod that changes only how the game looks or reacts (a presentation mod, with scripts) does not stop the game when its script
+fails: the game switches that mod off for the rest of the run, writes the mod, the file and the line into `openbeach.log`, and
+goes on with the other mods. Report the line to the mod's author, or remove the mod from `Active`.
+
 ## Saves made with mods
-A save made with mods remembers its mod list. When you load it with a different list, the game asks first and names the
+A save made with mods remembers its mod list; presentation mods are not part of it, so they never get in the way of a save. When you load it with a different list, the game asks first and names the
 mod. A replay made with other mods is refused.
 
 Tests and tools can set the list for one run with the `OBL_MODS` environment variable; it overrides `Active` in the same

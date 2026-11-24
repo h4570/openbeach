@@ -1,0 +1,16 @@
+# Recording script of the own reference replay l0_mod_script.replay (docs/testing/replays.md): L0 scenario 1 with the presentation
+# mod tests/mods/l0_script, whose script sets the speed and pauses through game commands. A presentation mod is not recorded (no
+# `mods` line), so the replay, tests/replay_l0_mod_script.txt, plays back without it. Re-record with
+#   ./tools/replay.ps1 -Record tests/replays/l0_mod_script.record.txt
+# @env OBL_PACK=l0
+# @env OBL_MODS=l0_script
+# @gameini Sound.PlayListCount=0
+# @timeout 300
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario 1
+record replays/l0_mod_script.replay every 10
+await gameplay
+step 60
+record end
+quit

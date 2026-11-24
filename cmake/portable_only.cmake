@@ -20,6 +20,7 @@ if(MSVC)
 endif()
 
 include(cmake/zlib_inflate.cmake)
+include(cmake/lua.cmake)
 
 add_subdirectory(src/core)
 add_subdirectory(src/formats)

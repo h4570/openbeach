@@ -1,0 +1,10 @@
+{
+  "format": "obl.mod",
+  "version": 1,
+  "id": "l0_script",
+  "title": "L0 script test mod",
+  "mod_version": "1.0.0",
+  "packs": ["base", "l0"],
+  "scope": "presentation",
+  "api": 1
+}

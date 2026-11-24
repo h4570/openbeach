@@ -101,7 +101,8 @@ than truncated; float words preserve their bits, including nonfinite values acce
   queue is dropped (`dropped`) and the tick counter waits; on the first gameplay frame of a world the tick starts at 0. Each
   gameplay frame applies the pending commands with the current tick, logs `command: @T applied|rejected <text>`, then
   advances the tick, paused frames included.
-- Test scripts submit with `command <text>` ([game-tests.md](../testing/game-tests.md)); the GUI calls `SubmitCommand`.
+- Test scripts submit with `command <text>` ([game-tests.md](../testing/game-tests.md)); the GUI calls `SubmitCommand`, and so do
+  the presentation scripts of mods, for the commands open to them ([scripting.md](../modding/reference/scripting.md#commands)).
 
 ## GUI wiring
 - Wired: building, scenery, grass and paving placement; dozer and sell; staff hire/dismiss, wages and shifts (both bulk
@@ -161,7 +162,8 @@ end 1000
 ```
 - Header lines in this order: format, start state (`scenario <name>` or `save <path>`; the name is a registry id, or
   `<n>` / `s<n>` for campaign menu slot n, `sandbox<n>` for sandbox slot n, `ScenarioRegistry::FindByStartName`), `seed`, `fixed-dt`, `hash-schema`, then an optional `mods <id>@<hash>,...` line.
-- `mods` lists the active mods in load order with their content hashes ([../modding/reference/mods.md](../modding/reference/mods.md)); it is written
+- `mods` lists the active world mods in load order with their content hashes (presentation mods send commands, which the replay
+  holds, so it plays back without them) ([../modding/reference/mods.md](../modding/reference/mods.md)); it is written
   only when a mod is active, and a replay without the line means "no mods", so older replays stay valid. A replay (in the game
   and headless) whose list differs from the active mods is an error that names the mod, not a warning: the world hashes cannot
   match. A bot run records the active mods the same way.

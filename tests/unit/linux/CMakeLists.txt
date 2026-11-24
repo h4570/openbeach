@@ -27,6 +27,7 @@ FetchContent_Declare(nlohmann_json
     DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
 FetchContent_MakeAvailable(nlohmann_json)
 include(${REPO}/cmake/zlib_inflate.cmake)
+include(${REPO}/cmake/lua.cmake)
 
 # Map, path and presentation runtime; keep game glue out of standalone units.
 if(OBL_UNIT_SDL)
@@ -70,6 +71,8 @@ list(REMOVE_ITEM COMMON_SOURCES
     ${REPO}/src/game/ui/font_construct.cpp
     ${REPO}/src/game/game/game_states.cpp
     ${REPO}/src/game/game/game.cpp
+    # The game side of the presentation scripts submits into the game loop, which the units do not link.
+    ${REPO}/src/game/mods/presentation_scripts.cpp
     ${REPO}/src/game/game/game_parameters.cpp
     ${REPO}/src/game/map/grid_areas.cpp
     ${REPO}/src/game/map/grid_lifecycle.cpp
@@ -287,7 +290,7 @@ add_executable(obl_unit_tests
     ${CONVERT_SOURCES}
     ${HOST_SOURCES})
 target_include_directories(obl_unit_tests PRIVATE ${REPO}/tests/unit ${REPO}/src ${REPO} ${REPO}/importer/include)
-target_link_libraries(obl_unit_tests PRIVATE nlohmann_json::nlohmann_json obl_zlib)
+target_link_libraries(obl_unit_tests PRIVATE nlohmann_json::nlohmann_json obl_zlib obl_lua)
 include(${REPO}/cmake/embedded_schemas.cmake)
 obl_embedded_schemas(obl_unit_tests)
 if(OBL_UNIT_SDL)
