@@ -9,27 +9,31 @@
 # WSL git cannot open a worktree's .git file (a Windows path).
 param(
     [string]$Distribution = 'Ubuntu',
+    # The WSL user that runs the checks; empty takes the distribution's default user. Pass one when emsdk or the
+    # toolchain belongs to another account, such as a CI runner's.
+    [string]$User = '',
     [ValidateSet('gcc', 'clang', 'all')][string]$Compiler = 'clang',
     [switch]$Full,
     [string]$TidyBase = 'origin/main'
 )
 $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot
+$wsl = @('-d', $Distribution) + $(if ($User) { @('-u', $User) } else { @() })
 $logs = Join-Path $root "run/testlogs/linux-check/$([Guid]::NewGuid().ToString('N'))"
 New-Item -ItemType Directory -Force $logs | Out-Null
-$linuxRoot = & wsl.exe -d $Distribution -- wslpath -a -u $root.Replace('\', '/')
+$linuxRoot = & wsl.exe @wsl -- wslpath -a -u $root.Replace('\', '/')
 if ($LASTEXITCODE) { throw 'Cannot resolve the checkout in WSL' }
 $linuxRoot = $linuxRoot.Trim()
 # Include the checkout path so concurrent worktrees never share CMake caches.
 $key = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($root))).Substring(0, 16)
 $native = "/tmp/obl-linux-check-$key"
-& wsl.exe -d $Distribution -- mkdir -p $native
+& wsl.exe @wsl -- mkdir -p $native
 if ($LASTEXITCODE) { throw 'Cannot create the native Linux build directory' }
 
 $common = @("OBL_SOURCE_ROOT=$linuxRoot", "OBL_UNIT_BUILD_ROOT=$native/unit", "OBL_SIM_BUILD=$native/sim")
 # ccache when installed: CMake takes the launcher from these variables when it configures a new build tree. The cache
 # (~/.cache/ccache) is shared by every checkout; paths below the checkout hash relative, the build directory not at all.
-& wsl.exe -d $Distribution --exec sh -c 'command -v ccache >/dev/null'
+& wsl.exe @wsl --exec sh -c 'command -v ccache >/dev/null'
 if (-not $LASTEXITCODE) {
     $common += @('CMAKE_C_COMPILER_LAUNCHER=ccache', 'CMAKE_CXX_COMPILER_LAUNCHER=ccache', "CCACHE_BASEDIR=$linuxRoot",
               'CCACHE_NOHASHDIR=1', 'CCACHE_MAXSIZE=20G')
@@ -58,13 +62,13 @@ foreach ($check in $checks) {
     $log = Join-Path $logs "$($check.Name).log"
     $vars = $common + @($check.Env | Where-Object { $_ })
     if ($check.Command) {
-        & wsl.exe -d $Distribution --exec env @vars bash -c $check.Command *> $log
+        & wsl.exe @wsl --exec env @vars bash -c $check.Command *> $log
     } else {
         $copy = Join-Path $logs $check.Script
         [IO.File]::WriteAllText($copy, ([IO.File]::ReadAllText((Join-Path $PSScriptRoot $check.Script))).Replace("`r`n", "`n"), [Text.UTF8Encoding]::new($false))
-        $linuxCopy = & wsl.exe -d $Distribution -- wslpath -a -u $copy.Replace('\', '/')
+        $linuxCopy = & wsl.exe @wsl -- wslpath -a -u $copy.Replace('\', '/')
         if ($LASTEXITCODE) { throw 'Cannot resolve the LF script copy in WSL' }
-        & wsl.exe -d $Distribution --exec env @vars bash $linuxCopy.Trim() @($check.Args) *> $log
+        & wsl.exe @wsl --exec env @vars bash $linuxCopy.Trim() @($check.Args) *> $log
     }
     $code = $LASTEXITCODE
     if ($code) { $failed = $true }
