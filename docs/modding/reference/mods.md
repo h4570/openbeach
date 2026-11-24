@@ -13,12 +13,20 @@ same path below it. Text tables and the catalog's record list merge instead (see
   "title": "My mod",
   "mod_version": "1.0.0",
   "pack": "base",
-  "requires": ["other_mod"]
+  "requires": ["other_mod"],
+  "scope": "world",
+  "api": 1
 }
 ```
 - `id`: the directory name; lowercase letters, digits, `_` and `-` (the rules of a pack id, `pack_path::PackDirectory`).
-- `pack`: the id of the pack the mod was made for (`base`, `l0`); the mod only starts on that pack.
+- `pack`: the id of the pack the mod was made for (`base`, `l0`); the mod only starts on that pack. A mod that does not depend
+  on content lists several instead, `"packs": ["base", "l0"]`, and starts on any of them; a manifest names `pack` or `packs`,
+  not both.
 - `requires` (optional): mod ids that must be active and earlier in the load order.
+- `scope` (optional): `"world"` (the default) or `"presentation"`. A presentation mod reaches the simulation only through game
+  commands, so it ships no data the simulation reads, and saves and replays leave it out ([scripting.md](scripting.md#scope)).
+- `api` (optional): the presentation script API version the mod's scripts were written for; a mod with
+  `scripts/presentation/*.lua` must name it ([scripting.md](scripting.md)).
 
 ## Activation
 The active mods and their order come from the `Active` key of the `[Mods]` section in `openbeach.ini`, comma separated
@@ -32,8 +40,9 @@ and list a name once. The legacy `mod/` directory keeps working unchanged.
 
 ## Start-up check
 `mod_pack::Activate` (`src/formats/mod_pack.cpp`), called from `InitGame` after the pack check, stops the game with the mod id
-and the reason when an active mod has no directory or no valid manifest, names another id than its directory, targets another
-pack, is listed twice, or needs a mod that is not active or comes later. It also computes each mod's content hash once
+and the reason when an active mod has no directory or no valid manifest, names another id than its directory, does not list the
+selected pack, is listed twice, needs a mod that is not active or comes later, is a presentation mod that ships a file its scope
+does not allow, needs a newer script API than the game has, or ships scripts without naming `api`. It also computes each mod's content hash once
 (`pack_path::ModContentHash`: SHA-256 over the sorted relative file names and the hash of every file).
 
 ## Text patches
@@ -43,7 +52,7 @@ A mod may ship `text/<lang>.patch.json` instead of a whole table:
 ```
 - The loader reads the base table (the pack's, or a full replacement from a layer), then applies the patch of each active
   mod in load order; a later mod wins on the same key. Keys match ignoring case, as lookups do.
-- A key the base lacks is added. Removing a key is not supported.
+- A key the base lacks is added. Removing a key is not supported. A presentation mod's patch may only add keys.
 - A mod may patch a language the pack does not have: the patch applies on top of the pack's own language (else the first
   table in settings order), so untranslated keys still show text, and the language counts as available at start-up.
 - A malformed patch stops the loading with an error naming the mod, the file and the key: invalid JSON, an unknown format
@@ -66,8 +75,8 @@ without copying it, with `catalog/index.patch.json`:
 - Removing, reordering or renaming records is not supported, and neither are GUI entries for new buildings.
 
 ## Saves and replays
-A save records the active mods in `header.mods` and a replay in its `mods` line (id and content hash, load order), only when a mod
-is active. Loading a save with other mods asks the player and names the mod; a replay with other mods is refused. Details:
+A save records the active world mods in `header.mods` and a replay in its `mods` line (id and content hash, load order), only when
+one is active; presentation mods are left out. Loading a save with other mods asks the player and names the mod; a replay with other mods is refused. Details:
 [saves](../../architecture/data-formats/saves.md#mods) and [replay file](../../architecture/commands.md#replay-file).
 
 ## Tests
@@ -76,4 +85,5 @@ is active. Loading a save with other mods asks the player and names the mod; a r
 `tests/mods/l0_patch`. `catalog_patch_test` covers the catalog patches; `tests/l0_mod_catalog_patch.txt` builds the
 building that the mod `tests/mods/l0_catalog` adds. `convert_save_checks_test` and `command_recorder_test` cover the mod lists of
 saves and replays; `tests/l0_mod_save.txt` saves with the test mod, reloads with it, and is refused with another mod list (`claim-mods`,
-`expect-obl-save-refused`).
+`expect-obl-save-refused`). The presentation scripts' tests are in [scripting.md](scripting.md#tests); `tests/l0_mods_mixed.txt`
+runs a world mod and a presentation mod at once and checks that the save records only the world mod.

@@ -86,7 +86,9 @@ bool ParseMods(std::string_view text, std::vector<ReplayMod>& mods, std::string&
 std::vector<ReplayMod> ActiveReplayMods()
 {
     std::vector<ReplayMod> mods;
-    for (const mod_pack::ActiveMod& mod : mod_pack::Active()) mods.push_back({mod.manifest.id, mod.hash});
+    // Presentation mods reach the world only through commands, which the replay holds, so it plays back without them.
+    for (const mod_pack::ActiveMod& mod : mod_pack::Active())
+        if (mod_pack::Recorded(mod)) mods.push_back({mod.manifest.id, mod.hash});
     return mods;
 }
 
