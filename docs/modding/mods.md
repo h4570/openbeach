@@ -2,7 +2,7 @@
 
 A mod is a directory `<game dir>/mods/<id>/` with a `mod.json` manifest. Next to it sit the mod's files under their logical
 paths (`catalog/...`, `text/...`, `sprites/...`), the same paths a pack uses. A file in a mod replaces the whole file of the
-same path below it; merging catalog records and text tables is not done yet.
+same path below it. Text tables merge instead (see "Text patches"); merging catalog records is not done yet.
 
 ## mod.json
 ```json
@@ -36,6 +36,20 @@ and the reason when an active mod has no directory or no valid manifest, names a
 pack, is listed twice, or needs a mod that is not active or comes later. It also computes each mod's content hash once
 (`pack_path::ModContentHash`: SHA-256 over the sorted relative file names and the hash of every file).
 
+## Text patches
+A mod may ship `text/<lang>.patch.json` instead of a whole table:
+```json
+{ "format": "obl.text_patch", "version": 1, "entries": { "KEY": "new text", "NEW_KEY": "added text" } }
+```
+- The loader reads the base table (the pack's, or a full replacement from a layer), then applies the patch of each active
+  mod in load order; a later mod wins on the same key. Keys match ignoring case, as lookups do.
+- A key the base lacks is added. Removing a key is not supported.
+- A mod may patch a language the pack does not have: the patch applies on top of the pack's own language (else the first
+  table in settings order), so untranslated keys still show text, and the language counts as available at start-up.
+- A malformed patch stops the loading with an error naming the mod, the file and the key: invalid JSON, an unknown format
+  or version, an `entries` that is not an object, a value that is not a string, a key that is not ASCII.
+
 ## Tests
 `pack_path_test` and `mod_pack_test` (unit); `tests/l0_mod.txt` runs the L0 pack with the test mod `tests/mods/l0_test`, which
-`tools/runtests.ps1` copies to `run/mods/`.
+`tools/runtests.ps1` copies to `run/mods/`. `text_load_test` covers the text patches; `tests/l0_mod_text_patch.txt` runs the mod
+`tests/mods/l0_patch`.

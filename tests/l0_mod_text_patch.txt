@@ -1,0 +1,13 @@
+# A mod's text patch (text/en.patch.json) changes one key of the pack's table, adds a new one and leaves the rest.
+# @env OBL_PACK=l0
+# @env OBL_MODS=l0_patch
+# @timeout 120
+# @gameini Language.Language=5
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario 1
+await gameplay
+expect-text L0_PLAY_BUILDLIST Build (patched)
+expect-text L0_PATCH_NEW Text from a patch
+expect-text L0_PLAY_CLOSEBUILDING Close shop
+quit

@@ -2,6 +2,7 @@
 
 #include "unit_test.h"
 
+#include "core/pack_path.h"
 #include "game/tables/text_load.h"
 #include "core/ini_file.h"
 #include "game/game/settings_ini.h"
@@ -20,6 +21,22 @@ std::u16string Unit(char16_t unit)
 {
     return std::u16string(1, unit);
 }
+
+void Write(const std::filesystem::path& file, const std::string& text)
+{
+    std::filesystem::create_directories(file.parent_path());
+    std::ofstream(file, std::ios::binary) << text;
+}
+
+std::string Patch(const std::string& entries)
+{
+    return R"({"format":"obl.text_patch","version":1,"entries":)" + entries + "}";
+}
+
+// Every test leaves no mod active for the next one.
+struct ModsGuard {
+    ~ModsGuard() { pack_path::SetActiveMods({}); }
+};
 
 } // namespace
 
@@ -180,4 +197,86 @@ OBL_TEST_CASE("text_load.l0_fallback_keeps_requested_language")
     OBL_REQUIRE(text_load::LoadPack(dir.path, text_load::LanguageCode(tableLanguage), entries, error));
     OBL_REQUIRE(entries.size() == 1u);
     OBL_CHECK(entries[0].value == u"Close");
+}
+
+OBL_TEST_CASE("text_load.mod_patches_apply_in_load_order")
+{
+    ModsGuard guard;
+    const obl::test::TempPath game("obl_text_patch");
+    const auto pack = game.path / "packs" / "l0";
+    Write(pack / "text/en.json",
+            R"({"format":"obl.text","version":1,"language":"en","entries":[["A","base a"],["B","base b"],["C","base c"]]})");
+    Write(game.path / "mods/first/text/en.patch.json", Patch(R"({"B":"first b","NEW":"first new"})"));
+    Write(game.path / "mods/second/text/en.patch.json", Patch(R"({"b":"second b","C":"second c"})"));
+    std::vector<text::Entry> entries;
+    std::string error;
+
+    // No active mods: the patch files are not read.
+    OBL_REQUIRE(text_load::LoadPack(pack, "en", entries, error));
+    OBL_CHECK_EQ(entries.size(), 3u);
+    OBL_CHECK(entries[1].value == u"base b");
+
+    pack_path::SetActiveMods({"first", "second"});
+    OBL_REQUIRE(text_load::LoadPack(pack, "en", entries, error));
+    OBL_REQUIRE(entries.size() == 4u);
+    OBL_CHECK(entries[0].value == u"base a");
+    OBL_CHECK(entries[1].value == u"second b"); // the later mod wins, and the key matches ignoring case
+    OBL_CHECK(entries[2].value == u"second c");
+    OBL_CHECK_EQ(entries[3].key, std::string("NEW")); // a key the base lacks is new content
+    OBL_CHECK(entries[3].value == u"first new");
+
+    pack_path::SetActiveMods({"second", "first"});
+    OBL_REQUIRE(text_load::LoadPack(pack, "en", entries, error));
+    OBL_CHECK(entries[1].value == u"first b");
+}
+
+OBL_TEST_CASE("text_load.mod_patch_of_a_language_the_pack_lacks_uses_the_pack_language")
+{
+    ModsGuard guard;
+    const obl::test::TempPath game("obl_text_patch_language");
+    const auto pack = game.path / "packs" / "l0";
+    Write(pack / "text/en.json", R"({"format":"obl.text","version":1,"language":"en","entries":[["A","base a"],["B","base b"]]})");
+    Write(game.path / "mods/fr/text/fr.patch.json", Patch(R"({"B":"bière"})"));
+    pack_path::SetActiveMods({"fr"});
+    std::vector<text::Entry> entries;
+    std::string error;
+    OBL_REQUIRE(text_load::LoadPack(pack, "fr", entries, error));
+    OBL_REQUIRE(entries.size() == 2u);
+    OBL_CHECK(entries[0].value == u"base a"); // untranslated keys still show text
+    OBL_CHECK(entries[1].value == std::u16string(u"bi") + char16_t(0xE8) + u"re");
+
+    // The language counts as available for the start-up selection, without a notice.
+    text_load::LanguageSelection selection;
+    unsigned language = 1;
+    std::string notice;
+    OBL_REQUIRE(selection.Select(pack, language, notice, error));
+    OBL_CHECK_EQ(language, 1u);
+    OBL_CHECK(notice.empty());
+}
+
+OBL_TEST_CASE("text_load.malformed_mod_patch_names_mod_file_and_key")
+{
+    ModsGuard guard;
+    const obl::test::TempPath game("obl_text_patch_bad");
+    const auto pack = game.path / "packs" / "l0";
+    Write(pack / "text/en.json", R"({"format":"obl.text","version":1,"language":"en","entries":[["A","base a"]]})");
+    const auto patch = game.path / "mods/bad/text/en.patch.json";
+    pack_path::SetActiveMods({"bad"});
+    std::vector<text::Entry> entries;
+    std::string error;
+
+    Write(patch, Patch(R"({"A":"fine","KEY":7})"));
+    OBL_CHECK(!text_load::LoadPack(pack, "en", entries, error));
+    OBL_CHECK(entries.empty());
+    OBL_CHECK(error.find("mod bad") != std::string::npos);
+    OBL_CHECK(error.find("en.patch.json") != std::string::npos);
+    OBL_CHECK(error.find("key KEY") != std::string::npos);
+
+    Write(patch, "not json");
+    OBL_CHECK(!text_load::LoadPack(pack, "en", entries, error));
+    OBL_CHECK(error.find("invalid JSON") != std::string::npos);
+
+    Write(patch, R"({"format":"obl.text","version":1,"entries":{}})");
+    OBL_CHECK(!text_load::LoadPack(pack, "en", entries, error));
+    OBL_CHECK(error.find("unknown format") != std::string::npos);
 }

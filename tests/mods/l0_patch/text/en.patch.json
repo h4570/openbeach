@@ -1,0 +1,8 @@
+{
+  "format": "obl.text_patch",
+  "version": 1,
+  "entries": {
+    "L0_PLAY_BUILDLIST": "Build (patched)",
+    "L0_PATCH_NEW": "Text from a patch"
+  }
+}

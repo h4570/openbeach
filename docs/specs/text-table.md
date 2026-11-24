@@ -75,3 +75,9 @@ from the settings; when its table was not imported, another imported one is used
 ## Tests
 `tests/unit/text_table_test.cpp` (the two `data.` tests need the prepared `run/` directory),
 `tests/unit/text_load_test.cpp`.
+17. After the base table, the `text/<language>.patch.json` of each active mod (obl.text_patch: `entries` is an object from key
+    to string) applies in load order: the key's first entry changes when the key matches ignoring case, otherwise the
+    entry is appended; a later mod wins. A language only a mod has is built on the pack's own language and counts as available.
+    A malformed patch fails with the mod, the file and the key in the error and leaves no entries
+    (`text_load.mod_patches_apply_in_load_order`, `text_load.mod_patch_of_a_language_the_pack_lacks_uses_the_pack_language`,
+    `text_load.malformed_mod_patch_names_mod_file_and_key`).

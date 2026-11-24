@@ -124,6 +124,7 @@ Implemented by [`obl-convert fonts`](converter/fonts.md) for installations; runt
 - Keys of converted texts are source identifiers; they appear only in converted content (scenario files, GUI
   layouts) and never in engine code. Texts the engine itself needs (error dialogs, new UI) use our own keys in an own
   pack (`text/en.json` of the engine pack). The converter may map source keys to ours.
+- A mod can change or add entries without copying the table: `text/<lang>.patch.json`, [mods.md](../../modding/mods.md#text-patches).
 - Tier L1: text lands in saves (feedback messages) and in bot-visible dialogs.
 - The engine's text table reads this file for the chosen language (`src/game/tables/text_load.h`); the converter's walk, refusals and undefined
   bytes: [converter/texts.md](converter/texts.md).
