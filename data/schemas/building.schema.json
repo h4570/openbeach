@@ -38,6 +38,18 @@
       "type": "integer",
       "minimum": 0
     },
+    "icon_sprite": {
+      "$ref": "obl.common#/$defs/key",
+      "description": "Own sprite for the build-panel icon and building-info thumbnail; omitted to use UI3_bp_thumb at frame `icon`."
+    },
+    "icon_locked_sprite": {
+      "$ref": "obl.common#/$defs/key",
+      "description": "Own sprite for the locked build-panel icon; omitted to use `icon_sprite` or UI3_bp_thumb_grey."
+    },
+    "preview_sprite": {
+      "$ref": "obl.common#/$defs/key",
+      "description": "Own sprite for the large build-panel preview; omitted to use `icon_sprite` or UI3_bp_preview."
+    },
     "menu": {
       "type": "string",
       "minLength": 1,

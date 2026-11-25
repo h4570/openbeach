@@ -131,6 +131,13 @@ public:
     int SelectedBuilding() const override { return Gui()->m_context[0]; }
     int SelectedScenery() const override { return Gui()->m_context[5]; }
     int BuildingIcon(int building) const override { return BuildingAt(building)->m_Icon; }
+    const char* BuildingPreviewSprite(int building) const override
+    {
+        const tables::BuildingDef* def = BuildingAt(building);
+        if (!def->m_PreviewSprite.empty()) return def->m_PreviewSprite.c_str();
+        if (!def->m_IconSprite.empty()) return def->m_IconSprite.c_str();
+        return nullptr;
+    }
     int SceneryIcon(int scenery) const override { return SceneryAt(scenery)->m_Icon; }
     float SceneryRating(int scenery) const override { return SceneryAt(scenery)->m_Rating; }
     int BuildingCommodityCount(int building) const override { return BuildingAt(building)->m_NumCommodities; }
@@ -139,6 +146,11 @@ public:
         return (&BuildingAt(building)->m_CommodityAB[0][0])[slot * 2 + (female ? 1 : 0)];
     }
     int ProviderIcon(const void* building) const override { return static_cast<const object::Building*>(building)->m_definition->m_Icon; }
+    const char* ProviderThumbSprite(const void* building) const override
+    {
+        const tables::BuildingDef* def = static_cast<const object::Building*>(building)->m_definition;
+        return def->m_IconSprite.empty() ? nullptr : def->m_IconSprite.c_str();
+    }
     uint32_t ObjectiveCount() const override { return game::GetWorld()->m_numObjectives; }
     uint32_t ObjectiveStatus(uint32_t index) const override { return (&game::GetWorld()->m_objectiveStatus[0])[index]; }
     int ProgressLabelWidth() const override

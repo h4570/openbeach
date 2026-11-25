@@ -436,3 +436,32 @@ OBL_TEST_CASE("gui_image_list: selection sets the context and mode from the kind
     gui_image_list::RefreshSelection(list, env);
     OBL_CHECK(env.calls.empty());
 }
+
+OBL_TEST_CASE("gui_image_list: building own icon_sprite and icon_locked_sprite override the shared thumb sheets")
+{
+    Env env;
+    env.buildings[0].m_Category = 1;
+    env.buildings[0].m_Icon = 0;
+    env.buildings[0].m_IconSprite = "mod_icon";
+    env.buildings[0].m_IconLockedSprite = "mod_icon_grey";
+    env.buildings[0].m_key = "mod_locked";
+    env.buildings[1].m_Category = 1;
+    env.buildings[1].m_Icon = 0;
+    env.buildings[1].m_IconSprite = "mod_icon";
+    env.buildings[1].m_key = "mod_open";
+    env.buildings[2].m_Category = 1;
+    env.buildings[2].m_Icon = 3;
+    env.buildings[2].m_IconSprite = "mod_only_icon";
+    env.buildings[2].m_key = "mod_fallback";
+    env.locked = 5; // buildings 0 and 2 locked
+    env.allowed = 2; // building 1 allowed
+    List list{};
+    gui_image_list::PopulateBuildings(list, 1, "thumb", "grey", env);
+    OBL_REQUIRE(list.m_entriesEnd - list.m_entriesBegin == 3);
+    OBL_CHECK_EQ(std::string(list.m_entriesBegin[0]->m_sprite), "mod_icon_grey");
+    OBL_CHECK_EQ(list.m_entriesBegin[0]->m_frame, 0);
+    OBL_CHECK_EQ(std::string(list.m_entriesBegin[1]->m_sprite), "mod_icon");
+    OBL_CHECK_EQ(list.m_entriesBegin[1]->m_frame, 0);
+    OBL_CHECK_EQ(std::string(list.m_entriesBegin[2]->m_sprite), "mod_only_icon");
+    OBL_CHECK_EQ(list.m_entriesBegin[2]->m_frame, 3);
+}

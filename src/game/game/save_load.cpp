@@ -1,4 +1,5 @@
 #include "game/game/save_load.h"
+#include "game/tables/catalog_load.h"
 #include "game/map/path_queries.h"
 
 #include "formats/mod_pack.h"
@@ -279,7 +280,7 @@ bool WriteDocument(
         const formats::SaveOrigin& origin, uint32_t timestamp, nlohmann::ordered_json& document, size_t& objectCount, std::string& error)
 {
     nlohmann::json index;
-    if (!ReadJson(pack_path::Resolve(PackRoot(), "catalog/index.json"), index, error)) return false;
+    if (!catalog::LoadIndex(PackRoot(), index, error)) return false;
     const bool polish = origin.language == "pl";
     world_save::JsonContext context;
     context.narrowToUtf8 = [polish](std::string_view text) {
@@ -688,8 +689,7 @@ bool QueueOblSave(const std::filesystem::path& file, std::string& error)
     nlohmann::json document;
     std::vector<std::string> warnings;
     std::vector<std::string> modIssues;
-    if (!ReadActiveSavePackOrigin(origin, error) || !ReadJson(pack_path::Resolve(PackRoot(), "catalog/index.json"), index, error) ||
-            !ReadJson(file, document, error))
+    if (!ReadActiveSavePackOrigin(origin, error) || !catalog::LoadIndex(PackRoot(), index, error) || !ReadJson(file, document, error))
         return false;
     const bool loaded = formats::ValidateOblSaveDocument(document, origin, *schemas, warnings, error, formats::kGameGridSide, &modIssues);
     for (const std::string& warning : warnings) OBL_LOG("obl.save %s: %s", file.generic_string().c_str(), warning.c_str());

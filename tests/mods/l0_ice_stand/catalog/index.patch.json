@@ -1,0 +1,9 @@
+{
+  "format": "obl.catalog_index_patch",
+  "version": 1,
+  "add": {
+    "buildings": [
+      "ice_stand"
+    ]
+  }
+}

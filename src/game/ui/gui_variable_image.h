@@ -80,11 +80,13 @@ public:
     virtual int SelectedBuilding() const = 0;
     virtual int SelectedScenery() const = 0;
     virtual int BuildingIcon(int building) const = 0; // BuildingDef::m_Icon, the frame of the build pictures
+    virtual const char* BuildingPreviewSprite(int /*building*/) const { return nullptr; } // optional own preview sprite
     virtual int SceneryIcon(int scenery) const = 0; // SceneryDef::m_Icon
     virtual float SceneryRating(int scenery) const = 0; // SceneryDef::m_Rating
     virtual int BuildingCommodityCount(int building) const = 0; // BuildingDef::m_NumCommodities
     virtual float BuildingAppeal(int building, int slot, bool female) const = 0; // BuildingDef::m_CommodityAB[slot][female], unchecked slot
     virtual int ProviderIcon(const void* building) const = 0; // the open building's BuildingDef::m_Icon
+    virtual const char* ProviderThumbSprite(const void* /*building*/) const { return nullptr; } // optional own thumbnail sprite
     virtual uint32_t ObjectiveCount() const = 0; // Number of scenario objectives.
     virtual uint32_t ObjectiveStatus(uint32_t index) const = 0; // World::m_objectiveStatus[index], unchecked
     virtual int ProgressLabelWidth() const = 0; // width of the OBJ_SCENARIO_PROGRESS caption on the second text renderer

@@ -73,7 +73,7 @@ without copying it, with `catalog/index.patch.json`:
 - A refused patch stops the loading with an error naming the mod and the record: a name that already exists (in the pack,
   an earlier mod or the same patch), a missing record file, a record whose `key` differs from its name, more records than the
   engine's limit for the category (`WorldParams::kMaxBuildings`, ...), or a malformed patch (format, version, `add`).
-- Removing, reordering or renaming records is not supported, and neither are GUI entries for new buildings.
+- Removing, reordering or renaming records is not supported. To make a mod building buildable with its own icon and sprites, see [buildings.md](buildings.md) and [first-building.md](../guides/first-building.md).
 
 ## Saves and replays
 A save records the active world mods in `header.mods` and a replay in its `mods` line (id and content hash, load order), only when
@@ -84,7 +84,8 @@ one is active; presentation mods are left out. Loading a save with other mods as
 `pack_path_test` and `mod_pack_test` (unit); `tests/l0_mod.txt` runs the L0 pack with the test mod `tests/mods/l0_test`, which
 `tools/runtests.ps1` copies to `run/mods/`. `text_load_test` covers the text patches; `tests/l0_mod_text_patch.txt` runs the mod
 `tests/mods/l0_patch`. `catalog_patch_test` covers the catalog patches; `tests/l0_mod_catalog_patch.txt` builds the
-building that the mod `tests/mods/l0_catalog` adds. `convert_save_checks_test` and `command_recorder_test` cover the mod lists of
+building that the mod `tests/mods/l0_catalog` adds, and `tests/l0_mod_building.txt` exercises the complete worked example
+`tests/mods/l0_ice_stand` (build panel icon, placement, construction, day/night goldens, guest purchases, sound, save/reload). `convert_save_checks_test` and `command_recorder_test` cover the mod lists of
 saves and replays; `tests/l0_mod_save.txt` saves with the test mod, reloads with it, and is refused with another mod list (`claim-mods`,
 `expect-obl-save-refused`). The presentation scripts' tests are in [scripting.md](scripting.md#tests); `tests/l0_mods_mixed.txt`
 runs a world mod and a presentation mod at once and checks that the save records only the world mod.

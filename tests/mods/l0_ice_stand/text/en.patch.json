@@ -1,0 +1,9 @@
+{
+  "format": "obl.text_patch",
+  "version": 1,
+  "entries": {
+    "ICE_STAND": "Ice Cream Stand",
+    "BUILDING_NAME_ICE_STAND": "Ice Cream Stand",
+    "BUILD_TIPTEXT_ICE_STAND": "Ice Cream Stand"
+  }
+}

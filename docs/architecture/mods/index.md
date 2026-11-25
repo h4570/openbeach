@@ -10,8 +10,14 @@ script or a change of the scope rule adds its line here.
   reads, in load order ([mods.md](../../modding/reference/mods.md#start-up-check)).
 - `pack_path` resolves every logical path through the layers: the active mods from last to first, the legacy `mod/`, the pack. A
   file in a mod shadows the whole file below it.
-- Some files merge instead of shadowing: text tables (`text/<lang>.patch.json`, `text_load.cpp`) and the catalog's record list
-  (`catalog/index.patch.json`, `catalog_load.cpp`). Each loader walks `pack_path::Layers` from the bottom up, so a later mod wins.
+- Some files merge instead of shadowing: text tables (`text/<lang>.patch.json`, `text_load.cpp`), the catalog's record list
+  (`catalog/index.patch.json`, `catalog_load.cpp`), JSON data patches (`*.patch.json`, `data_patch.cpp`), and GUI layout
+  patches (`gui/<name>.patch.json` with `obl.gui_patch`, `gui_patch.cpp`). Each loader walks `pack_path::Layers` from the
+  bottom up, so a later mod wins.
+- Building records (`obl.building` v2) accept optional `icon_sprite`, `icon_locked_sprite`, and `preview_sprite` keys so a
+  mod building supplies its own build-panel icon and preview without replacing the pack's shared `UI3_bp_thumb` /
+  `UI3_bp_preview` atlases (`gui_image_list.h`, `gui_variable_image.cpp`). `tools/make_sprite.py` converts PNG frames into
+  indexed `obl.sprite` assets (including building `color`/`depth`/`lightmap` planes and UI icons).
 
 ## Two kinds of scripts
 | | World and object scripts | Presentation scripts |

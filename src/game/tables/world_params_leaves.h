@@ -270,6 +270,9 @@ struct BuildingDef {
     std::string m_Name;
     std::string m_Sprite;
     int m_Icon{};
+    std::string m_IconSprite; // optional own sprite for the build-panel icon and BUILD_THUMB (overrides UI3_bp_thumb)
+    std::string m_IconLockedSprite; // optional own sprite when locked in the build tree (overrides UI3_bp_thumb_grey)
+    std::string m_PreviewSprite; // optional own sprite for BUILD_LARGE_PREVIEW (overrides UI3_bp_preview)
     int m_Category{}; // CATEGORY: 0 Hotel, 1 Food, 2 Leisure, 3 Other; Other does not count toward unbuilt scenario buildings
     int m_Cost2Build{};
     int m_RefundValue{};

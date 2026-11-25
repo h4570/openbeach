@@ -1,0 +1,88 @@
+# Worked example mod building (l0_ice_stand): open build menu, pick the mod's building, place it, builders finish it,
+# capture day and night golden images, guests buy from it, save/reload keeps it, and loading without the mod names it.
+# l0_night_light is a test-only mod that gives L0 dark night lighting so the night golden exercises palette toning.
+# @env OBL_PACK=l0
+# @env OBL_MODS=l0_ice_stand,l0_night_light
+# @timeout 180
+# @gameini Language.Language=5
+# @gameini Sound.PlayListCount=0
+# @gameini Video.ResWidth=800
+# @gameini Video.ResHeight=600
+# @gameini Video.LightEffects=1
+# @check python tools/gui_image_check.py {run} --pack l0 --script l0_mod_building.txt --golden tests/golden-images/l0-mod-building
+seed 1
+fixed-dt 0.02
+move 400 300
+boot-gameplay scenario 1
+await gameplay
+expect-text ICE_STAND Ice Cream Stand
+expect-text BUILD_TIPTEXT_ICE_STAND Ice Cream Stand
+step 50
+expect cash 20000
+expect buildings 3
+# Open the build menu, pick the mod's building icon, and enter placement mode (paused so wall-clock click timing never shifts sim ticks).
+force-pause 1
+gui-open BuildPanel
+await gui-open-dialogs == 1 5000
+await gui-animating == 0
+click 346 179
+await frames 2
+expect gui-context-0 9
+shot l0_mod_build_panel
+await frames 1
+gui-click BuildPanel tip L0_PLAY_PLACEBUILDING
+await gui-mode == 5 5000
+gui-click CancelBuildMode tip L0_PLAY_EXITBUILDMODE
+await gui-mode == 4 5000
+await gui-open-dialogs == 0 5000
+force-pause 0
+# Place the building and let builders finish it.
+place-find building ICE_STAND
+command place-building key=ICE_STAND x=$x y=$y dir=0
+step 1
+command-report
+expect cash 19500
+object-find building ICE_STAND
+expect-last count 1
+log stand stand=$id
+step 3500
+expect buildings 4
+object-report $stand
+expect-last build-job 0
+# Capture the finished building at day and at night (palette tone + lightmap).
+camera 1450 1750
+set-hour 12
+step 5
+force-pause 1
+await frames 2
+shot l0_mod_building_day
+await frames 1
+force-pause 0
+set-hour 22
+step 20
+force-pause 1
+await frames 2
+shot l0_mod_building_night
+await frames 1
+force-pause 0
+# Close the startup kiosk so guests buy from the mod's stand.
+set-hour 12
+object-find building KIOSK
+command set-building-open building=$id open=0
+step 2
+spawn-guests 3
+step 6000
+expect-range guests-departed-total 3 100
+object-report $stand
+expect-last-range income-today 0.01 100000
+expect-last-range visits 1 1000
+# Save and reload keeps the mod building; loading without the mod is refused and names it.
+save-obl testlogs/l0_mod_building.obl.save
+load-obl-save testlogs/l0_mod_building.obl.save
+await world-loaded
+object-find building ICE_STAND
+expect-last count 1
+claim-mods none
+expect-obl-save-refused testlogs/l0_mod_building.obl.save l0_ice_stand
+claim-mods l0_ice_stand,l0_night_light
+quit

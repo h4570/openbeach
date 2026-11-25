@@ -1,0 +1,30 @@
+{
+  "format": "obl.sprite",
+  "version": 1,
+  "name": "ice_stand_icon",
+  "kind": "ui",
+  "pixels": "indexed",
+  "palettes": "ice_stand_icon.palettes.png",
+  "palette_colors": 256,
+  "palette_count": 1,
+  "animations": [
+    {
+      "name": "ice_stand_icon",
+      "directions": 1,
+      "frames": 1,
+      "size": [
+        48,
+        48
+      ],
+      "hotspot": [
+        0,
+        0
+      ],
+      "sheets": [
+        "ice_stand_icon/ice_stand_icon.png"
+      ],
+      "columns": 1,
+      "unique_frames": 1
+    }
+  ]
+}

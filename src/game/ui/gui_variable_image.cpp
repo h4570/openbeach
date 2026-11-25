@@ -411,13 +411,18 @@ Result DrawWidget(const Widget& widget, const Env& env, Canvas& canvas)
         canvas.DrawClipped(limit, widget.y0, kUiLayer);
         canvas.Release();
     } else if (Is(key, "BUILD_LARGE_PREVIEW")) {
-        FramePicture(widget, canvas, env.SpriteName(NameSlot::BpPreview), CreateCall::Sprite, env.BuildingIcon(env.SelectedBuilding()));
+        const int selected = env.SelectedBuilding();
+        const char* ownSprite = env.BuildingPreviewSprite(selected);
+        const char* sprite = ownSprite && *ownSprite ? ownSprite : env.SpriteName(NameSlot::BpPreview);
+        FramePicture(widget, canvas, sprite, CreateCall::Sprite, env.BuildingIcon(selected));
     } else if (Is(key, "BUILD_SCENERY_PREVIEW")) {
         FramePicture(widget, canvas, env.SpriteName(NameSlot::BpPreview), CreateCall::Sprite, env.SceneryIcon(env.SelectedScenery()));
     } else if (Is(key, "BUILD_THUMB")) {
         const void* building = env.Provider();
         if (!building) return Result::Undefined;
-        FramePicture(widget, canvas, env.SpriteName(NameSlot::BpThumb), CreateCall::Sprite, env.ProviderIcon(building));
+        const char* ownSprite = env.ProviderThumbSprite(building);
+        const char* sprite = ownSprite && *ownSprite ? ownSprite : env.SpriteName(NameSlot::BpThumb);
+        FramePicture(widget, canvas, sprite, CreateCall::Sprite, env.ProviderIcon(building));
     } else if (Is(key, "BUILD_ID_MALE_INTENSITY") || Is(key, "BUILD_ID_FEMALE_INTENSITY")) {
         const double percent =
                 AverageAppeal(env, env.SelectedBuilding(), Is(key, "BUILD_ID_FEMALE_INTENSITY")) * static_cast<double>(kHundred);

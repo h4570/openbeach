@@ -40,6 +40,42 @@ struct PatchFailure : std::runtime_error {
     using std::runtime_error::runtime_error;
 };
 
+// Walks every layer's `catalog/index.patch.json` from the bottom up (load order), validates the patch envelope, and hands
+// each added record name to `onEntry(mod, where, kind, key)`.
+template<class Fn> void ForEachIndexPatch(const std::filesystem::path& pack, Fn&& onEntry)
+{
+    const auto layers = pack_path::Layers(pack);
+    for (auto layer = layers.rbegin(); layer != layers.rend(); ++layer) {
+        const auto file = *layer / "catalog" / "index.patch.json";
+        std::error_code ec;
+        if (!std::filesystem::is_regular_file(file, ec)) continue;
+        const std::string mod = layer->filename().string();
+        const std::string where = "mod " + mod + ": " + file.string();
+        std::ifstream stream(file, std::ios::binary);
+        if (!stream) throw PatchFailure(where + ": cannot open");
+        const json doc = json::parse(stream, nullptr, false);
+        if (doc.is_discarded()) throw PatchFailure(where + ": invalid JSON");
+        if (!doc.is_object()) throw PatchFailure(where + ": not an object");
+        const auto format = doc.find("format");
+        if (format == doc.end() || !format->is_string() || format->get<std::string>() != "obl.catalog_index_patch")
+            throw PatchFailure(where + ": unknown format (expected obl.catalog_index_patch)");
+        const auto version = doc.find("version");
+        if (version == doc.end() || !version->is_number_integer() || version->get<int>() != 1)
+            throw PatchFailure(where + ": unsupported version");
+        const auto add = doc.find("add");
+        if (add == doc.end() || !add->is_object()) throw PatchFailure(where + ": add is not an object");
+        for (const Kind& kind : kKinds) {
+            const auto names = add->find(kind.name);
+            if (names == add->end()) continue;
+            if (!names->is_array()) throw PatchFailure(where + ": add." + kind.name + " is not a list");
+            for (const auto& name : *names) {
+                if (!name.is_string()) throw PatchFailure(where + ": add." + kind.name + ": a name is not a string");
+                onEntry(mod, kind, name.get<std::string>());
+            }
+        }
+    }
+}
+
 class Reader {
 public:
     explicit Reader(const std::filesystem::path& pack) : m_root(pack), m_params(std::make_unique<WorldParams>()) {}
@@ -75,52 +111,20 @@ private:
     // Each `add` name is appended to its category: existing records keep their indices, new ones get the next.
     void ApplyPatches(const json_schema::Registry& schemas)
     {
-        const auto layers = pack_path::Layers(m_root);
-        for (auto layer = layers.rbegin(); layer != layers.rend(); ++layer) {
-            const auto file = *layer / "catalog" / "index.patch.json";
-            std::error_code ec;
-            if (!std::filesystem::is_regular_file(file, ec)) continue;
-            ApplyPatch(file, schemas);
-        }
-    }
-    void ApplyPatch(const std::filesystem::path& file, const json_schema::Registry& schemas)
-    {
-        const std::string mod = file.parent_path().parent_path().filename().string();
-        const std::string where = "mod " + mod + ": " + file.string();
-        std::ifstream stream(file, std::ios::binary);
-        if (!stream) throw PatchFailure(where + ": cannot open");
-        const json doc = json::parse(stream, nullptr, false);
-        if (doc.is_discarded()) throw PatchFailure(where + ": invalid JSON");
-        if (!doc.is_object()) throw PatchFailure(where + ": not an object");
-        const auto format = doc.find("format");
-        if (format == doc.end() || !format->is_string() || format->get<std::string>() != "obl.catalog_index_patch")
-            throw PatchFailure(where + ": unknown format (expected obl.catalog_index_patch)");
-        const auto version = doc.find("version");
-        if (version == doc.end() || !version->is_number_integer() || version->get<int>() != 1)
-            throw PatchFailure(where + ": unsupported version");
-        const auto add = doc.find("add");
-        if (add == doc.end() || !add->is_object()) throw PatchFailure(where + ": add is not an object");
-        for (const Kind& kind : kKinds) {
-            const auto names = add->find(kind.name);
-            if (names == add->end()) continue;
-            if (!names->is_array()) throw PatchFailure(where + ": add." + kind.name + " is not a list");
+        ForEachIndexPatch(m_root, [&](const std::string& mod, const Kind& kind, const std::string& key) {
             auto& docs = m_docs[kind.name];
-            for (const auto& name : *names) {
-                if (!name.is_string()) throw PatchFailure(where + ": add." + kind.name + ": a name is not a string");
-                const std::string key = name.get<std::string>();
-                const std::string record = "mod " + mod + ": " + kind.name + " record " + key;
-                for (const auto& existing : docs)
-                    if (existing.at("key") == name) throw PatchFailure(record + ": already exists");
-                if (docs.size() >= kind.capacity) throw PatchFailure(record + ": engine capacity exceeded");
-                const auto recordFile = pack_path::Resolve(m_root, std::filesystem::path("catalog") / kind.name / (key + ".json"));
-                std::error_code ec;
-                if (!std::filesystem::is_regular_file(recordFile, ec)) throw PatchFailure(record + ": missing file " + recordFile.string());
-                m_current = recordFile.string();
-                json record_doc = Read(recordFile, kind.format, schemas);
-                if (record_doc.at("key") != name) throw PatchFailure(record + ": key differs from the name added");
-                docs.push_back(std::move(record_doc));
-            }
-        }
+            const std::string record = "mod " + mod + ": " + kind.name + " record " + key;
+            for (const auto& existing : docs)
+                if (existing.at("key") == key) throw PatchFailure(record + ": already exists");
+            if (docs.size() >= kind.capacity) throw PatchFailure(record + ": engine capacity exceeded");
+            const auto recordFile = pack_path::Resolve(m_root, std::filesystem::path("catalog") / kind.name / (key + ".json"));
+            std::error_code ec;
+            if (!std::filesystem::is_regular_file(recordFile, ec)) throw PatchFailure(record + ": missing file " + recordFile.string());
+            m_current = recordFile.string();
+            json record_doc = Read(recordFile, kind.format, schemas);
+            if (record_doc.at("key") != key) throw PatchFailure(record + ": key differs from the name added");
+            docs.push_back(std::move(record_doc));
+        });
     }
     static json Read(const std::filesystem::path& path, const char* format, const json_schema::Registry& schemas)
     {
@@ -395,6 +399,9 @@ void Reader::Building(tables::BuildingDef& b, const json& d)
 {
     String(b.m_Name, d, "/name", 0x80);
     String(b.m_Sprite, d, "/sprite", 0x100);
+    String(b.m_IconSprite, d, "/icon_sprite", 0x100);
+    String(b.m_IconLockedSprite, d, "/icon_locked_sprite", 0x100);
+    String(b.m_PreviewSprite, d, "/preview_sprite", 0x100);
     String(b.m_Tree, d, "/requires", 0x40);
     String(b.m_Menu, d, "/menu", 0x20);
     String(b.m_Construct, d, "/construction/anim", 0x33);
@@ -404,7 +411,7 @@ void Reader::Building(tables::BuildingDef& b, const json& d)
     b.m_Category = Enum(d.at("category"), {"hotel", "food", "leisure", "other"});
     if (!BuildingBehaviorFromName(d.at("behavior").get<std::string>(), b.m_Behavior))
         throw std::runtime_error("unrecognized behavior " + d.at("behavior").dump());
-    Number(b.m_Icon, d.at("icon"));
+    if (d.contains("icon")) Number(b.m_Icon, d.at("icon"));
     Number(b.m_Cost2Build, d.at("cost").at("build"));
     Number(b.m_RefundValue, d.at("cost").at("refund"));
     Number(b.m_BuildTime, d.at("construction").at("build_time"));
@@ -507,6 +514,27 @@ void Reader::Footprint(tables::BuildingDef& b, const json& d)
     b.m_footprint = std::move(grid);
 }
 } // namespace
+
+bool LoadIndex(const std::filesystem::path& pack, nlohmann::json& out, std::string& error)
+{
+    error.clear();
+    const auto indexFile = pack_path::Resolve(pack, "catalog/index.json");
+    try {
+        data_patch::Input file(indexFile);
+        if (!file) throw std::runtime_error("cannot open " + indexFile.string());
+        json index = json::parse(file, nullptr, false);
+        if (index.is_discarded() || !index.is_object()) throw std::runtime_error(indexFile.string() + ": invalid JSON");
+        ForEachIndexPatch(pack, [&](const std::string&, const Kind& kind, const std::string& key) { index.at(kind.name).push_back(key); });
+        out = std::move(index);
+        return true;
+    } catch (const PatchFailure& failure) {
+        error = failure.what();
+        return false;
+    } catch (const std::exception& failure) {
+        error = indexFile.string() + ": " + failure.what();
+        return false;
+    }
+}
 
 bool LoadPack(const std::filesystem::path& pack, WorldParams& out, std::string& error)
 {

@@ -1,0 +1,93 @@
+{
+  "format": "obl.sprite",
+  "version": 1,
+  "name": "ice_stand",
+  "kind": "building",
+  "pixels": "indexed",
+  "palettes": "ice_stand.palettes.png",
+  "palette_colors": 256,
+  "palette_count": 1,
+  "animations": [
+    {
+      "name": "color",
+      "directions": 4,
+      "frames": 1,
+      "size": [
+        96,
+        96
+      ],
+      "hotspot": [
+        -48,
+        -78
+      ],
+      "sheets": [
+        "ice_stand/color.png"
+      ],
+      "columns": 1,
+      "unique_frames": 1,
+      "plane": "color",
+      "frame_map": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "depth",
+      "directions": 4,
+      "frames": 1,
+      "size": [
+        96,
+        96
+      ],
+      "hotspot": [
+        -48,
+        -78
+      ],
+      "sheets": [
+        "ice_stand/depth.png"
+      ],
+      "columns": 1,
+      "unique_frames": 1,
+      "plane": "depth",
+      "frame_map": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "lightmap",
+      "directions": 4,
+      "frames": 1,
+      "size": [
+        96,
+        96
+      ],
+      "hotspot": [
+        -48,
+        -78
+      ],
+      "sheets": [
+        "ice_stand/lightmap_1.png"
+      ],
+      "columns": 1,
+      "unique_frames": 1,
+      "plane": "light",
+      "frame_map": [
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  ],
+  "depth_extents": [
+    255,
+    255,
+    255,
+    255
+  ]
+}

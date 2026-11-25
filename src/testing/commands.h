@@ -14,7 +14,7 @@ namespace obl::test {
 //   place-find building|scenery <KEY> [dir]   the first footprint origin (top row first) where the place mode's fit check passes:
 //                        `place-find found= x= y=` (x/y -1 when none), for `command place-building key=<KEY> x=$x y=$y dir=<dir>`
 //   place-find surface <KEY> / place-find dozer   the first tile the surface mode of the path or grass <KEY> can paint, or the dozer clear
-//   object-report <id>   `object-report exists= id= type= state= waiting= pos-x= pos-y=` plus, for a building, `open= user-close= build-job= demolish-job=
+//   object-report <id>   `object-report exists= id= type= state= waiting= pos-x= pos-y=` plus, for a building, `open= user-close= build-job= demolish-job= income-today= visits= ...`
 //                        repair-interval= called-repair= called-clean= staff= price0..4= beer=` (with a show schedule also `events=1 event-price0..2= event-id0..2=`)
 //                        and, for a staff member, `wage= start= end= home= direct= direct-x= direct-y= direct-object= goto=` (the send-staff order)
 //   tile-report <x> <y>  `tile-report flags= grass= path=` (grass/path 1 when all bits of that surface are set)

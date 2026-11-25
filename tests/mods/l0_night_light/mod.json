@@ -1,0 +1,9 @@
+{
+  "format": "obl.mod",
+  "version": 1,
+  "id": "l0_night_light",
+  "title": "L0 Night Lighting (test fixture)",
+  "mod_version": "1.0.0",
+  "pack": "l0",
+  "scope": "world"
+}

@@ -44,6 +44,8 @@ public:
     int commodities[3] = {0, 2, 1};
     float appeal[3][2][2] = {{{0, 0}, {0, 0}}, {{0.5f, 0.0f}, {0.25f, 0.0f}}, {{0.0f, 0.4f}, {0, 0}}}; // [building][slot][female]
     int providerIcon = 7;
+    const char* buildingPreviewSprite = nullptr;
+    const char* providerThumbSprite = nullptr;
     uint32_t goals = 0;
     uint32_t goalStatus[4] = {};
     int labelWidth = 60;
@@ -56,11 +58,13 @@ public:
     int SelectedBuilding() const override { return selectedBuilding; }
     int SelectedScenery() const override { return selectedScenery; }
     int BuildingIcon(int building) const override { return buildingIcons[building]; }
+    const char* BuildingPreviewSprite(int) const override { return buildingPreviewSprite; }
     int SceneryIcon(int scenery) const override { return sceneryIcons[scenery]; }
     float SceneryRating(int scenery) const override { return sceneryRating[scenery]; }
     int BuildingCommodityCount(int building) const override { return commodities[building]; }
     float BuildingAppeal(int building, int slot, bool female) const override { return appeal[building][slot][female ? 1 : 0]; }
     int ProviderIcon(const void*) const override { return providerIcon; }
+    const char* ProviderThumbSprite(const void*) const override { return providerThumbSprite; }
     uint32_t ObjectiveCount() const override { return goals; }
     uint32_t ObjectiveStatus(uint32_t index) const override { return goalStatus[index]; }
     int ProgressLabelWidth() const override { return labelWidth; }
@@ -728,4 +732,24 @@ OBL_TEST_CASE("gui_variable_image.every_listed_key_is_handled")
         const Run run(OverlayKey(i), env, &object);
         OBL_CHECK(run.result != Result::Unhandled);
     }
+}
+
+OBL_TEST_CASE("gui_variable_image.building_own_preview_and_thumb_sprites_override_shared_sheets")
+{
+    FakeEnv env;
+    const int object = 0;
+    env.provider = &object;
+    env.selectedBuilding = 1;
+    env.buildingIcons[1] = 0;
+    env.providerIcon = 0;
+    env.buildingPreviewSprite = "mod_preview";
+    env.providerThumbSprite = "mod_icon";
+    const DrawRun preview("BUILD_LARGE_PREVIEW", env);
+    OBL_REQUIRE(preview.canvas.calls.size() == 2u);
+    OBL_CHECK_EQ(preview.canvas.calls[0].name, "mod_preview");
+    OBL_CHECK_EQ(preview.canvas.calls[1].frame, 0);
+    const DrawRun thumb("BUILD_THUMB", env, &object);
+    OBL_REQUIRE(thumb.canvas.calls.size() == 2u);
+    OBL_CHECK_EQ(thumb.canvas.calls[0].name, "mod_icon");
+    OBL_CHECK_EQ(thumb.canvas.calls[1].frame, 0);
 }

@@ -1,0 +1,153 @@
+{
+  "format": "obl.building",
+  "version": 2,
+  "key": "ice_stand",
+  "name": "ICE_STAND",
+  "category": "food",
+  "behavior": "ice_stall",
+  "sprite": "ice_stand",
+  "icon_sprite": "ice_stand_icon",
+  "cost": {
+    "build": 500,
+    "refund": 350
+  },
+  "construction": {
+    "build_time": 1,
+    "demolish_time": 1,
+    "max_builders": 4
+  },
+  "size": [
+    3,
+    3
+  ],
+  "build_on": [
+    "land",
+    "beach"
+  ],
+  "baseplates": [
+    7
+  ],
+  "points": {
+    "serve": [
+      0,
+      -64
+    ],
+    "staff": [
+      0,
+      0
+    ],
+    "entrance": [
+      0,
+      0
+    ]
+  },
+  "operation": {
+    "guest_capacity": 4,
+    "opening_hours": "allhours",
+    "max_instances": 99,
+    "max_queue": 6,
+    "attractor": "softdrnk",
+    "power": 0,
+    "staff": {
+      "types": [],
+      "max": 0
+    }
+  },
+  "commodities": [
+    {
+      "commodity": "sodas",
+      "intensity": [
+        0.9,
+        0.9
+      ],
+      "daily_intensity_factor": 0.98,
+      "price": 3.0,
+      "daily_price_factor": 0.98,
+      "cost": 0.2
+    },
+    {
+      "commodity": "ices",
+      "intensity": [
+        0.8,
+        0.8
+      ],
+      "daily_intensity_factor": 0.98,
+      "price": 3.0,
+      "daily_price_factor": 0.98,
+      "cost": 0.2
+    }
+  ],
+  "failure": {
+    "average_time": 6.0,
+    "percent": 5,
+    "age": 2
+  },
+  "footprint": {
+    "size": [
+      3,
+      3
+    ],
+    "layers": {
+      "placement": [
+        [
+          { "margin": 1 },
+          { "margin": 1 },
+          { "margin": 1 },
+          { "margin": 1 },
+          { "margin": 1 }
+        ],
+        [
+          { "margin": 1 },
+          { "terrain": 1 },
+          { "terrain": 1 },
+          { "terrain": 1 },
+          { "margin": 1 }
+        ],
+        [
+          { "margin": 1 },
+          { "terrain": 1 },
+          { "terrain": 1 },
+          { "terrain": 1 },
+          { "margin": 1 }
+        ],
+        [
+          { "margin": 1 },
+          { "terrain": 1 },
+          { "terrain": 1 },
+          { "terrain": 1 },
+          { "margin": 1 }
+        ],
+        [
+          { "margin": 1 },
+          { "margin": 1 },
+          { "margin": 1 },
+          { "margin": 1 },
+          { "margin": 1 }
+        ]
+      ],
+      "work": [
+        [ {}, {}, {}, {}, {} ],
+        [ {}, {}, {}, {}, {} ],
+        [ {}, {}, {}, {}, {} ],
+        [ {}, {}, {}, {}, {} ],
+        [ {}, {}, { "terrain": 1 }, {}, {} ]
+      ],
+      "depth": [
+        [ 0, 0, 0, 0, 0 ],
+        [ 0, 0, 0, 0, 0 ],
+        [ 0, 0, 0, 0, 0 ],
+        [ 0, 0, 0, 0, 0 ],
+        [ 0, 0, 0, 0, 0 ]
+      ],
+      "body": [
+        [ 0, 0, 0, 0, 0 ],
+        [ 0, 251658240, 251658240, 251658240, 0 ],
+        [ 0, 251658240, 251658240, 251658240, 0 ],
+        [ 0, 251658240, 251658240, 251658240, 0 ],
+        [ 0, 0, 0, 0, 0 ]
+      ]
+    }
+  },
+  "requires": "rep",
+  "menu": "L0Building"
+}
