@@ -190,6 +190,17 @@ const NamedRow kFunctions[] = {
         {178, "ClearMyDelayedMsgs"},
         {179, "AlertGuests"},
         {180, "Debug"},
+        // The generic functions and registers of mod scripts only (mod_script_functions.h); the parser refuses them in pack scripts.
+        {1000, "FindNearestBuilding"},
+        {1001, "FindNearestCommodity"},
+        {1002, "WalkToObject"},
+        {1003, "ChangeGuestsHappiness"},
+        {1004, "ChangeGuestsDesire"},
+        {1005, "PayMoney"},
+        {1006, "ChargeMoney"},
+        {1007, "CreateObject"},
+        {1008, "RemoveObject"},
+        {1009, "SendToNearby"},
 };
 
 const NamedRow kValues[] = {
@@ -416,6 +427,11 @@ const NamedRow kValues[] = {
         {269, "GuestOffSetPosX"},
         {270, "GuestOffSetPosY"},
         {271, "Owner"},
+        {280, "Arg1"},
+        {281, "Arg2"},
+        {282, "Arg3"},
+        {283, "Arg4"},
+        {284, "Result"},
 };
 
 std::vector<NamedId> Table(std::span<const NamedRow> rows)

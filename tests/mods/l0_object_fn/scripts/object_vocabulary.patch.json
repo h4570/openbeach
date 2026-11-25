@@ -1,0 +1,10 @@
+{
+  "format": "obl.object_script_vocabulary_patch",
+  "version": 1,
+  "states": [
+    "STATE_FN_RUN"
+  ],
+  "messages": [
+    "MT_FN_DONE"
+  ]
+}

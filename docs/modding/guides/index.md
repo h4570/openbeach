@@ -14,3 +14,4 @@ Step-by-step guides for mod authors, from nothing to a working mod.
 | [Key action](first-action.md) | Binding a key to a presentation script. |
 | [Publishing](publishing.md) | Building a ZIP and listing it in a signed catalog. |
 | [Developer mode](developer-mode.md) | Reloading active mods while developing them. |
+| [first-busker.md](first-busker.md) | A character that does something: the generic object functions find a kiosk, walk to it, cheer the guests around and earn money. |

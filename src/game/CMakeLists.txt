@@ -107,6 +107,8 @@ add_library(obl_common STATIC
     map/path_tile_script.h
     objects/script_program.cpp
     objects/script_program.h
+    objects/mod_script_functions.cpp
+    objects/mod_script_functions.h
     objects/script_program_api.cpp
     objects/script_program_api.h
     objects/script_program_ids.cpp

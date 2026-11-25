@@ -48,6 +48,10 @@ public:
 // Options for Parse: `strict` rejects unknown state/message names in ChangeState, ExitState and EndMessage (used for
 // mod scripts; pack scripts keep the original fallback to 0/kNoMessage). `firstLine` is the 1-based line number of
 // `text[0]` (2 when a `#obl-script 1 object` header line was stripped before parsing).
+// The first number of the functions and of the values only mod scripts (strict) may name (mod_script_functions.h).
+constexpr int kFirstModFunction = 1000;
+constexpr int kFirstModValue = 280;
+
 struct ParseOptions {
     bool strict = false;
     size_t firstLine = 1;

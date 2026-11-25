@@ -1,0 +1,21 @@
+# The generic object functions that create, find and change things (l0_object_fn): CreateObject, RemoveObject, ChargeMoney, PayMoney,
+# FindNearestCommodity, ChangeGuestsDesire. Makers create a helper that charges 2 and removes itself, look for a drinks building and raise the
+# snack desire of the guests around them.
+# @env OBL_PACK=l0
+# @env OBL_MODS=l0_object_fn
+# @timeout 180
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario 1
+await gameplay
+step 50
+spawn-building kiosk 60 60
+spawn-guests 2
+expect guests 4
+step 100
+expect guests 2
+log make guests=$guests income=$income-today costs=$costs-today
+expect income-today 8
+expect costs-today 6
+step 3000
+quit

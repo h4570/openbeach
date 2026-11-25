@@ -246,6 +246,7 @@ list(REMOVE_ITEM COMMON_SOURCES
     ${REPO}/src/game/objects/mover_visibility.cpp
     ${REPO}/src/game/objects/object_registry_api.cpp
     ${REPO}/src/game/objects/object_manager_lifecycle.cpp
+    ${REPO}/src/game/objects/mod_script_calls.cpp
     ${REPO}/src/game/objects/script_program_run.cpp
     ${REPO}/src/game/objects/script_program_load.cpp
     ${REPO}/src/game/objects/object_virtuals.cpp

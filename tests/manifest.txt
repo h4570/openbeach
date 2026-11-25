@@ -37,6 +37,8 @@ l0_mod_rule_replay.txt @l0
 l0_mod_rule_replay_refused.txt @l0
 l0_mod_object_script.txt @l0
 l0_mod_object_script_replay.txt @l0
+l0_mod_object_functions_busker.txt @l0
+l0_mod_object_functions_make.txt @l0
 l0_mod_gui_patch.txt @hidden @l0
 l0_mod_save.txt @l0
 l0_save_slots.txt @headless @l0

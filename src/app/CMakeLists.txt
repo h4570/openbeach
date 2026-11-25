@@ -211,6 +211,7 @@ add_library(openbeach OBJECT
     ../game/messages/message_handler.h
     ../game/objects/script_program_load.cpp
     ../game/objects/script_program_load.h
+    ../game/objects/mod_script_calls.cpp
     ../game/objects/script_program_run.cpp
     ../game/objects/script_program_run.h
     ../game/world/world_script.cpp

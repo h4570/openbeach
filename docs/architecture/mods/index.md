@@ -26,6 +26,13 @@ script or a change of the scope rule adds its line here.
   mods' vocabulary patches and validates every mod `.obs` in strict mode at start-up (naming mod, file, and line on error);
   `WorldScriptHost::FindOrLoad` loads custom object scripts on demand, and `LoadSaveOrigin` uses the same merged vocabulary so
   saves write and read mod state names ([object-scripts.md](../../modding/reference/object-scripts.md)).
+- Generic object functions (`src/game/objects/mod_script_functions.h/.cpp`): ten functions (ids from 1000) and five registers (`Arg1` to `Arg4`
+  and `Result`, ids from 280; 0x110 is the interpreter's "no value") in the engine's script API table. The parser accepts them only in strict
+  mode (mod scripts) and keeps the script line of each call. `GameHost` (`script_program_run.cpp`) keeps the registers for one run of a handler,
+  so nothing is saved, and dispatches the functions before the object's own `CallFunction`. They read and write the simulation only (object
+  lists, finances, the message handler, `world::CreateObject`), use no random numbers, and report a wrong argument or a limit as a `FatalError`
+  naming the line. The per-day and per-type limits are counted from the guests in the resort (no saved counter). Tests:
+  `l0_mod_object_functions_busker` and `l0_mod_object_functions_make` (mods `l0_busker_show` and `l0_object_fn`).
 - Building records (`obl.building` v2) accept optional `icon_sprite`, `icon_locked_sprite`, and `preview_sprite` keys so a
   mod building supplies its own build-panel icon and preview without replacing the pack's shared `UI3_bp_thumb` /
   `UI3_bp_preview` atlases (`gui_image_list.h`, `gui_variable_image.cpp`). `tools/make_sprite.py` converts PNG frames into

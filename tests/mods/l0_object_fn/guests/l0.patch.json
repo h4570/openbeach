@@ -1,0 +1,39 @@
+{
+  "format": "obl.json_patch",
+  "version": 1,
+  "ops": [
+    {
+      "op": "merge",
+      "path": "/types[key=visitor]",
+      "value": {
+        "script": "fn_maker"
+      }
+    },
+    {
+      "op": "append",
+      "path": "/types",
+      "items": [
+        {
+          "key": "fn_helper",
+          "name": "FN_HELPER",
+          "gender": "m",
+          "sprite": "dummy",
+          "script": "fn_helper",
+          "money": 0,
+          "nights": [
+            1,
+            1
+          ],
+          "sleep_time": [
+            22,
+            24
+          ],
+          "wake_time": [
+            7,
+            9
+          ]
+        }
+      ]
+    }
+  ]
+}

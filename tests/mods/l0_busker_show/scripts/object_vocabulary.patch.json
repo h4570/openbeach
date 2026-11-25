@@ -1,0 +1,14 @@
+{
+  "format": "obl.object_script_vocabulary_patch",
+  "version": 1,
+  "states": [
+    "STATE_SHOW_LOOK",
+    "STATE_SHOW_WALK",
+    "STATE_SHOW_PLAY"
+  ],
+  "messages": [
+    "MT_SHOW_TICK",
+    "MT_SHOW_END",
+    "MT_SHOW_CHEER"
+  ]
+}
