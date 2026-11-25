@@ -305,13 +305,14 @@ Module["preRun"] = [].concat(Module["preRun"] || [], function oblLoadGameFiles()
         {path: "remaster", kind: "directory", required: false},
         {path: "BeachLife.ini", kind: "file", required: false},
         {path: "openbeach.ini", kind: "file", required: false},
+        {path: "mod-catalogs.json", kind: "file", required: false},
         {path: "mods", kind: "directory", required: false},
         {path: "mod-cache", kind: "directory", required: false},
         {path: "SaveGames", kind: "directory", required: false},
         {path: "progress.json", kind: "file", required: false},
     ];
     // What the game writes and the flush returns to OPFS.
-    const writtenFiles = ["BeachLife.ini", "openbeach.ini", "progress.json"];
+    const writtenFiles = ["BeachLife.ini", "openbeach.ini", "mod-catalogs.json", "progress.json"];
     const writtenDirectory = "SaveGames";
     const flushIntervalMs = oblBrowserLog.tickMs;
     const lockName = "openbeach-game";
@@ -449,6 +450,58 @@ Module["preRun"] = [].concat(Module["preRun"] || [], function oblLoadGameFiles()
     Module["copyModArchive"] = (heap, offset) => {
         heap.set(archive, offset);
         archive = null;
+    };
+
+    // Mod catalog HTTPS fetches (CORS required on the catalog host; docs/modding/catalogs.md).
+    const catalogFetches = new Map();
+    Module["promptCatalogUrl"] = () => {
+        if (typeof window === "undefined" || typeof window.prompt !== "function") return "";
+        return window.prompt("Enter third-party mod catalog HTTPS URL:") || "";
+    };
+    Module["startCatalogFetch"] = (id, url, maxBytes) => {
+        const entry = {status: 0, bytes: null, error: "", controller: typeof AbortController !== "undefined" ? new AbortController() : null};
+        catalogFetches.set(id, entry);
+        if (!/^https:\/\//.test(url)) {
+            entry.status = -1;
+            entry.error = "only https:// URLs are supported";
+            return;
+        }
+        const opts = {mode: "cors"};
+        if (entry.controller) opts.signal = entry.controller.signal;
+        fetch(url, opts).then(async (response) => {
+            if (!response.ok) throw new Error("HTTP status " + response.status);
+            const buf = new Uint8Array(await response.arrayBuffer());
+            if (buf.length > maxBytes) throw new Error("download exceeds size limit");
+            if (catalogFetches.get(id) === entry) {
+                entry.bytes = buf;
+                entry.status = buf.length;
+            }
+        }).catch((err) => {
+            if (catalogFetches.get(id) === entry) {
+                entry.status = -1;
+                entry.error = err && err.message ? err.message : "HTTPS download failed";
+            }
+        });
+    };
+    Module["pollCatalogFetch"] = (id) => {
+        const entry = catalogFetches.get(id);
+        return entry ? entry.status : -1;
+    };
+    Module["copyCatalogFetch"] = (id, heap, offset) => {
+        const entry = catalogFetches.get(id);
+        if (entry && entry.bytes) heap.set(entry.bytes, offset);
+        catalogFetches.delete(id);
+    };
+    Module["catalogFetchError"] = (id) => {
+        const entry = catalogFetches.get(id);
+        const msg = entry ? entry.error : "download failed";
+        catalogFetches.delete(id);
+        return msg;
+    };
+    Module["cancelCatalogFetch"] = (id) => {
+        const entry = catalogFetches.get(id);
+        if (entry && entry.controller) entry.controller.abort();
+        catalogFetches.delete(id);
     };
 
     const canvas = Module["canvas"];

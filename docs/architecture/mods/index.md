@@ -42,6 +42,20 @@ The browser runs the same installer in MEMFS. Its file bridge writes changed mod
 committing the manifest after the files, and copies them back on the next run.
 See [the player's instructions](../../modding/players/mods-screen.md#installing-and-removing-mods).
 
+## Mod catalogs
+
+`mods::CatalogStore` (`src/game/mods/mod_catalog.h/.cpp`) parses signed `obl.mod_catalog` indexes, verifies their Ed25519
+signatures (`src/game/mods/ed25519.h/.cpp`), filters entries by engine version (`OBL_ENGINE_VERSION`), pack and script API,
+resolves dependency order, and verifies downloaded bytes against the declared `size` and `sha256` before handing them to
+`mods::ModArchive` (the same validation, recipe-building, replace-confirmation and browser OPFS path as local ZIPs).
+
+Added catalogs and their TOFU-pinned public keys live in `<game dir>/mod-catalogs.json` (persisted by `browser_files.js` in
+OPFS); no catalog is built in. Network code stays in `src/platform/http_fetch.cpp` (WinHTTP on Windows, `curl` on Linux/macOS,
+JNI `HttpURLConnection` on Android, `fetch()` with CORS in the browser, plus `file://` for local test catalogs), behind the
+pure header `src/game/mods/http_fetch.h`, keeping `src/core/` and the simulation core free of network dependencies and world
+hashes unchanged. When loading a save with missing world mods (`src/game/game/save_load.cpp`), `CatalogStore::FindModByIdAndHash`
+looks them up by id and content hash across the added catalogs. See [docs/modding/catalogs.md](../../modding/catalogs.md).
+
 ## Official mod sources
 
 Official mods live next to the L0 pack under `data/mods/<id>/`. The Windows test runner and the Linux CI

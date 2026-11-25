@@ -12,7 +12,9 @@
 #include "game/game/game_api.h"
 #include "game/game/game_accessors.h"
 #include "game/game/start_settings.h"
+#include "game/mods/http_fetch.h"
 #include "game/mods/mod_archive.h"
+#include "game/mods/mod_catalog.h"
 #include "game/mods/mod_list.h"
 #include "game/mods/presentation_scripts.h"
 #include "game/tables/text_load.h"
@@ -22,6 +24,7 @@
 #include "game/ui/own_widgets.h"
 #include "game/ui/text_table.h"
 
+#include <SDL3/SDL_clipboard.h>
 #include <SDL3/SDL_dialog.h>
 #include <SDL3/SDL_iostream.h>
 #include <SDL3/SDL_keyboard.h>
@@ -263,6 +266,8 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
 
     ~GuiModsPanel() override
     {
+        CancelPendingFetches();
+        StopUrlInput();
         if (g_openPanel == this) {
             SetArchiveInputEnabled(false);
             g_openPanel = nullptr;
@@ -278,10 +283,15 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
             g_openPanel = this;
             SetArchiveInputEnabled(true);
             LoadList();
+            LoadCatalogs();
         } else if (g_openPanel == this) {
+            CancelPendingFetches();
+            StopUrlInput();
             SetArchiveInputEnabled(false);
             m_pendingReplace.reset();
             m_pendingRemove.clear();
+            m_pendingAddCatalog.reset();
+            m_pendingKeyChange.reset();
             m_droppedFile.clear();
             g_openPanel = nullptr;
         }
@@ -303,7 +313,10 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
             game::game_api::ReloadFrontEnd(own_layer::kModsDialog);
             return;
         }
-        if (m_visible && !IsConfirming()) PollArchiveInput();
+        if (m_visible) {
+            PollCatalogFetches();
+            if (!IsConfirming()) PollArchiveInput();
+        }
     }
 
     bool MouseLeft(int x, int y, int state) override
@@ -343,25 +356,48 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
 
         // Header bar.
         own::Fill(m_x0, m_y0, m_x1, m_y0 + 48, own::kSea);
-        own::Text(2, m_x0 + 16, m_y0 + 14, 560, Lookup("OBL_MODS_TITLE").c_str(), own::kWhite, 0);
-        DrawButton(m_x0 + 248, m_y0 + 8, m_x0 + 460, m_y0 + 40, Lookup("OBL_MODS_INSTALL").c_str(), own::kSeaDark, own::kWhite);
-        const bool canRemove = m_list && m_list->Find(g_selectedId);
-        DrawButton(m_x0 + 468, m_y0 + 8, m_x0 + 602, m_y0 + 40, Lookup("OBL_MODS_REMOVE").c_str(), canRemove ? own::kSeaDark : own::kSand,
+        own::Text(2, m_x0 + 16, m_y0 + 14, 130, Lookup("OBL_MODS_TITLE").c_str(), own::kWhite, 0);
+        DrawButton(m_x0 + 150, m_y0 + 8, m_x0 + 264, m_y0 + 40,
+                Lookup(m_catalogView ? "OBL_MODS_INSTALLED_TAB" : "OBL_MODS_CATALOGS").c_str(), m_catalogView ? own::kFoam : own::kSeaDark,
+                m_catalogView ? own::kInk : own::kWhite);
+        DrawButton(m_x0 + 272, m_y0 + 8, m_x0 + 464, m_y0 + 40, Lookup("OBL_MODS_INSTALL").c_str(), own::kSeaDark, own::kWhite);
+        const bool canRemove = !m_catalogView && m_list && m_list->Find(g_selectedId);
+        DrawButton(m_x0 + 472, m_y0 + 8, m_x0 + 596, m_y0 + 40, Lookup("OBL_MODS_REMOVE").c_str(), canRemove ? own::kSeaDark : own::kSand,
                 canRemove ? own::kWhite : own::kGrey);
-        DrawButton(m_x0 + 610, m_y0 + 8, m_x0 + 692, m_y0 + 40, Lookup("OBL_MODS_HELP").c_str(), own::kSeaDark, own::kWhite);
-        DrawButton(m_x0 + 700, m_y0 + 8, m_x0 + 784, m_y0 + 40, Lookup("OBL_MODS_BACK").c_str(), own::kFoam, own::kInk);
+        DrawButton(m_x0 + 604, m_y0 + 8, m_x0 + 688, m_y0 + 40, Lookup("OBL_MODS_HELP").c_str(), own::kSeaDark, own::kWhite);
+        DrawButton(m_x0 + 696, m_y0 + 8, m_x0 + 784, m_y0 + 40, Lookup("OBL_MODS_BACK").c_str(), own::kFoam, own::kInk);
 
-        DrawListColumn();
-        DrawRightColumn();
+        if (m_catalogView) {
+            DrawCatalogListColumn();
+            DrawCatalogRightColumn();
+        } else {
+            DrawListColumn();
+            DrawRightColumn();
+        }
 
         // Footer status bar.
         const int footerY = m_y0 + h - 44;
         own::Fill(m_x0, footerY, m_x0 + w, m_y1, own::kSeaDark);
         std::u16string footer;
         uint32_t footerColor = own::kWhite;
-        if (IsConfirming()) {
-            const auto& id = m_pendingReplace ? m_pendingReplace->Id() : m_pendingRemove;
-            footer = Format(Lookup(m_pendingReplace ? "OBL_MODS_REPLACE_CONFIRM" : "OBL_MODS_REMOVE_CONFIRM"), {Utf8ToEngine(id)});
+        if (m_editingUrl) {
+            own::Fill(m_x0 + 12, footerY + 6, m_x0 + 500, footerY + 38, own::kWhite);
+            own::Frame(m_x0 + 12, footerY + 6, m_x0 + 500, footerY + 38, own::kSea);
+            const std::u16string shown = m_urlDraft.empty() ? Lookup("OBL_MODS_CAT_URL_HINT") : Utf8ToEngine(m_urlDraft + "_");
+            own::Text(0, m_x0 + 18, footerY + 14, 476, shown.c_str(), m_urlDraft.empty() ? own::kGrey : own::kInk, 0);
+            DrawButton(m_x0 + 506, footerY + 6, m_x0 + 586, footerY + 38, Lookup("OBL_MODS_CAT_PASTE").c_str(), own::kSea, own::kWhite);
+            DrawButton(m_x0 + 592, footerY + 6, m_x0 + 684, footerY + 38, Lookup("OBL_MODS_CONFIRM").c_str(), own::kGreen, own::kWhite);
+            DrawButton(m_x0 + 690, footerY + 6, m_x0 + 784, footerY + 38, Lookup("OBL_MODS_CANCEL").c_str(), own::kFoam, own::kInk);
+        } else if (IsConfirming()) {
+            if (m_pendingKeyChange) {
+                footer = Format(Lookup("OBL_MODS_CAT_KEY_CHANGED"), {Utf8ToEngine(m_pendingKeyChange->catalog.title)});
+                footerColor = 0xffc8c8;
+            } else if (m_pendingAddCatalog) {
+                footer = Format(Lookup("OBL_MODS_CAT_ADD_CONFIRM"), {Utf8ToEngine(m_pendingAddCatalog->url)});
+            } else {
+                const auto& id = m_pendingReplace ? m_pendingReplace->Id() : m_pendingRemove;
+                footer = Format(Lookup(m_pendingReplace ? "OBL_MODS_REPLACE_CONFIRM" : "OBL_MODS_REMOVE_CONFIRM"), {Utf8ToEngine(id)});
+            }
             DrawButton(m_x0 + 570, footerY + 6, m_x0 + 672, footerY + 38, Lookup("OBL_MODS_CONFIRM").c_str(), own::kSea, own::kWhite);
             DrawButton(m_x0 + 680, footerY + 6, m_x0 + 784, footerY + 38, Lookup("OBL_MODS_CANCEL").c_str(), own::kFoam, own::kInk);
         } else if (!g_statusText.empty()) {
@@ -582,7 +618,10 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
         MarkDirty();
     }
 
-    bool IsConfirming() const { return m_pendingReplace || !m_pendingRemove.empty(); }
+    bool IsConfirming() const
+    {
+        return m_pendingReplace || !m_pendingRemove.empty() || m_pendingAddCatalog.has_value() || m_pendingKeyChange.has_value();
+    }
 
     bool CanChangeFiles(const std::string& id)
     {
@@ -730,10 +769,13 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
 
         std::string error;
         if (replace) {
-            if (replace->Write(GameDirectory(), true, error) == mods::ModArchive::Result::Installed)
+            if (replace->Write(GameDirectory(), true, error) == mods::ModArchive::Result::Installed) {
                 OnInstalled(id);
-            else
+                StartNextQueuedDownload();
+            } else {
+                m_downloadQueue.clear();
                 SetArchiveStatus("OBL_MODS_INSTALL_ERROR", error, true);
+            }
         } else if (mods::RemoveMod(GameDirectory(), id, error)) {
             PersistModChange(id);
             LoadList();
@@ -741,6 +783,353 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
         } else {
             SetArchiveStatus("OBL_MODS_REMOVE_ERROR", error, true);
         }
+    }
+
+    // ---- Mod catalogs (#120) ----
+
+    struct PendingAddCatalog {
+        std::string url;
+        bool allowLocal = false;
+    };
+
+    struct PendingKeyChange {
+        std::string url;
+        bool allowLocal = false;
+        mods::Catalog catalog;
+    };
+
+    struct CatalogRow {
+        std::string catalogTitle;
+        std::string catalogUrl;
+        mods::CatalogEntry entry;
+    };
+
+    struct ActiveCatalogFetch {
+        uint64_t handle = 0;
+        std::string url;
+        bool allowLocal = false;
+        bool isModZip = false;
+        mods::CatalogEntry modEntry;
+    };
+
+    void LoadCatalogs()
+    {
+        std::string error;
+        if (!m_catalogStore.Load(GameDirectory(), error)) {
+            OBL_LOG("mods screen: cannot load catalogs: %s", error.c_str());
+        }
+        RebuildCatalogRows();
+    }
+
+    void SaveCatalogs()
+    {
+        if (os::HasEnv("OBL_SCRIPT")) return;
+        std::string error;
+        if (!m_catalogStore.Save(GameDirectory(), error)) {
+            OBL_LOG("mods screen: cannot save catalogs: %s", error.c_str());
+        }
+    }
+
+    void RebuildCatalogRows()
+    {
+        m_catalogRows.clear();
+        mods::SemVer engineVer;
+        if (!mods::ParseVersion(mods::kEngineVersion, engineVer)) engineVer = {1, 13, 0};
+        const std::string packId = pack_path::SelectedId();
+        for (const mods::StoredCatalog& cat : m_catalogStore.Catalogs()) {
+            const auto compatible = mods::FilterCompatibleMods(cat.mods, engineVer, packId, mod_pack::kPresentationApi);
+            for (const mods::CatalogEntry& e : compatible) {
+                m_catalogRows.push_back({cat.title, cat.url, e});
+            }
+        }
+        if (m_selectedCatalogModId.empty() || std::none_of(m_catalogRows.begin(), m_catalogRows.end(), [&](const CatalogRow& r) {
+                return r.entry.id == m_selectedCatalogModId;
+            })) {
+            m_selectedCatalogModId = m_catalogRows.empty() ? std::string() : m_catalogRows[0].entry.id;
+        }
+        const int pages = CatalogPageCount();
+        if (m_catalogPage < 0) m_catalogPage = 0;
+        if (m_catalogPage >= pages) m_catalogPage = pages - 1;
+        RebuildTargets();
+        MarkDirty();
+    }
+
+    int CatalogPageCount() const
+    {
+        if (m_catalogRows.empty()) return 1;
+        return static_cast<int>((m_catalogRows.size() + kPageSize - 1) / kPageSize);
+    }
+
+    void ChangeCatalogPage(int delta)
+    {
+        const int before = m_catalogPage;
+        m_catalogPage += delta;
+        const int pages = CatalogPageCount();
+        if (m_catalogPage < 0) m_catalogPage = 0;
+        if (m_catalogPage >= pages) m_catalogPage = pages - 1;
+        if (m_catalogPage != before) {
+            RebuildTargets();
+            MarkDirty();
+        }
+    }
+
+    void CancelPendingFetches()
+    {
+        if (m_activeFetch.handle) {
+            net::CancelFetch(m_activeFetch.handle);
+            m_activeFetch = {};
+        }
+        m_refreshQueue.clear();
+        m_downloadQueue.clear();
+    }
+
+    void StartUrlInput()
+    {
+        if (os::HasEnv("OBL_SCRIPT")) return;
+#ifdef __EMSCRIPTEN__
+        char urlBuf[1024] = {};
+        const int got = EM_ASM_INT(
+                {
+                    const v = Module["promptCatalogUrl"] ? Module["promptCatalogUrl"]() : "";
+                    if (!v) return 0;
+                    stringToUTF8(v, $0, $1);
+                    return 1;
+                },
+                urlBuf, static_cast<int>(sizeof(urlBuf)));
+        if (got && urlBuf[0]) SubmitCatalogUrl(urlBuf, false);
+#else
+        m_editingUrl = true;
+        m_urlDraft.clear();
+        if (SDL_Window* win = SDL_GetKeyboardFocus()) SDL_StartTextInput(win);
+        RebuildTargets();
+        MarkDirty();
+#endif
+    }
+
+    void StopUrlInput()
+    {
+        if (!m_editingUrl) return;
+        m_editingUrl = false;
+        m_urlDraft.clear();
+#ifndef __EMSCRIPTEN__
+        if (SDL_Window* win = SDL_GetKeyboardFocus()) SDL_StopTextInput(win);
+#endif
+    }
+
+    void PasteIntoUrlDraft()
+    {
+        if (!m_editingUrl) return;
+        if (char* clip = SDL_GetClipboardText()) {
+            for (const char* p = clip; *p && m_urlDraft.size() < 512; ++p) {
+                if (static_cast<unsigned char>(*p) >= 0x20 && static_cast<unsigned char>(*p) < 0x7f) m_urlDraft.push_back(*p);
+            }
+            SDL_free(clip);
+            MarkDirty();
+        }
+    }
+
+    void SubmitCatalogUrl(std::string_view rawUrl, bool allowLocal)
+    {
+        // Trim surrounding spaces.
+        while (!rawUrl.empty() && (rawUrl.front() == ' ' || rawUrl.front() == '\t')) rawUrl.remove_prefix(1);
+        while (!rawUrl.empty() && (rawUrl.back() == ' ' || rawUrl.back() == '\t')) rawUrl.remove_suffix(1);
+        StopUrlInput();
+        std::string error;
+        if (!mods::IsValidCatalogUrl(rawUrl, allowLocal, error)) {
+            SetArchiveStatus("OBL_MODS_CAT_ERROR", error, true);
+            return;
+        }
+        // Adding a third-party catalog always shows a notice and requires confirmation first.
+        m_pendingAddCatalog = PendingAddCatalog{std::string(rawUrl), allowLocal};
+        RebuildTargets();
+        MarkDirty();
+    }
+
+    void ConfirmCatalogAction()
+    {
+        if (m_pendingAddCatalog) {
+            const PendingAddCatalog req = std::exchange(m_pendingAddCatalog, std::nullopt).value();
+            BeginFetchCatalog(req.url, req.allowLocal);
+            return;
+        }
+        if (m_pendingKeyChange) {
+            const PendingKeyChange kc = std::exchange(m_pendingKeyChange, std::nullopt).value();
+            std::string error;
+            const auto status = m_catalogStore.AddOrUpdate(kc.url, kc.catalog, kc.allowLocal, true, error);
+            if (status == mods::CatalogStore::UpdateStatus::Failed) {
+                SetArchiveStatus("OBL_MODS_CAT_ERROR", error, true);
+            } else {
+                SaveCatalogs();
+                RebuildCatalogRows();
+                SetArchiveStatus("OBL_MODS_CAT_ADDED", kc.catalog.title, false);
+            }
+            return;
+        }
+        ConfirmArchiveChange();
+    }
+
+    void CancelConfirmAction()
+    {
+        m_pendingReplace.reset();
+        m_pendingRemove.clear();
+        m_pendingAddCatalog.reset();
+        m_pendingKeyChange.reset();
+        m_downloadQueue.clear();
+        RebuildTargets();
+        MarkDirty();
+    }
+
+    void BeginFetchCatalog(const std::string& url, bool allowLocal)
+    {
+        if (m_activeFetch.handle) return;
+        m_activeFetch = {net::StartFetch(url, mods::kMaxCatalogBytes, allowLocal), url, allowLocal, false, {}};
+        SetArchiveStatus("OBL_MODS_CAT_FETCHING", url, false);
+    }
+
+    void RefreshAllCatalogs()
+    {
+        if (m_activeFetch.handle) return;
+        m_refreshQueue.clear();
+        for (const mods::StoredCatalog& cat : m_catalogStore.Catalogs()) {
+            m_refreshQueue.push_back({cat.url, cat.allowLocal});
+        }
+        StartNextRefresh();
+    }
+
+    void StartNextRefresh()
+    {
+        if (m_activeFetch.handle || m_refreshQueue.empty()) return;
+        const auto next = m_refreshQueue.front();
+        m_refreshQueue.erase(m_refreshQueue.begin());
+        BeginFetchCatalog(next.url, next.allowLocal);
+    }
+
+    void RemoveCatalogAt(size_t index)
+    {
+        const auto& list = m_catalogStore.Catalogs();
+        if (index >= list.size()) return;
+        const std::string title = list[index].title;
+        const std::string url = list[index].url;
+        m_catalogStore.Remove(url);
+        SaveCatalogs();
+        RebuildCatalogRows();
+        SetArchiveStatus("OBL_MODS_CAT_REMOVED", title.empty() ? url : title, false);
+    }
+
+    void InstallFromCatalog(const std::string& modId)
+    {
+        if (m_activeFetch.handle) return;
+        std::vector<mods::CatalogEntry> available;
+        available.reserve(m_catalogRows.size());
+        for (const CatalogRow& r : m_catalogRows) available.push_back(r.entry);
+
+        std::vector<std::string> installedIds;
+        bool alreadyInstalled = false;
+        if (m_list) {
+            for (const mods::Entry& e : m_list->Entries()) {
+                installedIds.push_back(e.mod.id);
+                if (e.mod.id == modId) alreadyInstalled = true;
+            }
+        }
+        if (alreadyInstalled && !CanChangeFiles(modId)) return;
+
+        std::vector<mods::CatalogEntry> order;
+        std::string error;
+        if (!mods::ResolveInstallOrder(modId, available, installedIds, true, order, error)) {
+            SetArchiveStatus("OBL_MODS_INSTALL_ERROR", error, true);
+            return;
+        }
+        m_downloadQueue = std::move(order);
+        StartNextQueuedDownload();
+    }
+
+    void StartNextQueuedDownload()
+    {
+        if (m_activeFetch.handle || m_downloadQueue.empty()) return;
+        const mods::CatalogEntry entry = m_downloadQueue.front();
+        m_downloadQueue.erase(m_downloadQueue.begin());
+        const bool isLocal = entry.url.starts_with("file://");
+        m_activeFetch = {net::StartFetch(entry.url, mods::kMaxModZipBytes, isLocal), entry.url, isLocal, true, entry};
+        SetArchiveStatus("OBL_MODS_CAT_FETCHING", entry.id, false);
+    }
+
+    void PollCatalogFetches()
+    {
+        if (!m_activeFetch.handle) return;
+        net::FetchResult res;
+        if (!net::PollFetch(m_activeFetch.handle, res)) return;
+        const ActiveCatalogFetch finished = std::exchange(m_activeFetch, {});
+
+        if (!res.ok) {
+            m_downloadQueue.clear();
+            SetArchiveStatus(finished.isModZip ? "OBL_MODS_INSTALL_ERROR" : "OBL_MODS_CAT_ERROR", res.error, true);
+            StartNextRefresh();
+            return;
+        }
+
+        if (finished.isModZip) {
+            std::string error;
+            if (!mods::VerifyCatalogDownload(res.bytes, finished.modEntry, error)) {
+                m_downloadQueue.clear();
+                SetArchiveStatus("OBL_MODS_INSTALL_ERROR", error, true);
+                return;
+            }
+            mods::ModArchive archive;
+            if (!archive.Read(res.bytes, pack_path::SelectedId(), error)) {
+                m_downloadQueue.clear();
+                SetArchiveStatus("OBL_MODS_INSTALL_ERROR", error, true);
+                return;
+            }
+            if (archive.Id() != finished.modEntry.id) {
+                m_downloadQueue.clear();
+                SetArchiveStatus("OBL_MODS_INSTALL_ERROR", "archive mod id does not match catalog entry", true);
+                return;
+            }
+            const auto writeRes = archive.Write(GameDirectory(), false, error);
+            if (writeRes == mods::ModArchive::Result::AlreadyInstalled) {
+                if (!CanChangeFiles(archive.Id())) {
+                    m_downloadQueue.clear();
+                    return;
+                }
+                m_pendingReplace.emplace(std::move(archive));
+                RebuildTargets();
+                MarkDirty();
+            } else if (writeRes == mods::ModArchive::Result::Installed) {
+                OnInstalled(archive.Id());
+                StartNextQueuedDownload();
+            } else {
+                m_downloadQueue.clear();
+                SetArchiveStatus("OBL_MODS_INSTALL_ERROR", error, true);
+            }
+            return;
+        }
+
+        // Catalog index response.
+        const std::string_view text(std::bit_cast<const char*>(res.bytes.data()), res.bytes.size());
+        mods::Catalog parsed;
+        std::string error;
+        if (!mods::ParseCatalog(text, finished.url, finished.allowLocal, parsed, error)) {
+            SetArchiveStatus("OBL_MODS_CAT_ERROR", error, true);
+            StartNextRefresh();
+            return;
+        }
+        const auto status = m_catalogStore.AddOrUpdate(finished.url, parsed, finished.allowLocal, false, error);
+        if (status == mods::CatalogStore::UpdateStatus::KeyChanged) {
+            OBL_LOG("mods screen: catalog key changed for %s", finished.url.c_str());
+            m_pendingKeyChange = PendingKeyChange{finished.url, finished.allowLocal, std::move(parsed)};
+            RebuildTargets();
+            MarkDirty();
+            return;
+        }
+        if (status == mods::CatalogStore::UpdateStatus::Failed) {
+            SetArchiveStatus("OBL_MODS_CAT_ERROR", error, true);
+            StartNextRefresh();
+            return;
+        }
+        SaveCatalogs();
+        RebuildCatalogRows();
+        SetArchiveStatus("OBL_MODS_CAT_ADDED", parsed.title, false);
+        StartNextRefresh();
     }
 
     void OnHelp()
@@ -755,22 +1144,77 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
     void RebuildTargets()
     {
         m_targets.clear();
-        if (IsConfirming()) {
+        if (m_editingUrl) {
             const int footerY = m_y1 - 44;
-            m_targets.push_back({"archive.confirm", m_x0 + 570, footerY + 6, m_x0 + 672, footerY + 38, [this] { ConfirmArchiveChange(); }});
-            m_targets.push_back({"archive.cancel", m_x0 + 680, footerY + 6, m_x0 + 784, footerY + 38, [this] {
-                                     m_pendingReplace.reset();
-                                     m_pendingRemove.clear();
+            m_targets.push_back({"catalog.paste", m_x0 + 506, footerY + 6, m_x0 + 586, footerY + 38, [this] { PasteIntoUrlDraft(); }});
+            m_targets.push_back(
+                    {"catalog.url_ok", m_x0 + 592, footerY + 6, m_x0 + 684, footerY + 38, [this] { SubmitCatalogUrl(m_urlDraft, false); }});
+            m_targets.push_back({"catalog.url_cancel", m_x0 + 690, footerY + 6, m_x0 + 784, footerY + 38, [this] {
+                                     StopUrlInput();
                                      RebuildTargets();
                                      MarkDirty();
                                  }});
             return;
         }
-        m_targets.push_back({"install", m_x0 + 248, m_y0 + 8, m_x0 + 460, m_y0 + 40, [this] { OnInstall(); }});
-        if (m_list && m_list->Find(g_selectedId))
-            m_targets.push_back({"remove", m_x0 + 468, m_y0 + 8, m_x0 + 602, m_y0 + 40, [this] { OnRemove(); }});
-        m_targets.push_back({"help", m_x0 + 610, m_y0 + 8, m_x0 + 692, m_y0 + 40, [this] { OnHelp(); }});
-        m_targets.push_back({"back", m_x0 + 700, m_y0 + 8, m_x0 + 784, m_y0 + 40, [this] { m_pendingBack = true; }});
+        if (IsConfirming()) {
+            const int footerY = m_y1 - 44;
+            const char* confirmName =
+                    m_pendingKeyChange ? "catalog.trust_key" : (m_pendingAddCatalog ? "catalog.confirm" : "archive.confirm");
+            const char* cancelName = (m_pendingKeyChange || m_pendingAddCatalog) ? "catalog.cancel" : "archive.cancel";
+            m_targets.push_back({confirmName, m_x0 + 570, footerY + 6, m_x0 + 672, footerY + 38, [this] { ConfirmCatalogAction(); }});
+            m_targets.push_back({cancelName, m_x0 + 680, footerY + 6, m_x0 + 784, footerY + 38, [this] { CancelConfirmAction(); }});
+            return;
+        }
+        m_targets.push_back({"catalogs", m_x0 + 150, m_y0 + 8, m_x0 + 264, m_y0 + 40, [this] {
+                                 m_catalogView = !m_catalogView;
+                                 RebuildTargets();
+                                 MarkDirty();
+                             }});
+        m_targets.push_back({"install", m_x0 + 272, m_y0 + 8, m_x0 + 464, m_y0 + 40, [this] { OnInstall(); }});
+        if (!m_catalogView && m_list && m_list->Find(g_selectedId))
+            m_targets.push_back({"remove", m_x0 + 472, m_y0 + 8, m_x0 + 596, m_y0 + 40, [this] { OnRemove(); }});
+        m_targets.push_back({"help", m_x0 + 604, m_y0 + 8, m_x0 + 688, m_y0 + 40, [this] { OnHelp(); }});
+        m_targets.push_back({"back", m_x0 + 696, m_y0 + 8, m_x0 + 784, m_y0 + 40, [this] { m_pendingBack = true; }});
+
+        if (m_catalogView) {
+            const size_t start = static_cast<size_t>(m_catalogPage * kPageSize);
+            const size_t end = std::min(m_catalogRows.size(), start + static_cast<size_t>(kPageSize));
+            for (size_t i = start; i < end; ++i) {
+                const int rowY = m_y0 + 58 + static_cast<int>(i - start) * 48;
+                const std::string id = m_catalogRows[i].entry.id;
+                m_targets.push_back({"select." + id, m_x0 + 12, rowY, m_x0 + 394, rowY + 44, [this, id] {
+                                         m_selectedCatalogModId = id;
+                                         RebuildTargets();
+                                         MarkDirty();
+                                     }});
+            }
+            const int pages = CatalogPageCount();
+            if (pages > 1) {
+                if (m_catalogPage > 0)
+                    m_targets.push_back({"page.prev", m_x0 + 14, m_y0 + 504, m_x0 + 124, m_y0 + 536, [this] { ChangeCatalogPage(-1); }});
+                if (m_catalogPage + 1 < pages)
+                    m_targets.push_back({"page.next", m_x0 + 282, m_y0 + 504, m_x0 + 392, m_y0 + 536, [this] { ChangeCatalogPage(1); }});
+            }
+            // Selected catalog mod Install / Update button.
+            const auto selIt = std::find_if(
+                    m_catalogRows.begin(), m_catalogRows.end(), [&](const CatalogRow& r) { return r.entry.id == m_selectedCatalogModId; });
+            if (selIt != m_catalogRows.end()) {
+                const std::string id = selIt->entry.id;
+                m_targets.push_back(
+                        {"catalog.install." + id, m_x0 + 414, m_y0 + 210, m_x0 + 570, m_y0 + 242, [this, id] { InstallFromCatalog(id); }});
+            }
+            // Added catalogs management buttons.
+            m_targets.push_back({"catalog.add", m_x0 + 560, m_y0 + 264, m_x0 + 676, m_y0 + 292, [this] { StartUrlInput(); }});
+            m_targets.push_back({"catalog.refresh", m_x0 + 682, m_y0 + 264, m_x0 + 780, m_y0 + 292, [this] { RefreshAllCatalogs(); }});
+            const auto& cats = m_catalogStore.Catalogs();
+            const size_t maxShown = std::min<size_t>(cats.size(), 6);
+            for (size_t i = 0; i < maxShown; ++i) {
+                const int y = m_y0 + 300 + static_cast<int>(i) * 38;
+                m_targets.push_back(
+                        {"catalog.remove." + std::to_string(i), m_x0 + 706, y + 4, m_x0 + 780, y + 32, [this, i] { RemoveCatalogAt(i); }});
+            }
+            return;
+        }
         if (!m_list) return;
 
         const auto& entries = m_list->Entries();
@@ -1000,6 +1444,105 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
         }
     }
 
+    void DrawCatalogListColumn() const
+    {
+        const int x0 = m_x0 + 12;
+        const int x1 = m_x0 + 394;
+        if (m_catalogRows.empty()) {
+            own::Fill(x0, m_y0 + 58, x1, m_y0 + 126, own::kFoam);
+            own::Frame(x0, m_y0 + 58, x1, m_y0 + 126, own::kBorder);
+            const char* key = m_catalogStore.Catalogs().empty() ? "OBL_MODS_CAT_NONE" : "OBL_MODS_CAT_NO_MODS";
+            own::TextWrapped(1, x0 + 10, m_y0 + 68, x1 - x0 - 20, 52, Lookup(key).c_str(), own::kInk, 0);
+            return;
+        }
+        const size_t start = static_cast<size_t>(m_catalogPage * kPageSize);
+        const size_t end = std::min(m_catalogRows.size(), start + static_cast<size_t>(kPageSize));
+        for (size_t i = start; i < end; ++i) {
+            const CatalogRow& row = m_catalogRows[i];
+            const int rowY = m_y0 + 58 + static_cast<int>(i - start) * 48;
+            const bool selected = row.entry.id == m_selectedCatalogModId;
+            own::Fill(x0, rowY, x1, rowY + 44, selected ? own::kFoam : own::kWhite);
+            own::Frame(x0, rowY, x1, rowY + 44, selected ? own::kSea : own::kBorder);
+            own::Text(1, x0 + 10, rowY + 6, 360, Utf8ToEngine(row.entry.title).c_str(), own::kInk, 0);
+
+            const mods::Entry* installed = m_list ? m_list->Find(row.entry.id) : nullptr;
+            std::u16string sub = Utf8ToEngine(row.entry.id + "  " + row.entry.modVersion + "  ");
+            sub += ScopeText(row.entry.scope);
+            if (installed && installed->mod.valid) {
+                sub += u"  (";
+                sub += Lookup(
+                        installed->mod.manifest.modVersion == row.entry.modVersion ? "OBL_MODS_CAT_UP_TO_DATE" : "OBL_MODS_CAT_UPDATE");
+                sub += u")";
+            }
+            own::Text(0, x0 + 10, rowY + 24, 360, sub.c_str(), own::kGrey, 0);
+        }
+        const int pages = CatalogPageCount();
+        if (pages > 1) {
+            DrawButton(m_x0 + 14, m_y0 + 504, m_x0 + 124, m_y0 + 536, Lookup("OBL_MODS_PREVIOUS").c_str(),
+                    m_catalogPage > 0 ? own::kSea : own::kSand, m_catalogPage > 0 ? own::kWhite : own::kGrey);
+            const std::u16string pageLabel = Utf8ToEngine(std::to_string(m_catalogPage + 1) + " / " + std::to_string(pages));
+            own::Text(1, m_x0 + 130, m_y0 + 512, 146, pageLabel.c_str(), own::kInk, 2);
+            DrawButton(m_x0 + 282, m_y0 + 504, m_x0 + 392, m_y0 + 536, Lookup("OBL_MODS_NEXT").c_str(),
+                    m_catalogPage + 1 < pages ? own::kSea : own::kSand, m_catalogPage + 1 < pages ? own::kWhite : own::kGrey);
+        }
+    }
+
+    void DrawCatalogRightColumn() const
+    {
+        const int x0 = m_x0 + 404;
+        const int x1 = m_x0 + 788;
+        const int innerW = x1 - x0 - 20;
+
+        // Top card: selected catalog mod details and Install/Update button.
+        own::Fill(x0, m_y0 + 58, x1, m_y0 + 250, own::kFoam);
+        own::Frame(x0, m_y0 + 58, x1, m_y0 + 250, own::kBorder);
+        const auto selIt = std::find_if(
+                m_catalogRows.begin(), m_catalogRows.end(), [&](const CatalogRow& r) { return r.entry.id == m_selectedCatalogModId; });
+        if (selIt != m_catalogRows.end()) {
+            const auto& e = selIt->entry;
+            own::Text(2, x0 + 10, m_y0 + 66, innerW, Utf8ToEngine(e.title).c_str(), own::kInk, 0);
+            int y = m_y0 + 90;
+            own::Text(0, x0 + 10, y, innerW, Format(Lookup("OBL_MODS_VERSION"), {Utf8ToEngine(e.modVersion)}).c_str(), own::kInk, 0);
+            y += 16;
+            own::Text(
+                    0, x0 + 10, y, innerW, Format(Lookup("OBL_MODS_CAT_FROM"), {Utf8ToEngine(selIt->catalogTitle)}).c_str(), own::kInk, 0);
+            y += 16;
+            own::Text(0, x0 + 10, y, innerW, Format(Lookup("OBL_MODS_SCOPE"), {ScopeText(e.scope)}).c_str(), own::kInk, 0);
+            y += 16;
+            own::Text(0, x0 + 10, y, innerW, Format(Lookup("OBL_MODS_CAT_LICENSE"), {Utf8ToEngine(e.license)}).c_str(), own::kInk, 0);
+            y += 16;
+            if (!e.requiresMods.empty()) {
+                own::Text(0, x0 + 10, y, innerW, Format(Lookup("OBL_MODS_REQUIRES"), {Utf8ToEngine(Join(e.requiresMods, ", "))}).c_str(),
+                        own::kInk, 0);
+            }
+            const mods::Entry* installed = m_list ? m_list->Find(e.id) : nullptr;
+            const char* btnKey = installed ? "OBL_MODS_CAT_UPDATE" : "OBL_MODS_CAT_INSTALL";
+            DrawButton(m_x0 + 414, m_y0 + 210, m_x0 + 570, m_y0 + 242, Lookup(btnKey).c_str(), own::kSea, own::kWhite);
+        }
+
+        // Bottom card: added catalogs list + Add / Refresh / Remove.
+        own::Fill(x0, m_y0 + 258, x1, m_y0 + 548, own::kFoam);
+        own::Frame(x0, m_y0 + 258, x1, m_y0 + 548, own::kBorder);
+        own::Text(1, x0 + 10, m_y0 + 270, 140, Lookup("OBL_MODS_CATALOGS").c_str(), own::kSeaDark, 0);
+        DrawButton(m_x0 + 560, m_y0 + 264, m_x0 + 676, m_y0 + 292, Lookup("OBL_MODS_CAT_ADD").c_str(), own::kSea, own::kWhite);
+        DrawButton(m_x0 + 682, m_y0 + 264, m_x0 + 780, m_y0 + 292, Lookup("OBL_MODS_CAT_REFRESH").c_str(), own::kSeaDark, own::kWhite);
+
+        const auto& cats = m_catalogStore.Catalogs();
+        if (cats.empty()) {
+            own::TextWrapped(0, x0 + 10, m_y0 + 306, innerW, 60, Lookup("OBL_MODS_CAT_NONE").c_str(), own::kGrey, 0);
+        } else {
+            const size_t maxShown = std::min<size_t>(cats.size(), 6);
+            for (size_t i = 0; i < maxShown; ++i) {
+                const int y = m_y0 + 300 + static_cast<int>(i) * 38;
+                own::Fill(x0 + 8, y, x1 - 8, y + 34, own::kWhite);
+                own::Frame(x0 + 8, y, x1 - 8, y + 34, own::kBorder);
+                own::Text(0, x0 + 14, y + 4, 280, Utf8ToEngine(cats[i].title).c_str(), own::kInk, 0);
+                own::Text(0, x0 + 14, y + 18, 280, Utf8ToEngine(cats[i].url).c_str(), own::kGrey, 0);
+                DrawButton(m_x0 + 706, y + 4, m_x0 + 780, y + 32, Lookup("OBL_MODS_REMOVE").c_str(), own::kSeaDark, own::kWhite);
+            }
+        }
+    }
+
     void EnsureVisible(std::string_view id)
     {
         if (!m_list) return;
@@ -1022,6 +1565,18 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
     std::string m_droppedFile;
     std::optional<mods::ModArchive> m_pendingReplace;
     std::string m_pendingRemove;
+    bool m_catalogView = false;
+    bool m_editingUrl = false;
+    std::string m_urlDraft;
+    mods::CatalogStore m_catalogStore;
+    std::vector<CatalogRow> m_catalogRows;
+    std::string m_selectedCatalogModId;
+    int m_catalogPage = 0;
+    std::optional<PendingAddCatalog> m_pendingAddCatalog;
+    std::optional<PendingKeyChange> m_pendingKeyChange;
+    ActiveCatalogFetch m_activeFetch;
+    std::vector<PendingAddCatalog> m_refreshQueue;
+    std::vector<mods::CatalogEntry> m_downloadQueue;
     bool m_pendingBack = false;
     bool m_pendingReload = false;
 };
@@ -1043,6 +1598,58 @@ bool QueueArchive(std::string_view path)
 {
     if (!g_openPanel || !g_openPanel->m_visible || g_openPanel->IsConfirming() || !g_openPanel->m_droppedFile.empty()) return false;
     g_openPanel->m_droppedFile = path;
+    return true;
+}
+
+bool QueueCatalogUrl(std::string_view url, bool allowLocal)
+{
+    if (!g_openPanel || !g_openPanel->m_visible || g_openPanel->IsConfirming()) return false;
+    g_openPanel->m_catalogView = true;
+    g_openPanel->SubmitCatalogUrl(url, allowLocal);
+    return true;
+}
+
+bool IsEditingCatalogUrl()
+{
+    return g_openPanel && g_openPanel->m_visible && g_openPanel->m_editingUrl;
+}
+
+bool HandleTextInput(std::string_view utf8)
+{
+    if (!IsEditingCatalogUrl()) return false;
+    for (char c : utf8) {
+        if (g_openPanel->m_urlDraft.size() < 512 && static_cast<unsigned char>(c) >= 0x20 && static_cast<unsigned char>(c) < 0x7f)
+            g_openPanel->m_urlDraft.push_back(c);
+    }
+    g_openPanel->MarkDirty();
+    return true;
+}
+
+bool HandleKeyDown(int scancode, bool ctrl)
+{
+    if (!IsEditingCatalogUrl()) return false;
+    if (scancode == SDL_SCANCODE_BACKSPACE) {
+        if (!g_openPanel->m_urlDraft.empty()) {
+            g_openPanel->m_urlDraft.pop_back();
+            g_openPanel->MarkDirty();
+        }
+        return true;
+    }
+    if (scancode == SDL_SCANCODE_RETURN || scancode == SDL_SCANCODE_KP_ENTER) {
+        const std::string draft = g_openPanel->m_urlDraft;
+        g_openPanel->SubmitCatalogUrl(draft, false);
+        return true;
+    }
+    if (scancode == SDL_SCANCODE_ESCAPE) {
+        g_openPanel->StopUrlInput();
+        g_openPanel->RebuildTargets();
+        g_openPanel->MarkDirty();
+        return true;
+    }
+    if (ctrl && scancode == SDL_SCANCODE_V) {
+        g_openPanel->PasteIntoUrlDraft();
+        return true;
+    }
     return true;
 }
 

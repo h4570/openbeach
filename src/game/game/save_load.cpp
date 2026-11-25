@@ -6,6 +6,7 @@
 #include "formats/save_document.h"
 #include "formats/save_records.h"
 #include "formats/schemas.h"
+#include "game/mods/mod_catalog.h"
 #include "game/tables/commodity_providers.h"
 #include "game/objects/object_base.h"
 #include "game/objects/object_manager_state.h"
@@ -738,7 +739,30 @@ bool QueueOblSave(const std::filesystem::path& file, std::string& error)
     const bool loaded = formats::ValidateOblSaveDocument(document, origin, *schemas, warnings, error, formats::kGameGridSide, &modIssues);
     for (const std::string& warning : warnings) OBL_LOG("obl.save %s: %s", file.generic_string().c_str(), warning.c_str());
     if (!loaded) return false;
-    if (!modIssues.empty() && !ConfirmModDifferences(file, modIssues, error)) return false;
+    if (!modIssues.empty()) {
+        // Look up any missing/mismatched mods by id and hash in the player's added catalogs (#120).
+        mods::CatalogStore catalogs;
+        std::string catError;
+        if (catalogs.Load(pack_path::GameDirectory(PackRoot()), catError) && !catalogs.Catalogs().empty()) {
+            const auto headerIt = document.find("header");
+            const auto modsIt = headerIt != document.end() ? headerIt->find("mods") : document.end();
+            if (headerIt != document.end() && modsIt != headerIt->end() && modsIt->is_array()) {
+                for (const nlohmann::json& savedMod : *modsIt) {
+                    if (!savedMod.is_object()) continue;
+                    const std::string id = savedMod.value("id", std::string());
+                    const std::string hash = savedMod.value("hash", std::string());
+                    const bool activeSame = std::any_of(origin.mods.begin(), origin.mods.end(),
+                            [&](const formats::SaveMod& m) { return m.id == id && m.hash == hash; });
+                    if (activeSame) continue;
+                    if (const auto match = catalogs.FindModByIdAndHash(id, hash)) {
+                        modIssues.push_back("catalog \"" + match->catalogTitle + "\" offers " + match->entry.id + " " +
+                                match->entry.modVersion + " (" + match->catalogUrl + ")");
+                    }
+                }
+            }
+        }
+        if (!ConfirmModDifferences(file, modIssues, error)) return false;
+    }
     formats::FillSaveDefaults(document, *schemas);
     formats::RecordsToSlots(document);
     auto load = std::make_shared<QueuedLoad>();

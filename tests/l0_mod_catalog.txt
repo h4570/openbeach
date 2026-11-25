@@ -1,0 +1,44 @@
+# Add a local signed catalog, install its mod through the zip path, activate its script, then remove it.
+# Reuses the deflated l0_zip archive fixture (mod.json, presentation script, 8x8 L0 title crop recipe) with no network.
+# @env OBL_PACK=l0
+# @env OBL_MODS=
+# @env OBL_WINDOWED=1
+# @gameini Language.Language=0
+# @gameini Sound.PlayListCount=0
+# @timeout 120
+# @expect-log mods screen: OBL_MODS_CAT_ADDED: Local Test Catalog
+# @expect-log mods screen: OBL_MODS_INSTALLED: l0_zip
+# @expect-log mod l0_zip: installed ZIP started
+# @expect-log mods screen: OBL_MODS_REMOVED: l0_zip
+seed 1
+fixed-dt 0.02
+await state == 1
+await frames 20
+await gui-animating == 0
+gui-click MainMenu id mods_button
+await frames 15
+await gui-animating == 0
+gui-stage-catalog l0_zip 504b030414000000080000002100c3315d50670000007e0000000f0000006c305f7a69702f6d6f642e6a736f6e3d8cb10e83300c447f05dd1c5565cd1fb03177412971258b80adc4ea50c4bfd730b09ddeddbb1d1fa96b3244c8bb3c56c908f8526d2c1b621fc0d9abf29c7eacde185b2107af61ec8c9a397265ba05f44e34cdcb25796eb3e82968a5469b253b670149d9df8f3f504b0304140000000800000021006c07178b3600000039000000240000006c305f7a69702f736372697074732f70726573656e746174696f6e2f6d61696e2e6c75614b2bcd4b2ec9cccf53c8cf8b2f2e492c2ad1d054c84fcad1cbc94fd750cacc030ae5e4a4a6284479062880a5535394341552f352b800504b03041400000008000000210068e8592483000000a90000001a0000006c305f7a69702f726563697065732f62616e6e65722e6a736f6e358cc10ac3300c43ffc5e7d076b7925f19a364999718d226d8eeb6aef4df670abb4808496f8767e5392878a8f7d20511d48931524370f04216aa0bf88b03a92b47b41dcd21a1f412197191be0c939216ecda92ec52576deb89b373095bffa5f6af1a7250e309f8eb6ed15691cd1c7cc00f0eb653dff4d00c7e7490915236d678dc8e1f504b0102140014000000080000002100c3315d50670000007e0000000f00000000000000000000008001000000006c305f7a69702f6d6f642e6a736f6e504b01021400140000000800000021006c07178b36000000390000002400000000000000000000008001940000006c305f7a69702f736372697074732f70726573656e746174696f6e2f6d61696e2e6c7561504b010214001400000008000000210068e8592483000000a90000001a000000000000000000000080010c0100006c305f7a69702f726563697065732f62616e6e65722e6a736f6e504b05060000000003000300d7000000c70100000000
+await frames 3
+gui-click ModsScreen target catalog.confirm
+await frames 5
+gui-click ModsScreen target catalog.install.l0_zip
+await frames 5
+gui-click ModsScreen target catalogs
+await frames 3
+gui-click ModsScreen target toggle.l0_zip
+await frames 20
+await gui-animating == 0
+gui-click ModsScreen target toggle.l0_zip
+await frames 20
+await gui-animating == 0
+gui-click ModsScreen target remove
+await frames 3
+gui-click ModsScreen target archive.confirm
+await frames 3
+gui-click ModsScreen target back
+await frames 15
+boot-gameplay scenario 1
+await gameplay
+expect-text L0_PLAY_CLOSEBUILDING Close shop
+quit

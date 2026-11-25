@@ -9,6 +9,7 @@ project(OpenBeachUnitLinux LANGUAGES C CXX)
 
 set(REPO ${CMAKE_CURRENT_SOURCE_DIR}/../../..)
 cmake_path(NORMAL_PATH REPO)
+file(STRINGS ${REPO}/version.txt OBL_VERSION LIMIT_COUNT 1)
 
 
 set(CMAKE_CXX_STANDARD 20)
@@ -296,6 +297,7 @@ add_executable(obl_unit_tests
     ${CONVERT_SOURCES}
     ${HOST_SOURCES})
 target_include_directories(obl_unit_tests PRIVATE ${REPO}/tests/unit ${REPO}/src ${REPO} ${REPO}/importer/include)
+target_compile_definitions(obl_unit_tests PRIVATE "OBL_ENGINE_VERSION=\"${OBL_VERSION}\"")
 target_link_libraries(obl_unit_tests PRIVATE nlohmann_json::nlohmann_json obl_zlib obl_lua)
 include(${REPO}/cmake/embedded_schemas.cmake)
 obl_embedded_schemas(obl_unit_tests)

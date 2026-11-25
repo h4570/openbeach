@@ -10,11 +10,14 @@ import android.view.WindowManager;
 
 import org.libsdl.app.SDLActivity;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 
@@ -93,6 +96,36 @@ public class OpenBeachActivity extends SDLActivity {
         try (InputStream in = assets.open(path); OutputStream out = new FileOutputStream(target)) {
             byte[] buffer = new byte[65536];
             for (int n; (n = in.read(buffer)) > 0;) out.write(buffer, 0, n);
+        }
+    }
+
+    /** Downloads an HTTPS resource up to maxBytes for mod catalogs (called via JNI from http_fetch.cpp). */
+    public static byte[] fetchHttps(String urlString, int maxBytes) {
+        if (urlString == null || !urlString.startsWith("https://") || maxBytes <= 0) return null;
+        HttpURLConnection conn = null;
+        try {
+            URL url = new URL(urlString);
+            conn = (HttpURLConnection) url.openConnection();
+            conn.setInstanceFollowRedirects(false);
+            conn.setConnectTimeout(15000);
+            conn.setReadTimeout(30000);
+            conn.setRequestProperty("User-Agent", "OpenBeach");
+            if (conn.getResponseCode() != HttpURLConnection.HTTP_OK) return null;
+            try (InputStream in = conn.getInputStream(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+                byte[] buf = new byte[16384];
+                int total = 0;
+                for (int n; (n = in.read(buf)) > 0;) {
+                    total += n;
+                    if (total > maxBytes) return null;
+                    out.write(buf, 0, n);
+                }
+                return out.toByteArray();
+            }
+        } catch (IOException e) {
+            Log.w(TAG, "HTTPS fetch failed for " + urlString, e);
+            return null;
+        } finally {
+            if (conn != null) conn.disconnect();
         }
     }
 }

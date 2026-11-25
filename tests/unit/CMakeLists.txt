@@ -365,6 +365,7 @@ add_executable(obl_unit_tests
     map_pack_test.cpp
     media_pack_test.cpp
     mod_archive_test.cpp
+    mod_catalog_test.cpp
     mod_pack_test.cpp
     mod_list_test.cpp
     script_runtime_test.cpp

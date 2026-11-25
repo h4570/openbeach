@@ -22,6 +22,23 @@ The game checks the manifest, target pack, script API and scope before writing. 
 [asset recipes](../reference/recipes.md), the game builds their outputs from the current pack during installation.
 An unavailable source disables that recipe and leaves a message in the log.
 
+## Installing from catalogs
+OpenBeach includes no built-in catalog. Choose **Catalogs** in the **Mods** screen header to manage third-party catalogs
+and install or update mods from them:
+
+- Choose **Add catalog**, enter or paste an `https://` `catalog.json` address, and confirm the third-party notice.
+- The game verifies the catalog's Ed25519 signature and remembers its signing key. If a catalog's signing key ever changes on
+  refresh, the game warns you and asks before trusting the new key.
+- Select a compatible mod from the catalog list and choose **Install** (or **Update** if an older version is installed). Any
+  required mods from your added catalogs are installed first in dependency order.
+- Every download is checked against the catalog's declared byte size and SHA-256 hash, then validated and installed through
+  the same ZIP installer and replace/remove rules (switch off an active mod before updating it).
+- Choose **Refresh** to check added catalogs for updates, or **Remove** beside a catalog to drop it from your list.
+- If a save names a missing world mod, the game checks your added catalogs by mod id and content hash and notes where it is
+  available.
+
+See [mod catalogs](../catalogs.md) for the catalog format and hosting requirements.
+
 ## Turning mods on and off
 - Active mods appear at the top of the list, in load order; inactive mods follow by id.
 - Click or tap **On** / **Off** on a mod to switch it. A mod switched on joins the end of the active list.
