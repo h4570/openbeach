@@ -329,8 +329,13 @@ template<class Host> void Perform(Host& host, const ScriptCommand* node)
     for (; node; node = node->m_next) {
         switch (node->m_opcode) {
         case OpFunction: {
-            const int32_t id = static_cast<const FunctionCommand*>(node->m_data)->m_functionId;
-            if (id != kNoFunction) host.CallFunction(id);
+            const auto& call = *static_cast<const FunctionCommand*>(node->m_data);
+            if (call.m_functionId == kNoFunction) break;
+            // A host that reports the script line of a call takes it with the id.
+            if constexpr (requires { host.CallFunctionAt(call.m_functionId, call.m_line); })
+                host.CallFunctionAt(call.m_functionId, call.m_line);
+            else
+                host.CallFunction(call.m_functionId);
             break;
         }
         case OpMessage: PerformMessage(host, *static_cast<const MessageCommand*>(node->m_data)); break;

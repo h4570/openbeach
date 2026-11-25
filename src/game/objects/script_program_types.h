@@ -45,6 +45,7 @@ struct ScriptOperand {
 // Opcode 0 `Function <name>;`: the id of a built-in function (0xb5 = unknown name is a FatalError in the parser).
 struct FunctionCommand {
     int32_t m_functionId;
+    int32_t m_line = 0; // the script line of the call, for the errors of the mod functions (not compared by Diff)
 };
 
 // Opcode 1 `Message <MT_...> <receiver> <data> <flags> [Time t] [MaxTime t] [FloatData v] [State v] [SendFrom v];`. Slots

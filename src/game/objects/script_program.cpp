@@ -213,6 +213,7 @@ private:
     ScriptOperand Resolve(const std::string& token)
     {
         int id = FindNoCase(m_vocabulary.values, token);
+        if (id >= kFirstModValue && !m_options.strict) FailAt("a value of mod scripts, not of pack scripts: " + token);
         if (id >= 0) return {id, nullptr};
         if (!token.empty() && token[0] == '"') return {ValueString, NewString(Unquote(token))};
         if (StartsWith(token, "RandDWORD")) return {ValueRandDword, NewInt(std::atoi(token.c_str() + 9))};
@@ -221,6 +222,12 @@ private:
             int state = StateId(token);
             if (state < 0) FailAt("unrecognized state name: " + token);
             return {ValueNumber, NewFloat(static_cast<float>(state))};
+        }
+        if (StartsWith(token, "MT_") && m_options.strict) {
+            // A message type as a number (an argument of the mod functions, e.g. SendToNearby).
+            int message = MessageId(token);
+            if (message < 0) FailAt("unrecognized message name: " + token);
+            return {ValueNumber, NewFloat(static_cast<float>(message))};
         }
         char first = token.empty() ? '\0' : token[0];
         if ((first < '0' || first > '9') && first != '-') FailAt("unrecognized name in the object script: " + token);
@@ -381,8 +388,10 @@ private:
         std::string name = Read();
         int id = FindNoCase(m_vocabulary.functions, name);
         if (id < 0) FailAt("unrecognized function in the object script: " + name);
+        if (id >= kFirstModFunction && !m_options.strict) FailAt("a function of mod scripts, not of pack scripts: " + name);
         auto* payload = New<FunctionCommand>();
         payload->m_functionId = id;
+        payload->m_line = static_cast<int32_t>(LineNumber(m_tokenPos));
         Read(); // `;`
         Append(NewNode(OpFunction, payload), list);
     }

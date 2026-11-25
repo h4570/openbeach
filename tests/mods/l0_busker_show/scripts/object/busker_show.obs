@@ -1,0 +1,102 @@
+#obl-script 1 object
+// Worked example of the generic functions (docs/modding/guides/first-busker.md): the busker looks for the nearest kiosk, walks to it, then
+// every 5 seconds cheers up the guests around him and earns 5 plus 1 for each guest he reached, until his act ends.
+
+State STATE_NULL
+	OnUpdate
+	End
+	OnEntry
+		Set WalkAnimation "D_WALK_NORMAL";
+		Set StandAnimation "D_STAND_NORMAL";
+		Set WalkSpeed 60;
+		ChangeState STATE_STARTUP;
+	End
+End
+
+State STATE_STARTUP
+	OnUpdate
+	End
+	OnEntry
+		ChangeState STATE_SHOW_LOOK;
+	End
+	OnExit
+		PlayAnimation WalkAnimation;
+	End
+End
+
+State STATE_SHOW_LOOK
+	OnEntry
+		Set Arg1 "kiosk";
+		Function FindNearestBuilding;
+		If (Result != NO_OBJECT)
+			Set Arg1 Result;
+			Function WalkToObject;
+			ChangeState STATE_SHOW_WALK;
+		Else
+			// No kiosk: play where he stands.
+			ChangeState STATE_SHOW_PLAY;
+		End
+	End
+End
+
+State STATE_SHOW_WALK
+	OnEntry
+		PlayAnimation WalkAnimation;
+	End
+	Message MT_MOVEIMHERE
+		OnReceipt
+			ChangeState STATE_SHOW_PLAY;
+		End
+	End
+	Message MT_PATHBLOCKED
+		OnReceipt
+			ChangeState STATE_SHOW_PLAY;
+		End
+	End
+	Message MT_CANT_MOVE
+		OnReceipt
+			ChangeState STATE_SHOW_PLAY;
+		End
+	End
+End
+
+State STATE_SHOW_PLAY
+	OnEntry
+		PlayAnimation StandAnimation;
+		Message MT_SHOW_TICK Me 0 0 Time 5;
+		Message MT_SHOW_END Me 0 0 Time 16;
+	End
+	Message MT_SHOW_TICK
+		OnReceipt
+			Set Arg1 6;
+			Set Arg2 0.05;
+			Function ChangeGuestsHappiness;
+			Set Arg1 5;
+			Add Arg1 Result;
+			Function PayMoney;
+			Set Arg1 6;
+			Set Arg2 MT_SHOW_CHEER;
+			Set Arg3 1;
+			Function SendToNearby;
+			Message MT_SHOW_TICK Me 0 0 Time 5;
+		End
+	End
+	Message MT_SHOW_CHEER
+		OnReceipt
+			Set Arg1 1;
+			Function ChargeMoney;
+		End
+	End
+	Message MT_SHOW_END
+		OnReceipt
+			ChangeState STATE_GUEST_LEAVING_WORLD;
+		End
+	End
+End
+
+State STATE_GUEST_LEAVING_WORLD
+	OnEntry
+		Function ClearMyDelayedMsgs;
+		Message MT_KILLOBJECT -2 Me 0;
+	End
+End

@@ -70,6 +70,7 @@ The engine's fixed list of `Function <name>;` targets (matched ignoring ASCII ca
 - **Cleaner:** `FindLitter`, `FindBinToClean`, `FindToiletToClean`, `FindUrgentClean`, `RemoveLitter`, `GoToBinFront`, `FaceBin`, `CleanBin`, `CleanToilet`, `ResetIdle`, `FaceLitter`, `FindWanderPos`, `DidNotClean`, `StartedCleaning`, `IdleThought`, `DirectedThought`, `StrollThought`, `CleanToiletTime`, `FindBestScoredJob`
 - **Security:** `FindMisdemeanour`, `IncNumSeriousFines`, `IncNumMinorFines`, `IncNumJailed`, `IncNumCautioned`, `GoToFineOffsetAtHut`, `SetFacingDir`, `ChooseAction`, `SendDetainTickerMsg`, `Move2Hotel`
 - **Lifeguard:** `Move2Tower`, `FindBeachPoint`, `FnMove2SeaEntry`, `Move2SeaEntryPoint`, `SearchForGuests`, `PullGuest`, `FaceLadder`, `FindBeach`, `GuestDrowned`, `GuestSaved`, `IsInMyArea`, `OffsetAfterRescue`, `SetGuestInvisible`, `SetGuestVisible`, `CheckGuestStillAlive`
+- **Mod characters (mod scripts only):** `FindNearestBuilding`, `FindNearestCommodity`, `WalkToObject`, `ChangeGuestsHappiness`, `ChangeGuestsDesire`, `PayMoney`, `ChargeMoney`, `CreateObject`, `RemoveObject`, `SendToNearby` (details in the last section)
 - **Mechanic & rep & shared staff:** `FindJob`, `LookForBetterJob`, `LookWatering`, `DidNotRepair`, `FinishedRepairs`, `Repairing`, `GetWateringPos`, `FacePlant`, `MoveToNextBuilding`, `LookForGuests`, `ArrivedAtGuest`, `AddToBoostTotal`, `PatrollingThought`, `AddOpinionData`, `DecIdleTime`, `ResetDirectingStaff`, `SendToJob`, `StartShift`, `EndShift`, `DrawAttention`, `GotAttention`, `ForgetAttention`
 
 ## Values
@@ -85,3 +86,49 @@ The engine's fixed list of script variables and constants (matched ignoring ASCI
 - **Builder:** `BuildEntPointX`, `BuildEntPointY`, `BuildFacing`, `RestFacing`, `BuilderNumber`, `NumTimesPlayedAnimInRow`, `WaitTillMorning`, `NumBuildersWhistling`, `AmIDemolishing`, `IsJobStillValid`, `BuilderLocation`
 - **Security:** `FoundMisdemeanour`, `Tolerance`, `ActionToTake`, `Offender`, `FightWithID`, `NumMinorFines`, `NumSeriousFines`, `MinorFineCost`, `SeriousFineCost`, `PatrolVelocity`, `DoubleFine`, `FineOffsetX`, `FineOffsetY`, `FineLevel`, `ExitPointX`, `ExitPointY`, `SecurityOffice`, `TellOff`
 - **Lifeguard & rep & shark:** `Saving`, `SavingID`, `InSea`, `EnteringSea`, `SavingX`, `SavingY`, `DistanceToSender`, `Rescue`, `RescueSwim`, `InMyArea`, `AtHotel`, `DrawingGuest`, `SavingDistance`, `RescueThenDeath`, `GuestAlreadyBeingSaved`, `TalkingID`, `TimetalkingToGuest`, `TimetalkingToGuestFloat`, `PerCentToBoostGuest`, `SentToGuest`, `GuestOffSetPosX`, `GuestOffSetPosY`, `MyVictim`, `MyVictimOffsetX`, `MyVictimOffsetY`, `VictimDir`
+- **Mod registers (mod scripts only):** `Arg1`, `Arg2`, `Arg3`, `Arg4`, `Result`
+
+## Generic functions for mod characters
+
+A mod script (never a pack script: the parser refuses these names there) can use ten generic functions to make a character that does something, such as a busker or a vendor. A function reads its arguments from the registers Arg1 to Arg4 and leaves its answer in Result. Set the arguments with `Set`, read the answer with `If` or `Set`:
+
+```text
+Set Arg1 "kiosk";
+Function FindNearestBuilding;
+If (Result != NO_OBJECT)
+	Set Arg1 Result;
+	Function WalkToObject;
+End
+```
+
+- The registers belong to one run of a handler (`OnEntry`, `OnUpdate` or one message handler). They start at zero in each run, so keep nothing in them between handlers; saves and replays never see them.
+- A text argument is a quoted string. A message type is written as `MT_...` (the mod's own names included) and is a number in an argument.
+- A function stays in the simulation tick and draws only on the simulation's random numbers, so replays stay exact and a save in the middle of a script reloads and goes on the same.
+- A wrong argument or a call over a limit stops the game with a message that names the script line and the function. Nothing runs slowly.
+
+| Function | Arguments | Answer in Result | What it does |
+|---|---|---|---|
+| FindNearestBuilding | Arg1: building key (text) | the building's id, or NO_OBJECT | The nearest building with that catalog key. |
+| FindNearestCommodity | Arg1: commodity family key (text), such as "SOFTDRNK" | the building's id, or NO_OBJECT | The nearest building that sells something of that family. |
+| WalkToObject | Arg1: object id | none | Walks to the object (a building's entrance). The walk ends like any other, with the message for arriving or for a blocked path. |
+| ChangeGuestsHappiness | Arg1: radius in tiles, Arg2: change from -1 to 1 | guests changed | Adds the change to the happiness of the guests around, kept between 0 and 1. |
+| ChangeGuestsDesire | Arg1: radius, Arg2: desire key (text), Arg3: change | guests changed | The same for one desire, such as "SNACKS". |
+| PayMoney | Arg1: amount | none | Income of the resort, shown in the finances as an attraction income. |
+| ChargeMoney | Arg1: amount | none | A cost of the resort, shown in the finances as a cost. |
+| CreateObject | Arg1: guest type key (text), Arg2: object id (optional, default the caller) | the new id | Creates a guest of a mod type (a type with its own `script`) at the place of the object. |
+| RemoveObject | Arg1: object id | none | Removes a guest of a mod type, like the message that kills an object. |
+| SendToNearby | Arg1: radius, Arg2: message, Arg3: data | objects reached | Sends the message from the caller to the guests and staff around it, the caller excluded. |
+
+Waiting is not a function: send a message to yourself with `Time`, or use `ChangeState ... Time`. Walking to a fixed point stays `Message MT_MOVE2POINT Me <tile x> <tile y>`.
+
+### Limits
+
+| Limit | Value |
+|---|---|
+| Radius | 0 to 16 tiles |
+| Amount of one PayMoney or ChargeMoney call | above 0, up to 10000 |
+| Change of a happiness or desire | -1 to 1 |
+| Objects of mod types created a day | 20 (counted among the ones that arrived today and are still in the resort) |
+| Objects of one mod type | 40 |
+
+A mod that needs another function asks for it in an issue; the function comes with a test. The worked example is the busker show in [first-busker.md](../guides/first-busker.md).

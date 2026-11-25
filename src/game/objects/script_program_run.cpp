@@ -7,6 +7,8 @@
 #include "game/objects/script_program_types.h"
 #include "game/objects/object_base.h"
 #include "game/objects/script_program_exec.h"
+#include "game/objects/mod_script_functions.h"
+#include "game/objects/script_program_api.h"
 #include "core/ascii_case.h"
 #include "core/call_counter.h"
 #include "game/game/diagnostics.h"
@@ -15,6 +17,7 @@
 
 #include <cstdint>
 #include <cstring>
+#include <string>
 
 namespace obl::object {
 using game::FatalError;
@@ -48,15 +51,34 @@ public:
 
     ScriptValue GetValue(int32_t key, void* data) const
     {
+        if (mod_script::IsRegister(key)) return m_registers.Get(key);
         ScriptValue out{};
         m_object->GetValue(&out, key, reinterpret_cast<intptr_t>(data));
         return out;
     }
     void SetValue(int32_t key, void* data, int32_t type, int32_t bits) const
     {
+        if (mod_script::IsRegister(key)) {
+            m_registers.Set(key, type, bits);
+            return;
+        }
         m_object->SetValue(key, reinterpret_cast<intptr_t>(data), type, bits);
     }
-    void CallFunction(int32_t id) const { m_object->CallFunction(id); }
+    void CallFunction(int32_t id) const { CallFunctionAt(id, 0); }
+    // `line` is the script line of the call; the functions of mod scripts name it in their errors.
+    void CallFunctionAt(int32_t id, int32_t line) const
+    {
+        if (!mod_script::IsFunction(id)) {
+            m_object->CallFunction(id);
+            return;
+        }
+        const std::string error = mod_script::Call(*m_object, id, m_registers);
+        if (error.empty()) return;
+        const char* name = "?";
+        for (const auto& row : script_program::EngineFunctions())
+            if (row.id == id) name = row.name.c_str();
+        FatalError("A mod object script failed at line %d: Function %s: %s", line, name, error.c_str());
+    }
     void Send(const Message& message) const { m_object->Send(message); }
     void SendDelayed(const Message& message, float delay) const { m_object->SendDelayed(message, delay); }
     float PlayAnimation(const char* name, int32_t reverse, int32_t exitState, int32_t loop, const char* finish) const
@@ -78,6 +100,8 @@ public:
 
 private:
     object::Base* m_object;
+    // The registers of the mod functions live for one run of a handler: the host is made per run.
+    mutable mod_script::Registers m_registers;
 };
 
 // Sent messages go to the global message handler, immediately or delayed.

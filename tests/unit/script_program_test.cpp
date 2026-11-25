@@ -1,6 +1,7 @@
 
 #include "unit_test.h"
 
+#include "game/objects/mod_script_functions.h"
 #include "game/objects/script_program_api.h"
 #include "game/objects/script_program_ids.h"
 #include "game/objects/script_program_types.h"
@@ -13,7 +14,9 @@
 #include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <cmath>
 #include <iterator>
+#include <map>
 #include <memory>
 #include <regex>
 #include <set>
@@ -836,4 +839,120 @@ OBL_TEST_CASE("script_program.the_reference_page_lists_every_function_and_value"
     std::set<std::string> expectedValues;
     for (const NamedId& row : EngineValues()) expectedValues.insert(row.name);
     OBL_CHECK(BacktickIdentifiersInSection(page, "## Values") == expectedValues);
+}
+
+// ---- The generic functions of mod scripts (mod_script_functions.h) ----------------------------------------------------------------
+
+namespace {
+
+// The engine's own vocabulary plus a message, as the game builds it for a mod script.
+Vocabulary ModVocabulary()
+{
+    Vocabulary vocabulary = SmallVocabulary();
+    vocabulary.functions = EngineFunctions();
+    vocabulary.values = EngineValues();
+    return vocabulary;
+}
+
+void ParseMod(Parsed& parsed, const std::string& text, bool strict)
+{
+    const Vocabulary vocabulary = ModVocabulary();
+    std::string buffer = text + ".";
+    obl::script_program::Parse(*parsed.script, buffer.data(), text.size(), vocabulary, parsed.heap.memory(), {strict, 1});
+}
+
+const char* const kModFunctionNames[] = {"FindNearestBuilding", "FindNearestCommodity", "WalkToObject", "ChangeGuestsHappiness",
+        "ChangeGuestsDesire", "PayMoney", "ChargeMoney", "CreateObject", "RemoveObject", "SendToNearby"};
+
+} // namespace
+
+OBL_TEST_CASE("script_program.mod_functions_have_the_engine_numbers")
+{
+    namespace ms = obl::mod_script;
+    int found = 0;
+    for (const NamedId& row : EngineFunctions()) {
+        if (row.id < ms::kFirstFunction) continue;
+        OBL_CHECK(ms::IsFunction(row.id));
+        OBL_CHECK(std::find(std::begin(kModFunctionNames), std::end(kModFunctionNames), row.name) != std::end(kModFunctionNames));
+        ++found;
+    }
+    OBL_CHECK_EQ(found, static_cast<int>(std::size(kModFunctionNames)));
+    OBL_CHECK_EQ(ms::kLastFunction - ms::kFirstFunction + 1, found);
+    std::map<std::string, int> registers;
+    for (const NamedId& row : EngineValues())
+        if (row.id >= ms::kArg1) registers[row.name] = row.id;
+    OBL_CHECK_EQ(registers["Arg1"], ms::kArg1);
+    OBL_CHECK_EQ(registers["Arg4"], ms::kArg4);
+    OBL_CHECK_EQ(registers["Result"], ms::kResult);
+    OBL_CHECK(ms::kArg1 >= obl::script_program::kFirstModValue && ms::kArg1 != 0x110);
+}
+
+OBL_TEST_CASE("script_program.mod_functions_parse_only_in_mod_scripts")
+{
+    for (const char* name : kModFunctionNames) {
+        const std::string text = std::string("State STATE_A\n OnEntry\n  Set Arg1 3;\n  Function ") + name + ";\n End\nEnd\n";
+        Parsed mod;
+        ParseMod(mod, text, true);
+        OBL_REQUIRE(mod.script->m_NumStates == 1);
+        // `Function` is the second command of the list; its line is kept for the errors of the call.
+        const ScriptCommand* call = mod.script->m_states[0].m_onEntry->m_next;
+        OBL_REQUIRE(call != nullptr);
+        OBL_CHECK_EQ(Payload<obl::script_program::FunctionCommand>(call).m_line, 4);
+
+        Parsed pack;
+        bool refused = false;
+        try {
+            ParseMod(pack, text, false);
+        } catch (const obl::script_program::ParseError& failure) {
+            refused = true;
+            OBL_CHECK(std::string(failure.what()).find("line 3") != std::string::npos); // the `Set Arg1` line comes first
+        }
+        OBL_CHECK(refused);
+    }
+}
+
+OBL_TEST_CASE("script_program.message_names_are_numbers_in_mod_scripts")
+{
+    Parsed mod;
+    ParseMod(mod, "State STATE_A\n OnEntry\n  Set Arg2 MT_TWO;\n End\nEnd\n", true);
+    OBL_REQUIRE(mod.script->m_NumStates == 1);
+
+    Parsed unknown;
+    bool refused = false;
+    try {
+        ParseMod(unknown, "State STATE_A\n OnEntry\n  Set Arg2 MT_NOPE;\n End\nEnd\n", true);
+    } catch (const obl::script_program::ParseError& failure) {
+        refused = std::string(failure.what()).find("MT_NOPE") != std::string::npos;
+    }
+    OBL_CHECK(refused);
+}
+
+OBL_TEST_CASE("script_program.mod_function_limits_and_arguments")
+{
+    namespace ms = obl::mod_script;
+    OBL_CHECK(ms::CheckRadius(0).empty());
+    OBL_CHECK(ms::CheckRadius(ms::kMaxRadius).empty());
+    OBL_CHECK(!ms::CheckRadius(ms::kMaxRadius + 0.5).empty());
+    OBL_CHECK(!ms::CheckRadius(-1).empty());
+    OBL_CHECK(!ms::CheckRadius(std::nan("")).empty());
+    OBL_CHECK(ms::CheckMoney(0.5).empty());
+    OBL_CHECK(ms::CheckMoney(ms::kMaxMoney).empty());
+    OBL_CHECK(!ms::CheckMoney(0).empty());
+    OBL_CHECK(!ms::CheckMoney(ms::kMaxMoney + 1).empty());
+    OBL_CHECK(!ms::CheckMoney(-5).empty());
+    OBL_CHECK(ms::CheckUnitDelta(-1).empty() && ms::CheckUnitDelta(1).empty());
+    OBL_CHECK(!ms::CheckUnitDelta(1.5).empty());
+    OBL_CHECK(!ms::CheckUnitDelta(std::nan("")).empty());
+    OBL_CHECK_EQ(ms::AddClamped(0.9f, 0.5f), 1.0f);
+    OBL_CHECK_EQ(ms::AddClamped(0.1f, -0.5f), 0.0f);
+    OBL_CHECK_EQ(ms::AddClamped(0.25f, 0.5f), 0.75f);
+
+    ms::Registers registers;
+    OBL_CHECK_EQ(registers.Get(ms::kArg1).bits, 0);
+    registers.Set(ms::kArg3, 3, 77);
+    OBL_CHECK_EQ(registers.Get(ms::kArg3).type, 3);
+    OBL_CHECK_EQ(registers.Get(ms::kArg3).bits, 77);
+    registers.Set(ms::kResult, 2, -1);
+    OBL_CHECK_EQ(registers.Get(ms::kResult).bits, -1);
+    OBL_CHECK_EQ(registers.Get(ms::kArg1).bits, 0);
 }

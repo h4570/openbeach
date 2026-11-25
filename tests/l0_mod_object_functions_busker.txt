@@ -1,0 +1,32 @@
+# The generic object functions in a busker show (l0_busker_show): FindNearestBuilding, WalkToObject, ChangeGuestsHappiness, PayMoney,
+# SendToNearby and ChargeMoney. Buskers walk to a kiosk, cheer the guests around them every 5 seconds and earn money. The world hash is the same
+# on two runs and a save in the middle reloads and goes on the same.
+# @env OBL_PACK=l0
+# @env OBL_MODS=l0_busker_show
+# @timeout 180
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario 1
+await gameplay
+step 50
+spawn-building kiosk 60 60
+spawn-guests 4
+expect guests 4
+expect income-today 0
+step 1000
+expect income-today 0
+step 3000
+expect income-today 16
+log busker income=$income-today costs=$costs-today guests=$guests happy=$guests-happiness-sum
+save-obl testlogs/l0_mod_object_functions_busker.obl.save
+seed 1
+load-obl-save testlogs/l0_mod_object_functions_busker.obl.save
+await world-loaded
+step 300
+world-hash
+seed 1
+load-obl-save testlogs/l0_mod_object_functions_busker.obl.save
+await world-loaded
+step 300
+world-hash expect-same
+quit

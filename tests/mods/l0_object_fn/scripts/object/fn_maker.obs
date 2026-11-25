@@ -1,0 +1,58 @@
+#obl-script 1 object
+// Test script of the generic functions that create, find and change things. Each success leaves a mark in the finances:
+// income 1 for a created helper, income 3 when a drinks building was found, expense N for the N guests whose snack desire went up.
+
+State STATE_NULL
+	OnUpdate
+	End
+	OnEntry
+		Set WalkAnimation "D_WALK_NORMAL";
+		Set StandAnimation "D_STAND_NORMAL";
+		Set WalkSpeed 60;
+		ChangeState STATE_STARTUP;
+	End
+End
+
+State STATE_STARTUP
+	OnUpdate
+	End
+	OnEntry
+		ChangeState STATE_FN_RUN;
+	End
+	OnExit
+		PlayAnimation WalkAnimation;
+	End
+End
+
+State STATE_FN_RUN
+	OnEntry
+		PlayAnimation StandAnimation;
+		Set Arg1 "fn_helper";
+		Function CreateObject;
+		If (Result != NO_OBJECT)
+			Set Arg1 1;
+			Function PayMoney;
+		End
+		Set Arg1 "SOFTDRNK";
+		Function FindNearestCommodity;
+		If (Result != NO_OBJECT)
+			Set Arg1 3;
+			Function PayMoney;
+		End
+		Set Arg1 16;
+		Set Arg2 "SNACKS";
+		Set Arg3 0.2;
+		Function ChangeGuestsDesire;
+		If (Result > 0)
+			Set Arg1 Result;
+			Function ChargeMoney;
+		End
+		Message MT_FN_DONE Me 0 0 Time 20;
+	End
+	Message MT_FN_DONE
+		OnReceipt
+			Function ClearMyDelayedMsgs;
+			Message MT_KILLOBJECT -2 Me 0;
+		End
+	End
+End

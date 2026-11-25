@@ -1,0 +1,13 @@
+{
+  "format": "obl.json_patch",
+  "version": 1,
+  "ops": [
+    {
+      "op": "merge",
+      "path": "/types[key=visitor]",
+      "value": {
+        "script": "busker_show"
+      }
+    }
+  ]
+}

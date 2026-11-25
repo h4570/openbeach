@@ -155,6 +155,14 @@ const std::map<std::string, Probe>& Probes()
             {"scenery-costs-today", WorldField(&World::m_sceneryCostToday)},
             {"buildings", ObjectProbe(&game::GetObjectManager, [](const object::Manager& m) { return m.m_buildings.size(); })},
             {"guests", ObjectProbe(&game::GetObjectManager, [](const object::Manager& m) { return m.m_guests.size(); })},
+            // The sum of the guests' happiness (0..1 each): the mood changes of the mod object functions.
+            {"guests-happiness-sum",
+                    ObjectProbe(&game::GetObjectManager,
+                            [](const object::Manager& m) {
+                                double sum = 0;
+                                for (const object::Base* guest : m.m_guests) sum += static_cast<const object::Guest*>(guest)->m_happiness;
+                                return sum;
+                            })},
             // Guest arrival/departure sums of the world (both genders): the natural departure path (state 0x29 -> world::OnObjectDeleting).
             {"guests-arrived-total",
                     ObjectProbe(&game::GetWorld, [](const World& w) { return w.m_totalGuestArrive[0] + w.m_totalGuestArrive[1]; })},
