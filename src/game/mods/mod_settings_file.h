@@ -14,4 +14,9 @@ std::optional<std::string> ReadModSettingFile(const std::filesystem::path& file,
 // Writes it, creating the file or the section; every other line stays. False when the file cannot be written.
 bool WriteModSettingFile(const std::filesystem::path& file, const std::string& mod, const std::string& key, const std::string& value);
 
+// The player's `[Keys]` line for an action (docs/modding/reference/actions.md): the key names as written, nullopt when there is none.
+std::optional<std::string> ReadKeyBindingFile(const std::filesystem::path& file, const std::string& action);
+// Writes it; empty text removes the binding (the action's own keys apply again), "none" unbinds.
+bool WriteKeyBindingFile(const std::filesystem::path& file, const std::string& action, const std::string& keys);
+
 } // namespace obl::mods

@@ -322,7 +322,7 @@ bool ExecuteBuildingEventCommand(const std::string& name, const std::vector<std:
 {
     if (name != "event-build" && name != "event-state" && name != "hour" && name != "event-guests" && name != "event-slot" &&
             name != "save-panel" && name != "save-confirm" && name != "load-slot" && name != "convert-save" && name != "load-obl-save" &&
-            name != "save-obl" && name != "claim-mods" && name != "mod-setting" && name != "bind-key" &&
+            name != "save-obl" && name != "claim-mods" && name != "mod-setting" && name != "bind-key" && name != "reload-keys" &&
             name != "expect-obl-save-refused" && name != "event-expect" && name != "event-load-index" && name != "event-focus" &&
             name != "event-tick" && name != "event-select" && name != "event-rotate" && name != "event-cancel" && name != "event-advance" &&
             name != "event-visible" && name != "event-check-actors" && name != "event-delay" && name != "event-open" &&
@@ -345,6 +345,12 @@ bool ExecuteBuildingEventCommand(const std::string& name, const std::vector<std:
         return true;
     }
     // `bind-key <action> <keys|default>`: the player's `[Keys]` entry of the action, as if it stood in openbeach.ini ("none" unbinds).
+    // `reload-keys`: the key table built again from the player's lines, what a restart does.
+    if (name == "reload-keys" && args.empty()) {
+        mods::ReloadKeyBindings();
+        OBL_LOG("autotest: reload-keys");
+        return true;
+    }
     if (name == "bind-key" && args.size() == 2) {
         mods::SetTestKeyBinding(args[0], args[1] == "default" ? std::string() : args[1]);
         OBL_LOG("autotest: bind-key %s %s", args[0].c_str(), args[1].c_str());

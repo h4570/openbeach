@@ -692,6 +692,62 @@ int ApiScreenSafeArea(lua_State* L)
     return 1;
 }
 
+// ---- actions --------------------------------------------------------------------------------------------------------------------
+
+void PushKeyList(lua_State* L, const std::vector<std::string>& keys)
+{
+    lua_createtable(L, static_cast<int>(keys.size()), 0);
+    for (size_t i = 0; i < keys.size(); ++i) {
+        lua_pushstring(L, keys[i].c_str());
+        lua_rawseti(L, -2, static_cast<lua_Integer>(i + 1));
+    }
+}
+
+int ApiActionsList(lua_State* L)
+{
+    const std::vector<ActionInfo> actions = Of(L).host->Actions();
+    lua_createtable(L, static_cast<int>(actions.size()), 0);
+    for (size_t i = 0; i < actions.size(); ++i) {
+        lua_createtable(L, 0, 6);
+        SetText(L, "name", actions[i].name);
+        SetText(L, "label", actions[i].label);
+        SetText(L, "mod", actions[i].mod);
+        lua_pushboolean(L, actions[i].held);
+        lua_setfield(L, -2, "held");
+        PushKeyList(L, actions[i].keys);
+        lua_setfield(L, -2, "keys");
+        PushKeyList(L, actions[i].defaults);
+        lua_setfield(L, -2, "defaults");
+        lua_rawseti(L, -2, static_cast<lua_Integer>(i + 1));
+    }
+    return 1;
+}
+
+// obl.actions.bind(name, keys): keys is a key name, a list of names, "none" or "default". Answers true, or false and the reason.
+int ApiActionsBind(lua_State* L)
+{
+    const std::string name = luaL_checkstring(L, 1);
+    std::string keys;
+    if (lua_istable(L, 2)) {
+        const lua_Integer count = luaL_len(L, 2);
+        for (lua_Integer i = 1; i <= count; ++i) {
+            lua_rawgeti(L, 2, i);
+            if (lua_type(L, -1) != LUA_TSTRING) return luaL_error(L, "obl.actions.bind: a list of key names is expected");
+            if (i > 1) keys += ", ";
+            keys += lua_tostring(L, -1);
+            lua_pop(L, 1);
+        }
+        if (keys.empty()) keys = "none";
+    } else {
+        keys = luaL_checkstring(L, 2);
+    }
+    const std::string error = Of(L).host->BindAction(name, keys);
+    lua_pushboolean(L, error.empty());
+    if (error.empty()) return 1;
+    lua_pushstring(L, error.c_str());
+    return 2;
+}
+
 int ApiStatsFrameMs(lua_State* L)
 {
     const std::vector<float>& times = *Of(L).frameTimes;
@@ -803,6 +859,7 @@ void RegisterApi(lua_State* L)
                     {"hovered", ApiGameHovered}});
     SetTable(L, "store", {{"get", ApiStoreGet}, {"set", ApiStoreSet}});
     SetTable(L, "settings", {{"get", ApiSettingsGet}});
+    SetTable(L, "actions", {{"list", ApiActionsList}, {"bind", ApiActionsBind}});
     // Input, camera, GUI, overlay and information (docs/modding/reference/scripting.md).
     lua_pushstring(L, kPlatform);
     lua_setfield(L, -2, "platform");

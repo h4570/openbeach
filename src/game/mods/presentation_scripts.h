@@ -37,6 +37,8 @@ void ConfigureKeyBindings(const std::filesystem::path& iniFile);
 // Test support (`bind-key`): the player's binding for an action as if it stood in the ini; empty text goes back to the default.
 void SetTestKeyBinding(const std::string& action, const std::string& keys);
 void ClearTestKeyBindings();
+// Builds the key table again from the mods and the player's lines, as a restart does (the `reload-keys` test command).
+void ReloadKeyBindings();
 
 // on_stop and the stores: at the end of the game.
 void StopPresentationScripts();

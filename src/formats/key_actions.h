@@ -95,6 +95,12 @@ using PlayerLookup = std::function<std::optional<std::string>(std::string_view n
 // default); inside one layer the later action does. The losers lose that key and `conflicts` says so.
 Table Resolve(std::span<const ModKeys> mods, const PlayerLookup& player);
 
+// The rules of a player's rebinding (obl.actions.bind): `keys` is what a `[Keys]` line may hold, or "default" to drop the player's line.
+// False with `error` for an action the table lacks, a key name no key has, or a key another action holds now. `current` is the table
+// the game reads, `defaults` the one with no player lines; the keys of the action itself never conflict, and "none" always passes.
+// The `[Keys]` line of a hand edit would take such a key from the other action; a rebinding screen must not do that unasked.
+bool CheckBind(const Table& current, const Table& defaults, std::string_view action, std::string_view keys, std::string& error);
+
 // The table the game reads. Before the first Install it holds the engine's default keys, so a game with no mods behaves as it did.
 void Install(const Table& table);
 const Table& Current();

@@ -97,6 +97,16 @@ struct GameSnapshot {
     std::optional<ObjectInfo> hovered;
 };
 
+// One named action as the key table settles it (formats/key_actions.h), for obl.actions.list.
+struct ActionInfo {
+    std::string name; // "game.pause", "<mod>.<id>"
+    std::string label; // the engine's summary or the mod's label
+    std::string mod; // empty for an engine action
+    bool held = false;
+    std::vector<std::string> keys; // key names that act now
+    std::vector<std::string> defaults; // key names with no player binding
+};
+
 // What a script may reach beyond its sandbox. The game supplies the real one (presentation_scripts.cpp), unit tests a fake.
 class ScriptHost {
 public:
@@ -125,6 +135,10 @@ public:
     virtual ScreenInfo Screen() const { return {}; }
     // "mouse", "touch" or empty: what moved the pointer last.
     virtual std::string LastPointer() const { return {}; }
+    // The key table (obl.actions): every action with its keys, and the player's binding for one. `keys` is a list of key names like
+    // "F5, F6", "none" to unbind or "default" for the action's own keys; the answer is empty on success, else the reason.
+    virtual std::vector<ActionInfo> Actions() { return {}; }
+    virtual std::string BindAction(const std::string&, const std::string&) { return "key bindings are not available"; }
     // The game state after the last tick; null outside a world.
     virtual const GameSnapshot* Snapshot() { return nullptr; }
 };

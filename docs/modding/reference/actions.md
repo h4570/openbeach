@@ -61,6 +61,20 @@ The key is the action's full name (a mod's is `<mod id>.<id>`). The value is a l
 value or a missing line means the default (or the mod's binding). An unknown key name is logged and the line ignored. Scripted
 test runs read no file: `bind-key <action> <keys|default>` stands in for the line.
 
+## Rebinding from a script
+A presentation mod (API 1, experimental like the rest of it, [scripting.md](scripting.md)) can build a key bindings screen:
+- `obl.actions.list()` gives every action with `name`, `label`, `mod`, `held`, `keys` and `defaults` (key names).
+- `obl.actions.bind(name, keys)` writes the player's `[Keys]` line, the same line as editing the file by hand: `keys` is a key name, a
+  list (`{"F5", "F6"}`, at most four) or `"none"`; `"default"` removes the line. The answer is `true`, or `false` and the reason:
+  `no action is named "x"`, `no key is named "x"`, `key "F10" is bound to "game.pause"`. Unlike a hand edit, which takes the key from
+  the other action (see below), a call never does: the mod asks the player which action should lose it and unbinds that one first.
+  The engine has no fixed actions to refuse: the keys that are not actions (above) cannot be listed or bound at all.
+- The change acts at once, is kept in `openbeach.ini` and is found again after a restart. Nothing reaches the simulation, saves or
+  replays.
+- **Press a new key:** there is no extra call. The mod keeps a flag, and while it is set `on_input(event)` takes the next
+  `event.kind == "key"` with `event.phase == "down"`, calls `event:consume()` (the game does not act on it) and binds
+  `event.key` (a key name, as `bind` wants it); `"Escape"` can cancel the capture.
+
 ## Conflicts
 One key acts for one action. When several actions end up with the same key, the strongest source keeps it: the player's `[Keys]`
 line, then the later mod in load order (the mod's declared keys and its bindings count alike), then the earlier mods, then the
@@ -72,4 +86,5 @@ screen lists as key conflicts (`mod_pack::KeyConflicts`).
 `key_actions_test` (unit): the default table, the ini, a mod's action and binding, conflicts and their winner, the takeover, and
 that this page's table agrees with the code; `mod_pack_test`: the manifest fields. Game tests on L0: `tests/l0_mod_actions.txt`
 (`l0_actions`: the action fires on F9, `game.pause` moves to F10), `tests/l0_mod_action_takeover.txt` (`l0_takeover`) and
-`tests/l0_key_binding.txt` (`bind-key`).
+`tests/l0_key_binding.txt` (`bind-key`), `tests/l0_mod_keys.txt` (`l0_keys`: list, rebind, a refused key, reset, the binding after
+`reload-keys`, which builds the table again as a restart does); the bind rules are `key_actions.a_rebinding_*` (unit).

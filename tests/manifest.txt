@@ -64,6 +64,7 @@ l0_mod_settings.txt @l0
 l0_mod_actions.txt @l0
 l0_mod_action_takeover.txt @l0
 l0_key_binding.txt @l0
+l0_mod_keys.txt @l0
 l0_mod_world_script.txt @l0
 l0_mod_world_events.txt @l0
 l0_mod_world_events_ext.txt @l0

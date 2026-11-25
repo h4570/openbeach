@@ -204,3 +204,37 @@ OBL_TEST_CASE("key_actions.the_reference_page_lists_every_engine_action_with_its
     OBL_CHECK_EQ(listed.size(), ka::kEngineCount);
     for (size_t i = 0; i < listed.size(); ++i) OBL_CHECK(listed[i] == ka::EngineActions()[i].name);
 }
+
+OBL_TEST_CASE("key_actions.a_rebinding_refuses_a_key_another_action_holds")
+{
+    const ka::Table defaults = Res({});
+    const ka::Table now = Res({}, Ini({{"game.pause", "F10"}}));
+    std::string error;
+    // A free key, a list, "none" and the action's own key pass.
+    OBL_CHECK(ka::CheckBind(now, defaults, "game.speed_up", "F11", error));
+    OBL_CHECK(ka::CheckBind(now, defaults, "game.speed_up", "F11, F12", error));
+    OBL_CHECK(ka::CheckBind(now, defaults, "game.speed_up", "none", error));
+    OBL_CHECK(ka::CheckBind(now, defaults, "game.pause", "F10", error));
+    // Another action's key is refused, by name, ignoring case.
+    OBL_CHECK(!ka::CheckBind(now, defaults, "game.speed_up", "f10", error));
+    OBL_CHECK_EQ(error, std::string("key \"F10\" is bound to \"game.pause\""));
+    OBL_CHECK(!ka::CheckBind(now, defaults, "game.speed_up", "F11, F10", error));
+    // An unknown key, too many keys and an unknown action.
+    OBL_CHECK(!ka::CheckBind(now, defaults, "game.speed_up", "NoSuchKey", error));
+    OBL_CHECK_EQ(error, std::string("no key is named \"NoSuchKey\""));
+    OBL_CHECK(!ka::CheckBind(now, defaults, "game.speed_up", "F1, F3, F6, F7, F8", error));
+    OBL_CHECK(!ka::CheckBind(now, defaults, "no.such", "F11", error));
+    OBL_CHECK_EQ(error, std::string("no action is named \"no.such\""));
+}
+
+OBL_TEST_CASE("key_actions.resetting_to_default_is_refused_while_another_action_holds_the_default_key")
+{
+    const ka::Table defaults = Res({});
+    // game.pause moved to F10 and panel.music took P: giving game.pause its P back would steal it.
+    const ka::Table now = Res({}, Ini({{"game.pause", "F10"}, {"panel.music", "P"}}));
+    std::string error;
+    OBL_CHECK(!ka::CheckBind(now, defaults, "game.pause", "default", error));
+    OBL_CHECK_EQ(error, std::string("key \"P\" is bound to \"panel.music\""));
+    OBL_CHECK(ka::CheckBind(now, defaults, "panel.music", "default", error)); // M is free
+    OBL_CHECK(ka::CheckBind(Res({}), defaults, "game.pause", "default", error));
+}

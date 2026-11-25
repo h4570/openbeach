@@ -202,6 +202,9 @@ public:
     ScreenInfo Screen() const override { return CurrentScreen(); }
     std::string LastPointer() const override { return g_lastPointer; }
 
+    std::vector<ActionInfo> Actions() override;
+    std::string BindAction(const std::string& name, const std::string& keys) override;
+
     const GameSnapshot* Snapshot() override
     {
         if (!g_snapshotTaken) {
@@ -216,7 +219,7 @@ GameScriptHost g_host;
 
 // The table of key bindings from the mods that run (all active ones before the scripts start) and the player's file. `log` reports the
 // conflicts, which is wanted once at start-up and not on every change of the running mods.
-void RebuildKeys(bool log)
+std::vector<mod_pack::ActiveMod> KeyMods()
 {
     std::vector<mod_pack::ActiveMod> mods;
     const std::vector<std::string> running = g_runtime ? g_runtime->RunningMods() : std::vector<std::string>{};
@@ -224,6 +227,13 @@ void RebuildKeys(bool log)
         // A mod without scripts (api 0) only moves keys and cannot stop; one with scripts counts while it runs.
         if (!g_runtime || mod.manifest.api == 0 || std::find(running.begin(), running.end(), mod.manifest.id) != running.end())
             mods.push_back(mod);
+    return mods;
+}
+
+void RebuildKeys(bool log)
+{
+    const std::vector<mod_pack::ActiveMod> mods = KeyMods();
+    const std::vector<std::string> running = g_runtime ? g_runtime->RunningMods() : std::vector<std::string>{};
     const bool scripted = os::HasEnv("OBL_SCRIPT");
     const auto player = [&](std::string_view name) -> std::optional<std::string> {
         if (const auto it = g_testKeys.find(std::string(name)); it != g_testKeys.end()) return it->second;
@@ -268,6 +278,61 @@ void SyncAreas()
     }
     // A mod that stopped frees its keys.
     if (g_runtime && g_runtime->RunningMods().size() != g_keyRunning) RebuildKeys(false);
+}
+
+std::vector<std::string> KeyNames(const key_actions::KeyList& keys)
+{
+    std::vector<std::string> names;
+    for (const uint8_t key : keys) names.emplace_back(input::KeyName(key));
+    return names;
+}
+
+std::vector<ActionInfo> GameScriptHost::Actions()
+{
+    // What each action's keys would be with no `[Keys]` line, and the mods' labels.
+    const std::vector<key_actions::ModKeys> layers = mod_pack::ActionLayers(KeyMods());
+    const key_actions::Table defaults = key_actions::Resolve(layers, nullptr);
+    std::map<std::string, std::string> labels;
+    for (const key_actions::EngineAction& engine : key_actions::EngineActions())
+        labels[std::string(engine.name)] = std::string(engine.summary);
+    for (const key_actions::ModKeys& mod : layers)
+        for (const key_actions::ModAction& action : mod.actions) labels[mod.mod + "." + action.id] = action.label;
+    std::vector<ActionInfo> list;
+    for (const key_actions::Entry& entry : key_actions::Current().entries) {
+        ActionInfo info;
+        info.name = entry.name;
+        info.label = labels[entry.name];
+        info.mod = entry.mod;
+        info.held = entry.held;
+        info.keys = KeyNames(entry.keys);
+        for (const key_actions::Entry& other : defaults.entries)
+            if (other.name == entry.name) info.defaults = KeyNames(other.keys);
+        list.push_back(std::move(info));
+    }
+    return list;
+}
+
+std::string GameScriptHost::BindAction(const std::string& name, const std::string& keys)
+{
+    // The rules live in key_actions::CheckBind: they refuse a key another action holds, which a hand edit of [Keys] would take from it.
+    const key_actions::Table defaults = key_actions::Resolve(mod_pack::ActionLayers(KeyMods()), nullptr);
+    std::string error;
+    if (!key_actions::CheckBind(key_actions::Current(), defaults, name, keys, error)) return error;
+    const std::string text = ascii::EqualsNoCase(keys, "default") ? std::string() : keys;
+    if (os::HasEnv("OBL_SCRIPT")) {
+        // A scripted run leaves the player's file alone; `bind-key` keeps its lines in memory the same way.
+        if (text.empty())
+            g_testKeys.erase(name);
+        else
+            g_testKeys[name] = text;
+    } else {
+        if (g_keysFile.empty()) return "there is no openbeach.ini to keep the binding in";
+        game::start_settings::CreateDefaultFile(g_keysFile);
+        if (!WriteKeyBindingFile(g_keysFile, name, text)) return "cannot write " + g_keysFile.generic_string();
+    }
+    RebuildKeys(false);
+    SyncAreas();
+    return {};
 }
 
 // The platform's finger events, before its own touch recognizer (input_routing.h).
@@ -422,6 +487,13 @@ void SetTestKeyBinding(const std::string& action, const std::string& keys)
     else
         g_testKeys[action] = keys;
     RebuildKeys(true);
+    SyncAreas();
+}
+
+void ReloadKeyBindings()
+{
+    // What a restart does with the player's lines: the table is built again from them.
+    RebuildKeys(false);
     SyncAreas();
 }
 
