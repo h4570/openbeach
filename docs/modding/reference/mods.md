@@ -25,6 +25,8 @@ same path below it. Text tables, the catalog's record list, object script vocabu
   on content lists several instead, `"packs": ["base", "l0"]`, and starts on any of them; a manifest names `pack` or `packs`,
   not both.
 - `requires` (optional): mod ids that must be active and earlier in the load order.
+- `conflicts` (optional): mod ids this mod does not work with; the start-up check and the mods screen refuse to run both together
+  (whichever of the two names the other). A mod cannot name itself or a mod it also lists in `requires`.
 - `scope` (optional): `"world"` (the default) or `"presentation"`. A presentation mod reaches the simulation only through game
   commands, so it ships no data the simulation reads, and saves and replays leave it out ([scripting.md](scripting.md#scope)).
 - `api` (optional): the presentation script API version the mod's scripts were written for; a mod with
@@ -71,7 +73,7 @@ and list a name once. The legacy `mod/` directory keeps working unchanged.
 ## Start-up check
 `mod_pack::Activate` (`src/formats/mod_pack.cpp`), called from `InitGame` after the pack check, stops the game with the mod id
 and the reason when an active mod has no directory or no valid manifest, names another id than its directory, does not list the
-selected pack, is listed twice, needs a mod that is not active or comes later, is a presentation mod that ships a file its scope
+selected pack, is listed twice, needs a mod that is not active or comes later, conflicts with another active mod (`conflicts` in `mod.json`), is a presentation mod that ships a file its scope
 does not allow, needs a newer script API than the game has, or ships scripts without naming `api`. After the world script
 vocabulary loads, `world::CheckModWorldScripts` parses every `scripts/world/*.wsc` and stops the game on an error or a
 refused call ([world-scripts.md](world-scripts.md#refused-calls)). It also computes each mod's content hash once

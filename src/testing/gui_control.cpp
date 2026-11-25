@@ -8,6 +8,8 @@
 #include "game/ui/gui_modes_tools.h"
 #include "game/ui/gui_patch_runtime.h"
 #include "game/ui/input.h"
+#include "game/ui/mods_screen.h"
+#include "game/ui/own_layer.h"
 #include "gui_tree.h"
 #include "game/ui/gui_modes_types.h"
 #include "game/ui/font.h"
@@ -310,8 +312,18 @@ bool ExecuteGuiControlCommand(const std::string& name, const std::vector<std::st
         manager->AnimateDialog(args[0].c_str(), type, static_cast<float>(std::atof(args[2].c_str())), delay);
         OBL_LOG("autotest: gui-animate %s type=%d seconds=%s delay=%d", args[0].c_str(), type, args[2].c_str(), delay);
     } else {
-        std::string why;
         const std::vector<std::string> selector(args.begin() + 1, args.end());
+        if (selector.size() == 2 && ascii::EqualsNoCase(selector[0], "target") && ascii::EqualsNoCase(args[0], own_layer::kModsDialog)) {
+            int x = 0, y = 0;
+            if (!obl::gui::mods_screen::FindTarget(selector[1], x, y)) {
+                OBL_LOG("autotest: FAILED gui-move %s: no target %s", args[0].c_str(), selector[1].c_str());
+                return true;
+            }
+            platform::SetSyntheticCursor(x, y);
+            OBL_LOG("autotest: gui-move %s target %s x=%d y=%d", args[0].c_str(), selector[1].c_str(), x, y);
+            return true;
+        }
+        std::string why;
         const GuiWidget* widget = FindWidget(*dialog, selector, why);
         if (!widget) {
             OBL_LOG("autotest: FAILED gui-move %s: %s", args[0].c_str(), why.c_str());

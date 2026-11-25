@@ -2,6 +2,7 @@
 
 #include "core/char16.h"
 #include <cstdint>
+#include <string>
 
 namespace obl::text {
 struct Table;
@@ -19,6 +20,8 @@ namespace text_table {
 inline constexpr char16_t kEmptyText[1] = {};
 
 text::Table* Create(const char* language);
+// The language code the last Create read (`en`, `pl`...).
+const std::string& Language();
 void Destroy(text::Table* table);
 const text::Table* Current();
 

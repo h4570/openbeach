@@ -43,6 +43,7 @@ struct Manifest {
     std::string modVersion;
     std::vector<std::string> packs; // the pack ids the mod starts on (`pack` or `packs`)
     std::vector<std::string> requiredMods; // mod ids that must be active and earlier in the load order
+    std::vector<std::string> conflictingMods; // `conflicts`: mod ids this mod does not work with; never active together
     Scope scope = Scope::World;
     std::vector<settings_schema::Field> settings; // `settings`: kept in openbeach.ini under [Mod.<id>], never read by the simulation
     int api = 0; // the presentation API version the scripts were written for; 0 when the manifest names none
@@ -63,6 +64,10 @@ inline bool Recorded(const ActiveMod& mod)
 {
     return mod.manifest.scope == Scope::World;
 }
+
+// Whether `a` and `b` refuse to run together: either names the other in `conflicts`, so a mod need not know every mod that
+// refuses to run beside it.
+bool AreIncompatible(const Manifest& a, const Manifest& b);
 
 // False with `error` when `text` is not a valid mod.json.
 bool ParseManifest(std::string_view text, Manifest& manifest, std::string& error);
@@ -85,6 +90,18 @@ std::vector<key_actions::ModKeys> ActionLayers(std::span<const ActiveMod> mods);
 // the mods screen's conflict list.
 std::vector<std::string> KeyConflicts(std::span<const ActiveMod> mods, const key_actions::PlayerLookup& player);
 
+// A directory under `<game dir>/mods/`, valid or not, for the mods screen.
+struct InstalledMod {
+    std::string id; // the directory name
+    std::filesystem::path directory;
+    bool valid = false; // mod.json was read and parsed
+    Manifest manifest; // when valid
+    std::string error; // why not, when not valid
+};
+
+// Every directory of `<game dir>/mods/` whose name is a mod id, sorted by id. Reads only the manifests.
+std::vector<InstalledMod> ListInstalled(const std::filesystem::path& gameDirectory);
+
 // The result of the last successful start-up check (SetActive), in load order.
 const std::vector<ActiveMod>& Active();
 // Test support (`claim-mods`): replaces what saves and replays record and compare as the active mods, without touching the
@@ -95,5 +112,10 @@ void RestoreActive();
 // The start-up step: reads the mod list (OBL_MODS, else `configured`), checks it, and makes the mods layers of pack_path.
 // False with `error` when the check fails; the game stops then.
 bool Activate(const std::filesystem::path& gameDirectory, std::string_view packId, std::string_view configured, std::string& error);
+
+// Activate with a list instead of the setting (the mods screen applies a new list of presentation mods at once). On failure
+// nothing changes.
+bool ActivateList(
+        const std::filesystem::path& gameDirectory, std::string_view packId, std::span<const std::string> ids, std::string& error);
 
 } // namespace obl::mod_pack

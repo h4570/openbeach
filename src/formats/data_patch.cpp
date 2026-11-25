@@ -33,6 +33,7 @@ struct Document {
     fs::path source;
     std::map<std::string, Origin> origins;
     std::string last;
+    std::string logical; // the file's logical path, which a conflict names
 };
 
 std::string Escape(const std::string& key)
@@ -92,7 +93,7 @@ bool Related(const std::string& a, const std::string& b)
 }
 
 void Assign(Document& doc, Json& target, const Json& value, const std::string& pointer, const Origin& write, bool merge,
-        std::vector<std::string>& conflicts)
+        std::vector<Conflict>& conflicts)
 {
     if (merge && value.is_object() && target.is_object()) {
         for (const auto& [key, member] : value.items()) Assign(doc, target[key], member, pointer + Escape(key), write, true, conflicts);
@@ -111,12 +112,12 @@ void Assign(Document& doc, Json& target, const Json& value, const std::string& p
     }
     for (const auto& [old, previous] : doc.origins)
         if (Related(pointer, old) && previous.mod != write.mod && !previous.appended)
-            conflicts.push_back(write.where + " overrides " + previous.where);
+            conflicts.push_back({write.mod, previous.mod, doc.logical, pointer, write.where + " overrides " + previous.where});
     doc.origins[pointer] = write;
     target = value;
 }
 
-void Apply(Document& doc, const fs::path& file, const std::string& mod, std::vector<std::string>& conflicts, std::string& where)
+void Apply(Document& doc, const fs::path& file, const std::string& mod, std::vector<Conflict>& conflicts, std::string& where)
 {
     const Json patch = Read(file);
     if (patch.at("format") != "obl.json_patch" || !patch.at("version").is_number_integer() || patch.at("version") != 1 ||
@@ -176,10 +177,12 @@ Input::Input(const fs::path& file) : std::istream(nullptr)
     if (m_file.open(file, std::ios::in | std::ios::binary)) rdbuf(&m_file);
 }
 
-bool Prepare(const fs::path& pack, std::span<const std::string> mods, std::vector<std::string>& conflicts, std::string& error)
+namespace {
+
+// Applies the patches of `mods` and checks the results; `files` gets the patched documents.
+bool Build(const fs::path& pack, std::span<const std::string> mods, std::vector<Conflict>& conflicts, Files& files, std::string& error)
 {
     std::map<fs::path, Document> documents;
-    Files files;
     conflicts.clear();
     try {
         const auto game = pack_path::GameDirectory(pack);
@@ -208,6 +211,7 @@ bool Prepare(const fs::path& pack, std::span<const std::string> mods, std::vecto
                     doc.value = Read(doc.source);
                     doc.format = doc.value.at("format").get<std::string>();
                     doc.last = error;
+                    doc.logical = logical.generic_string();
                 }
                 Apply(doc, patch, mod, conflicts, error);
             }
@@ -238,9 +242,27 @@ bool Prepare(const fs::path& pack, std::span<const std::string> mods, std::vecto
         error += ": " + std::string(failure.what());
         return false;
     }
-    g_files.swap(files);
     error.clear();
     return true;
+}
+
+} // namespace
+
+bool Prepare(const fs::path& pack, std::span<const std::string> mods, std::vector<std::string>& conflicts, std::string& error)
+{
+    std::vector<Conflict> found;
+    Files files;
+    if (!Build(pack, mods, found, files, error)) return false;
+    conflicts.clear();
+    for (const Conflict& conflict : found) conflicts.push_back(conflict.text);
+    g_files.swap(files);
+    return true;
+}
+
+bool FindConflicts(const fs::path& pack, std::span<const std::string> mods, std::vector<Conflict>& conflicts, std::string& error)
+{
+    Files files;
+    return Build(pack, mods, conflicts, files, error);
 }
 
 } // namespace obl::data_patch

@@ -175,6 +175,24 @@ OBL_TEST_CASE("data_patch.later_mod_wins_and_both_are_reported")
     OBL_CHECK(conflict.find("/types[key=visitor]/money") != std::string::npos);
 }
 
+OBL_TEST_CASE("data_patch.find_conflicts_names_the_winner_without_publishing")
+{
+    PatchGame game;
+    game.Patch("early", {Op("set", "/types[key=visitor]/money", "value", 15)});
+    game.Patch("late", {Op("set", "/types[key=visitor]/money", "value", 25)});
+    std::vector<obl::data_patch::Conflict> found;
+    OBL_REQUIRE(obl::data_patch::FindConflicts(game.pack, game.mods, found, game.error));
+    OBL_REQUIRE(found.size() == 1);
+    OBL_CHECK(found[0].winner == "late" && found[0].loser == "early");
+    OBL_CHECK(found[0].file == "guests/island.json" && found[0].path == "/types/0/money");
+    // The loaders still read the file as it is.
+    OBL_CHECK(game.Read()["types"][0]["money"] == 100);
+    // The other order: the other winner.
+    const std::vector<std::string> swapped = {"late", "early"};
+    OBL_REQUIRE(obl::data_patch::FindConflicts(game.pack, swapped, found, game.error));
+    OBL_CHECK(found.size() == 1 && found[0].winner == "early");
+}
+
 OBL_TEST_CASE("data_patch.two_appends_both_land_in_load_order")
 {
     PatchGame game;

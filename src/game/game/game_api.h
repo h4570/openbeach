@@ -61,6 +61,9 @@ float Version();
 bool ReturnToMainMenu();
 void RequestReturnToMainMenu();
 void CancelReturnToMainMenu();
+// Builds the language table and the state's GUI script again before the next frame is drawn, then opens `dialog` (the mods screen,
+// after a change of the presentation mods).
+void ReloadFrontEnd(const char* dialog);
 void SetSandboxMode(bool sandbox);
 void LoadScenarioProgress();
 void ResetScenarioProgress();

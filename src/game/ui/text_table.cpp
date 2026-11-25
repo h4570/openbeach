@@ -99,6 +99,19 @@ namespace {
 test::CallCounter g_lookupCalls("ui.text-lookup"), g_lookupWideCalls("ui.text-lookup-wide");
 }
 
+namespace {
+std::string& CurrentLanguageCode()
+{
+    static std::string language;
+    return language;
+}
+} // namespace
+
+const std::string& Language()
+{
+    return CurrentLanguageCode();
+}
+
 Table* Create(const char* language)
 {
     g_constructCalls.Count();
@@ -115,6 +128,9 @@ Table* Create(const char* language)
     std::vector<text::Entry> extra = ownTexts;
     if (own_controls::PadPointer())
         for (text::Entry& own : own_texts::Texts(language)) extra.push_back(std::move(own));
+    // The mods screen is on every pack (own_layer.h).
+    for (text::Entry& own : own_texts::ModsScreenTexts(language)) extra.push_back(std::move(own));
+    CurrentLanguageCode() = language;
     auto* table = new Table(text::MakeTable(text_load::PackPath(language), SlotModulus(), entries, extra));
     GlobalTable() = table;
     return table;

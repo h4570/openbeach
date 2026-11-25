@@ -94,9 +94,11 @@ bool ApplyPatches(std::string_view baseScriptText, std::span<const PatchSource> 
 // Discovers `gui/<layout>.patch.json` files across `pack_path::Layers(pack)` in load order (bottom-up, later mod wins).
 std::vector<std::filesystem::path> FindPatchFiles(const std::filesystem::path& pack, std::string_view layout);
 
-// Convenience: reads discovered patch files for `layout` and applies them on top of `baseScriptText`.
-// If no patch files exist, sets `out.scriptText = baseScriptText` untouched and returns true.
+// Convenience: reads discovered patch files for `layout` and applies them on top of `baseScriptText`, after `leading` (the
+// engine's own layer, game/ui/own_layer.h, which sits under the mods). If there is no patch at all, sets
+// `out.scriptText = baseScriptText` untouched and returns true.
 bool ApplyPackPatches(const std::filesystem::path& pack, std::string_view layout, std::string_view baseScriptText,
-        std::span<const std::string> activeMods, int32_t screenWidth, int32_t screenHeight, ApplyResult& out, std::string& error);
+        std::span<const std::string> activeMods, int32_t screenWidth, int32_t screenHeight, ApplyResult& out, std::string& error,
+        std::span<const PatchSource> leading = {});
 
 } // namespace obl::gui_patch

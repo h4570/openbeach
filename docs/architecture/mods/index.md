@@ -6,8 +6,8 @@ script or a change of the scope rule adds its line here.
 
 ## Layers and patches
 - `mod_pack::Activate` (`src/formats/mod_pack.cpp`) runs once in `InitGame`, after the pack check: it reads `[Mods] Active` (or
-  `OBL_MODS`), checks every manifest and stops the game on a refusal. Its result, `mod_pack::Active()`, is the one list the rest
-  reads, in load order ([mods.md](../../modding/reference/mods.md#start-up-check)).
+  `OBL_MODS`), checks every manifest (including `conflicts` incompatibilities) and stops the game on a refusal. Its result, `mod_pack::Active()`, is the one list the rest
+  reads, in load order ([mods.md](../../modding/reference/mods.md#start-up-check)). `mod_pack::ActivateList` applies a new list at runtime when the mods screen changes presentation mods.
 - `pack_path` resolves every logical path through the layers: the active mods from last to first, the legacy `mod/`, the pack. A
   file in a mod shadows the whole file below it.
 - Some files merge instead of shadowing: text tables (`text/<lang>.patch.json`, `text_load.cpp`), the catalog's record list
@@ -116,3 +116,21 @@ description. A mod's values live in `openbeach.ini` under `[Mod.<id>]`; the game
 the file and runs `ScriptRuntime::SettingsChanged`, which calls `on_setting` for each value that changed). Scripted test runs
 keep a changed value in memory and leave the player's file alone. The guard of the rule is
 `tests/golden_hash_l0_settings_s1.txt`: the L0 golden run with every engine setting off its default must give the golden hashes.
+
+## The mods screen and the engine's own layer
+- **Own GUI layer** (`src/game/ui/own_layer.h/.cpp`, pure): sits above the pack and under every mod, passed as leading patches to
+  `gui_patch::ApplyPackPatches`. For `main_menu` and `reset_menu` it adds an `OwnButton` (`id="mods_button"`) to `MainMenu` and
+  the `ModsScreen` dialog (`ModsPanel`). If a pack's menu does not fit, the layout falls back to loading without the own layer.
+- **Own widgets** (`src/game/ui/own_widgets.h/.cpp`): `GuiOwnButton` adopts a text-labeled button sprite from the active `.gui`
+  layout at runtime when one is available (falling back to a self-drawn frame otherwise), and `GuiModsPanel` draws itself with
+  plain fills and the layout's fonts, so no pack art is shipped and both work on the converted pack and on L0. Their texts come
+  from `own_texts::ModsScreenTexts` (`src/game/game/own_texts.cpp`).
+- **List and conflicts** (`src/game/mods/mod_list.h/.cpp`, pure): `ModList` tracks installed mods (`mod_pack::ListInstalled`),
+  load order, per-mod problems (`Invalid`, `WrongPack`, `NeedsApi`, `MissingRequirement`, `RequirementLater`, `ConflictsWith`) and
+  pluggable `ConflictSource` callbacks. `data_patch::FindConflicts` supplies value-override conflicts without publishing,
+  `mods::FindTakeOverConflicts` supplies `takes_over` (input/camera/`action.*`) conflicts, and `mods::FindKeyConflicts` supplies
+  key-binding conflicts from `mod_pack::KeyConflicts`.
+- **Live apply** (`src/game/ui/mods_screen.cpp`): writes `[Mods] Active` to `openbeach.ini` (skipped during scripted test runs).
+  Presentation mod changes apply at once (`mod_pack::ActivateList`, `mods::RestartPresentationScripts`,
+  `mods::ConfigureKeyBindings`, `game_api::ReloadFrontEnd`); world mod changes wait for the next start and the footer says so.
+  Settings step through `settings_schema::Field` and call `mods::SetModSetting`.

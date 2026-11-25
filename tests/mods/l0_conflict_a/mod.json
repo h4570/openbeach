@@ -1,0 +1,10 @@
+{
+  "format": "obl.mod",
+  "version": 1,
+  "id": "l0_conflict_a",
+  "title": "L0 conflict test A",
+  "mod_version": "1.0.0",
+  "pack": "l0",
+  "scope": "presentation",
+  "conflicts": ["l0_conflict_b"]
+}

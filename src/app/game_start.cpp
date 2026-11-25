@@ -11,6 +11,7 @@
 #include "game/mods/presentation_scripts.h"
 #include "game/ui/gui_content_runtime.h"
 #include "game/ui/gui_layouts_runtime.h"
+#include "game/ui/mods_screen.h"
 #include "game/ui/blit.h"
 #include "platform/frame_limiter.h"
 #include "platform/hidden_window.h"
@@ -197,6 +198,7 @@ int obl::InitGame(const Text16& gameDir)
     }
     mods::ConfigureKeyBindings(WidePath(gameDir) / game::start_settings::kFileName);
     // Converted GUI tables and layouts (packs/base/gui/); missing files stop the game only when the GUI first needs them.
+    gui::mods_screen::SetGameDirectory(WidePath(gameDir));
     gui::gui_content::Load(gameDir);
     gui::gui_layouts::Load(gameDir);
     const bool started = (platform::SetInstanceLockDirectory(gameDir), true) && OBL_WINDOWS_ONLY(platform::RegisterPlatformMainReports()) &&

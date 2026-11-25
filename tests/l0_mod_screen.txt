@@ -1,0 +1,55 @@
+# The mods screen of the main menu (docs/modding/players/mods-screen.md): opens from the main menu's Mods button, switches on the
+# presentation mod l0_settings at once so its script starts, changes each of its settings through the screen so on_setting fires,
+# switches on a world mod (noting it applies on the next start), and returns to the main menu.
+# @env OBL_PACK=l0
+# @env OBL_MODS=
+# @env OBL_WINDOWED=1
+# @gameini Language.Language=0
+# @gameini Sound.PlayListCount=0
+# @timeout 120
+# @expect-log mods screen: active=l0_settings
+# @expect-log mod l0_settings: start wide=false theme=sand zoom=2
+# @expect-log mod l0_settings: changed wide true, now wide=true theme=sand zoom=2
+# @expect-log mod l0_settings: changed theme sea, now wide=true theme=sea zoom=2
+# @expect-log mod l0_settings: changed zoom 3, now wide=true theme=sea zoom=3
+# @expect-log mods screen: saved=l0_settings,l0_test \(world mods apply on next start\)
+# @expect-log mods screen: help https://github.com/h4570/openbeach/blob/main/docs/modding/players/mods-screen.md
+seed 1
+fixed-dt 0.02
+await state == 1
+await frames 20
+await gui-animating == 0
+gui-state MainMenu
+expect-last visible 1
+# Open the Mods screen from the own-layer Mods button.
+gui-click MainMenu id mods_button
+await frames 15
+await gui-animating == 0
+gui-state ModsScreen
+expect-last visible 1
+# Switch on the presentation mod l0_settings: it activates at once and reloads the front end.
+gui-click ModsScreen target toggle.l0_settings
+await frames 20
+await gui-animating == 0
+gui-state ModsScreen
+expect-last visible 1
+# Step each of its settings via the screen's UI buttons; the script hears each change immediately.
+gui-click ModsScreen target setting.wide.next
+await frames 10
+gui-click ModsScreen target setting.theme.next
+await frames 10
+gui-click ModsScreen target setting.zoom.next
+await frames 10
+# Switch on a world mod: saved for the next start, without reloading the running world.
+gui-click ModsScreen target toggle.l0_test
+await frames 10
+# Help link logs its URL (without launching a browser in test runs).
+gui-click ModsScreen target help
+await frames 5
+# Back returns to the main menu.
+gui-click ModsScreen target back
+await frames 15
+await gui-animating == 0
+gui-state MainMenu
+expect-last visible 1
+quit

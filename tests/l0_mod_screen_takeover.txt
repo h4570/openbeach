@@ -1,0 +1,32 @@
+# Takeover conflicts on the mods screen (docs/modding/players/mods-screen.md#conflicts): l0_takeover_a and l0_takeover_b both take
+# over input.touch. Switching both on reports the conflict with the later mod winning; swapping their order changes the winner.
+# @env OBL_PACK=l0
+# @env OBL_MODS=
+# @env OBL_WINDOWED=1
+# @gameini Language.Language=0
+# @gameini Sound.PlayListCount=0
+# @timeout 120
+# @expect-log mods screen: conflict l0_takeover_b wins over l0_takeover_a \(input\.touch\)
+# @expect-log mods screen: conflict l0_takeover_a wins over l0_takeover_b \(input\.touch\)
+seed 1
+fixed-dt 0.02
+await state == 1
+await frames 20
+await gui-animating == 0
+gui-click MainMenu id mods_button
+await frames 15
+await gui-animating == 0
+gui-state ModsScreen
+expect-last visible 1
+# Switch on l0_takeover_a, then l0_takeover_b: l0_takeover_b is later and wins input.touch.
+gui-click ModsScreen target toggle.l0_takeover_a
+await frames 20
+await gui-animating == 0
+gui-click ModsScreen target toggle.l0_takeover_b
+await frames 20
+await gui-animating == 0
+# Move l0_takeover_b up so order becomes l0_takeover_b, l0_takeover_a: now l0_takeover_a wins input.touch.
+gui-click ModsScreen target up.l0_takeover_b
+await frames 20
+await gui-animating == 0
+quit

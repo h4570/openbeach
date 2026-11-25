@@ -1,4 +1,5 @@
 #include "game/ui/gui_patch.h"
+#include "game/ui/own_layer.h"
 
 #include "core/pack_path.h"
 #include "temp_dir.h"
@@ -286,4 +287,28 @@ OBL_TEST_CASE("gui_patch.no_patches_returns_base_text_byte_identical")
     OBL_CHECK(Contains(out.scriptText, "Button(56, 78, 236, 118, l0_menu_start"));
 
     obl::pack_path::SetActiveMods(savedMods);
+}
+
+OBL_TEST_CASE("gui_patch.own_layer_adds_mods_button_and_screen_under_mods")
+{
+    const auto own = obl::own_layer::GuiPatches("main_menu");
+    OBL_REQUIRE(own.size() == 1);
+    OBL_CHECK(obl::own_layer::GuiPatches("play_gui").empty());
+
+    gp::ApplyResult out;
+    std::string error;
+    OBL_REQUIRE(gp::ApplyPatches(kSampleMenu, own, {}, 800, 600, out, error));
+    OBL_CHECK(Contains(out.scriptText, "OwnButton(290, 0, 530, 38, OBL_MENU_MODS, ModsScreen)"));
+    OBL_CHECK(Contains(out.scriptText, "DialogItem ModsScreen"));
+    OBL_CHECK(Contains(out.scriptText, "ModsPanel(0, 0, 800, 600)"));
+
+    // A mod sitting above the own layer can move the Mods button by its id.
+    const std::vector<gp::PatchSource> both = {
+            own[0],
+            {"restyle", "main_menu.patch.json",
+                    R"({"format":"obl.gui_patch","version":1,"ops":[{"op":"move_control","id":"mods_button","x":10,"y":20}]})"},
+    };
+    const std::vector<std::string> active = {"restyle"};
+    OBL_REQUIRE(gp::ApplyPatches(kSampleMenu, both, active, 800, 600, out, error));
+    OBL_CHECK(Contains(out.scriptText, "OwnButton(10, 20, 250, 58, OBL_MENU_MODS, ModsScreen)"));
 }

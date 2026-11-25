@@ -343,6 +343,14 @@ bool HasPresentationScripts(const std::filesystem::path& directory)
 
 } // namespace
 
+bool AreIncompatible(const Manifest& a, const Manifest& b)
+{
+    const auto names = [](const Manifest& m, const std::string& who) {
+        return std::find(m.conflictingMods.begin(), m.conflictingMods.end(), who) != m.conflictingMods.end();
+    };
+    return names(a, b.id) || names(b, a.id);
+}
+
 bool ParseManifest(std::string_view text, Manifest& manifest, std::string& error)
 {
     nlohmann::json doc = nlohmann::json::parse(text.begin(), text.end(), nullptr, false);
@@ -384,19 +392,32 @@ bool ParseManifest(std::string_view text, Manifest& manifest, std::string& error
         }
         m.api = it->get<int>();
     }
-    if (const auto it = doc.find("requires"); it != doc.end()) {
+    const auto readIds = [&](const char* key, std::vector<std::string>& out) {
+        const auto it = doc.find(key);
+        if (it == doc.end()) return true;
         if (!it->is_array()) {
-            error = "requires is not an array";
+            error = std::string(key) + " is not an array";
             return false;
         }
         for (const auto& item : *it) {
             if (!item.is_string() || !pack_path::PackDirectory(item.get<std::string>())) {
-                error = "requires holds something that is not a mod id";
+                error = std::string(key) + " holds something that is not a mod id";
                 return false;
             }
-            m.requiredMods.push_back(item.get<std::string>());
+            out.push_back(item.get<std::string>());
         }
+        return true;
+    };
+    if (!readIds("requires", m.requiredMods) || !readIds("conflicts", m.conflictingMods)) return false;
+    if (std::find(m.conflictingMods.begin(), m.conflictingMods.end(), m.id) != m.conflictingMods.end()) {
+        error = "conflicts names the mod itself";
+        return false;
     }
+    for (const std::string& need : m.requiredMods)
+        if (std::find(m.conflictingMods.begin(), m.conflictingMods.end(), need) != m.conflictingMods.end()) {
+            error = "\"" + need + "\" is both in requires and in conflicts";
+            return false;
+        }
     if (!ReadSettings(doc, m.settings, error)) return false;
     if (!ReadActions(doc, m.actions, error) || !ReadBindings(doc, m.bindings, error)) return false;
     if (const auto it = doc.find("takes_over"); it != doc.end()) {
@@ -470,6 +491,10 @@ bool CheckActive(const std::filesystem::path& gameDirectory, std::string_view pa
                                   : "requires \"" + need + "\", which is not active");
             }
         }
+        for (const ActiveMod& other : mods) {
+            if (AreIncompatible(mod.manifest, other.manifest))
+                return fail("does not work with \"" + other.manifest.id + "\" (\"conflicts\" in mod.json); remove one of them");
+        }
         mod.directory = *directory;
         mod.hash = pack_path::ModContentHash(*directory);
         if (mod.hash.empty()) return fail("a file cannot be read");
@@ -511,6 +536,33 @@ std::vector<std::string> KeyConflicts(std::span<const ActiveMod> mods, const key
     return table.conflicts;
 }
 
+std::vector<InstalledMod> ListInstalled(const std::filesystem::path& gameDirectory)
+{
+    std::vector<InstalledMod> found;
+    std::error_code ec;
+    for (std::filesystem::directory_iterator it(gameDirectory / "mods", ec), end; !ec && it != end; it.increment(ec)) {
+        if (!it->is_directory(ec)) continue;
+        InstalledMod mod;
+        mod.id = it->path().filename().string();
+        if (!pack_path::PackDirectory(mod.id)) continue;
+        mod.directory = it->path();
+        std::ifstream in(mod.directory / "mod.json", std::ios::binary);
+        if (!in) {
+            mod.error = "no mod.json";
+        } else {
+            const std::string text((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+            mod.valid = ParseManifest(text, mod.manifest, mod.error);
+            if (mod.valid && mod.manifest.id != mod.id) {
+                mod.valid = false;
+                mod.error = "mod.json names the id \"" + mod.manifest.id + "\"";
+            }
+        }
+        found.push_back(std::move(mod));
+    }
+    std::sort(found.begin(), found.end(), [](const InstalledMod& a, const InstalledMod& b) { return a.id < b.id; });
+    return found;
+}
+
 const std::vector<ActiveMod>& Active()
 {
     return g_override ? *g_override : g_active;
@@ -531,6 +583,11 @@ bool Activate(const std::filesystem::path& gameDirectory, std::string_view packI
     // OBL_MODS replaces the setting for tests and tools, even when it is empty.
     const auto env = os::GetEnv("OBL_MODS");
     const std::vector<std::string> ids = pack_path::ParseModList(env ? std::string_view(*env) : configured);
+    return ActivateList(gameDirectory, packId, ids, error);
+}
+
+bool ActivateList(const std::filesystem::path& gameDirectory, std::string_view packId, std::span<const std::string> ids, std::string& error)
+{
     std::vector<ActiveMod> mods;
     if (!CheckActive(gameDirectory, packId, ids, mods, error)) return false;
     std::vector<std::string> conflicts;
@@ -543,7 +600,7 @@ bool Activate(const std::filesystem::path& gameDirectory, std::string_view packI
     for (const auto& conflict : conflicts) OBL_LOG("mod patch: %s", conflict.c_str());
     for (const auto& conflict : TakeOverConflicts(mods)) OBL_LOG("mod takes_over: %s", conflict.c_str());
     g_active = std::move(mods);
-    pack_path::SetActiveMods(ids);
+    pack_path::SetActiveMods({ids.begin(), ids.end()});
     return true;
 }
 

@@ -421,6 +421,24 @@ void StopPresentationScripts()
     ReleaseOverlayResources();
 }
 
+void RestartPresentationScripts()
+{
+    StopPresentationScripts();
+    g_started = false;
+    g_fingersDown = 0;
+}
+
+std::string ModSettingValue(const mod_pack::ActiveMod& mod, const settings_schema::Field& field)
+{
+    const std::string& id = mod.manifest.id;
+    std::optional<std::string> text;
+    if (const auto it = g_testSettings.find(id + "." + field.id); it != g_testSettings.end())
+        text = it->second;
+    else
+        text = ReadModSettingFile(mod.directory.parent_path().parent_path() / game::start_settings::kFileName, id, field.id);
+    return settings_schema::ValueOrDefault(field, text);
+}
+
 std::vector<std::string> RunningPresentationMods()
 {
     return g_runtime ? g_runtime->RunningMods() : std::vector<std::string>{};

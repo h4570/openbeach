@@ -1,0 +1,39 @@
+# Incompatible mods (`conflicts` in mod.json) on the mods screen (docs/modding/players/mods-screen.md#conflicts): l0_conflict_a
+# names l0_conflict_b in `conflicts`, so the screen refuses to switch both on in either order, and allows the other once the first
+# is switched off.
+# @env OBL_PACK=l0
+# @env OBL_MODS=
+# @env OBL_WINDOWED=1
+# @gameini Language.Language=0
+# @gameini Sound.PlayListCount=0
+# @timeout 120
+# @expect-log mods screen: active=l0_conflict_a
+# @expect-log mods screen: refused l0_conflict_b \(l0_conflict_a\)
+# @expect-log mods screen: active=l0_conflict_b
+# @expect-log mods screen: refused l0_conflict_a \(l0_conflict_b\)
+seed 1
+fixed-dt 0.02
+await state == 1
+await frames 20
+await gui-animating == 0
+gui-click MainMenu id mods_button
+await frames 15
+await gui-animating == 0
+gui-state ModsScreen
+expect-last visible 1
+# Switch on l0_conflict_a; switching on l0_conflict_b beside it is refused.
+gui-click ModsScreen target toggle.l0_conflict_a
+await frames 20
+await gui-animating == 0
+gui-click ModsScreen target toggle.l0_conflict_b
+await frames 10
+# Switch off l0_conflict_a; now l0_conflict_b switches on, and l0_conflict_a is refused beside it.
+gui-click ModsScreen target toggle.l0_conflict_a
+await frames 20
+await gui-animating == 0
+gui-click ModsScreen target toggle.l0_conflict_b
+await frames 20
+await gui-animating == 0
+gui-click ModsScreen target toggle.l0_conflict_a
+await frames 10
+quit
