@@ -7,7 +7,7 @@
 #include "importer/src/writers/catalog_writer.h"
 #include "importer/src/writers/content_key.h"
 #include "importer/src/writers/ordered_pool.h"
-#include "importer/src/writers/png_write.h"
+#include "core/png_write.h"
 #include "importer/src/readers/save/save_stream.h"
 #include "formats/schemas.h"
 #include "importer/src/source/source.h"

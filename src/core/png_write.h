@@ -1,6 +1,6 @@
 #pragma once
 
-// 8-bit PNG encoding for the converter's images (docs/architecture/data-formats/assets.md, "Images and pixels").
+// 8-bit PNG encoding for pack images and generated mod assets (docs/architecture/data-formats/assets.md, "Images and pixels").
 
 #include <cstdint>
 #include <span>

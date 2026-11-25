@@ -48,6 +48,8 @@ add_library(obl_core STATIC
     pack_path.h
     png_read.cpp
     png_read.h
+    png_write.cpp
+    png_write.h
     refpack.cpp
     refpack.h
     text16.cpp

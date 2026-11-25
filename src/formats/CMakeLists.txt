@@ -2,6 +2,8 @@
 # the schema bundle, the obl.save document checks and the pack codecs both sides read (GUI content, sprites, script and
 # map paths). Portable, core/ only; never includes the importer.
 add_library(obl_formats STATIC
+    asset_recipe.cpp
+    asset_recipe.h
     cell_state.cpp
     cell_state.h
     data_patch.cpp
@@ -16,6 +18,8 @@ add_library(obl_formats STATIC
     map_pack.h
     object_vocabulary.cpp
     object_vocabulary.h
+    pack_sink.cpp
+    pack_sink.h
     palette_modifiers_pack.cpp
     palette_modifiers_pack.h
     save_document.cpp

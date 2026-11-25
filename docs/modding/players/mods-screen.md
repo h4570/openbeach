@@ -5,6 +5,23 @@ and check for conflicts without editing `openbeach.ini`.
 
 A mod is a folder `mods/<id>/` in the game directory with a `mod.json` manifest beside its files.
 
+## Installing and removing mods
+Choose **Install from file** and select a ZIP containing one mod folder, with its `mod.json` directly inside that folder.
+On desktop and in the browser, you can also drop the ZIP onto the game while **Mods** is open. Android opens the system
+file picker. The folder name must match the manifest's id. The installed mod appears in the list, ready to switch on.
+
+If the id is already installed, the game asks before replacing its files. Switch off an active mod before replacing
+or removing it. If a world mod is still running after you switch it off, restart the game first.
+
+Select a mod, choose **Remove**, then confirm to delete its files and generated assets. Your mod settings and private
+data are kept. In the browser, changes are saved to that site's browser storage.
+
+The archive must be a standard ZIP with stored or deflated entries and portable ASCII filenames. Links, encrypted files
+and split archives are refused. Limits are 64 MiB for the ZIP, 32 MiB for one file, 128 MiB expanded and 4,096 entries.
+The game checks the manifest, target pack, script API and scope before writing. If the mod includes
+[asset recipes](../reference/recipes.md), the game builds their outputs from the current pack during installation.
+An unavailable source disables that recipe and leaves a message in the log.
+
 ## Turning mods on and off
 - Active mods appear at the top of the list, in load order; inactive mods follow by id.
 - Click or tap **On** / **Off** on a mod to switch it. A mod switched on joins the end of the active list.

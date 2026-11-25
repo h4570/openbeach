@@ -59,6 +59,7 @@ l0_mod_world_script.txt @l0
 l0_mod_world_events.txt @l0
 l0_mod_world_script_refused.txt @l0
 l0_mod_screen.txt @hidden @l0
+l0_mod_install.txt @hidden @l0
 l0_mod_screen_conflicts.txt @hidden @l0
 l0_mod_screen_takeover.txt @hidden @l0
 golden_hash_l0_s1.golden @l0

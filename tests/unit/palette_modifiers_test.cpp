@@ -3,7 +3,7 @@
 #include "unit_test.h"
 
 #include "game/ui/palette_modifiers.h"
-#include "importer/src/writers/png_write.h"
+#include "core/png_write.h"
 #include "temp_dir.h"
 
 #include <nlohmann/json.hpp>

@@ -1,4 +1,4 @@
-// Mod asset recipes (importer/src/writers/asset_recipe.cpp): schema validation, deterministic integer/fixed-point image
+// Mod asset recipes (src/formats/asset_recipe.cpp): schema validation, deterministic integer/fixed-point image
 // operations, PNG and indexed obl.sprite outputs, SHA-256 caching and missing-source handling.
 
 #include "unit_test.h"
@@ -8,7 +8,7 @@
 #include "core/sha256.h"
 #include "formats/schemas.h"
 #include "formats/sprite_pack.h"
-#include "importer/src/writers/png_write.h"
+#include "core/png_write.h"
 #include "openbeach/importer/asset_recipe.h"
 #include "openbeach/importer/pack_sink.h"
 

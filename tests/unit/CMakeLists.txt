@@ -364,6 +364,7 @@ add_executable(obl_unit_tests
     script_pack_test.cpp
     map_pack_test.cpp
     media_pack_test.cpp
+    mod_archive_test.cpp
     mod_pack_test.cpp
     mod_list_test.cpp
     script_runtime_test.cpp
@@ -383,7 +384,7 @@ add_executable(obl_unit_tests
 # sdl_shim stands in for SDL's private SDL_internal.h so SDL's Windows scancode table can serve as an oracle.
 target_include_directories(obl_unit_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/sdl_shim ${sdl3_SOURCE_DIR}/src/events)
-target_link_libraries(obl_unit_tests PRIVATE obl_common obl_convert obl_import_web nlohmann_json::nlohmann_json SDL3::Headers SDL3::SDL3-static)
+target_link_libraries(obl_unit_tests PRIVATE obl_common obl_convert obl_import_web obl_zlib nlohmann_json::nlohmann_json SDL3::Headers SDL3::SDL3-static)
 target_compile_definitions(obl_unit_tests PRIVATE OBL_GAME_DIR="${OBL_GAME_DIR}" OBL_REPO_DIR="${CMAKE_SOURCE_DIR}")
 
 # "data." cases compare against the user's run/ (extractor output, reference the reference build) and report SKIP (77)

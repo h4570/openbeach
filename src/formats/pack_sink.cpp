@@ -1,4 +1,4 @@
-#include "openbeach/importer/pack_sink.h"
+#include "formats/pack_sink.h"
 
 #include <fstream>
 #include <iterator>

@@ -43,7 +43,6 @@ add_library(obl_convert STATIC
     src/source/source.cpp
     src/source/source.h
     src/source/spool.cpp
-    src/writers/asset_recipe.cpp
     src/writers/catalog_writer.cpp
     src/writers/catalog_writer.h
     src/writers/content_key.h
@@ -66,9 +65,6 @@ add_library(obl_convert STATIC
     src/writers/media_convert.h
     src/writers/pack_manifest.cpp
     src/writers/pack_manifest.h
-    src/writers/pack_sink.cpp
-    src/writers/png_write.cpp
-    src/writers/png_write.h
     src/writers/resource_convert.cpp
     src/writers/resource_convert.h
     src/writers/scenario_convert.cpp

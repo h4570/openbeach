@@ -14,7 +14,7 @@ script or a change of the scope rule adds its line here.
 - Asset recipes (`recipes/*.json`, `obl.asset_recipe`, [recipes.md](../../modding/reference/recipes.md)): `obl-convert recipes`
   (and `obl-convert import` / the browser worker `obl_build_mod_recipes`) run deterministic integer/fixed-point image operations
   (`crop`, `mirror`, `scale`, `blur`, `pad`) over pack PNGs and cache PNG or indexed `obl.sprite` outputs in `mod-cache/<id>/`
-  keyed by recipe and source SHA-256 (`importer/src/writers/asset_recipe.cpp`). Keeping outputs outside `mods/<id>/` leaves
+  keyed by recipe and source SHA-256 (`src/formats/asset_recipe.cpp`). Keeping outputs outside `mods/<id>/` leaves
   `ModContentHash` unchanged across packs. Missing sources disable only the outputs that need them.
 - Some files merge instead of shadowing: text tables (`text/<lang>.patch.json`, `text_load.cpp`), the catalog's record list
   (`catalog/index.patch.json`, `catalog_load.cpp`), the object script vocabulary (`scripts/object_vocabulary.patch.json`,
@@ -30,6 +30,17 @@ script or a change of the scope rule adds its line here.
   mod building supplies its own build-panel icon and preview without replacing the pack's shared `UI3_bp_thumb` /
   `UI3_bp_preview` atlases (`gui_image_list.h`, `gui_variable_image.cpp`). `tools/make_sprite.py` converts PNG frames into
   indexed `obl.sprite` assets (including building `color`/`depth`/`lightmap` planes and UI icons).
+
+## Installing an archive
+
+The Mods screen passes ZIP bytes from SDL's desktop or Android picker, a desktop drop, or the browser file input to
+`mods::ModArchive`. It bounds and checks the ZIP, matches the root to `mod.json`, and reuses the start-up manifest and file
+scope rules before writing. The archive writer stages the mod and its generated recipe cache, then publishes them by rename.
+Replacing and removing require confirmation and an inactive mod.
+
+The browser runs the same installer in MEMFS. Its file bridge writes changed mod directories and recipe caches to OPFS,
+committing the manifest after the files, and copies them back on the next run.
+See [the player's instructions](../../modding/players/mods-screen.md#installing-and-removing-mods).
 
 ## Official mod sources
 

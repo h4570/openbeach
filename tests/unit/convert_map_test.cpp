@@ -11,7 +11,7 @@
 #include "game/world/world_construct_pis.h"
 #include "importer/src/writers/content_key.h"
 #include "importer/src/writers/map_convert.h"
-#include "importer/src/writers/png_write.h"
+#include "core/png_write.h"
 #include "importer/src/readers/save/save_stream.h"
 #include "formats/schemas.h"
 #include "importer/src/source/source.h"

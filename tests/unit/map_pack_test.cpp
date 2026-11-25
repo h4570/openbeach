@@ -1,6 +1,6 @@
 #include "unit_test.h"
 #include "core/image_decode.h"
-#include "importer/src/writers/png_write.h"
+#include "core/png_write.h"
 #include "importer/src/source/source.h"
 #include "formats/map_pack.h"
 #include "core/png_read.h"

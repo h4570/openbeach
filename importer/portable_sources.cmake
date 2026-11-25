@@ -5,7 +5,8 @@ file(GLOB_RECURSE OBL_IMPORTER_SOURCES CONFIGURE_DEPENDS ${REPO}/importer/src/*.
 list(APPEND OBL_IMPORTER_SOURCES
     ${REPO}/src/core/json_schema.cpp ${REPO}/src/core/json_float.cpp ${REPO}/src/core/code_page.cpp
     ${REPO}/src/core/code_pages.cpp ${REPO}/src/core/image_decode.cpp ${REPO}/src/core/png_read.cpp
-    ${REPO}/src/core/pack_path.cpp ${REPO}/src/core/os.cpp ${REPO}/src/core/sha256.cpp
+    ${REPO}/src/core/png_write.cpp ${REPO}/src/core/pack_path.cpp ${REPO}/src/core/os.cpp ${REPO}/src/core/sha256.cpp
+    ${REPO}/src/formats/asset_recipe.cpp ${REPO}/src/formats/pack_sink.cpp
     ${REPO}/src/formats/data_patch.cpp ${REPO}/src/formats/gui_content.cpp ${REPO}/src/formats/script_pack.cpp ${REPO}/src/formats/palette_modifiers_pack.cpp
     ${REPO}/src/formats/sprite_pack.cpp ${REPO}/src/formats/cell_state.cpp ${REPO}/src/formats/save_document.cpp ${REPO}/src/formats/save_records.cpp ${REPO}/src/formats/save_states.cpp ${REPO}/src/formats/schemas.cpp
     ${REPO}/src/formats/map_pack.cpp ${REPO}/src/formats/object_vocabulary.cpp)

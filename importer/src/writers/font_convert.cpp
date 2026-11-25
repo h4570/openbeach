@@ -2,7 +2,7 @@
 #include "core/ascii_case.h"
 #include "core/code_pages.h"
 #include "importer/src/writers/image_convert.h"
-#include "importer/src/writers/png_write.h"
+#include "core/png_write.h"
 #include "importer/src/readers/save/save_stream.h"
 #include "formats/schemas.h"
 #include "importer/src/source/source.h"

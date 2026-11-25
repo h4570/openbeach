@@ -4,6 +4,7 @@
 
 #include "gui_control.h"
 
+#include "game/game/game_accessors.h"
 #include "game/ui/gui_manager_dialogs.h"
 #include "game/ui/gui_modes_tools.h"
 #include "game/ui/gui_patch_runtime.h"
@@ -19,9 +20,17 @@
 #include "core/ascii_case.h"
 #include "core/log.h"
 #include "test_util.h"
+#include "platform/sdl_present.h"
 
+#include <SDL3/SDL_events.h>
+#include <SDL3/SDL_video.h>
+
+#include <bit>
+#include <charconv>
 #include <cstdlib>
 #include <cstring>
+#include <filesystem>
+#include <fstream>
 #include <set>
 
 namespace obl::test {
@@ -234,6 +243,46 @@ bool ReadGuiProbe(const std::string& name, double& out)
 
 bool ExecuteGuiControlCommand(const std::string& name, const std::vector<std::string>& args)
 {
+    if (name == "gui-drop-mod") {
+        if (args.size() != 1 || args[0].empty() || args[0].size() % 2 != 0) {
+            OBL_LOG("autotest: FAILED gui-drop-mod needs a ZIP in hex");
+            return true;
+        }
+        const std::string& hex = args[0];
+        std::vector<uint8_t> bytes;
+        for (size_t i = 0; i < hex.size(); i += 2) {
+            unsigned value = 0;
+            const auto result = std::from_chars(hex.data() + i, hex.data() + i + 2, value, 16);
+            if (result.ec != std::errc{} || result.ptr != hex.data() + i + 2) {
+                OBL_LOG("autotest: FAILED gui-drop-mod malformed hex");
+                return true;
+            }
+            bytes.push_back(static_cast<uint8_t>(value));
+        }
+        // Keep the fixture in the test slot and feed it through the same SDL event and file read as a desktop drop.
+        static constexpr char kArchivePath[] = "testlogs/gui-drop-mod.zip";
+        std::error_code ec;
+        std::filesystem::create_directory("testlogs", ec);
+        std::ofstream file(kArchivePath, std::ios::binary);
+        file.write(std::bit_cast<const char*>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
+        file.close();
+        const auto window = platform::SdlGameWindow(game::GetGameWindow());
+        if (!file || !window) {
+            OBL_LOG("autotest: FAILED gui-drop-mod cannot stage archive or find window");
+            return true;
+        }
+        for (const auto type : {SDL_EVENT_DROP_BEGIN, SDL_EVENT_DROP_FILE, SDL_EVENT_DROP_COMPLETE}) {
+            SDL_Event event{};
+            event.type = type;
+            event.drop.windowID = SDL_GetWindowID(window);
+            if (type == SDL_EVENT_DROP_FILE) event.drop.data = kArchivePath;
+            if (!SDL_PushEvent(&event)) {
+                OBL_LOG("autotest: FAILED gui-drop-mod could not send SDL event");
+                break;
+            }
+        }
+        return true;
+    }
     if (name == "gui-mod-action") {
         if (args.empty()) {
             OBL_LOG("autotest: FAILED gui-mod-action needs an expected action");

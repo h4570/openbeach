@@ -5,6 +5,7 @@
 #include <sstream>
 #include <span>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace obl::data_patch {
@@ -27,6 +28,7 @@ bool IsSimulationDataPath(const std::filesystem::path& logical);
 // The `format` of a patch file, empty when it cannot be read or names none. `gui/<layout>.patch.json` is a JSON data patch
 // (`obl.json_patch`) when it patches a JSON file such as `gui/object_browser.json`, and a GUI layout patch (`obl.gui_patch`,
 // game/ui/gui_patch.h) when it patches a `.gui` layout: the two loaders tell them apart by this field, not by the path.
+std::string PatchFormatText(std::string_view text);
 std::string PatchFormat(const std::filesystem::path& file);
 inline constexpr const char* kGuiPatchFormat = "obl.gui_patch";
 

@@ -2,7 +2,7 @@
 
 #include "formats/palette_modifiers_pack.h"
 #include "core/image_decode.h"
-#include "importer/src/writers/png_write.h"
+#include "core/png_write.h"
 #include "importer/src/readers/save/save_stream.h"
 #include "formats/schemas.h"
 #include "importer/src/source/source.h"
