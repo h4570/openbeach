@@ -1,0 +1,13 @@
+{
+  "format": "obl.asset_recipe",
+  "version": 1,
+  "source": "images/screens/l0_title.png",
+  "output": "overlay/banner.png",
+  "operations": [
+    { "op": "crop", "x": 0, "y": 0, "width": 64, "height": 64 },
+    { "op": "mirror", "axis": "horizontal" },
+    { "op": "scale", "width": 32, "height": 32, "filter": "bilinear" },
+    { "op": "blur", "radius": 1, "passes": 1 },
+    { "op": "pad", "width": 40, "height": 32, "mode": "color", "color": [255, 0, 255, 255] }
+  ]
+}

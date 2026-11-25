@@ -1,0 +1,40 @@
+# A presentation mod derives an overlay PNG from an L0 pack image by recipe (docs/modding/reference/recipes.md).
+# Hidden-only: it reads the presented frame.
+# @env OBL_PACK=l0
+# @env OBL_MODS=l0_recipe
+# @timeout 120
+# @gameini Video.ResWidth=800
+# @gameini Video.ResHeight=600
+# @gameini Video.NudgeScroll=0
+# @gameini Video.SeaEffects=1
+# @gameini Video.LightEffects=1
+# @gameini Video.Keyline=0
+seed 1
+fixed-dt 0.02
+move 400 300
+boot-gameplay scenario 1
+await gameplay
+step 5
+# Hidden by default: the overlay is not drawn yet.
+screen-pixel 160 10
+expect-last-range r 0 200
+mod-overlay on
+step 2
+# Left padded border of banner.png (4px wide, magenta [255, 0, 255]).
+screen-pixel 160 10
+expect-last r 255
+expect-last g 0
+expect-last b 255
+# Right padded border of banner.png (x = 160 + 39 = 199).
+screen-pixel 199 10
+expect-last r 255
+expect-last g 0
+expect-last b 255
+# Derived interior of banner.png from l0_title.png (not magenta: green > 0).
+screen-pixel 175 20
+expect-last-range g 1 255
+mod-overlay off
+step 2
+screen-pixel 160 10
+expect-last-range r 0 200
+quit
