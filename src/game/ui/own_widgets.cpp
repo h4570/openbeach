@@ -69,6 +69,36 @@ void Frame(int x0, int y0, int x1, int y1, uint32_t rgb)
     Fill(x1 - 1, y0, x1, y1, rgb);
 }
 
+int InkCentre(int font)
+{
+    ui::GuiManager* gui = game::GetGuiManager();
+    const int fallback = LineHeight(font) / 2;
+    if (!gui) return fallback;
+    const int slot = font > 0 && font < 10 && gui->m_fonts[font] ? font : 0;
+    const auto* bitmap = static_cast<const ui::BitmapFont*>(gui->m_fonts[slot]);
+    const ui::RendererImage* image = bitmap ? bitmap->m_image : nullptr;
+    if (!image || (!image->m_pixels && image->m_pixels16.empty())) return fallback;
+    // The ink rows of a capital H inside its glyph cell: the text line is drawn from the cell's top, so the centre of those rows is
+    // where the label's visible middle sits (the cell also holds room for descenders and accents).
+    const ui::GlyphRect& g = bitmap->m_glyphs['H'];
+    if (g.bottom <= g.top || g.right <= g.left || g.bottom > image->m_height || g.right > image->m_width) return fallback;
+    const auto pixel = [&](int x, int y) -> uint32_t {
+        const size_t i = static_cast<size_t>(y) * static_cast<size_t>(image->m_width) + static_cast<size_t>(x);
+        return image->m_bpp == 16 && !image->m_pixels16.empty() ? image->m_pixels16[i]
+                                                                : image->m_pixels[i * static_cast<size_t>(image->m_bytesPerPixel)];
+    };
+    const uint32_t background = pixel(g.left, g.top);
+    int first = -1, last = -1;
+    for (int y = g.top; y < g.bottom; ++y)
+        for (int x = g.left; x < g.right; ++x)
+            if (pixel(x, y) != background) {
+                if (first < 0) first = y;
+                last = y;
+                break;
+            }
+    return first < 0 ? fallback : first - g.top + (last - first + 1) / 2;
+}
+
 int LineHeight(int font)
 {
     ui::GuiManager* gui = game::GetGuiManager();
@@ -208,6 +238,25 @@ bool IsBorderPixel(const uint8_t* frame, int w, int h, int x, int y)
     return false;
 }
 
+// The graphic of the first sprite button of the MainMenu dialog, or null when the pack has none.
+const char* FindMenuButtonGraphic()
+{
+    GuiManager* gui = game::GetGuiManager();
+    if (!gui) return nullptr;
+    for (const auto* def = gui->m_definitions; def; def = def->m_next) {
+        if (!def->m_dialog || std::strcmp(def->m_dialog->m_name, "MainMenu") != 0) continue;
+        const auto* sentinel = def->m_dialog->m_children;
+        if (!sentinel) return nullptr;
+        for (const auto* node = sentinel->m_next; node && node != sentinel; node = node->m_next) {
+            if (!node->m_widget || node->m_widget->m_type != static_cast<int32_t>(GuiType::Button)) continue;
+            const auto* button = static_cast<const GuiButtonData*>(node->m_widget);
+            if (button->m_graphic) return button->m_graphic;
+        }
+        return nullptr;
+    }
+    return nullptr;
+}
+
 } // namespace
 
 GuiOwnButton::GuiOwnButton(int x0, int y0, int x1, int y1, std::string text, std::string dialog)
@@ -236,25 +285,11 @@ void GuiOwnButton::ResolvePackSprite()
 {
     if (m_spriteResolved) return;
     m_spriteResolved = true;
-    GuiManager* gui = game::GetGuiManager();
     auto* bank = static_cast<SpriteBank*>(GetSpriteBank());
-    if (!gui || !bank) return;
+    if (!bank) return;
     // Adopt the first sibling button sprite of MainMenu so the Mods tab shares the exact pill shape, outline, hover/press frames
     // and label colour of the pack's own main menu buttons without shipping any pack art.
-    const char* graphic = nullptr;
-    for (const auto* def = gui->m_definitions; def && !graphic; def = def->m_next) {
-        if (!def->m_dialog || std::strcmp(def->m_dialog->m_name, "MainMenu") != 0) continue;
-        const auto* sentinel = def->m_dialog->m_children;
-        if (!sentinel) break;
-        for (const auto* node = sentinel->m_next; node && node != sentinel; node = node->m_next) {
-            if (!node->m_widget || node->m_widget->m_type != static_cast<int32_t>(GuiType::Button)) continue;
-            const auto* button = static_cast<const GuiButtonData*>(node->m_widget);
-            if (button->m_graphic) {
-                graphic = button->m_graphic;
-                break;
-            }
-        }
-    }
+    const char* graphic = FindMenuButtonGraphic();
     if (!graphic) return;
     m_sprite = bank->CreateObservedInstance(graphic);
     if (!m_sprite || !m_sprite->m_sprite || !m_sprite->m_sprite->m_anims) return;
@@ -439,3 +474,108 @@ void GuiOwnButton::Update(float)
 }
 
 } // namespace obl::ui
+
+namespace obl::gui::own_widgets {
+
+namespace {
+bool g_lookSampled = false;
+PackLook g_look;
+
+uint32_t Mix(uint32_t a, uint32_t b, int percentB)
+{
+    uint32_t out = 0;
+    for (int shift = 16; shift >= 0; shift -= 8) {
+        const int ca = static_cast<int>((a >> shift) & 255), cb = static_cast<int>((b >> shift) & 255);
+        out |= static_cast<uint32_t>((ca * (100 - percentB) + cb * percentB) / 100) << shift;
+    }
+    return out;
+}
+
+// Rows of a rounded rectangle: each row is inset by what the circle of radius `r` cuts off at that distance from the edge.
+int Inset(int r, int dist)
+{
+    int inset = 0;
+    while (inset < r && (r - inset - 1) * (r - inset - 1) + (r - dist - 1) * (r - dist - 1) >= r * r) ++inset;
+    return inset;
+}
+
+void RoundFill(int x0, int y0, int x1, int y1, int r, uint32_t rgb)
+{
+    r = std::min({r, (x1 - x0) / 2, (y1 - y0) / 2});
+    if (r <= 0) {
+        Fill(x0, y0, x1, y1, rgb);
+        return;
+    }
+    for (int d = 0; d < r; ++d) {
+        const int inset = Inset(r, d);
+        Fill(x0 + inset, y0 + d, x1 - inset, y0 + d + 1, rgb);
+        Fill(x0 + inset, y1 - d - 1, x1 - inset, y1 - d, rgb);
+    }
+    if (y1 - y0 > 2 * r) Fill(x0, y0 + r, x1, y1 - r, rgb);
+}
+} // namespace
+
+void ResetPackLook()
+{
+    g_lookSampled = false;
+    g_look = PackLook{};
+}
+
+const PackLook& GetPackLook()
+{
+    if (g_lookSampled) return g_look;
+    g_lookSampled = true;
+    ui::Renderer* renderer = game::GetRenderer();
+    auto* bank = static_cast<ui::SpriteBank*>(ui::GetSpriteBank());
+    const char* graphic = ui::FindMenuButtonGraphic();
+    if (!renderer || !bank || !graphic) return g_look;
+    ui::SpriteInstance* instance = bank->CreateObservedInstance(graphic);
+    if (instance && instance->m_sprite && instance->m_sprite->m_anims && instance->m_sprite->m_palettes) {
+        ui::SpriteAnim* anim = instance->m_sprite->m_anims[instance->m_animIndex];
+        const uint16_t* pal = instance->m_sprite->m_palettes[0];
+        const uint8_t* rle = anim && pal && anim->m_width > 0 && anim->m_height > 0 ? anim->GetFrame(0, 0) : nullptr;
+        if (rle) {
+            const int w = anim->m_width, h = anim->m_height;
+            std::vector<uint16_t> decoded(static_cast<size_t>(w * h), 0);
+            uint16_t identityPal[256];
+            for (int i = 0; i < 256; ++i) identityPal[i] = static_cast<uint16_t>(i);
+            ui::pixel_primitives::Ui16(decoded.data(), rle, identityPal, w, 0, 0, w, h, 0, 0, w, h);
+            std::vector<uint8_t> frame(decoded.size(), 0);
+            for (size_t i = 0; i < decoded.size(); ++i) frame[i] = static_cast<uint8_t>(decoded[i]);
+            const bool rgb555 = renderer->m_rgb555 != 0;
+            const uint32_t accent = ui::SampleLabelColor(frame.data(), pal, w, h, std::min(w / 4, 28), rgb555);
+            // A white label means a dark button: the flat palette already suits it. A coloured one belongs to a light pack whose
+            // menu is coloured text on frosted pills.
+            if (accent != kWhite && accent != 0) {
+                g_look.available = true;
+                g_look.accent = accent;
+            }
+        }
+    }
+    if (instance) bank->ReleaseInstance(instance);
+    if (g_look.available) {
+        const uint32_t a = g_look.accent;
+        Palette& p = g_look.palette;
+        p.sea = Mix(a, 0xffffff, 22);
+        p.seaDark = Mix(a, 0x000000, 20);
+        p.sand = Mix(a, 0xffffff, 90);
+        p.foam = Mix(a, 0xffffff, 95);
+        p.ink = Mix(a, 0x000000, 65);
+        p.grey = Mix(a, 0x707080, 55);
+        p.border = Mix(a, 0xffffff, 55);
+    }
+    return g_look;
+}
+
+void Box(int x0, int y0, int x1, int y1, int radius, uint32_t fill, uint32_t border)
+{
+    if (radius <= 0) {
+        Fill(x0, y0, x1, y1, fill);
+        Frame(x0, y0, x1, y1, border);
+        return;
+    }
+    RoundFill(x0, y0, x1, y1, radius, border);
+    RoundFill(x0 + 1, y0 + 1, x1 - 1, y1 - 1, radius - 1, fill);
+}
+
+} // namespace obl::gui::own_widgets

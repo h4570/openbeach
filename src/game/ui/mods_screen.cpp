@@ -262,7 +262,11 @@ struct GuiModsPanel;
 GuiModsPanel* g_openPanel = nullptr;
 
 struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
-    GuiModsPanel(int x0, int y0, int x1, int y1) : GuiLeaf(x0, y0, x1, y1) { m_type = kModsPanelType; }
+    GuiModsPanel(int x0, int y0, int x1, int y1) : GuiLeaf(x0, y0, x1, y1)
+    {
+        m_type = kModsPanelType;
+        own::ResetPackLook(); // a pack reload or a live reload may bring other menu art
+    }
 
     ~GuiModsPanel() override
     {
@@ -344,6 +348,19 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
         return true;
     }
 
+    own::Palette m_pal;
+    int m_round = 0; // corner radius of boxes (0: square)
+
+    static uint32_t LerpRgb(uint32_t a, uint32_t b, int step, int steps)
+    {
+        uint32_t out = 0;
+        for (int shift = 16; shift >= 0; shift -= 8) {
+            const int ca = static_cast<int>((a >> shift) & 255), cb = static_cast<int>((b >> shift) & 255);
+            out |= static_cast<uint32_t>(ca + (cb - ca) * step / steps) << shift;
+        }
+        return out;
+    }
+
     void Draw() override
     {
         if (!m_visible || !m_dirty) return;
@@ -352,20 +369,30 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
 
         const int w = m_x1 - m_x0;
         const int h = m_y1 - m_y0;
-        own::Fill(m_x0, m_y0, m_x1, m_y1, own::kSand);
+        // A pack with coloured menu buttons gives the screen its colour and rounded boxes; any other pack keeps the flat style.
+        const own::PackLook& look = own::GetPackLook();
+        m_pal = look.available ? look.palette : own::Palette{};
+        m_round = look.available ? 8 : 0;
+        if (look.available) {
+            // Sky-like backdrop: from the foam tint at the top to the sand tint at the bottom.
+            for (int y = m_y0; y < m_y1; ++y)
+                own::Fill(m_x0, y, m_x1, y + 1, LerpRgb(m_pal.foam, m_pal.sand, y - m_y0, std::max(1, h - 1)));
+        } else {
+            own::Fill(m_x0, m_y0, m_x1, m_y1, m_pal.sand);
+        }
 
         // Header bar.
-        own::Fill(m_x0, m_y0, m_x1, m_y0 + 48, own::kSea);
-        own::Text(2, m_x0 + 16, m_y0 + 14, 130, Lookup("OBL_MODS_TITLE").c_str(), own::kWhite, 0);
+        own::Fill(m_x0, m_y0, m_x1, m_y0 + 48, m_pal.sea);
+        own::Text(2, m_x0 + 16, m_y0 + 14, 130, Lookup("OBL_MODS_TITLE").c_str(), m_pal.white, 0);
         DrawButton(m_x0 + 150, m_y0 + 8, m_x0 + 264, m_y0 + 40,
-                Lookup(m_catalogView ? "OBL_MODS_INSTALLED_TAB" : "OBL_MODS_CATALOGS").c_str(), m_catalogView ? own::kFoam : own::kSeaDark,
-                m_catalogView ? own::kInk : own::kWhite);
-        DrawButton(m_x0 + 272, m_y0 + 8, m_x0 + 464, m_y0 + 40, Lookup("OBL_MODS_INSTALL").c_str(), own::kSeaDark, own::kWhite);
+                Lookup(m_catalogView ? "OBL_MODS_INSTALLED_TAB" : "OBL_MODS_CATALOGS").c_str(), m_catalogView ? m_pal.foam : m_pal.seaDark,
+                m_catalogView ? m_pal.ink : m_pal.white);
+        DrawButton(m_x0 + 272, m_y0 + 8, m_x0 + 464, m_y0 + 40, Lookup("OBL_MODS_INSTALL").c_str(), m_pal.seaDark, m_pal.white);
         const bool canRemove = !m_catalogView && m_list && m_list->Find(g_selectedId);
-        DrawButton(m_x0 + 472, m_y0 + 8, m_x0 + 596, m_y0 + 40, Lookup("OBL_MODS_REMOVE").c_str(), canRemove ? own::kSeaDark : own::kSand,
-                canRemove ? own::kWhite : own::kGrey);
-        DrawButton(m_x0 + 604, m_y0 + 8, m_x0 + 688, m_y0 + 40, Lookup("OBL_MODS_HELP").c_str(), own::kSeaDark, own::kWhite);
-        DrawButton(m_x0 + 696, m_y0 + 8, m_x0 + 784, m_y0 + 40, Lookup("OBL_MODS_BACK").c_str(), own::kFoam, own::kInk);
+        DrawButton(m_x0 + 472, m_y0 + 8, m_x0 + 596, m_y0 + 40, Lookup("OBL_MODS_REMOVE").c_str(), canRemove ? m_pal.seaDark : m_pal.sand,
+                canRemove ? m_pal.white : m_pal.grey);
+        DrawButton(m_x0 + 604, m_y0 + 8, m_x0 + 688, m_y0 + 40, Lookup("OBL_MODS_HELP").c_str(), m_pal.seaDark, m_pal.white);
+        DrawButton(m_x0 + 696, m_y0 + 8, m_x0 + 784, m_y0 + 40, Lookup("OBL_MODS_BACK").c_str(), m_pal.foam, m_pal.ink);
 
         if (m_catalogView) {
             DrawCatalogListColumn();
@@ -377,17 +404,16 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
 
         // Footer status bar.
         const int footerY = m_y0 + h - 44;
-        own::Fill(m_x0, footerY, m_x0 + w, m_y1, own::kSeaDark);
+        own::Fill(m_x0, footerY, m_x0 + w, m_y1, m_pal.seaDark);
         std::u16string footer;
-        uint32_t footerColor = own::kWhite;
+        uint32_t footerColor = m_pal.white;
         if (m_editingUrl) {
-            own::Fill(m_x0 + 12, footerY + 6, m_x0 + 500, footerY + 38, own::kWhite);
-            own::Frame(m_x0 + 12, footerY + 6, m_x0 + 500, footerY + 38, own::kSea);
+            own::Box(m_x0 + 12, footerY + 6, m_x0 + 500, footerY + 38, m_round, m_pal.white, m_pal.sea);
             const std::u16string shown = m_urlDraft.empty() ? Lookup("OBL_MODS_CAT_URL_HINT") : Utf8ToEngine(m_urlDraft + "_");
-            own::Text(0, m_x0 + 18, footerY + 14, 476, shown.c_str(), m_urlDraft.empty() ? own::kGrey : own::kInk, 0);
-            DrawButton(m_x0 + 506, footerY + 6, m_x0 + 586, footerY + 38, Lookup("OBL_MODS_CAT_PASTE").c_str(), own::kSea, own::kWhite);
-            DrawButton(m_x0 + 592, footerY + 6, m_x0 + 684, footerY + 38, Lookup("OBL_MODS_CONFIRM").c_str(), own::kGreen, own::kWhite);
-            DrawButton(m_x0 + 690, footerY + 6, m_x0 + 784, footerY + 38, Lookup("OBL_MODS_CANCEL").c_str(), own::kFoam, own::kInk);
+            own::Text(0, m_x0 + 18, footerY + 14, 476, shown.c_str(), m_urlDraft.empty() ? m_pal.grey : m_pal.ink, 0);
+            DrawButton(m_x0 + 506, footerY + 6, m_x0 + 586, footerY + 38, Lookup("OBL_MODS_CAT_PASTE").c_str(), m_pal.sea, m_pal.white);
+            DrawButton(m_x0 + 592, footerY + 6, m_x0 + 684, footerY + 38, Lookup("OBL_MODS_CONFIRM").c_str(), m_pal.green, m_pal.white);
+            DrawButton(m_x0 + 690, footerY + 6, m_x0 + 784, footerY + 38, Lookup("OBL_MODS_CANCEL").c_str(), m_pal.foam, m_pal.ink);
         } else if (IsConfirming()) {
             if (m_pendingKeyChange) {
                 footer = Format(Lookup("OBL_MODS_CAT_KEY_CHANGED"), {Utf8ToEngine(m_pendingKeyChange->catalog.title)});
@@ -398,17 +424,17 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
                 const auto& id = m_pendingReplace ? m_pendingReplace->Id() : m_pendingRemove;
                 footer = Format(Lookup(m_pendingReplace ? "OBL_MODS_REPLACE_CONFIRM" : "OBL_MODS_REMOVE_CONFIRM"), {Utf8ToEngine(id)});
             }
-            DrawButton(m_x0 + 570, footerY + 6, m_x0 + 672, footerY + 38, Lookup("OBL_MODS_CONFIRM").c_str(), own::kSea, own::kWhite);
-            DrawButton(m_x0 + 680, footerY + 6, m_x0 + 784, footerY + 38, Lookup("OBL_MODS_CANCEL").c_str(), own::kFoam, own::kInk);
+            DrawButton(m_x0 + 570, footerY + 6, m_x0 + 672, footerY + 38, Lookup("OBL_MODS_CONFIRM").c_str(), m_pal.sea, m_pal.white);
+            DrawButton(m_x0 + 680, footerY + 6, m_x0 + 784, footerY + 38, Lookup("OBL_MODS_CANCEL").c_str(), m_pal.foam, m_pal.ink);
         } else if (!g_statusText.empty()) {
             footer = g_statusText;
-            footerColor = g_statusIsError ? 0xffc8c8 : own::kWhite;
+            footerColor = g_statusIsError ? 0xffc8c8 : m_pal.white;
         } else if (m_list && !m_list->CanStart()) {
             footer = Lookup("OBL_MODS_FIX_FIRST");
             footerColor = 0xffc8c8;
         } else if (WorldModsChanged()) {
             footer = Lookup("OBL_MODS_WORLD_NEXT");
-            footerColor = own::kFoam;
+            footerColor = m_pal.foam;
         }
         if (!footer.empty()) own::Text(1, m_x0 + 16, footerY + 14, IsConfirming() ? 546 : w - 32, footer.c_str(), footerColor, 0);
 
@@ -1270,9 +1296,8 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
 
     void DrawButton(int x0, int y0, int x1, int y1, const Char16* label, uint32_t fill, uint32_t ink) const
     {
-        own::Fill(x0, y0, x1, y1, fill);
-        own::Frame(x0, y0, x1, y1, own::kBorder);
-        const int y = y0 + (y1 - y0 - own::LineHeight(1)) / 2 + 1;
+        own::Box(x0, y0, x1, y1, m_round ? std::min((y1 - y0) / 2, 16) : 0, fill, m_pal.border);
+        const int y = (y0 + y1) / 2 - own::InkCentre(1);
         own::Text(1, x0 + 4, y, x1 - x0 - 8, label, ink, 2);
     }
 
@@ -1281,9 +1306,8 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
         const int x0 = m_x0 + 12;
         const int x1 = m_x0 + 394;
         if (!m_list || m_list->Entries().empty()) {
-            own::Fill(x0, m_y0 + 58, x1, m_y0 + 116, own::kFoam);
-            own::Frame(x0, m_y0 + 58, x1, m_y0 + 116, own::kBorder);
-            own::TextWrapped(1, x0 + 10, m_y0 + 68, x1 - x0 - 20, 44, Lookup("OBL_MODS_NONE").c_str(), own::kInk, 0);
+            own::Box(x0, m_y0 + 58, x1, m_y0 + 116, m_round, m_pal.foam, m_pal.border);
+            own::TextWrapped(1, x0 + 10, m_y0 + 68, x1 - x0 - 20, 44, Lookup("OBL_MODS_NONE").c_str(), m_pal.ink, 0);
             return;
         }
         const auto& entries = m_list->Entries();
@@ -1296,42 +1320,42 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
             const int rowY = m_y0 + 58 + static_cast<int>(i - start) * 48;
             const bool selected = entry.mod.id == g_selectedId;
             const bool hasProblem = entry.problem != mods::Problem::None;
-            own::Fill(x0, rowY, x1, rowY + 44, selected ? own::kFoam : own::kWhite);
-            own::Frame(x0, rowY, x1, rowY + 44, hasProblem ? own::kRed : (selected ? own::kSea : own::kBorder));
+            own::Box(x0, rowY, x1, rowY + 44, m_round, selected ? m_pal.foam : m_pal.white,
+                    hasProblem ? m_pal.red : (selected ? m_pal.sea : m_pal.border));
 
-            const uint32_t toggleFill = entry.on ? own::kGreen : (hasProblem ? own::kGrey : own::kSeaDark);
+            const uint32_t toggleFill = entry.on ? m_pal.green : (hasProblem ? m_pal.grey : m_pal.seaDark);
             DrawButton(m_x0 + 18, rowY + 6, m_x0 + 70, rowY + 38, Lookup(entry.on ? "OBL_MODS_ON" : "OBL_MODS_OFF").c_str(), toggleFill,
-                    own::kWhite);
+                    m_pal.white);
 
             const std::string& title = (entry.mod.valid && !entry.mod.manifest.title.empty()) ? entry.mod.manifest.title : entry.mod.id;
-            own::Text(1, m_x0 + 76, rowY + 6, 246, Utf8ToEngine(title).c_str(), hasProblem ? own::kRed : own::kInk, 0);
+            own::Text(1, m_x0 + 76, rowY + 6, 246, Utf8ToEngine(title).c_str(), hasProblem ? m_pal.red : m_pal.ink, 0);
 
             if (hasProblem) {
-                own::Text(0, m_x0 + 76, rowY + 24, 246, ProblemText(entry.problem, entry.detail).c_str(), own::kRed, 0);
+                own::Text(0, m_x0 + 76, rowY + 24, 246, ProblemText(entry.problem, entry.detail).c_str(), m_pal.red, 0);
             } else {
                 std::u16string sub = Utf8ToEngine(entry.mod.id + "  " + entry.mod.manifest.modVersion + "  ");
                 sub += ScopeText(entry.mod.manifest.scope);
-                own::Text(0, m_x0 + 76, rowY + 24, 246, sub.c_str(), own::kGrey, 0);
+                own::Text(0, m_x0 + 76, rowY + 24, 246, sub.c_str(), m_pal.grey, 0);
             }
 
             if (entry.on) {
                 const bool canUp = i > 0;
                 const bool canDown = i + 1 < activeCount;
-                DrawButton(m_x0 + 328, rowY + 6, m_x0 + 356, rowY + 38, u"^", canUp ? own::kSea : own::kSand,
-                        canUp ? own::kWhite : own::kGrey);
-                DrawButton(m_x0 + 360, rowY + 6, m_x0 + 388, rowY + 38, u"v", canDown ? own::kSea : own::kSand,
-                        canDown ? own::kWhite : own::kGrey);
+                DrawButton(m_x0 + 328, rowY + 6, m_x0 + 356, rowY + 38, u"^", canUp ? m_pal.sea : m_pal.sand,
+                        canUp ? m_pal.white : m_pal.grey);
+                DrawButton(m_x0 + 360, rowY + 6, m_x0 + 388, rowY + 38, u"v", canDown ? m_pal.sea : m_pal.sand,
+                        canDown ? m_pal.white : m_pal.grey);
             }
         }
 
         const int pages = PageCount();
         if (pages > 1) {
             DrawButton(m_x0 + 14, m_y0 + 504, m_x0 + 124, m_y0 + 536, Lookup("OBL_MODS_PREVIOUS").c_str(),
-                    g_page > 0 ? own::kSea : own::kSand, g_page > 0 ? own::kWhite : own::kGrey);
+                    g_page > 0 ? m_pal.sea : m_pal.sand, g_page > 0 ? m_pal.white : m_pal.grey);
             const std::u16string pageLabel = Utf8ToEngine(std::to_string(g_page + 1) + " / " + std::to_string(pages));
-            own::Text(1, m_x0 + 130, m_y0 + 512, 146, pageLabel.c_str(), own::kInk, 2);
+            own::Text(1, m_x0 + 130, m_y0 + 512, 146, pageLabel.c_str(), m_pal.ink, 2);
             DrawButton(m_x0 + 282, m_y0 + 504, m_x0 + 392, m_y0 + 536, Lookup("OBL_MODS_NEXT").c_str(),
-                    g_page + 1 < pages ? own::kSea : own::kSand, g_page + 1 < pages ? own::kWhite : own::kGrey);
+                    g_page + 1 < pages ? m_pal.sea : m_pal.sand, g_page + 1 < pages ? m_pal.white : m_pal.grey);
         }
     }
 
@@ -1342,96 +1366,92 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
         const int innerW = x1 - x0 - 20;
 
         // Top card: selected mod info.
-        own::Fill(x0, m_y0 + 58, x1, m_y0 + 216, own::kFoam);
-        own::Frame(x0, m_y0 + 58, x1, m_y0 + 216, own::kBorder);
+        own::Box(x0, m_y0 + 58, x1, m_y0 + 216, m_round, m_pal.foam, m_pal.border);
         const mods::Entry* selected = m_list ? m_list->Find(g_selectedId) : nullptr;
         if (selected) {
             const std::string& title =
                     (selected->mod.valid && !selected->mod.manifest.title.empty()) ? selected->mod.manifest.title : selected->mod.id;
-            own::Text(2, x0 + 10, m_y0 + 66, innerW, Utf8ToEngine(title).c_str(), own::kInk, 0);
+            own::Text(2, x0 + 10, m_y0 + 66, innerW, Utf8ToEngine(title).c_str(), m_pal.ink, 0);
             int y = m_y0 + 90;
             if (selected->mod.valid) {
                 const auto& m = selected->mod.manifest;
-                own::Text(0, x0 + 10, y, innerW, Format(Lookup("OBL_MODS_VERSION"), {Utf8ToEngine(m.modVersion)}).c_str(), own::kInk, 0);
+                own::Text(0, x0 + 10, y, innerW, Format(Lookup("OBL_MODS_VERSION"), {Utf8ToEngine(m.modVersion)}).c_str(), m_pal.ink, 0);
                 y += 16;
                 own::Text(
-                        0, x0 + 10, y, innerW, Format(Lookup("OBL_MODS_PACKS"), {Utf8ToEngine(Join(m.packs, ", "))}).c_str(), own::kInk, 0);
+                        0, x0 + 10, y, innerW, Format(Lookup("OBL_MODS_PACKS"), {Utf8ToEngine(Join(m.packs, ", "))}).c_str(), m_pal.ink, 0);
                 y += 16;
-                own::Text(0, x0 + 10, y, innerW, Format(Lookup("OBL_MODS_SCOPE"), {ScopeText(m.scope)}).c_str(), own::kInk, 0);
+                own::Text(0, x0 + 10, y, innerW, Format(Lookup("OBL_MODS_SCOPE"), {ScopeText(m.scope)}).c_str(), m_pal.ink, 0);
                 y += 16;
                 if (!m.takesOver.empty() && y <= m_y0 + 194) {
                     own::Text(0, x0 + 10, y, innerW, Format(Lookup("OBL_MODS_TAKES_OVER"), {Utf8ToEngine(Join(m.takesOver, ", "))}).c_str(),
-                            own::kInk, 0);
+                            m_pal.ink, 0);
                     y += 16;
                 }
                 if (!m.actions.empty() && y <= m_y0 + 194) {
                     own::Text(0, x0 + 10, y, innerW, Format(Lookup("OBL_MODS_ACTIONS"), {Utf8ToEngine(FormatActions(m.actions))}).c_str(),
-                            own::kInk, 0);
+                            m_pal.ink, 0);
                     y += 16;
                 }
                 if (!m.bindings.empty() && y <= m_y0 + 194) {
                     own::Text(0, x0 + 10, y, innerW,
-                            Format(Lookup("OBL_MODS_BINDINGS"), {Utf8ToEngine(FormatBindings(m.bindings))}).c_str(), own::kInk, 0);
+                            Format(Lookup("OBL_MODS_BINDINGS"), {Utf8ToEngine(FormatBindings(m.bindings))}).c_str(), m_pal.ink, 0);
                     y += 16;
                 }
                 if (!m.requiredMods.empty() && y <= m_y0 + 194) {
                     own::Text(0, x0 + 10, y, innerW,
-                            Format(Lookup("OBL_MODS_REQUIRES"), {Utf8ToEngine(Join(m.requiredMods, ", "))}).c_str(), own::kInk, 0);
+                            Format(Lookup("OBL_MODS_REQUIRES"), {Utf8ToEngine(Join(m.requiredMods, ", "))}).c_str(), m_pal.ink, 0);
                     y += 16;
                 }
                 if (!m.conflictingMods.empty() && y <= m_y0 + 194) {
                     own::Text(0, x0 + 10, y, innerW,
-                            Format(Lookup("OBL_MODS_INCOMPATIBLE"), {Utf8ToEngine(Join(m.conflictingMods, ", "))}).c_str(), own::kInk, 0);
+                            Format(Lookup("OBL_MODS_INCOMPATIBLE"), {Utf8ToEngine(Join(m.conflictingMods, ", "))}).c_str(), m_pal.ink, 0);
                     y += 16;
                 }
             }
             if (selected->problem != mods::Problem::None) {
                 own::Text(1, x0 + 10, std::min(y + 4, m_y0 + 194), innerW, ProblemText(selected->problem, selected->detail).c_str(),
-                        own::kRed, 0);
+                        m_pal.red, 0);
             }
         }
 
         // Middle card: settings of the selected mod.
-        own::Fill(x0, m_y0 + 224, x1, m_y0 + 402, own::kFoam);
-        own::Frame(x0, m_y0 + 224, x1, m_y0 + 402, own::kBorder);
-        own::Text(1, x0 + 10, m_y0 + 232, innerW, Lookup("OBL_MODS_SETTINGS").c_str(), own::kSeaDark, 0);
+        own::Box(x0, m_y0 + 224, x1, m_y0 + 402, m_round, m_pal.foam, m_pal.border);
+        own::Text(1, x0 + 10, m_y0 + 232, innerW, Lookup("OBL_MODS_SETTINGS").c_str(), m_pal.seaDark, 0);
         if (!selected || !selected->mod.valid || selected->mod.manifest.settings.empty()) {
-            own::Text(0, x0 + 10, m_y0 + 258, innerW, Lookup("OBL_MODS_NO_SETTINGS").c_str(), own::kGrey, 0);
+            own::Text(0, x0 + 10, m_y0 + 258, innerW, Lookup("OBL_MODS_NO_SETTINGS").c_str(), m_pal.grey, 0);
         } else {
             const auto& active = mod_pack::Active();
             const auto live = std::find_if(active.begin(), active.end(), [&](const auto& m) { return m.manifest.id == g_selectedId; });
             if (!selected->on || selected->problem != mods::Problem::None || live == active.end()) {
-                own::Text(0, x0 + 10, m_y0 + 258, innerW, Lookup("OBL_MODS_SETTINGS_OFF").c_str(), own::kGrey, 0);
+                own::Text(0, x0 + 10, m_y0 + 258, innerW, Lookup("OBL_MODS_SETTINGS_OFF").c_str(), m_pal.grey, 0);
             } else {
                 const auto& fields = selected->mod.manifest.settings;
                 const size_t count = std::min(fields.size(), static_cast<size_t>(kMaxSettingRows));
                 for (size_t i = 0; i < count; ++i) {
                     const settings_schema::Field& field = fields[i];
                     const int y = m_y0 + 254 + static_cast<int>(i) * 28;
-                    own::Text(0, x0 + 10, y + 6, 190, Utf8ToEngine(field.label).c_str(), own::kInk, 0);
-                    DrawButton(m_x0 + 610, y, m_x0 + 638, y + 24, u"<", own::kSea, own::kWhite);
-                    own::Fill(m_x0 + 640, y, m_x0 + 750, y + 24, own::kWhite);
-                    own::Frame(m_x0 + 640, y, m_x0 + 750, y + 24, own::kBorder);
+                    own::Text(0, x0 + 10, y + 6, 190, Utf8ToEngine(field.label).c_str(), m_pal.ink, 0);
+                    DrawButton(m_x0 + 610, y, m_x0 + 638, y + 24, u"<", m_pal.sea, m_pal.white);
+                    own::Box(m_x0 + 640, y, m_x0 + 750, y + 24, m_round, m_pal.white, m_pal.border);
                     const std::string current = mods::ModSettingValue(*live, field);
                     std::u16string shown;
                     if (field.kind == settings_schema::Kind::Toggle)
                         shown = Lookup(settings_schema::IsOn(current) ? "OBL_MODS_ON" : "OBL_MODS_OFF");
                     else
                         shown = Utf8ToEngine(settings_schema::Display(field, current));
-                    own::Text(0, m_x0 + 644, y + 6, 102, shown.c_str(), own::kInk, 2);
-                    DrawButton(m_x0 + 752, y, m_x0 + 780, y + 24, u">", own::kSea, own::kWhite);
+                    own::Text(0, m_x0 + 644, y + 6, 102, shown.c_str(), m_pal.ink, 2);
+                    DrawButton(m_x0 + 752, y, m_x0 + 780, y + 24, u">", m_pal.sea, m_pal.white);
                 }
             }
         }
 
         // Bottom card: conflicts of the active list.
-        own::Fill(x0, m_y0 + 410, x1, m_y0 + 548, own::kFoam);
-        own::Frame(x0, m_y0 + 410, x1, m_y0 + 548, own::kBorder);
-        own::Text(1, x0 + 10, m_y0 + 418, innerW, Lookup("OBL_MODS_CONFLICTS").c_str(), own::kSeaDark, 0);
+        own::Box(x0, m_y0 + 410, x1, m_y0 + 548, m_round, m_pal.foam, m_pal.border);
+        own::Text(1, x0 + 10, m_y0 + 418, innerW, Lookup("OBL_MODS_CONFLICTS").c_str(), m_pal.seaDark, 0);
         if (!m_list || m_list->Conflicts().empty()) {
-            own::Text(0, x0 + 10, m_y0 + 444, innerW, Lookup("OBL_MODS_NO_CONFLICTS").c_str(), own::kGrey, 0);
+            own::Text(0, x0 + 10, m_y0 + 444, innerW, Lookup("OBL_MODS_NO_CONFLICTS").c_str(), m_pal.grey, 0);
         } else {
-            own::Text(0, x0 + 10, m_y0 + 438, innerW, Lookup("OBL_MODS_CONFLICT_HINT").c_str(), own::kGrey, 0);
+            own::Text(0, x0 + 10, m_y0 + 438, innerW, Lookup("OBL_MODS_CONFLICT_HINT").c_str(), m_pal.grey, 0);
             const auto& conflicts = m_list->Conflicts();
             const size_t count = std::min(conflicts.size(), static_cast<size_t>(kMaxConflictRows));
             for (size_t i = 0; i < count; ++i) {
@@ -1439,7 +1459,7 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
                 const std::u16string line = c.winner.empty()
                         ? Utf8ToEngine(c.what)
                         : Format(Lookup("OBL_MODS_CONFLICT_VALUE"), {Utf8ToEngine(c.winner), Utf8ToEngine(c.loser), Utf8ToEngine(c.what)});
-                own::Text(0, x0 + 10, m_y0 + 458 + static_cast<int>(i) * 20, innerW, line.c_str(), own::kRed, 0);
+                own::Text(0, x0 + 10, m_y0 + 458 + static_cast<int>(i) * 20, innerW, line.c_str(), m_pal.red, 0);
             }
         }
     }
@@ -1449,10 +1469,9 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
         const int x0 = m_x0 + 12;
         const int x1 = m_x0 + 394;
         if (m_catalogRows.empty()) {
-            own::Fill(x0, m_y0 + 58, x1, m_y0 + 126, own::kFoam);
-            own::Frame(x0, m_y0 + 58, x1, m_y0 + 126, own::kBorder);
+            own::Box(x0, m_y0 + 58, x1, m_y0 + 126, m_round, m_pal.foam, m_pal.border);
             const char* key = m_catalogStore.Catalogs().empty() ? "OBL_MODS_CAT_NONE" : "OBL_MODS_CAT_NO_MODS";
-            own::TextWrapped(1, x0 + 10, m_y0 + 68, x1 - x0 - 20, 52, Lookup(key).c_str(), own::kInk, 0);
+            own::TextWrapped(1, x0 + 10, m_y0 + 68, x1 - x0 - 20, 52, Lookup(key).c_str(), m_pal.ink, 0);
             return;
         }
         const size_t start = static_cast<size_t>(m_catalogPage * kPageSize);
@@ -1461,9 +1480,8 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
             const CatalogRow& row = m_catalogRows[i];
             const int rowY = m_y0 + 58 + static_cast<int>(i - start) * 48;
             const bool selected = row.entry.id == m_selectedCatalogModId;
-            own::Fill(x0, rowY, x1, rowY + 44, selected ? own::kFoam : own::kWhite);
-            own::Frame(x0, rowY, x1, rowY + 44, selected ? own::kSea : own::kBorder);
-            own::Text(1, x0 + 10, rowY + 6, 360, Utf8ToEngine(row.entry.title).c_str(), own::kInk, 0);
+            own::Box(x0, rowY, x1, rowY + 44, m_round, selected ? m_pal.foam : m_pal.white, selected ? m_pal.sea : m_pal.border);
+            own::Text(1, x0 + 10, rowY + 6, 360, Utf8ToEngine(row.entry.title).c_str(), m_pal.ink, 0);
 
             const mods::Entry* installed = m_list ? m_list->Find(row.entry.id) : nullptr;
             std::u16string sub = Utf8ToEngine(row.entry.id + "  " + row.entry.modVersion + "  ");
@@ -1474,16 +1492,16 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
                         installed->mod.manifest.modVersion == row.entry.modVersion ? "OBL_MODS_CAT_UP_TO_DATE" : "OBL_MODS_CAT_UPDATE");
                 sub += u")";
             }
-            own::Text(0, x0 + 10, rowY + 24, 360, sub.c_str(), own::kGrey, 0);
+            own::Text(0, x0 + 10, rowY + 24, 360, sub.c_str(), m_pal.grey, 0);
         }
         const int pages = CatalogPageCount();
         if (pages > 1) {
             DrawButton(m_x0 + 14, m_y0 + 504, m_x0 + 124, m_y0 + 536, Lookup("OBL_MODS_PREVIOUS").c_str(),
-                    m_catalogPage > 0 ? own::kSea : own::kSand, m_catalogPage > 0 ? own::kWhite : own::kGrey);
+                    m_catalogPage > 0 ? m_pal.sea : m_pal.sand, m_catalogPage > 0 ? m_pal.white : m_pal.grey);
             const std::u16string pageLabel = Utf8ToEngine(std::to_string(m_catalogPage + 1) + " / " + std::to_string(pages));
-            own::Text(1, m_x0 + 130, m_y0 + 512, 146, pageLabel.c_str(), own::kInk, 2);
+            own::Text(1, m_x0 + 130, m_y0 + 512, 146, pageLabel.c_str(), m_pal.ink, 2);
             DrawButton(m_x0 + 282, m_y0 + 504, m_x0 + 392, m_y0 + 536, Lookup("OBL_MODS_NEXT").c_str(),
-                    m_catalogPage + 1 < pages ? own::kSea : own::kSand, m_catalogPage + 1 < pages ? own::kWhite : own::kGrey);
+                    m_catalogPage + 1 < pages ? m_pal.sea : m_pal.sand, m_catalogPage + 1 < pages ? m_pal.white : m_pal.grey);
         }
     }
 
@@ -1494,51 +1512,48 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
         const int innerW = x1 - x0 - 20;
 
         // Top card: selected catalog mod details and Install/Update button.
-        own::Fill(x0, m_y0 + 58, x1, m_y0 + 250, own::kFoam);
-        own::Frame(x0, m_y0 + 58, x1, m_y0 + 250, own::kBorder);
+        own::Box(x0, m_y0 + 58, x1, m_y0 + 250, m_round, m_pal.foam, m_pal.border);
         const auto selIt = std::find_if(
                 m_catalogRows.begin(), m_catalogRows.end(), [&](const CatalogRow& r) { return r.entry.id == m_selectedCatalogModId; });
         if (selIt != m_catalogRows.end()) {
             const auto& e = selIt->entry;
-            own::Text(2, x0 + 10, m_y0 + 66, innerW, Utf8ToEngine(e.title).c_str(), own::kInk, 0);
+            own::Text(2, x0 + 10, m_y0 + 66, innerW, Utf8ToEngine(e.title).c_str(), m_pal.ink, 0);
             int y = m_y0 + 90;
-            own::Text(0, x0 + 10, y, innerW, Format(Lookup("OBL_MODS_VERSION"), {Utf8ToEngine(e.modVersion)}).c_str(), own::kInk, 0);
+            own::Text(0, x0 + 10, y, innerW, Format(Lookup("OBL_MODS_VERSION"), {Utf8ToEngine(e.modVersion)}).c_str(), m_pal.ink, 0);
             y += 16;
             own::Text(
-                    0, x0 + 10, y, innerW, Format(Lookup("OBL_MODS_CAT_FROM"), {Utf8ToEngine(selIt->catalogTitle)}).c_str(), own::kInk, 0);
+                    0, x0 + 10, y, innerW, Format(Lookup("OBL_MODS_CAT_FROM"), {Utf8ToEngine(selIt->catalogTitle)}).c_str(), m_pal.ink, 0);
             y += 16;
-            own::Text(0, x0 + 10, y, innerW, Format(Lookup("OBL_MODS_SCOPE"), {ScopeText(e.scope)}).c_str(), own::kInk, 0);
+            own::Text(0, x0 + 10, y, innerW, Format(Lookup("OBL_MODS_SCOPE"), {ScopeText(e.scope)}).c_str(), m_pal.ink, 0);
             y += 16;
-            own::Text(0, x0 + 10, y, innerW, Format(Lookup("OBL_MODS_CAT_LICENSE"), {Utf8ToEngine(e.license)}).c_str(), own::kInk, 0);
+            own::Text(0, x0 + 10, y, innerW, Format(Lookup("OBL_MODS_CAT_LICENSE"), {Utf8ToEngine(e.license)}).c_str(), m_pal.ink, 0);
             y += 16;
             if (!e.requiresMods.empty()) {
                 own::Text(0, x0 + 10, y, innerW, Format(Lookup("OBL_MODS_REQUIRES"), {Utf8ToEngine(Join(e.requiresMods, ", "))}).c_str(),
-                        own::kInk, 0);
+                        m_pal.ink, 0);
             }
             const mods::Entry* installed = m_list ? m_list->Find(e.id) : nullptr;
             const char* btnKey = installed ? "OBL_MODS_CAT_UPDATE" : "OBL_MODS_CAT_INSTALL";
-            DrawButton(m_x0 + 414, m_y0 + 210, m_x0 + 570, m_y0 + 242, Lookup(btnKey).c_str(), own::kSea, own::kWhite);
+            DrawButton(m_x0 + 414, m_y0 + 210, m_x0 + 570, m_y0 + 242, Lookup(btnKey).c_str(), m_pal.sea, m_pal.white);
         }
 
         // Bottom card: added catalogs list + Add / Refresh / Remove.
-        own::Fill(x0, m_y0 + 258, x1, m_y0 + 548, own::kFoam);
-        own::Frame(x0, m_y0 + 258, x1, m_y0 + 548, own::kBorder);
-        own::Text(1, x0 + 10, m_y0 + 270, 140, Lookup("OBL_MODS_CATALOGS").c_str(), own::kSeaDark, 0);
-        DrawButton(m_x0 + 560, m_y0 + 264, m_x0 + 676, m_y0 + 292, Lookup("OBL_MODS_CAT_ADD").c_str(), own::kSea, own::kWhite);
-        DrawButton(m_x0 + 682, m_y0 + 264, m_x0 + 780, m_y0 + 292, Lookup("OBL_MODS_CAT_REFRESH").c_str(), own::kSeaDark, own::kWhite);
+        own::Box(x0, m_y0 + 258, x1, m_y0 + 548, m_round, m_pal.foam, m_pal.border);
+        own::Text(1, x0 + 10, m_y0 + 270, 140, Lookup("OBL_MODS_CATALOGS").c_str(), m_pal.seaDark, 0);
+        DrawButton(m_x0 + 560, m_y0 + 264, m_x0 + 676, m_y0 + 292, Lookup("OBL_MODS_CAT_ADD").c_str(), m_pal.sea, m_pal.white);
+        DrawButton(m_x0 + 682, m_y0 + 264, m_x0 + 780, m_y0 + 292, Lookup("OBL_MODS_CAT_REFRESH").c_str(), m_pal.seaDark, m_pal.white);
 
         const auto& cats = m_catalogStore.Catalogs();
         if (cats.empty()) {
-            own::TextWrapped(0, x0 + 10, m_y0 + 306, innerW, 60, Lookup("OBL_MODS_CAT_NONE").c_str(), own::kGrey, 0);
+            own::TextWrapped(0, x0 + 10, m_y0 + 306, innerW, 60, Lookup("OBL_MODS_CAT_NONE").c_str(), m_pal.grey, 0);
         } else {
             const size_t maxShown = std::min<size_t>(cats.size(), 6);
             for (size_t i = 0; i < maxShown; ++i) {
                 const int y = m_y0 + 300 + static_cast<int>(i) * 38;
-                own::Fill(x0 + 8, y, x1 - 8, y + 34, own::kWhite);
-                own::Frame(x0 + 8, y, x1 - 8, y + 34, own::kBorder);
-                own::Text(0, x0 + 14, y + 4, 280, Utf8ToEngine(cats[i].title).c_str(), own::kInk, 0);
-                own::Text(0, x0 + 14, y + 18, 280, Utf8ToEngine(cats[i].url).c_str(), own::kGrey, 0);
-                DrawButton(m_x0 + 706, y + 4, m_x0 + 780, y + 32, Lookup("OBL_MODS_REMOVE").c_str(), own::kSeaDark, own::kWhite);
+                own::Box(x0 + 8, y, x1 - 8, y + 34, m_round, m_pal.white, m_pal.border);
+                own::Text(0, x0 + 14, y + 4, 280, Utf8ToEngine(cats[i].title).c_str(), m_pal.ink, 0);
+                own::Text(0, x0 + 14, y + 18, 280, Utf8ToEngine(cats[i].url).c_str(), m_pal.grey, 0);
+                DrawButton(m_x0 + 706, y + 4, m_x0 + 780, y + 32, Lookup("OBL_MODS_REMOVE").c_str(), m_pal.seaDark, m_pal.white);
             }
         }
     }
