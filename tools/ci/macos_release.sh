@@ -27,6 +27,12 @@ if [[ "${OBL_SKIP_TESTS:-0}" != 1 ]]; then
     rm -rf "$l0"
     mkdir -p "$l0/packs/l0" "$l0/Data"
     cp -R "$root/data/packs/l0/." "$l0/packs/l0/"
+    # The test mods, for the run files that name them in an `# @env OBL_MODS=` line (l0_bot_build_tree_mods); `broken/` holds
+    # fixtures for the checker, not mods.
+    mkdir -p "$l0/mods"
+    for mod in "$root"/tests/mods/*/; do
+        [ "$(basename "$mod")" = broken ] || cp -R "${mod%/}" "$l0/mods/"
+    done
     printf '[Beach Life Options]\nVersion=1\n' > "$l0/BeachLife.ini"
     OBL_SOURCE_ROOT="$root" python3 "$root/tools/obl_sim_tests.py" --sim "$build/bin/obl-sim" --game-dir "$l0" \
         --filter l0_boot l0_gameplay l0_guests l0_goal l0_builders "l0_bot_*" headless_mismatch "replay_l0_*" \
