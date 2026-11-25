@@ -38,5 +38,10 @@ request resets the object, as the SDL backend does when it cannot start a drag. 
   update are seen as a click: the release is deferred to the next update.
 - **Cursor shape:** `Input_SetCursorShape` ignores the current shape, otherwise the backend loads the system cursor (resources
   106, 101-103, 107, 108, 111 for shapes 1-7) before the object stores the id at `m_cursorShape`.
-- **Test injection** (`SetSyntheticCursor`, `InjectMouseButton`, `InjectRelativeMotion`; `input.h`) feeds the SDL backend; the
-  Linux obl-sim stubs them (`headless_modules.cpp`), headless scripts refuse the directives that use them.
+- **Mod scripts:** after `Input_Update` the presentation scripts see the update's events and may take a consumed one back out
+  of the object, or add a made-up click ([mods/index.md](mods/index.md#the-input-path)). Finger events go to the scripts
+  (`mods::RouteTouch`) before `TouchGestures`; a finger whose down a script consumed, or every finger while a mod owns
+  `input.touch`, never reaches the gestures.
+- **Test injection** (`SetSyntheticCursor`, `InjectMouseButton`, `InjectRelativeMotion`, `InjectFinger`; `input.h`) feeds the
+  SDL backend; `InjectFinger` takes the finger path of the browser build, gestures included, on any host. The Linux obl-sim
+  stubs them (`headless_modules.cpp`), headless scripts refuse the directives that use them.

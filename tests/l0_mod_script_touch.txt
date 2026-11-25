@@ -1,0 +1,43 @@
+# A presentation mod takes over input.touch (docs/modding/reference/scripting.md): the test mod tests/mods/l0_touch turns a tap into
+# a right click, which does not press its own menu button; finger 9 makes the script fail, and touch is the engine's again, so a
+# tap is a left click on the button. Its button's Mod:l0_touch.ping reaches the script's on_action.
+# Hidden-only: it injects fingers into the window's input.
+# @env OBL_PACK=l0
+# @env OBL_MODS=l0_touch
+# @env OBL_WINDOWED=1
+# @gameini Language.Language=0
+# @gameini Sound.PlayListCount=0
+# @timeout 120
+# @expect-log presentation scripts: mod "l0_touch" takes over "input.touch"
+# @expect-log mod l0_touch: action ping
+# @expect-log presentation scripts: "input.touch" is the engine's again
+seed 1
+fixed-dt 0.02
+await state == 1
+await frames 20
+await gui-animating == 0
+expect gui-mod-action-count 0
+# A mouse click on the button: its action reaches the script.
+gui-click MainMenu id touch_ping_btn
+await frames 15
+expect gui-mod-action-count 1
+# A tap while the mod has touch: the script clicks right there with the right button, which a button ignores.
+gui-move MainMenu id touch_ping_btn
+touch down 1 $x $y
+await frames 3
+touch up 1 $x $y
+await frames 15
+expect gui-mod-action-count 1
+# Finger 9 fails the script on purpose: the default touch comes back at once.
+touch down 9 $x $y
+await frames 3
+touch cancel 9 $x $y
+await frames 3
+# The same tap is a left click now.
+touch down 1 $x $y
+await frames 3
+touch up 1 $x $y
+await frames 15
+expect gui-mod-action-count 2
+gui-mod-action Mod:l0_touch.ping
+quit

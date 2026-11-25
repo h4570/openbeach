@@ -1,0 +1,33 @@
+# A presentation mod consumes input (docs/modding/reference/scripting.md): the test mod tests/mods/l0_consume takes the toilet
+# block's build tool and consumes the first left click, so that click places nothing; the next click builds (800 to build).
+# Hidden-only: it presses the window's mouse button.
+# @env OBL_PACK=l0
+# @env OBL_MODS=l0_consume
+# @timeout 120
+# @expect-log mod l0_consume: build tool true
+# @expect-log mod l0_consume: consumed left down
+# @expect-log mod l0_consume: consumed left up
+# @expect-log mod l0_consume: observed left down, consumed by l0_consume
+# @expect-log mod l0_consume: observed left down, consumed by nil
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario 1
+await gameplay
+await gui-mode == 5 1000
+expect cash 20000
+# The camera brings a tile the tool accepts to the middle of the view, and the cursor goes to the nearest such tile.
+call-drive GuiModesPlaceClickFocus 5
+step 10
+call-drive GuiModesPlaceClickAim 5
+step 5
+down 0
+step 3
+up 0
+step 5
+expect cash 20000
+down 0
+step 3
+up 0
+step 5
+expect cash 19200
+quit

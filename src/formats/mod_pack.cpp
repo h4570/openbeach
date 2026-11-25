@@ -222,6 +222,9 @@ bool PresentationMayShip(const std::filesystem::path& file, const std::string& r
     }
     if (relative.starts_with(std::string(kPresentationScripts) + "/")) return true;
     if (relative.starts_with("text/") && relative.find('/', 5) == std::string::npos && relative.ends_with(".patch.json")) return true;
+    // Images for the scripts' overlay: only obl.overlay.image reads overlay/, and no pack has that directory, so nothing is shadowed.
+    if (relative.starts_with(std::string(kOverlayImages) + "/") && relative.find('/', 8) == std::string::npos && relative.ends_with(".png"))
+        return true;
     if (relative.find('/') == std::string::npos) {
         const std::string extension = std::filesystem::path(relative).extension().string();
         return extension.empty() || extension == ".md" || extension == ".txt";
@@ -308,6 +311,20 @@ bool ParseManifest(std::string_view text, Manifest& manifest, std::string& error
         }
     }
     if (!ReadSettings(doc, m.settings, error)) return false;
+    if (const auto it = doc.find("takes_over"); it != doc.end()) {
+        if (!it->is_array()) {
+            error = "takes_over is not an array";
+            return false;
+        }
+        for (const auto& item : *it) {
+            const std::string area = item.is_string() ? item.get<std::string>() : std::string();
+            if (std::find(std::begin(kTakeOverAreas), std::end(kTakeOverAreas), area) == std::end(kTakeOverAreas)) {
+                error = "takes_over names \"" + area + "\", which is not a default behavior a mod can take over";
+                return false;
+            }
+            if (std::find(m.takesOver.begin(), m.takesOver.end(), area) == m.takesOver.end()) m.takesOver.push_back(area);
+        }
+    }
     manifest = std::move(m);
     return true;
 }
@@ -343,13 +360,16 @@ bool CheckActive(const std::filesystem::path& gameDirectory, std::string_view pa
         if (mod.manifest.scope == Scope::Presentation)
             if (const std::string file = FirstRefusedFile(*directory); !file.empty())
                 return fail("a presentation mod may not ship \"" + file +
-                        "\" (only scripts/presentation/, text/<lang>.patch.json, gui/<name>.patch.json of presentation data and documents "
-                        "at the top)");
+                        "\" (only scripts/presentation/, overlay/<name>.png, text/<lang>.patch.json, gui/<name>.patch.json of presentation "
+                        "data and documents at the top)");
         if (mod.manifest.api > kPresentationApi)
             return fail("needs the presentation script API " + std::to_string(mod.manifest.api) + ", this game has " +
                     std::to_string(kPresentationApi) + "; update the game");
-        if (mod.manifest.api == 0 && HasPresentationScripts(*directory))
-            return fail("ships presentation scripts but names no \"api\" in mod.json");
+        const bool scripts = HasPresentationScripts(*directory);
+        if (mod.manifest.api == 0 && scripts) return fail("ships presentation scripts but names no \"api\" in mod.json");
+        // Only a script can do what a taken-over default did.
+        if (!mod.manifest.takesOver.empty() && !scripts)
+            return fail("takes over \"" + mod.manifest.takesOver[0] + "\" but ships no scripts");
         for (const std::string& need : mod.manifest.requiredMods) {
             const bool earlier = std::any_of(mods.begin(), mods.end(), [&](const ActiveMod& m) { return m.manifest.id == need; });
             if (!earlier) {
@@ -364,6 +384,23 @@ bool CheckActive(const std::filesystem::path& gameDirectory, std::string_view pa
         mods.push_back(std::move(mod));
     }
     return true;
+}
+
+std::vector<std::string> TakeOverConflicts(std::span<const ActiveMod> mods)
+{
+    std::vector<std::string> lines;
+    for (std::string_view area : kTakeOverAreas) {
+        std::vector<std::string> takers;
+        for (const ActiveMod& mod : mods)
+            if (std::find(mod.manifest.takesOver.begin(), mod.manifest.takesOver.end(), area) != mod.manifest.takesOver.end())
+                takers.push_back(mod.manifest.id);
+        if (takers.size() < 2) continue;
+        std::string names;
+        for (const std::string& id : takers) names += (names.empty() ? "\"" : ", \"") + id + "\"";
+        lines.push_back(
+                "\"" + std::string(area) + "\" is taken over by " + names + "; \"" + takers.back() + "\" wins (later in load order)");
+    }
+    return lines;
 }
 
 const std::vector<ActiveMod>& Active()
@@ -396,6 +433,7 @@ bool Activate(const std::filesystem::path& gameDirectory, std::string_view packI
     }
     if (!data_patch::Prepare(gameDirectory / *pack, ids, conflicts, error)) return false;
     for (const auto& conflict : conflicts) OBL_LOG("mod patch: %s", conflict.c_str());
+    for (const auto& conflict : TakeOverConflicts(mods)) OBL_LOG("mod takes_over: %s", conflict.c_str());
     g_active = std::move(mods);
     pack_path::SetActiveMods(ids);
     return true;

@@ -1,0 +1,47 @@
+# A presentation mod draws an overlay (docs/modding/reference/scripting.md): the test mod tests/mods/l0_overlay draws boxes, text
+# and its own image over the frame. Test runs hide the overlay unless the script asks for it.
+# Hidden-only: it reads the presented frame.
+# @env OBL_PACK=l0
+# @env OBL_MODS=l0_overlay
+# @timeout 120
+# @gameini Video.ResWidth=800
+# @gameini Video.ResHeight=600
+# @gameini Video.NudgeScroll=0
+# @gameini Video.SeaEffects=1
+# @gameini Video.LightEffects=1
+# @gameini Video.Keyline=0
+seed 1
+fixed-dt 0.02
+move 400 300
+boot-gameplay scenario 1
+await gameplay
+step 5
+# Hidden by default: the box's pixel is the world's (the sea), not red.
+screen-pixel 20 20
+expect-last-range r 0 200
+mod-overlay on
+step 2
+screen-pixel 20 20
+expect-last r 255
+expect-last g 0
+expect-last b 0
+# The image's top-left pixel is white, at its size and scaled.
+screen-pixel 160 10
+expect-last r 255
+expect-last g 255
+expect-last b 255
+screen-pixel 200 10
+expect-last r 255
+expect-last g 255
+expect-last b 255
+# The outline's top edge is green, its inside is not.
+screen-pixel 120 10
+expect-last r 0
+expect-last g 255
+expect-last b 0
+expect-shot l0_mod_script_overlay
+mod-overlay off
+step 2
+screen-pixel 20 20
+expect-last-range r 0 200
+quit

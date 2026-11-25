@@ -384,6 +384,22 @@ void GameWindowClientSize(void* window, int& width, int& height)
     if (SDL_Window* sdl = SdlGameWindow(window)) SDL_GetWindowSizeInPixels(sdl, &width, &height);
 }
 
+void GameWindowSafeArea(void* window, int& left, int& top, int& right, int& bottom)
+{
+    left = top = right = bottom = 0;
+    SDL_Window* sdl = SdlGameWindow(window);
+    SDL_Rect safe{};
+    int width = 0, height = 0;
+    if (!sdl || !SDL_GetWindowSafeArea(sdl, &safe) || !SDL_GetWindowSize(sdl, &width, &height) || width <= 0 || height <= 0) return;
+    // SDL reports the safe area in window coordinates; the client size is in pixels.
+    int pixelWidth = 0, pixelHeight = 0;
+    SDL_GetWindowSizeInPixels(sdl, &pixelWidth, &pixelHeight);
+    left = safe.x * pixelWidth / width;
+    top = safe.y * pixelHeight / height;
+    right = std::max(0, width - safe.x - safe.w) * pixelWidth / width;
+    bottom = std::max(0, height - safe.y - safe.h) * pixelHeight / height;
+}
+
 #ifdef _WIN32
 HWND GetWin32Window(void* window)
 {

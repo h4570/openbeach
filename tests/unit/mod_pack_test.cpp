@@ -196,6 +196,16 @@ OBL_TEST_CASE("mod_pack.a_presentation_mod_ships_no_simulation_data")
     refused("text/sub/en.patch.json");
     refused("gui/sim_list.patch.json"); // a JSON data patch of a gui/ file that is not on the presentation list
 
+    refused("overlay/sub/icon.png");
+    refused("overlay/icon.tga");
+    refused("images/icon.png"); // the pack's own directory: the file would shadow a pack image
+
+    // The overlay's images are drawn by scripts only.
+    WriteManifest(game.path, "icons", fields);
+    Write(game.path / "mods/icons/scripts/presentation/main.lua", "");
+    Write(game.path / "mods/icons/overlay/icon.png", "");
+    OBL_CHECK(Accepted(game.path, "l0", "icons", error));
+
     // A GUI layout patch and a JSON data patch of a presentation file are presentation data.
     WriteManifest(game.path, "layout", fields);
     Write(game.path / "mods/layout/gui/main_menu.patch.json", R"({"format":"obl.gui_patch","version":1,"ops":[]})");
@@ -304,4 +314,35 @@ OBL_TEST_CASE("mod_pack.settings_that_cannot_be_kept_in_an_ini_file_are_refused"
     for (size_t i = 0; i <= mod_pack::kMaxSettings; ++i)
         many += std::string(i ? "," : "") + R"({"id":"s)" + std::to_string(i) + R"(","type":"toggle","label":"S"})";
     refused(many + "]", "at most");
+}
+
+OBL_TEST_CASE("mod_pack.a_mod_takes_over_known_defaults_with_its_scripts")
+{
+    test::TempPath game("mod-takes-over");
+    const std::string fields = "\"pack\":\"l0\",\"scope\":\"presentation\",\"api\":1,";
+    WriteManifest(game.path, "touch", fields + "\"takes_over\":[\"input.touch\",\"camera.edge_scroll\",\"input.touch\"]");
+    Write(game.path / "mods/touch/scripts/presentation/main.lua", "");
+    std::vector<mod_pack::ActiveMod> mods;
+    std::string error;
+    std::vector<std::string> list = {"touch"};
+    OBL_REQUIRE(mod_pack::CheckActive(game.path, "l0", list, mods, error));
+    OBL_CHECK(mods[0].manifest.takesOver == (std::vector<std::string>{"input.touch", "camera.edge_scroll"}));
+
+    WriteManifest(game.path, "unknown", fields + "\"takes_over\":[\"input.everything\"]");
+    Write(game.path / "mods/unknown/scripts/presentation/main.lua", "");
+    OBL_CHECK(!Accepted(game.path, "l0", "unknown", error) && error.find("input.everything") != std::string::npos);
+    WriteManifest(game.path, "not_list", fields + "\"takes_over\":\"input.touch\"");
+    OBL_CHECK(!Accepted(game.path, "l0", "not_list", error) && error.find("takes_over") != std::string::npos);
+    // Only a script can do what the default did.
+    WriteManifest(game.path, "scriptless", fields + "\"takes_over\":[\"input.touch\"]");
+    OBL_CHECK(!Accepted(game.path, "l0", "scriptless", error) && error.find("ships no scripts") != std::string::npos);
+
+    // Two mods taking over one default: the later one in load order wins, and the conflict names both.
+    WriteManifest(game.path, "later", fields + "\"takes_over\":[\"input.touch\"]");
+    Write(game.path / "mods/later/scripts/presentation/main.lua", "");
+    list = {"touch", "later"};
+    OBL_REQUIRE(mod_pack::CheckActive(game.path, "l0", list, mods, error));
+    const std::vector<std::string> conflicts = mod_pack::TakeOverConflicts(mods);
+    OBL_REQUIRE(conflicts.size() == 1);
+    OBL_CHECK_EQ(conflicts[0], std::string("\"input.touch\" is taken over by \"touch\", \"later\"; \"later\" wins (later in load order)"));
 }

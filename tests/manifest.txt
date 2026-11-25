@@ -38,6 +38,11 @@ l0_mod_gui_patch.txt @hidden @l0
 l0_mod_save.txt @l0
 l0_save_slots.txt @headless @l0
 l0_mod_script.txt @l0
+l0_mod_script_touch.txt @hidden @l0
+l0_mod_script_consume.txt @hidden @l0
+l0_mod_script_camera.txt @l0
+l0_mod_script_overlay.txt @hidden @l0
+l0_mod_script_state.txt @l0
 l0_mods_mixed.txt @l0
 l0_mod_settings.txt @l0
 golden_hash_l0_s1.golden @l0

@@ -598,6 +598,8 @@ void Update(Game* game)
     ui::save_panel::UpdateLoadInfoBox(game);
     UpdateClock(&game->m_clock);
     InputUpdate(*GetInput());
+    // The mods' presentation scripts see the input before the game does, so they can consume it (docs/architecture/input.md).
+    mods::PresentationInput(GetInput());
     // The player's commands of this tick run before the world update (docs/architecture/commands.md).
     RunCommandTick(game, switched);
     if (!loading) game->m_currentState->Update();
@@ -607,7 +609,7 @@ void Update(Game* game)
     game->m_sound.get()->Update(dt);
     game->m_loopSounds->UpdateFrame(dt);
     // The mods' presentation scripts after the state's update: a command they submit runs at the next tick, like a GUI click.
-    mods::PresentationFrame(dt, GetInput());
+    mods::PresentationFrame(dt);
     // Left Shift held, U pressed, left Alt held (physical keys), only outside a world.
     const ui::Input& input = *GetInput();
     if (InputKeyHeld(input, obl::input::KeyCode::LeftShift) && InputKeyPressed(input, obl::input::KeyCode::U) &&
@@ -644,6 +646,8 @@ void Render(Game* game)
     ui::renderer::RestoreLostSurfaces(renderer);
     game->m_currentState->PostRender();
     if (!g_staleGameplayGui) DrawOverlay(game->m_guiManager.get());
+    // The mods' overlay over everything the game drew; nothing in the game reads it back.
+    mods::DrawPresentationOverlay();
     ui::renderer::Present(renderer);
     // Only this present: the loading bar's presents are not captured.
     if (g_renderPresentObserver) g_renderPresentObserver(renderer);

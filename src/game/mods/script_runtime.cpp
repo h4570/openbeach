@@ -11,10 +11,12 @@
 #include "lualib.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdlib>
 #include <fstream>
 #include <iterator>
 #include <map>
+#include <numeric>
 
 namespace obl::mods {
 
@@ -26,6 +28,24 @@ constexpr int kHookStep = 1000;
 constexpr int kMaxLogLines = 200;
 constexpr size_t kMaxStoreKey = 256;
 constexpr const char* kStoreFormat = "obl.mod_store";
+// Drawing calls one mod may make per frame; the overlay is redrawn every frame, so more is a script that forgot to stop.
+constexpr int kMaxOverlayOps = 4096;
+// Coordinates beyond this are refused as an error in the script rather than drawn or clicked somewhere far away.
+constexpr double kMaxCoordinate = 1 << 20;
+// Frames obl.stats.fps averages over.
+constexpr size_t kFpsFrames = 30;
+constexpr const char* kPlatform =
+#if defined(__EMSCRIPTEN__)
+        "web";
+#elif defined(__ANDROID__)
+        "android";
+#elif defined(_WIN32)
+        "windows";
+#elif defined(__APPLE__)
+        "macos";
+#else
+        "linux";
+#endif
 
 // The first list (#114): what the HUD's pause and speed controls and the place modes send. Selecting objects, panels and the build
 // tool's preview are not commands (docs/architecture/commands.md); they come as script calls of their own.
@@ -50,6 +70,10 @@ struct ScriptRuntime::Mod {
     bool storeDirty = false;
     std::vector<settings_schema::Field> fields;
     std::map<std::string, std::string> settings; // setting id -> canonical value, as of the last read
+    std::vector<std::string> takesOver;
+    bool consumed = false; // the event of the current on_input call was consumed
+    int overlayOps = 0; // drawing calls since the frame began
+    const std::vector<float>* frameTimes = nullptr;
 };
 
 namespace {
@@ -287,6 +311,459 @@ int ApiSettingsGet(lua_State* L)
     return 1;
 }
 
+// ---- input ---------------------------------------------------------------------------------------------------------------------
+
+// A coordinate argument: any number, rounded down, so `e.x / 2` works as well as an integer.
+int CheckCoordinate(lua_State* L, int index)
+{
+    const lua_Number value = luaL_checknumber(L, index);
+    if (!(std::fabs(value) <= kMaxCoordinate)) luaL_argerror(L, index, "a coordinate out of range");
+    return static_cast<int>(std::floor(value));
+}
+
+int CheckButton(lua_State* L, int index)
+{
+    const std::string_view button = luaL_optstring(L, index, "left");
+    if (button == "left") return 0;
+    if (button == "right") return 1;
+    return luaL_argerror(L, index, "the button is \"left\" or \"right\"");
+}
+
+int SynthesizeAt(lua_State* L, SyntheticInput::Kind kind)
+{
+    SyntheticInput input;
+    input.kind = kind;
+    input.x = CheckCoordinate(L, 1);
+    input.y = CheckCoordinate(L, 2);
+    input.button = CheckButton(L, 3);
+    Of(L).host->SynthesizeInput(input);
+    return 0;
+}
+
+int ApiInputClick(lua_State* L)
+{
+    return SynthesizeAt(L, SyntheticInput::Kind::Click);
+}
+
+int ApiInputPress(lua_State* L)
+{
+    return SynthesizeAt(L, SyntheticInput::Kind::Press);
+}
+
+int ApiInputRelease(lua_State* L)
+{
+    return SynthesizeAt(L, SyntheticInput::Kind::Release);
+}
+
+// obl.input.move(x, y) holds the pointer there; obl.input.move() gives it back to the device.
+int ApiInputMove(lua_State* L)
+{
+    SyntheticInput input;
+    if (lua_isnoneornil(L, 1)) {
+        input.kind = SyntheticInput::Kind::Free;
+    } else {
+        input.kind = SyntheticInput::Kind::Move;
+        input.x = CheckCoordinate(L, 1);
+        input.y = CheckCoordinate(L, 2);
+    }
+    Of(L).host->SynthesizeInput(input);
+    return 0;
+}
+
+int ApiInputLastPointer(lua_State* L)
+{
+    const std::string pointer = Of(L).host->LastPointer();
+    if (pointer.empty())
+        lua_pushnil(L);
+    else
+        lua_pushstring(L, pointer.c_str());
+    return 1;
+}
+
+// `e:consume()` in on_input: the event goes no further, to earlier mods or the game.
+int EventConsume(lua_State* L)
+{
+    Of(L).consumed = true;
+    return 0;
+}
+
+int ObservedConsume(lua_State* L)
+{
+    return luaL_error(L, "on_input_observe cannot consume an event; consume it in on_input");
+}
+
+// ---- camera --------------------------------------------------------------------------------------------------------------------
+
+constexpr double kZoomScales[] = {2.0, 1.0, 0.5}; // by zoom level, as the renderer scales the view
+
+int ApiCameraPosition(lua_State* L)
+{
+    const std::optional<CameraView> camera = Of(L).host->Camera();
+    if (!camera) {
+        lua_pushnil(L);
+        return 1;
+    }
+    lua_pushinteger(L, camera->x);
+    lua_pushinteger(L, camera->y);
+    return 2;
+}
+
+int ApiCameraSetPosition(lua_State* L)
+{
+    const int x = CheckCoordinate(L, 1), y = CheckCoordinate(L, 2);
+    lua_pushboolean(L, Of(L).host->SetCameraPosition(x, y));
+    return 1;
+}
+
+int ApiCameraPan(lua_State* L)
+{
+    const int dx = CheckCoordinate(L, 1), dy = CheckCoordinate(L, 2);
+    Mod& mod = Of(L);
+    const std::optional<CameraView> camera = mod.host->Camera();
+    lua_pushboolean(L, camera && mod.host->SetCameraPosition(camera->x + dx, camera->y + dy));
+    return 1;
+}
+
+int ApiCameraZoom(lua_State* L)
+{
+    const std::optional<CameraView> camera = Of(L).host->Camera();
+    if (!camera) {
+        lua_pushnil(L);
+        return 1;
+    }
+    // 2 and 1 as integers, so they print as "2" and "1".
+    const double scale = kZoomScales[std::clamp(camera->zoomLevel, 0, 2)];
+    if (scale >= 1)
+        lua_pushinteger(L, static_cast<lua_Integer>(scale));
+    else
+        lua_pushnumber(L, scale);
+    return 1;
+}
+
+// The game has three zoom levels; the scale picks the nearest (on a log scale, so 1.4 is nearer 1 than 2).
+int ApiCameraSetZoom(lua_State* L)
+{
+    const lua_Number scale = luaL_checknumber(L, 1);
+    if (!(scale > 0)) return luaL_argerror(L, 1, "the zoom is a scale above 0");
+    int best = 1;
+    for (int level = 0; level < 3; ++level)
+        if (std::fabs(std::log(scale / kZoomScales[level])) < std::fabs(std::log(scale / kZoomScales[best]))) best = level;
+    lua_pushboolean(L, Of(L).host->SetZoomLevel(best));
+    return 1;
+}
+
+// ---- GUI -----------------------------------------------------------------------------------------------------------------------
+
+int RunGui(lua_State* L, GuiRequest& request)
+{
+    lua_pushboolean(L, Of(L).host->Gui(request));
+    return 1;
+}
+
+int GuiByName(lua_State* L, GuiRequest::Op op, bool position)
+{
+    GuiRequest request;
+    request.op = op;
+    request.name = luaL_checkstring(L, 1);
+    if (position) {
+        request.x = CheckCoordinate(L, 2);
+        request.y = CheckCoordinate(L, 3);
+    }
+    return RunGui(L, request);
+}
+
+int ApiGuiShow(lua_State* L)
+{
+    return GuiByName(L, GuiRequest::Op::ShowControl, false);
+}
+
+int ApiGuiHide(lua_State* L)
+{
+    return GuiByName(L, GuiRequest::Op::HideControl, false);
+}
+
+int ApiGuiMove(lua_State* L)
+{
+    return GuiByName(L, GuiRequest::Op::MoveControl, true);
+}
+
+int ApiGuiOpen(lua_State* L)
+{
+    return GuiByName(L, GuiRequest::Op::OpenDialog, false);
+}
+
+int ApiGuiClose(lua_State* L)
+{
+    return GuiByName(L, GuiRequest::Op::CloseDialog, false);
+}
+
+int ApiGuiMoveDialog(lua_State* L)
+{
+    return GuiByName(L, GuiRequest::Op::MoveDialog, true);
+}
+
+int ApiGuiSelect(lua_State* L)
+{
+    GuiRequest request;
+    request.op = GuiRequest::Op::Select;
+    const lua_Integer id = luaL_checkinteger(L, 1);
+    if (id < 0 || id > static_cast<lua_Integer>(UINT32_MAX)) return luaL_argerror(L, 1, "not an object id");
+    request.id = static_cast<uint32_t>(id);
+    return RunGui(L, request);
+}
+
+int ApiGuiPlace(lua_State* L)
+{
+    GuiRequest request;
+    request.op = GuiRequest::Op::Place;
+    request.kind = luaL_checkstring(L, 1);
+    if (request.kind != "building" && request.kind != "scenery") return luaL_argerror(L, 1, "the kind is \"building\" or \"scenery\"");
+    request.name = luaL_checkstring(L, 2);
+    return RunGui(L, request);
+}
+
+int ApiGuiCancel(lua_State* L)
+{
+    GuiRequest request;
+    request.op = GuiRequest::Op::CancelTool;
+    return RunGui(L, request);
+}
+
+// ---- overlay -------------------------------------------------------------------------------------------------------------------
+
+uint32_t CheckColor(lua_State* L, int index)
+{
+    const lua_Integer color = luaL_checkinteger(L, index);
+    if (color < 0 || color > 0xFFFFFFFFll) luaL_argerror(L, index, "a color is 0xAARRGGBB");
+    return static_cast<uint32_t>(color);
+}
+
+void Draw(lua_State* L, const OverlayOp& op)
+{
+    Mod& mod = Of(L);
+    if (++mod.overlayOps > kMaxOverlayOps) luaL_error(L, "obl.overlay: more than %d drawing calls in one frame", kMaxOverlayOps);
+    mod.host->Draw(op);
+}
+
+int Box(lua_State* L, OverlayOp::Kind kind)
+{
+    OverlayOp op;
+    op.kind = kind;
+    op.x = CheckCoordinate(L, 1);
+    op.y = CheckCoordinate(L, 2);
+    op.w = CheckCoordinate(L, 3);
+    op.h = CheckCoordinate(L, 4);
+    op.color = CheckColor(L, 5);
+    Draw(L, op);
+    return 0;
+}
+
+int ApiOverlayRect(lua_State* L)
+{
+    return Box(L, OverlayOp::Kind::Rect);
+}
+
+int ApiOverlayFrame(lua_State* L)
+{
+    return Box(L, OverlayOp::Kind::Frame);
+}
+
+int ApiOverlayText(lua_State* L)
+{
+    OverlayOp op;
+    op.kind = OverlayOp::Kind::Text;
+    op.x = CheckCoordinate(L, 1);
+    op.y = CheckCoordinate(L, 2);
+    op.text = luaL_checkstring(L, 3);
+    op.font = luaL_checkstring(L, 4);
+    op.color = static_cast<uint32_t>(luaL_opt(L, CheckColor, 5, 0xFFFFFFFFll));
+    if (!Of(L).host->MeasureText(op.text, op.font)) return luaL_error(L, "obl.overlay.text: the pack has no font \"%s\"", op.font.c_str());
+    Draw(L, op);
+    return 0;
+}
+
+int ApiOverlayMeasure(lua_State* L)
+{
+    const std::string text = luaL_checkstring(L, 1), font = luaL_checkstring(L, 2);
+    const auto size = Of(L).host->MeasureText(text, font);
+    if (!size) return luaL_error(L, "obl.overlay.measure: the pack has no font \"%s\"", font.c_str());
+    lua_pushinteger(L, size->first);
+    lua_pushinteger(L, size->second);
+    return 2;
+}
+
+bool IsImageName(std::string_view name)
+{
+    return name.size() > 4 && name.ends_with(".png") && name.size() <= 128 && std::all_of(name.begin(), name.end(), [](char c) {
+        return (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-' || c == '_' || c == '.';
+    }) && name.find("..") == std::string_view::npos;
+}
+
+// obl.overlay.image(x, y, name [, w, h]): a PNG of the mod's overlay/, at its size or scaled to w x h.
+int ApiOverlayImage(lua_State* L)
+{
+    OverlayOp op;
+    op.kind = OverlayOp::Kind::Image;
+    op.x = CheckCoordinate(L, 1);
+    op.y = CheckCoordinate(L, 2);
+    const std::string name = luaL_checkstring(L, 3);
+    if (!IsImageName(name)) return luaL_argerror(L, 3, "an image is a file name in overlay/ (lowercase, ending in .png)");
+    if (!lua_isnoneornil(L, 4)) {
+        op.w = CheckCoordinate(L, 4);
+        op.h = CheckCoordinate(L, 5);
+    }
+    op.image = Of(L).directory / mod_pack::kOverlayImages / name;
+    Draw(L, op);
+    return 0;
+}
+
+// obl.overlay.view(sx, sy, sw, sh, dx, dy, dw, dh): the frame's region (sx, sy, sw, sh) scaled into (dx, dy, dw, dh), a magnifier.
+int ApiOverlayView(lua_State* L)
+{
+    OverlayOp op;
+    op.kind = OverlayOp::Kind::View;
+    op.sx = CheckCoordinate(L, 1);
+    op.sy = CheckCoordinate(L, 2);
+    op.sw = CheckCoordinate(L, 3);
+    op.sh = CheckCoordinate(L, 4);
+    op.x = CheckCoordinate(L, 5);
+    op.y = CheckCoordinate(L, 6);
+    op.w = CheckCoordinate(L, 7);
+    op.h = CheckCoordinate(L, 8);
+    Draw(L, op);
+    return 0;
+}
+
+// ---- screen and frame statistics -----------------------------------------------------------------------------------------------
+
+int ApiScreenSize(lua_State* L)
+{
+    const ScreenInfo screen = Of(L).host->Screen();
+    lua_pushinteger(L, screen.width);
+    lua_pushinteger(L, screen.height);
+    return 2;
+}
+
+int ApiScreenAspect(lua_State* L)
+{
+    const ScreenInfo screen = Of(L).host->Screen();
+    lua_pushnumber(L, screen.height > 0 ? static_cast<lua_Number>(screen.width) / screen.height : 0.0);
+    return 1;
+}
+
+void SetInteger(lua_State* L, const char* field, lua_Integer value)
+{
+    lua_pushinteger(L, value);
+    lua_setfield(L, -2, field);
+}
+
+void SetNumber(lua_State* L, const char* field, lua_Number value)
+{
+    lua_pushnumber(L, value);
+    lua_setfield(L, -2, field);
+}
+
+void SetText(lua_State* L, const char* field, const std::string& value)
+{
+    lua_pushstring(L, value.c_str());
+    lua_setfield(L, -2, field);
+}
+
+int ApiScreenSafeArea(lua_State* L)
+{
+    const ScreenInfo screen = Of(L).host->Screen();
+    lua_createtable(L, 0, 4);
+    SetInteger(L, "left", screen.safeLeft);
+    SetInteger(L, "top", screen.safeTop);
+    SetInteger(L, "right", screen.safeRight);
+    SetInteger(L, "bottom", screen.safeBottom);
+    return 1;
+}
+
+int ApiStatsFrameMs(lua_State* L)
+{
+    const std::vector<float>& times = *Of(L).frameTimes;
+    lua_pushnumber(L, times.empty() ? 0.0 : static_cast<lua_Number>(times.back()) * 1000.0);
+    return 1;
+}
+
+int ApiStatsFps(lua_State* L)
+{
+    const std::vector<float>& times = *Of(L).frameTimes;
+    const double total = std::accumulate(times.begin(), times.end(), 0.0);
+    lua_pushnumber(L, total > 0 ? static_cast<lua_Number>(times.size()) / total : 0.0);
+    return 1;
+}
+
+// ---- game state ----------------------------------------------------------------------------------------------------------------
+
+void PushObject(lua_State* L, const ObjectInfo& object)
+{
+    lua_createtable(L, 0, 6);
+    SetInteger(L, "id", object.id);
+    SetText(L, "kind", object.kind);
+    if (!object.key.empty()) SetText(L, "key", object.key);
+    SetInteger(L, "x", object.x);
+    SetInteger(L, "y", object.y);
+    SetInteger(L, "state", object.state);
+}
+
+int ApiGameState(lua_State* L)
+{
+    const GameSnapshot* game = Of(L).host->Snapshot();
+    if (!game) {
+        lua_pushnil(L);
+        return 1;
+    }
+    lua_createtable(L, 0, 8);
+    SetNumber(L, "money", game->money);
+    SetInteger(L, "day", game->day);
+    SetNumber(L, "hour", game->hour);
+    SetInteger(L, "speed", game->speedLevel);
+    lua_pushboolean(L, game->paused);
+    lua_setfield(L, -2, "paused");
+    SetText(L, "weather", game->weather);
+    SetInteger(L, "guests", game->guests);
+    SetNumber(L, "mood", game->mood);
+    return 1;
+}
+
+int ApiGameBuildings(lua_State* L)
+{
+    const GameSnapshot* game = Of(L).host->Snapshot();
+    if (!game) {
+        lua_pushnil(L);
+        return 1;
+    }
+    lua_createtable(L, static_cast<int>(game->buildings.size()), 0);
+    for (size_t i = 0; i < game->buildings.size(); ++i) {
+        PushObject(L, game->buildings[i]);
+        lua_rawseti(L, -2, static_cast<lua_Integer>(i + 1));
+    }
+    return 1;
+}
+
+int PushOptionalObject(lua_State* L, const std::optional<ObjectInfo> GameSnapshot::* field)
+{
+    const GameSnapshot* game = Of(L).host->Snapshot();
+    if (!game || !(game->*field)) {
+        lua_pushnil(L);
+        return 1;
+    }
+    PushObject(L, *(game->*field));
+    return 1;
+}
+
+int ApiGameSelected(lua_State* L)
+{
+    return PushOptionalObject(L, &GameSnapshot::selected);
+}
+
+int ApiGameHovered(lua_State* L)
+{
+    return PushOptionalObject(L, &GameSnapshot::hovered);
+}
+
 void SetFunctions(lua_State* L, std::initializer_list<std::pair<const char*, lua_CFunction>> functions)
 {
     for (const auto& [name, function] : functions) {
@@ -296,21 +773,41 @@ void SetFunctions(lua_State* L, std::initializer_list<std::pair<const char*, lua
 }
 
 // The `obl` table: the whole script API. RegisteredApi walks it, and the reference page lists the same names.
+void SetTable(lua_State* L, const char* name, std::initializer_list<std::pair<const char*, lua_CFunction>> functions)
+{
+    lua_newtable(L);
+    SetFunctions(L, functions);
+    lua_setfield(L, -2, name);
+}
+
 void RegisterApi(lua_State* L)
 {
     lua_newtable(L);
     lua_pushinteger(L, mod_pack::kPresentationApi);
     lua_setfield(L, -2, "api");
     SetFunctions(L, {{"log", ApiLog}, {"command", ApiCommand}});
-    lua_newtable(L);
-    SetFunctions(L, {{"in_world", ApiInWorld}});
-    lua_setfield(L, -2, "game");
-    lua_newtable(L);
-    SetFunctions(L, {{"get", ApiStoreGet}, {"set", ApiStoreSet}});
-    lua_setfield(L, -2, "store");
-    lua_newtable(L);
-    SetFunctions(L, {{"get", ApiSettingsGet}});
-    lua_setfield(L, -2, "settings");
+    SetTable(L, "game",
+            {{"in_world", ApiInWorld}, {"state", ApiGameState}, {"buildings", ApiGameBuildings}, {"selected", ApiGameSelected},
+                    {"hovered", ApiGameHovered}});
+    SetTable(L, "store", {{"get", ApiStoreGet}, {"set", ApiStoreSet}});
+    SetTable(L, "settings", {{"get", ApiSettingsGet}});
+    // Input, camera, GUI, overlay and information (docs/modding/reference/scripting.md).
+    lua_pushstring(L, kPlatform);
+    lua_setfield(L, -2, "platform");
+    SetTable(L, "input",
+            {{"click", ApiInputClick}, {"press", ApiInputPress}, {"release", ApiInputRelease}, {"move", ApiInputMove},
+                    {"last_pointer", ApiInputLastPointer}});
+    SetTable(L, "camera",
+            {{"position", ApiCameraPosition}, {"set_position", ApiCameraSetPosition}, {"pan", ApiCameraPan}, {"zoom", ApiCameraZoom},
+                    {"set_zoom", ApiCameraSetZoom}});
+    SetTable(L, "gui",
+            {{"show", ApiGuiShow}, {"hide", ApiGuiHide}, {"move", ApiGuiMove}, {"open", ApiGuiOpen}, {"close", ApiGuiClose},
+                    {"move_dialog", ApiGuiMoveDialog}, {"select", ApiGuiSelect}, {"place", ApiGuiPlace}, {"cancel", ApiGuiCancel}});
+    SetTable(L, "overlay",
+            {{"rect", ApiOverlayRect}, {"frame", ApiOverlayFrame}, {"text", ApiOverlayText}, {"measure", ApiOverlayMeasure},
+                    {"image", ApiOverlayImage}, {"view", ApiOverlayView}});
+    SetTable(L, "screen", {{"size", ApiScreenSize}, {"aspect", ApiScreenAspect}, {"safe_area", ApiScreenSafeArea}});
+    SetTable(L, "stats", {{"frame_ms", ApiStatsFrameMs}, {"fps", ApiStatsFps}});
     lua_setglobal(L, "obl");
 }
 
@@ -370,12 +867,31 @@ struct DispatchRequest {
     float dt = 0;
     const InputEvent* event = nullptr;
     const char* setting = nullptr; // on_setting: the id of the changed setting
+    const std::string* consumedBy = nullptr; // on_input_observe: the mod that consumed the event, empty when none did
+    const std::string* action = nullptr; // on_action
 };
 
-void SetString(lua_State* L, const char* field, const std::string& value)
+void PushEvent(lua_State* L, const DispatchRequest& request)
 {
-    lua_pushstring(L, value.c_str());
-    lua_setfield(L, -2, field);
+    const InputEvent& e = *request.event;
+    lua_createtable(L, 0, 8);
+    SetText(L, "kind", e.kind);
+    SetText(L, "phase", e.phase);
+    if (!e.key.empty()) SetText(L, "key", e.key);
+    if (!e.button.empty()) SetText(L, "button", e.button);
+    if (e.kind != "key") {
+        SetInteger(L, "x", e.x);
+        SetInteger(L, "y", e.y);
+    }
+    if (e.kind == "touch") SetInteger(L, "finger", e.finger);
+    if (e.kind == "wheel") SetNumber(L, "delta", e.delta);
+    if (request.consumedBy) {
+        if (!request.consumedBy->empty()) SetText(L, "consumed_by", *request.consumedBy);
+        lua_pushcfunction(L, ObservedConsume);
+    } else {
+        lua_pushcfunction(L, EventConsume);
+    }
+    lua_setfield(L, -2, "consume");
 }
 
 // Calls the global `function` when the script defines one. Raw access, so a metatable on _G cannot run code outside the call.
@@ -394,18 +910,10 @@ int Dispatch(lua_State* L)
         PushSetting(L, *FindField(mod, request.setting), mod.settings.at(request.setting));
         args = 2;
     } else if (request.event) {
-        const InputEvent& e = *request.event;
-        lua_newtable(L);
-        SetString(L, "kind", e.kind);
-        SetString(L, "phase", e.phase);
-        if (!e.key.empty()) SetString(L, "key", e.key);
-        if (!e.button.empty()) SetString(L, "button", e.button);
-        if (e.kind == "mouse") {
-            lua_pushinteger(L, e.x);
-            lua_setfield(L, -2, "x");
-            lua_pushinteger(L, e.y);
-            lua_setfield(L, -2, "y");
-        }
+        PushEvent(L, request);
+        args = 1;
+    } else if (request.action) {
+        lua_pushstring(L, request.action->c_str());
         args = 1;
     } else if (std::string_view(request.function) == "on_frame") {
         lua_pushnumber(L, request.dt);
@@ -564,6 +1072,8 @@ void ScriptRuntime::Start(std::span<const ScriptMod> mods)
         mod->storeFile = source.storeFile;
         mod->fields = source.settings;
         ReadSettings(*mod);
+        mod->takesOver = source.takesOver;
+        mod->frameTimes = &m_frameTimes;
         LoadStore(*mod);
         Mod& m = *m_mods.emplace_back(std::move(mod));
         m.L = NewState(m);
@@ -608,16 +1118,60 @@ template<class Request> void ScriptRuntime::CallAll(bool reverse, const Request&
 
 void ScriptRuntime::Frame(float dt)
 {
+    m_frameTimes.push_back(dt);
+    if (m_frameTimes.size() > kFpsFrames) m_frameTimes.erase(m_frameTimes.begin());
+    for (auto& mod : m_mods) mod->overlayOps = 0;
     DispatchRequest request{"on_frame"};
     request.dt = dt;
     CallAll(false, request);
 }
 
-void ScriptRuntime::Input(const InputEvent& event)
+std::string ScriptRuntime::Input(const InputEvent& event)
 {
+    // The owner of the event's area gets every event of it, before the cooperative order.
+    const std::string_view area = event.kind == "touch"        ? "input.touch"
+            : event.kind == "mouse" || event.kind == "pointer" ? "input.mouse_drag"
+                                                               : "";
+    const std::string owner = area.empty() ? std::string() : AreaOwner(area);
+    std::vector<Mod*> order;
+    for (auto it = m_mods.rbegin(); it != m_mods.rend(); ++it)
+        if ((*it)->id == owner)
+            order.insert(order.begin(), it->get());
+        else
+            order.push_back(it->get());
+    std::string consumedBy;
     DispatchRequest request{"on_input"};
     request.event = &event;
-    CallAll(true, request);
+    for (Mod* mod : order) {
+        if (!mod->running) continue;
+        mod->consumed = false;
+        std::string error;
+        if (!Protected(*mod, Dispatch, &request, error)) {
+            SwitchOff(*mod, error);
+            continue;
+        }
+        if (mod->consumed) {
+            consumedBy = mod->id;
+            break;
+        }
+    }
+    DispatchRequest observe{"on_input_observe"};
+    observe.event = &event;
+    observe.consumedBy = &consumedBy;
+    CallAll(true, observe);
+    return consumedBy;
+}
+
+void ScriptRuntime::Action(std::string_view modId, std::string_view event)
+{
+    const std::string text(event);
+    DispatchRequest request{"on_action"};
+    request.action = &text;
+    for (auto& mod : m_mods) {
+        if (!mod->running || mod->id != modId) continue;
+        std::string error;
+        if (!Protected(*mod, Dispatch, &request, error)) SwitchOff(*mod, error);
+    }
 }
 
 void ScriptRuntime::SettingsChanged()
@@ -652,6 +1206,15 @@ std::vector<std::string> ScriptRuntime::RunningMods() const
     return ids;
 }
 
+std::string ScriptRuntime::AreaOwner(std::string_view area) const
+{
+    for (auto it = m_mods.rbegin(); it != m_mods.rend(); ++it) {
+        const Mod& mod = **it;
+        if (mod.running && std::find(mod.takesOver.begin(), mod.takesOver.end(), area) != mod.takesOver.end()) return mod.id;
+    }
+    return {};
+}
+
 std::span<const std::string_view> ScriptCommands()
 {
     return kCommands;
@@ -660,8 +1223,10 @@ std::span<const std::string_view> ScriptCommands()
 std::vector<std::string> RegisteredApi()
 {
     ScriptLimits limits;
+    std::vector<float> frameTimes;
     Mod mod;
     mod.limits = &limits;
+    mod.frameTimes = &frameTimes;
     mod.id = "api";
     std::vector<std::string> names;
     if (lua_State* L = NewState(mod)) {

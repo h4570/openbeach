@@ -26,4 +26,8 @@ void IntroMovieFinish();
 // output, because Web Audio repeats the last buffer the blocked main thread fed it; native hosts only count the calls.
 void SuspendAudioOutput();
 void ResumeAudioOutput();
+// The game window's client size and the covered edges of its safe area (a notch, rounded corners) in client pixels
+// (sdl_present.h); the mods' obl.screen.safe_area reads them.
+void GameWindowClientSize(void* window, int& width, int& height);
+void GameWindowSafeArea(void* window, int& left, int& top, int& right, int& bottom);
 } // namespace obl::platform

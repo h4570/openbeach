@@ -1,0 +1,18 @@
+# A presentation mod moves the camera (docs/modding/reference/scripting.md): the test mod tests/mods/l0_camera places it, pans it
+# and zooms out at fixed gameplay frames.
+# @env OBL_PACK=l0
+# @env OBL_MODS=l0_camera
+# @gameini Video.NudgeScroll=0
+# @timeout 120
+# @expect-log presentation scripts: mod "l0_camera" takes over "camera.edge_scroll"
+# @expect-log mod l0_camera: placed: camera 300 200 zoom 1
+# @expect-log mod l0_camera: panned: camera 340 180 zoom 1
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario 1
+await gameplay
+await camera-x == 340 1000
+expect camera-y 180
+await zoom-level == 2 1000
+step 10
+quit

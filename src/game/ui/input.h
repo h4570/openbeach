@@ -59,6 +59,10 @@ void SetSyntheticClientCursor(int x, int y);
 // Restores the selected real position source after a synthetic cursor fixture.
 void ClearSyntheticCursor();
 
+// A finger event at (x, y) in game coordinates (test automation): `phase` 0 down, 1 move, 2 up, 3 cancel (mods::TouchPhase). It
+// takes the path of the browser's and Android's fingers, the mods' scripts and then the touch gestures, on every host.
+void InjectFinger(int64_t finger, int phase, int x, int y);
+
 // Whether [Display] ConfineMouse holds the pointer now, leaving out the hidden run (which never takes the mouse).
 bool MouseConfineWanted();
 
