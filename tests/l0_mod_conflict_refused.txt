@@ -1,0 +1,8 @@
+# Two world mods that define the same object-script state (l0_busker and l0_crlf both add STATE_BUSKER_PERFORM) are refused
+# before the game starts, and the message names both mods (docs/modding/testing.md#conflict-set).
+# @env OBL_PACK=l0
+# @env OBL_MODS=l0_busker,l0_crlf
+# @timeout 60
+# @expect-exit 4
+# @expect-log FatalError: object script vocabulary: mod "l0_(busker|crlf)" .*STATE_BUSKER_PERFORM.* collides with mod "l0_(busker|crlf)"
+quit
