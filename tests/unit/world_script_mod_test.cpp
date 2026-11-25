@@ -187,7 +187,7 @@ OBL_TEST_CASE("world_script_mod.on_event_blocks_are_lists_of_their_state")
     OBL_CHECK_EQ(WorldEvents().size(), kWorldEventCount);
 }
 
-OBL_TEST_CASE("world_script_mod.the_reference_page_lists_the_events_and_refused_calls")
+OBL_TEST_CASE("world_script_mod.the_reference_page_lists_the_engine_vocabulary")
 {
     const std::string page = ReadText(std::filesystem::path(OBL_REPO_DIR) / "docs/modding/reference/world-scripts.md");
     OBL_REQUIRE(!page.empty());
@@ -197,4 +197,12 @@ OBL_TEST_CASE("world_script_mod.the_reference_page_lists_the_events_and_refused_
         OBL_CHECK(page.find(std::string("`ShowMenu ") + menu + "`") != std::string::npos);
     }
     OBL_CHECK(page.find("`Function UnlockNextScenario;`") != std::string::npos);
+    for (const NamedId& function : EngineFunctions()) {
+        const std::string token = IsRefusedModFunction(function.id) ? "Function " + function.name + ";" : function.name;
+        OBL_CHECK(page.find("`" + token + "`") != std::string::npos);
+    }
+    const size_t start = page.find("### Built-in condition values");
+    OBL_REQUIRE(start != std::string::npos);
+    const auto values = page.substr(start, page.find("\n## ", start) - start);
+    for (const NamedId& value : EngineValues()) OBL_CHECK(values.find("`" + value.name + "`") != std::string::npos);
 }

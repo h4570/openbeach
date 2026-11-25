@@ -26,6 +26,7 @@ std::vector<ui::GuiCreditEntry> g_credits;
 std::vector<obl::gui_content::Credit> g_creditRows;
 std::string g_error = "not loaded";
 bool g_loaded = false;
+Text16 g_gameDirectory;
 
 // Headless runs never reach the GUI, so they start without the files; a windowed game stops with the reason.
 void Require()
@@ -39,6 +40,7 @@ void Require()
 bool Load(const Text16& gameDirectory)
 {
     if (g_loaded) return true;
+    g_gameDirectory = gameDirectory;
     if (!obl::gui_content::LoadPack(obl::WidePath(gameDirectory) / obl::pack_path::Selected(), g_content, g_error)) {
         OBL_LOG("gui content: %s", g_error.c_str());
         return false;
@@ -60,6 +62,16 @@ bool Load(const Text16& gameDirectory)
     g_error.clear();
     OBL_LOG("gui content: %u headings, %u credit rows", static_cast<unsigned>(g_headings.size()), static_cast<unsigned>(g_credits.size()));
     return true;
+}
+
+void Reload()
+{
+    for (auto& rows : g_rows) rows.clear();
+    g_headings.clear();
+    g_credits.clear();
+    g_loaded = false;
+    Load(g_gameDirectory);
+    Require();
 }
 
 bool Loaded()

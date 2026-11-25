@@ -129,11 +129,15 @@ jobs:
         run: bash tools/ci/l0_sim_tests.sh $CCACHE_ARGS -DOBL_SIM_FAST_BUILD=ON -DOBL_LINUX_WINDOWED=ON
       - name: Mod checker on L0
         run: python3 tools/tests/check_mods_engine.py "$OBL_SIM_BUILD/bin/obl-sim"
-      - name: Official mod tests on L0
+      - name: Mod examples on L0
         run: |
+          python3 -m pip install pillow
           cmake --build "$OBL_SIM_BUILD" --target OpenBeach obl_catalog_sign
-          cp -R data/mods build/l0-run/mods
-          python3 tools/obl_sim_tests.py --windowed --no-build --game-dir build/l0-run --filter 'l0_official_*'
+          mkdir -p build/l0-run/mods
+          cp -R data/mods/* tests/mods/l0_* docs/modding/examples/mod_template build/l0-run/mods/
+          python3 tools/obl_sim_tests.py --windowed --no-build --jobs 1 --game-dir build/l0-run --filter \
+            'l0_official_*' l0_mod_template_dev l0_mod_building l0_mod_object_script l0_mod_world_script \
+            l0_mod_gui_patch l0_mod_settings l0_mod_actions l0_mod_install l0_mod_catalog
       - name: Official mod catalog
         id: official_catalog
         env:

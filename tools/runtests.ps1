@@ -153,7 +153,7 @@ if ($gameTests.Count -gt 0) {
     Copy-Item -LiteralPath $l0Source -Destination $l0Installed -Recurse -Force
     # Stage official and test mods for scripts that opt in with `# @env OBL_MODS=<id>`.
     $modsInstalled = Join-Path $repo 'run\mods'
-    foreach ($source in @('data\mods', 'tests\mods')) {
+    foreach ($source in @('data\mods', 'tests\mods', 'docs\modding\examples')) {
         $modsSource = Join-Path $repo $source
         if (-not (Test-Path -LiteralPath $modsSource -PathType Container)) { continue }
         New-Item -ItemType Directory -Path $modsInstalled -Force | Out-Null

@@ -10,9 +10,10 @@
 namespace obl::gui::gui_layouts {
 
 bool Load(const Text16& gameDirectory);
+void Reload();
 
 // The file of a layout key (game_states.h kMainMenuLayout, ...) for a language number. nullptr for a null key (a state without a
-// converted layout). The name stays valid until the game ends.
+// converted layout). Copy the name if it must outlive a developer-mode reload.
 const char* FileFor(const char* layout, int language);
 
 std::string ReadScript(const char* file);

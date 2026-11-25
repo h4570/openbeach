@@ -31,6 +31,22 @@ The game stops at start-up and names the mod and the reason when a listed mod:
 To get the game running again, remove that mod's id from `Active` (or fix the order or the missing mod it names), then start
 the game again.
 
+On desktop, edit the `openbeach.ini` in the [game directory](installing.md). In a Chromium browser, you can edit the site's
+OPFS file from the developer console while the game is closed. This clears the active list and preserves the other settings:
+
+```js
+const root = await navigator.storage.getDirectory();
+const file = await root.getFileHandle("openbeach.ini");
+const ini = await (await file.getFile()).text();
+const writer = await file.createWritable();
+await writer.write(ini.replace(/^(\[Mods\][^\S\r\n]*\r?\n)((?:[^\[\r\n][^\r\n]*\r?\n|\r?\n)*?)Active[^\S\r\n]*=[^\r\n]*/mi, "$1$2Active="));
+await writer.close();
+```
+
+On Android, edit the same file if your device gives you access to the game directory. For an install in private app storage,
+Android's **Clear storage** resets the active list along with installed mods, imported packs, settings and local saves. Use
+that reset only if you can restore the data you need.
+
 ## A mod whose script fails
 A mod that changes only how the game looks or reacts (a presentation mod, with scripts) does not stop the game when its script
 fails: the game switches that mod off for the rest of the run, writes the mod, the file and the line into `openbeach.log`, and

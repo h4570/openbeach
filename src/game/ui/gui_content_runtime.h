@@ -25,6 +25,7 @@ struct ListRow {
 enum class List { Guest, Building, Cell, Staff, Hire, Event };
 
 bool Load(const Text16& gameDirectory);
+void Reload();
 bool Loaded();
 const std::string& LoadError();
 

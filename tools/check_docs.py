@@ -28,6 +28,12 @@ MAX_BYTES = 20 * 1024
 # Append-only logs written by tools; Grep them, never read them whole.
 SIZE_EXEMPT = {"plan/done.md"}
 LINK_RE = re.compile(r"\]\(\s*<?([^)\s>#]+)")
+SCHEMA_LINK_RE = re.compile(r"^\.\./\.\./\.\./data/schemas/([^/]+\.schema\.json)$")
+
+
+def missing_schema_links(reference: str, schemas: set[str]) -> set[str]:
+    linked = {match[1] for target in LINK_RE.findall(reference) if (match := SCHEMA_LINK_RE.fullmatch(target))}
+    return schemas - linked
 
 
 def local_links(index: Path) -> set[str]:
@@ -76,6 +82,12 @@ def check(docs: Path) -> tuple[list[str], list[str]]:
         lines = data.count(b"\n")
         if lines > MAX_LINES or len(data) > MAX_BYTES:
             warnings.append(f"docs/{rel}: {lines} lines, {len(data)} bytes (limit {MAX_LINES} lines / {MAX_BYTES} bytes); split it")
+    schemas = {schema.name for schema in (docs.parent / "data/schemas").glob("*.schema.json")}
+    if schemas:
+        reference = docs / "modding/reference/formats.md"
+        links = reference.read_text(encoding="utf-8") if reference.exists() else ""
+        for name in sorted(missing_schema_links(links, schemas)):
+            errors.append(f"docs/modding/reference/formats.md: missing schema link for {name}")
     return errors, warnings
 
 

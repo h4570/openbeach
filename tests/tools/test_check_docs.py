@@ -64,6 +64,11 @@ def main() -> int:
                                               "plan/done.md": "line\n" * 1000}))
     expect("plan/done.md is exempt from the size limit", errors == [] and warnings == [], (errors, warnings))
 
+    schema_links = "[map](../../../data/schemas/map.schema.json)"
+    expect("an undocumented schema is reported",
+           check_docs.missing_schema_links(schema_links, {"map.schema.json", "new.schema.json"}) == {"new.schema.json"},
+           schema_links)
+
     print(f"{'PASS' if failures == 0 else 'FAIL'} ({failures} failures)")
     return 1 if failures else 0
 

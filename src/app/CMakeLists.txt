@@ -3,6 +3,8 @@ add_library(openbeach OBJECT
     ../game/game/game.cpp
     ../game/game/game_parameters.cpp
     ../game/game/game_api.h
+    ../game/mods/dev_mode.cpp
+    ../game/mods/dev_mode.h
     ../platform/host_text.cpp
     ../game/game/host_text.h
     ../game/ui/scripted_sound_runtime.cpp

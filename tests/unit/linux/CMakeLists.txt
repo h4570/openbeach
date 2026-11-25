@@ -74,6 +74,7 @@ list(REMOVE_ITEM COMMON_SOURCES
     ${REPO}/src/game/game/game.cpp
     # The game side of the presentation scripts submits into the game loop, reads the world and draws into the renderer, which
     # the units do not link.
+    ${REPO}/src/game/mods/dev_mode.cpp
     ${REPO}/src/game/mods/game_snapshot.cpp
     ${REPO}/src/game/mods/overlay_draw.cpp
     ${REPO}/src/game/mods/presentation_scripts.cpp

@@ -614,10 +614,12 @@ int ApiOverlayImage(lua_State* L)
         op.h = CheckCoordinate(L, 5);
     }
     const auto shipped = Of(L).directory / mod_pack::kOverlayImages / name;
+    const auto& store = Of(L).storeFile;
+    const auto gameDirectory = (store.empty() ? Of(L).directory : store).parent_path().parent_path();
     std::error_code ec;
     if (std::filesystem::is_regular_file(shipped, ec)) {
         op.image = shipped;
-    } else if (const auto cache = pack_path::ModCacheDirectory(Of(L).directory.parent_path().parent_path(), Of(L).id)) {
+    } else if (const auto cache = pack_path::ModCacheDirectory(gameDirectory, Of(L).id)) {
         const auto cached = *cache / mod_pack::kOverlayImages / name;
         op.image = std::filesystem::is_regular_file(cached, ec) ? cached : shipped;
     } else {

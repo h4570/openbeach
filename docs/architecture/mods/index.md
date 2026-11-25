@@ -175,6 +175,14 @@ keep a changed value in memory and leave the player's file alone. The guard of t
   `mods::ConfigureKeyBindings`, `game_api::ReloadFrontEnd`); world mod changes wait for the next start and the footer says so.
   Settings step through `settings_schema::Field` and call `mods::SetModSetting`.
 
+## Developer mode
+
+`[Mods] Dev=1` runs in the interactive host. `mods/dev_mode.cpp` uses private copies under `mods/` as active resolver
+layers, so edits to the source files cannot leak into an open world or change its recorded mod hash. At a frame boundary,
+changed presentation copies go through normal activation and text and GUI readers. The host restarts the Lua runtime and
+rebuilds the affected UI. It stages world changes before entering a fresh world and refreshes its script vocabularies.
+Failed activation keeps the previous copies. Shared resources built for the whole session still require a restart.
+
 ## Line ends
 `script_pack::ReadScript` takes a header line ending in LF or CRLF for pack and mod scripts alike and returns the body unchanged
 (the script parsers already skip a trailing CR). `pack_path::ModContentHash` hashes `.json`, `.lua`, `.wsc`, `.obs`, `.md` and

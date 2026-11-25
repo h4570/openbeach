@@ -50,6 +50,12 @@ bool Load(const Text16& gameDirectory)
     return true;
 }
 
+void Reload()
+{
+    if (!obl::gui_layouts::LoadLayouts(g_pack, g_layouts, g_error)) Require(g_error);
+    g_fileLayout.clear();
+}
+
 const char* FileFor(const char* layout, int language)
 {
     if (!layout) return nullptr;
