@@ -1,0 +1,9 @@
+# Plays back l0_mods_combined.replay with the combined mod set: the world hashes of the whole set reach every checkpoint, the
+# same on Windows, Linux and WebAssembly (tools/determinism_check.ps1). The replay names only the world mods of the set: the
+# presentation mods draw and read but never feed the world, so they are not part of its mod list.
+# @env OBL_PACK=l0
+# @env OBL_MODS=l0_patch,l0_catalog,l0_ice_stand,l0_busker,l0_world_script,l0_world_events,l0_overlay,l0_settings,l0_actions,l0_state,l0_gui_patch
+# @timeout 240
+replay replays/l0_mods_combined.replay
+expect-last mismatches 0
+quit

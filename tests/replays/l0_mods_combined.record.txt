@@ -1,0 +1,15 @@
+# Records l0_mods_combined.replay: scenario 1 with the combined mod set of l0_mods_combined.txt across the first midnight, so
+# both world scripts' daily work is in the checkpoints. Re-record with tools/replay.ps1 -Record when the set changes.
+# @env OBL_PACK=l0
+# @env OBL_MODS=l0_patch,l0_catalog,l0_ice_stand,l0_busker,l0_world_script,l0_world_events,l0_overlay,l0_settings,l0_actions,l0_state,l0_gui_patch
+# @timeout 300
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario 1
+record replays/l0_mods_combined.replay every 250
+await gameplay
+command set-game-speed level=2
+step 2600
+expect day 1
+record end
+quit

@@ -1,0 +1,24 @@
+# The whole mod feature at once (docs/modding/testing.md#combined-set): world mods (text patch, shorter day, building, guest with its
+# script, world scripts, catalog patch) and presentation mods (overlay, settings, actions, state, GUI patch)
+# active together. None of them names the same thing, so every one loads and a day plays; the replay of the set
+# (replay_l0_mods_combined) holds the determinism check.
+# @env OBL_PACK=l0
+# @env OBL_MODS=l0_patch,l0_catalog,l0_ice_stand,l0_busker,l0_world_script,l0_world_events,l0_overlay,l0_settings,l0_actions,l0_state,l0_gui_patch
+# @timeout 240
+# @gameini Language.Language=5
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario 1
+await gameplay
+expect-text L0_PLAY_BUILDLIST Build (patched)
+world-script-change STATE_WORLD_AFTERGAME
+command set-game-speed level=2
+step 1
+set-hour 23.5
+step 200
+expect day 1
+mod-world-script-report l0_world_script/daily_bonus.wsc
+expect-last var0 1
+mod-world-script-report l0_world_events/events.wsc
+expect-last var0 1
+quit

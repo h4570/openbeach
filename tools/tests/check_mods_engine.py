@@ -113,6 +113,30 @@ class ModChecker(unittest.TestCase):
         self.assertEqual(code, 0, output)
         self.assertIn('"l0_takeover_b" wins', output)
 
+    def test_conflict_winner_follows_load_order(self):
+        a, b = [self.install(FIXTURES / name) for name in ("l0_takeover_a", "l0_takeover_b")]
+        for order, winner in (([a, b], b), ([b, a], a)):
+            with self.subTest(order=order):
+                code, output = self.run_checker(order)
+                self.assertEqual(code, 0, output)
+                self.assertIn(f'"{winner}" wins', output)
+
+    def test_same_state_name_is_refused_naming_both_mods(self):
+        mods = [self.install(FIXTURES / name) for name in ("l0_busker", "l0_crlf")]
+        code, output = self.run_checker(mods)
+        self.assertNotEqual(code, 0, output)
+        self.assertIn("STATE_BUSKER_PERFORM", output)
+        self.assertIn("l0_busker", output)
+        self.assertIn("l0_crlf", output)
+
+    def test_combined_set_loads_together(self):
+        text = (ROOT / "tests/l0_mods_combined.txt").read_text(encoding="utf-8")
+        active = next(line for line in text.splitlines() if line.startswith("# @env OBL_MODS=")).split("=", 1)[1].split(",")
+        for name in active:
+            self.install(FIXTURES / name)
+        code, output = self.run_checker(active)
+        self.assertEqual(code, 0, output)
+
     def test_no_active_mods(self):
         code, output = self.run_checker()
         self.assertEqual(code, 0, output)

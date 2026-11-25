@@ -51,6 +51,9 @@ l0_mod_recipe.txt @hidden @l0
 l0_mod_script_state.txt @l0
 l0_mods_mixed.txt @l0
 l0_mods_world_scripts.txt @l0
+l0_mods_combined.txt @l0
+replay_l0_mods_combined.txt @l0
+l0_mod_conflict_refused.txt @l0
 l0_mod_settings.txt @l0
 l0_mod_actions.txt @l0
 l0_mod_action_takeover.txt @l0
