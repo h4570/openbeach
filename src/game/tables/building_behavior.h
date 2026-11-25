@@ -8,6 +8,8 @@
 // Names are written as JSON and listed in data/schemas/building.schema.json (a unit test keeps them equal).
 
 #include <array>
+#include <cstdint>
+#include <string>
 #include <string_view>
 
 namespace obl {
@@ -102,6 +104,98 @@ inline bool BuildingBehaviorFromName(std::string_view name, BuildingBehavior& ou
         }
     }
     return false;
+}
+
+// Guest lodging role of a building: hotels are filled first, then accommodation blocks.
+enum class AccommodationKind : uint8_t {
+    None,
+    Hotel,
+    Block,
+};
+
+inline const char* AccommodationKindName(AccommodationKind kind)
+{
+    switch (kind) {
+    case AccommodationKind::Hotel: return "hotel";
+    case AccommodationKind::Block: return "block";
+    default: return "none";
+    }
+}
+
+inline bool AccommodationKindFromName(std::string_view name, AccommodationKind& out)
+{
+    if (name == "none") {
+        out = AccommodationKind::None;
+        return true;
+    }
+    if (name == "hotel") {
+        out = AccommodationKind::Hotel;
+        return true;
+    }
+    if (name == "block") {
+        out = AccommodationKind::Block;
+        return true;
+    }
+    return false;
+}
+
+// Combinable building traits (docs/modding/reference/buildings.md). `behavior` populates the defaults via
+// DefaultBuildingTraits; explicit trait fields in catalog/buildings/<key>.json override individual entries.
+struct BuildingTraits {
+    bool powerExempt = false; // spared from power-shortage shedding (world_power.h)
+    bool boardsGuests = false; // queues guests in place on MT_WAIT_FOR_BOAT and boards them on MT_GUEST_SERVED; arrival stop
+    bool contaminationSafe = false; // food/drink served here is not spoiled by water contamination
+    bool countsAsBar = false; // counted as a bar by world scripts
+    bool ownsSwimmingArea = false; // claims a beach/sea swimming area on completion and handles beach-open commands
+    bool toilet = false; // cleaning job, flies/smoke when dirty, cleaner targeting and feedback
+    bool waterCleaner = false; // reduces water contamination illness while open
+    bool powerGenerator = false; // listed in the power generators UI table
+    bool instantBuild = false; // built without builders
+    bool patrolExempt = false; // excluded from rep and security guard patrols
+    int initialRentalStock = 0; // starting stock of snorkels, lilos and surfboards (equipment_hire = 20)
+    AccommodationKind accommodation = AccommodationKind::None; // guest lodging tier and accommodation income
+    std::string idleSound; // looping sound played while open (and with a free vehicle when the building has vehicles)
+    std::string objectScript; // optional scripts/object/<stem>.obs run while the building stands
+};
+
+inline BuildingTraits DefaultBuildingTraits(BuildingBehavior behavior)
+{
+    BuildingTraits t;
+    switch (behavior) {
+    case BuildingBehavior::Hotel:
+        t.powerExempt = true;
+        t.accommodation = AccommodationKind::Hotel;
+        break;
+    case BuildingBehavior::AccomBlock:
+        t.powerExempt = true;
+        t.accommodation = AccommodationKind::Block;
+        break;
+    case BuildingBehavior::LifeguardPost: t.ownsSwimmingArea = true; break;
+    case BuildingBehavior::MechanicHome:
+    case BuildingBehavior::BuilderHome: t.powerExempt = true; break;
+    case BuildingBehavior::ShipStop:
+    case BuildingBehavior::BusStop: t.boardsGuests = true; break;
+    case BuildingBehavior::ComplaintsHut:
+        t.powerExempt = true;
+        t.boardsGuests = true;
+        break;
+    case BuildingBehavior::IceStall:
+    case BuildingBehavior::FastFood: t.contaminationSafe = true; break;
+    case BuildingBehavior::WaterCleaner: t.waterCleaner = true; break;
+    case BuildingBehavior::Toilet: t.toilet = true; break;
+    case BuildingBehavior::JetskiHire:
+    case BuildingBehavior::SpeedboatHire: t.idleSound = "newjetskiidle"; break;
+    case BuildingBehavior::EquipmentHire: t.initialRentalStock = 20; break;
+    case BuildingBehavior::Bar:
+    case BuildingBehavior::CocktailBar: t.countsAsBar = true; break;
+    case BuildingBehavior::PowerGenerator: t.powerGenerator = true; break;
+    case BuildingBehavior::Jetty:
+        t.instantBuild = true;
+        t.patrolExempt = true;
+        break;
+    default: break;
+    }
+    return t;
 }
 
 } // namespace obl

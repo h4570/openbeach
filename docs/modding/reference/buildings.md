@@ -13,7 +13,21 @@ Validated against `data/schemas/building.schema.json`. Required fields are marke
 | `key` | key | **Required.** Unique catalog key; must match the filename `<key>.json` and the entry in `catalog/index.patch.json`. |
 | `name` | string | **Required.** Text-table key (recommended) or literal display name. |
 | `category` | `"hotel" \| "food" \| "leisure" \| "other"` | Build-panel tab (`hotel`, `food`, `leisure`); `"other"` is hidden from the build panel and excluded from unbuilt-building counts. |
-| `behavior` | enum | Engine special-case dispatch (`"none"` for an ordinary shop). See [Behaviors](#behaviors) below. |
+| `behavior` | enum | Engine special-case dispatch (`"none"` for an ordinary shop) and default bundle for the trait fields below. See [Behaviors](#behaviors) and [Traits](#traits). |
+| `power_exempt` | boolean | Spared from power-shortage shedding. |
+| `boards_guests` | boolean | Queued guests wait in place and board arriving vehicles; serves as an arrival stop when no `ship_stop`/`bus_stop` is present (and boards alongside them). |
+| `contamination_safe` | boolean | Food and drink served here are not spoiled by water contamination. |
+| `counts_as_bar` | boolean | Counted as a bar by world scripts. |
+| `owns_swimming_area` | boolean | Claims its beach/sea swimming area on completion and handles beach-open commands. |
+| `toilet` | boolean | Toilet cleaning job, flies/smoke when dirty, cleaner targeting, and cleaner feedback. |
+| `water_cleaner` | boolean | Reduces water contamination illness while open. |
+| `power_generator` | boolean | Listed in the power generators UI table. |
+| `instant_build` | boolean | Built immediately without builders. |
+| `patrol_exempt` | boolean | Excluded from rep and security guard patrols. |
+| `initial_rental_stock` | integer >= 0 | Starting stock of snorkels, lilos, and surfboards on construction. |
+| `accommodation` | `"none" \| "hotel" \| "block"` | Guest lodging tier (`"hotel"` filled first, then `"block"`) and accommodation income. |
+| `idle_sound` | string | Looping sound played while open (buildings with vehicles require a free vehicle); `""` clears a behavior's default. |
+| `object_script` | string | Optional object script stem (`scripts/object/<name>.obs`) run while the building stands; see [Object scripts](object-scripts.md). |
 | `sprite` | key | **Required.** Sprite key in `sprites/<sprite>.json` (`kind: "building"`). |
 | `icon` | integer >= 0 | Frame index in the icon sprite sheet (default `0`). |
 | `icon_sprite` | key | Own sprite (`kind: "ui"`) for the build-panel icon and `BUILD_THUMB`; when omitted, uses the pack's `UI3_bp_thumb` at frame `icon`. |
@@ -70,6 +84,48 @@ For each building, the engine looks up `BUILDING_NAME_<KEY>` for the build-panel
 | `jetty` | Built immediately without builders; excluded from rep/guard patrols. |
 | `lifeguard_post`, `mechanic_home`, `builder_home`, `cleaner_home`, `rep_office`, `security_post` | Staff home buildings and browser buttons (`builder_home` and `mechanic_home` are power-exempt; `lifeguard_post` owns a swimming area). |
 | `ship_stop`, `bus_stop`, `complaints_hut` | Arrival/boarding stops and the power-exempt complaints hut. |
+
+## Traits
+
+Instead of taking a whole `behavior` bundle, a building record may set any trait field directly. `behavior` still sets the defaults of every trait (so existing records without trait fields keep their exact behavior), and any explicit trait field overrides its default — including setting `false`, `0`, `"none"`, or `""` to turn a default off.
+
+### Defaults by `behavior`
+
+Every `behavior` not listed below leaves all traits at their zero defaults (`false`, `0`, `"none"`, `""`):
+
+| `behavior` | Default traits set |
+|---|---|
+| `hotel` | `power_exempt: true`, `accommodation: "hotel"` |
+| `accom_block` | `power_exempt: true`, `accommodation: "block"` |
+| `lifeguard_post` | `owns_swimming_area: true` |
+| `mechanic_home` | `power_exempt: true` |
+| `builder_home` | `power_exempt: true` |
+| `ship_stop`, `bus_stop` | `boards_guests: true` |
+| `complaints_hut` | `power_exempt: true`, `boards_guests: true` |
+| `ice_stall`, `fast_food` | `contamination_safe: true` |
+| `water_cleaner` | `water_cleaner: true` |
+| `toilet` | `toilet: true` |
+| `jetski_hire`, `speedboat_hire` | `idle_sound: "newjetskiidle"` |
+| `equipment_hire` | `initial_rental_stock: 20` |
+| `bar`, `cocktail_bar` | `counts_as_bar: true` |
+| `power_generator` | `power_generator: true` |
+| `jetty` | `instant_build: true`, `patrol_exempt: true` |
+
+### Checks that remain tied to `behavior`
+
+A few special cases belong to one original building's fixed geometry, UI, or schedule and remain keyed to `behavior`:
+
+- `stage`: builds the original stage's fixed event schedule (`BuildingEvents`) tied to pack event slots and performer classes. For a mod stage or active building, attach an `object_script` instead.
+- `cocktail_bar`: displays each beer's `cocktail` text key instead of its `brand` key in the bar dialog.
+- `beach_hut` and `main_pool`: place the original hardcoded loungers and pool ball offset on completion.
+- `dj_club_footprint` and `dj_club_offset`: position the nightclub DJ using the original clubs' fixed footprint or rotation offsets.
+- `mechanic_home`: spared on initial startup when a generator is broken (`currentPower < maxPower`).
+- `ship_stop`: switches the ferry panel button between the ship and coach graphics.
+- `complaints_hut`: target building for guest complaint huddles and `ComplaintsHut` script queries.
+
+### Optional building `object_script`
+
+Setting `"object_script": "<stem>"` attaches `scripts/object/<stem>.obs` ([object-scripts.md](object-scripts.md)) to the building while it stands (after construction finishes and before demolition begins). The script has its own state (starting in `STATE_NULL`, separate from the building's construction/demolition lifecycle), can use `ChangeState`, `Message`, `GameTime`, `PlaySound`, and the mod-only functions such as `ChangeGuestsHappiness` and `PayMoney`, and saves its state by name in `obl.save` only when `object_script` is set.
 
 ## Sprites and icons
 

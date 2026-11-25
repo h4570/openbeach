@@ -514,8 +514,7 @@ CommandResult Apply(const SetBuildingOpenPolicy& c)
 CommandResult Apply(const SetBeachOpenPolicy& c)
 {
     object::Base* object = ObjectById(c.object);
-    if (object && TypeOf(object) == ObjectType::Building &&
-            reinterpret_cast<Building*>(object)->m_definition->m_Behavior != BuildingBehavior::LifeguardPost)
+    if (object && TypeOf(object) == ObjectType::Building && !reinterpret_cast<Building*>(object)->m_definition->m_Traits.ownsSwimmingArea)
         return Reject("building has no beach toggle");
     return ApplyObjectControl(c, ObjectType::Building, true);
 }

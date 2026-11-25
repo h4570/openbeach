@@ -1,0 +1,22 @@
+# Records l0_mod_building_traits.replay: places the three trait buildings (pier, bar with idle sound, evening concert stage)
+# and steps into the evening concert so replay_l0_mod_building_traits verifies determinism.
+# @env OBL_PACK=l0
+# @env OBL_MODS=l0_building_traits
+# @timeout 180
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario 1
+record replays/l0_mod_building_traits.replay every 100
+await gameplay
+step 50
+place-find building TRAIT_PIER
+command place-building key=TRAIT_PIER x=$x y=$y dir=0
+step 10
+place-find building TRAIT_BAR
+command place-building key=TRAIT_BAR x=$x y=$y dir=0
+step 10
+place-find building TRAIT_STAGE
+command place-building key=TRAIT_STAGE x=$x y=$y dir=0
+step 300
+record end
+quit

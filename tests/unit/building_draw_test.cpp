@@ -557,6 +557,7 @@ OBL_TEST_CASE("building_draw.draw_loo_smoke_and_flies")
 {
     Rig rig;
     rig.def.m_Behavior = BuildingBehavior::Toilet;
+    rig.def.m_Traits = obl::DefaultBuildingTraits(rig.def.m_Behavior);
     rig.b.m_VisitsSinceCleaned = 0x14;
     Draw(rig.env, rig.b);
     OBL_CHECK(!Has(rig.Log(), "create"));
@@ -575,6 +576,7 @@ OBL_TEST_CASE("building_draw.draw_loo_smoke_and_flies")
     OBL_CHECK(Has(rig.Log(), "create test_smoke"));
     rig.env.log.clear();
     rig.def.m_Behavior = BuildingBehavior::Bar;
+    rig.def.m_Traits = obl::DefaultBuildingTraits(rig.def.m_Behavior);
     Draw(rig.env, rig.b);
     OBL_CHECK(!Has(rig.Log(), "create"));
 }

@@ -1,0 +1,72 @@
+# Building traits (l0_building_traits): tests combinable traits (instant_build, boards_guests, counts_as_bar, idle_sound,
+# power_exempt, patrol_exempt, contamination_safe) and an optional building object_script (evening concert stage that raises
+# nearby guests' happiness and earns income), plus save/load round trip and determinism.
+# @env OBL_PACK=l0
+# @env OBL_MODS=l0_building_traits
+# @timeout 180
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario 1
+await gameplay
+step 50
+expect buildings 3
+# 1. Trait pier: boards_guests + instant_build + patrol_exempt + power_exempt (enters state 0 immediately without builders).
+place-find building TRAIT_PIER
+command place-building key=TRAIT_PIER x=$x y=$y dir=0
+step 10
+object-find building TRAIT_PIER
+expect-last count 1
+log pier pier=$id
+object-report $pier
+expect-last state 0
+# 2. Trait bar: counts_as_bar + idle_sound ("surf") + contamination_safe + instant_build.
+place-find building TRAIT_BAR
+command place-building key=TRAIT_BAR x=$x y=$y dir=0
+step 10
+object-find building TRAIT_BAR
+expect-last count 1
+log bar bar=$id
+object-report $bar
+expect-last state 0
+call-report objects.building-update-hire-idle
+expect-last-range calls 1 10000
+# 3. Trait stage: instant_build + object_script ("trait_stage") giving an evening concert from 18:00.
+spawn-building trait_stage 60 60
+step 10
+object-find building TRAIT_STAGE
+expect-last count 1
+log stage stage=$id
+object-report $stage
+expect-last state 0
+# Close kiosk so guests do not buy from it during the midday check.
+object-find building KIOSK
+command set-building-open building=$id open=0
+step 5
+set-hour 12
+spawn-guests 4
+expect guests 4
+step 200
+expect income-today 0
+# Advance to evening (19:00): the stage enters STATE_STAGE_CONCERT, cheers nearby guests, and earns attraction income.
+set-hour 19
+step 400
+expect-range income-today 10 10000
+log stage-concert income=$income-today guests=$guests happy=$guests-happiness-sum
+# Save and reload mid-concert: deterministic world hash on reload and refusal without the mod.
+save-obl testlogs/l0_mod_building_traits.obl.save
+seed 1
+load-obl-save testlogs/l0_mod_building_traits.obl.save
+await world-loaded
+object-find building TRAIT_STAGE
+expect-last count 1
+step 300
+world-hash
+seed 1
+load-obl-save testlogs/l0_mod_building_traits.obl.save
+await world-loaded
+step 300
+world-hash expect-same
+claim-mods none
+expect-obl-save-refused testlogs/l0_mod_building_traits.obl.save l0_building_traits
+claim-mods l0_building_traits
+quit

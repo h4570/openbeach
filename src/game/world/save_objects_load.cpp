@@ -289,6 +289,22 @@ public:
         cursor = loaded;
     }
 
+    void BuildingScriptState(object::Building& b)
+    {
+        if (const json* v = Find("building.script_state")) {
+            if (v->is_string()) {
+                const auto number = formats::SaveStateNumber(formats::SaveStateSet::ObjectState, *v, &m_context.objectStates);
+                if (!number)
+                    Fail("building.script_state", "no state " + v->get<std::string>());
+                else
+                    b.m_scriptState = static_cast<int32_t>(*number);
+            } else {
+                b.m_scriptState = static_cast<int32_t>(Integer("building.script_state", v));
+            }
+        }
+        if (b.m_script != nullptr && (b.m_state == 0 || b.m_state == 4)) b.m_scriptEntered = 1;
+    }
+
     // The base object (entity_lifecycle.h): the head records, the position to SetPosition before the state, the draw
     // fields, the sprite (made by name when the object has none) and its records, the last two fields.
     void BaseLayer(object::Base& o)
@@ -545,6 +561,7 @@ bool ReadObjectJson(const json& in, const ReadContext& context, const ObjectLoad
         auto& building = static_cast<object::Building&>(o);
         object::VisitFields(building, reader);
         reader.Base(static_cast<object::Prop&>(building));
+        reader.BuildingScriptState(building);
         reader.Rotation(building);
         break;
     }

@@ -82,6 +82,8 @@ struct GameFeedbackEnv {
     int32_t CountByName(const char* name) { return object_manager::CountByName(GetObjectManager(), name); }
     int32_t CountBuildings(BuildingBehavior behavior)
     {
+        if (behavior == BuildingBehavior::Toilet)
+            return static_cast<int32_t>(obl::object_manager::CountBuildingsByTrait(*GetObjectManager(), &BuildingTraits::toilet));
         return static_cast<int32_t>(obl::object_manager::CountBuildingsByBehavior(*GetObjectManager(), behavior));
     }
     uint32_t CountGuests() { return static_cast<uint32_t>(object_manager::CountByClass(GetObjectManager(), kGuestClass)); }

@@ -95,7 +95,10 @@ void CompareWithEngine(const std::string& text, const WorldParams* loaded = null
         auto actual = std::make_unique<WorldParams>(*loaded);
         auto expected = std::make_unique<WorldParams>(*engine.params);
         // The engine's parser keeps no behavior; the catalog's value must be the one the key gives (building_behavior.h).
-        for (auto& b : expected->m_buildings) b.m_Behavior = obl::BehaviorFromKey(b.m_key.c_str());
+        for (auto& b : expected->m_buildings) {
+            b.m_Behavior = obl::BehaviorFromKey(b.m_key.c_str());
+            b.m_Traits = obl::DefaultBuildingTraits(b.m_Behavior);
+        }
         for (auto* params : {actual.get(), expected.get()}) {
             for (auto& b : params->m_buildings) {
                 b.m_walkPoints.clear();
@@ -900,6 +903,150 @@ OBL_TEST_CASE("convert.building_behavior_schema_matches_enum")
         OBL_CHECK_EQ(std::string(obl::BuildingBehaviorName(entry.behavior)), std::string(entry.name));
     }
     OBL_CHECK(schema["properties"]["behavior"]["enum"].get<std::vector<std::string>>() == names);
+}
+
+OBL_TEST_CASE("convert.building_traits_defaults_per_behavior")
+{
+    using obl::AccommodationKind;
+    using obl::BuildingBehavior;
+    using obl::DefaultBuildingTraits;
+
+    // Spot-check every behavior that sets non-default traits and verify none sets nothing.
+    const auto none = DefaultBuildingTraits(BuildingBehavior::None);
+    OBL_CHECK(!none.powerExempt && !none.boardsGuests && !none.contaminationSafe && !none.countsAsBar);
+    OBL_CHECK(!none.ownsSwimmingArea && !none.toilet && !none.waterCleaner && !none.powerGenerator);
+    OBL_CHECK(!none.instantBuild && !none.patrolExempt && none.initialRentalStock == 0);
+    OBL_CHECK(none.accommodation == AccommodationKind::None && none.idleSound.empty() && none.objectScript.empty());
+
+    const auto hotel = DefaultBuildingTraits(BuildingBehavior::Hotel);
+    OBL_CHECK(hotel.powerExempt && hotel.accommodation == AccommodationKind::Hotel);
+
+    const auto block = DefaultBuildingTraits(BuildingBehavior::AccomBlock);
+    OBL_CHECK(block.powerExempt && block.accommodation == AccommodationKind::Block);
+
+    OBL_CHECK(DefaultBuildingTraits(BuildingBehavior::LifeguardPost).ownsSwimmingArea);
+    OBL_CHECK(DefaultBuildingTraits(BuildingBehavior::MechanicHome).powerExempt);
+    OBL_CHECK(DefaultBuildingTraits(BuildingBehavior::BuilderHome).powerExempt);
+    OBL_CHECK(DefaultBuildingTraits(BuildingBehavior::ShipStop).boardsGuests);
+    OBL_CHECK(DefaultBuildingTraits(BuildingBehavior::BusStop).boardsGuests);
+    const auto hut = DefaultBuildingTraits(BuildingBehavior::ComplaintsHut);
+    OBL_CHECK(hut.powerExempt && hut.boardsGuests);
+    OBL_CHECK(DefaultBuildingTraits(BuildingBehavior::IceStall).contaminationSafe);
+    OBL_CHECK(DefaultBuildingTraits(BuildingBehavior::FastFood).contaminationSafe);
+    OBL_CHECK(DefaultBuildingTraits(BuildingBehavior::WaterCleaner).waterCleaner);
+    OBL_CHECK(DefaultBuildingTraits(BuildingBehavior::Toilet).toilet);
+    OBL_CHECK_EQ(DefaultBuildingTraits(BuildingBehavior::JetskiHire).idleSound, std::string("newjetskiidle"));
+    OBL_CHECK_EQ(DefaultBuildingTraits(BuildingBehavior::SpeedboatHire).idleSound, std::string("newjetskiidle"));
+    OBL_CHECK_EQ(DefaultBuildingTraits(BuildingBehavior::EquipmentHire).initialRentalStock, 20);
+    OBL_CHECK(DefaultBuildingTraits(BuildingBehavior::Bar).countsAsBar);
+    OBL_CHECK(DefaultBuildingTraits(BuildingBehavior::CocktailBar).countsAsBar);
+    OBL_CHECK(DefaultBuildingTraits(BuildingBehavior::PowerGenerator).powerGenerator);
+    const auto jetty = DefaultBuildingTraits(BuildingBehavior::Jetty);
+    OBL_CHECK(jetty.instantBuild && jetty.patrolExempt);
+}
+
+OBL_TEST_CASE("convert.building_traits_override_combine_and_refuse")
+{
+    const fs::path l0 = fs::path(OBL_REPO_DIR) / "data" / "packs" / "l0";
+    const obl::test::TempPath tmp("obl_building_traits");
+    fs::create_directories(tmp.path / "catalog");
+    fs::copy(l0 / "catalog", tmp.path / "catalog", fs::copy_options::recursive);
+
+    // Override one trait on a jetski_hire behavior (clear idle_sound) and combine novel traits on a custom building.
+    const fs::path kioskPath = tmp.path / "catalog" / "buildings" / "kiosk.json";
+    nlohmann::json baseDoc;
+    {
+        std::ifstream in(kioskPath);
+        in >> baseDoc;
+    }
+
+    auto loadWith = [&](const nlohmann::json& doc, obl::tables::WorldParams& out, std::string& error) {
+        std::ofstream outFile(kioskPath);
+        outFile << doc.dump(2);
+        outFile.close();
+        return obl::catalog::LoadPack(tmp.path, out, error);
+    };
+
+    // 1. Override one trait from behavior default (jetski_hire with idle_sound cleared and power_exempt added).
+    {
+        nlohmann::json doc = baseDoc;
+        doc["behavior"] = "jetski_hire";
+        doc["idle_sound"] = "";
+        doc["power_exempt"] = true;
+        obl::tables::WorldParams params;
+        std::string error;
+        OBL_REQUIRE(loadWith(doc, params, error));
+        const auto it =
+                std::find_if(params.m_buildings.begin(), params.m_buildings.end(), [](const auto& b) { return b.m_key == "kiosk"; });
+        OBL_REQUIRE(it != params.m_buildings.end());
+        OBL_CHECK(it->m_Behavior == obl::BuildingBehavior::JetskiHire);
+        OBL_CHECK(it->m_Traits.idleSound.empty());
+        OBL_CHECK(it->m_Traits.powerExempt);
+    }
+
+    // 2. Novel combination no original building has: bar + idle_sound + boards_guests + contamination_safe + object_script.
+    {
+        nlohmann::json doc = baseDoc;
+        doc["behavior"] = "none";
+        doc["counts_as_bar"] = true;
+        doc["idle_sound"] = "tiki_ambience";
+        doc["boards_guests"] = true;
+        doc["contamination_safe"] = true;
+        doc["initial_rental_stock"] = 7;
+        doc["accommodation"] = "block";
+        doc["object_script"] = "stage_concert";
+        obl::tables::WorldParams params;
+        std::string error;
+        OBL_REQUIRE(loadWith(doc, params, error));
+        const auto it =
+                std::find_if(params.m_buildings.begin(), params.m_buildings.end(), [](const auto& b) { return b.m_key == "kiosk"; });
+        OBL_REQUIRE(it != params.m_buildings.end());
+        OBL_CHECK(it->m_Traits.countsAsBar);
+        OBL_CHECK_EQ(it->m_Traits.idleSound, std::string("tiki_ambience"));
+        OBL_CHECK(it->m_Traits.boardsGuests);
+        OBL_CHECK(it->m_Traits.contaminationSafe);
+        OBL_CHECK_EQ(it->m_Traits.initialRentalStock, 7);
+        OBL_CHECK(it->m_Traits.accommodation == obl::AccommodationKind::Block);
+        OBL_CHECK_EQ(it->m_Traits.objectScript, std::string("stage_concert"));
+    }
+
+    // 3. Refusals: bad types, negative stock, unknown accommodation, path separators in sound or object_script.
+    auto expectRefused = [&](const nlohmann::json& doc, const char* needle) {
+        obl::tables::WorldParams params;
+        std::string error;
+        OBL_CHECK(!loadWith(doc, params, error));
+        OBL_CHECK(Contains(error, needle));
+    };
+    {
+        nlohmann::json doc = baseDoc;
+        doc["power_exempt"] = "yes";
+        expectRefused(doc, "power_exempt");
+    }
+    {
+        nlohmann::json doc = baseDoc;
+        doc["initial_rental_stock"] = -1;
+        expectRefused(doc, "initial_rental_stock");
+    }
+    {
+        nlohmann::json doc = baseDoc;
+        doc["accommodation"] = "villa";
+        expectRefused(doc, "accommodation");
+    }
+    {
+        nlohmann::json doc = baseDoc;
+        doc["idle_sound"] = "../evil";
+        expectRefused(doc, "idle_sound");
+    }
+    {
+        nlohmann::json doc = baseDoc;
+        doc["object_script"] = "sub/evil";
+        expectRefused(doc, "object_script");
+    }
+    {
+        nlohmann::json doc = baseDoc;
+        doc["object_script"] = "";
+        expectRefused(doc, "object_script");
+    }
 }
 
 OBL_TEST_CASE("data.convert_catalog_matches_engine")

@@ -237,11 +237,9 @@ ScriptValue BuildTreeExist(World& world, const int32_t* data)
 ScriptValue BarsBuilt(World& world)
 {
     int total = 0;
-    // The five bar keys (BEACHBAR, POOLBAR, BAR1, BAR2 are Bar; COCKTAIL is CocktailBar) by behavior, in list order.
-    for (BuildingBehavior behavior : {BuildingBehavior::Bar, BuildingBehavior::CocktailBar}) {
-        const auto list = obl::object_manager::FindBuildings(*game::GetObjectManager(), behavior);
-        total += CountReady(list.data(), static_cast<uint32_t>(list.size()), true);
-    }
+    // Every building with the counts_as_bar trait (the five original bars and any mod bar), in list order.
+    const auto list = obl::object_manager::FindBuildingsByTrait(*game::GetObjectManager(), &BuildingTraits::countsAsBar);
+    total += CountReady(list.data(), static_cast<uint32_t>(list.size()), true);
     world.m_barsConstructed = total;
     return {kInt, total};
 }

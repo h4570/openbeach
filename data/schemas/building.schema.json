@@ -31,6 +31,64 @@
       "description": "Building service behavior, independent of the catalog key; values are defined in src/game/tables/building_behavior.h.",
       "enum": ["none", "hotel", "accom_block", "beach_hut", "main_pool", "lifeguard_post", "mechanic_home", "builder_home", "cleaner_home", "rep_office", "security_post", "stage", "ship_stop", "bus_stop", "complaints_hut", "ice_stall", "fast_food", "water_cleaner", "toilet", "jetski_hire", "speedboat_hire", "equipment_hire", "bar", "cocktail_bar", "dj_club_footprint", "dj_club_offset", "first_aid", "power_generator", "souvenir_shop", "general_store", "jetty"]
     },
+    "power_exempt": {
+      "type": "boolean",
+      "description": "Overrides the behavior default: when true, the building is spared from power-shortage shedding."
+    },
+    "boards_guests": {
+      "type": "boolean",
+      "description": "Overrides the behavior default: when true, queued guests wait in place and board arriving vehicles, and the building can serve as an arrival stop."
+    },
+    "contamination_safe": {
+      "type": "boolean",
+      "description": "Overrides the behavior default: when true, food and drink served here are not spoiled by water contamination."
+    },
+    "counts_as_bar": {
+      "type": "boolean",
+      "description": "Overrides the behavior default: when true, world scripts count this building as a bar."
+    },
+    "owns_swimming_area": {
+      "type": "boolean",
+      "description": "Overrides the behavior default: when true, the building claims its beach/sea swimming area on completion."
+    },
+    "toilet": {
+      "type": "boolean",
+      "description": "Overrides the behavior default: when true, the building uses toilet cleaning, flies/smoke, and cleaner feedback."
+    },
+    "water_cleaner": {
+      "type": "boolean",
+      "description": "Overrides the behavior default: when true, reduces water contamination illness while open."
+    },
+    "power_generator": {
+      "type": "boolean",
+      "description": "Overrides the behavior default: when true, listed in the power generators table."
+    },
+    "instant_build": {
+      "type": "boolean",
+      "description": "Overrides the behavior default: when true, built immediately without builders."
+    },
+    "patrol_exempt": {
+      "type": "boolean",
+      "description": "Overrides the behavior default: when true, excluded from rep and security guard patrols."
+    },
+    "initial_rental_stock": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Overrides the behavior default: starting stock of snorkels, lilos, and surfboards."
+    },
+    "accommodation": {
+      "enum": ["none", "hotel", "block"],
+      "description": "Overrides the behavior default: guest lodging tier and accommodation income."
+    },
+    "idle_sound": {
+      "type": "string",
+      "description": "Overrides the behavior default: looping sound played while open (empty string clears the behavior default)."
+    },
+    "object_script": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Optional object script stem (scripts/object/<name>.obs) run while the building stands."
+    },
     "sprite": {
       "$ref": "obl.common#/$defs/key"
     },

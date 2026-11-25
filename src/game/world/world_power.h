@@ -77,7 +77,7 @@ inline bool IsShedExempt(BuildingBehavior behavior)
     }
 }
 
-// Env additionally: int Rand() (the game's rand), BuildingBehavior Behavior(i), void SwitchOffConsumer(i) (BuildingShedPower).
+// Env additionally: int Rand() (the game's rand), bool PowerExempt(i) (or BuildingBehavior Behavior(i)), void SwitchOffConsumer(i) (BuildingShedPower).
 // Draws one building: `rand() % count` unsigned, once per call, whenever the rule fires; the building loses power when it draws power,
 // is not already off, has no build or demolish job and is not exempt. Returns the index shed or -1.
 // With no buildings a division by zero (#DE) after `rand()` would fault; here nothing happens (and nothing is drawn).
@@ -85,9 +85,13 @@ template<class Env> int SwitchOffConsumers(const Sums& sums, uint32_t count, Env
 {
     if (count == 0 || !ShouldShed(sums)) return -1;
     const uint32_t index = static_cast<uint32_t>(env.Rand()) % count;
-    if (env.Power(index) <= 0 || env.ClosedForPower(index) || env.HasBuildJob(index) || env.HasDemolishJob(index) ||
-            IsShedExempt(env.Behavior(index)))
-        return -1;
+    const bool exempt = [&] {
+        if constexpr (requires { env.PowerExempt(index); })
+            return env.PowerExempt(index);
+        else
+            return IsShedExempt(env.Behavior(index));
+    }();
+    if (env.Power(index) <= 0 || env.ClosedForPower(index) || env.HasBuildJob(index) || env.HasDemolishJob(index) || exempt) return -1;
     env.SwitchOffConsumer(index);
     return static_cast<int>(index);
 }

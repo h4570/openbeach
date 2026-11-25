@@ -138,6 +138,7 @@ struct World {
         buildingDefs.back()->m_NumCommodities = commodities;
         buildingDefs.back()->m_Power = power;
         buildingDefs.back()->m_Behavior = obl::BehaviorFromKey(name);
+        buildingDefs.back()->m_Traits = obl::DefaultBuildingTraits(buildingDefs.back()->m_Behavior);
         building->m_definition = buildingDefs.back().get();
         building->m_waitingForDeath = dying;
         env.open.resize(std::max<size_t>(env.open.size(), id + 1));

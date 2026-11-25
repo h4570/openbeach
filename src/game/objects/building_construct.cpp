@@ -5,6 +5,7 @@
 #include "game/game/rng.h"
 #include "game/objects/building_construction.h"
 #include "game/objects/object_building.h"
+#include "game/world/world_script_host.h"
 #include "game/tables/world_params_tables.h"
 #include "core/call_counter.h"
 
@@ -56,6 +57,10 @@ Building::Building(const char* key) : Prop(key)
     g_counter.Count();
     GameEnv env;
     cons::Construct(*this, key, env);
+    if (m_definition && !m_definition->m_Traits.objectScript.empty()) {
+        if (auto* host = game::GetWorldScriptHost())
+            m_script = static_cast<script::ScriptProgram*>(host->FindOrLoad(m_definition->m_Traits.objectScript.c_str()));
+    }
 }
 
 } // namespace obl::object

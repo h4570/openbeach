@@ -133,6 +133,58 @@ inline uint32_t CountBuildingsByBehavior(const object::Manager& m, BuildingBehav
     return count;
 }
 
+inline bool HasTrait(const object::Base& object, bool BuildingTraits::* trait)
+{
+    if (!IsClass(object, static_cast<char>(ObjectType::Building))) return false;
+    const auto* definition = static_cast<const object::Building&>(object).m_definition;
+    return definition != nullptr && (definition->m_Traits.*trait);
+}
+
+inline ObjectList FindBuildingsByTrait(const object::Manager& m, bool BuildingTraits::* trait)
+{
+    ObjectList result;
+    for (object::Base* building : m.m_buildings)
+        if (HasTrait(*building, trait)) result.push_back(building);
+    return result;
+}
+
+inline uint32_t CountBuildingsByTrait(const object::Manager& m, bool BuildingTraits::* trait)
+{
+    uint32_t count = 0;
+    for (const object::Base* building : m.m_buildings)
+        if (HasTrait(*building, trait)) ++count;
+    return count;
+}
+
+inline bool HasAccommodation(const object::Base& object, AccommodationKind kind)
+{
+    if (!IsClass(object, static_cast<char>(ObjectType::Building))) return false;
+    const auto* definition = static_cast<const object::Building&>(object).m_definition;
+    return definition != nullptr && definition->m_Traits.accommodation == kind;
+}
+
+inline ObjectList FindBuildingsByAccommodation(const object::Manager& m, AccommodationKind kind)
+{
+    ObjectList result;
+    for (object::Base* building : m.m_buildings)
+        if (HasAccommodation(*building, kind)) result.push_back(building);
+    return result;
+}
+
+// Arrival stops in priority order: ShipStop, else BusStop, else any mod building with boards_guests (excluding ComplaintsHut).
+inline ObjectList FindArrivalStops(const object::Manager& m)
+{
+    ObjectList found = FindBuildings(m, BuildingBehavior::ShipStop);
+    if (!found.empty()) return found;
+    found = FindBuildings(m, BuildingBehavior::BusStop);
+    if (!found.empty()) return found;
+    for (object::Base* building : m.m_buildings) {
+        const auto* def = static_cast<const object::Building*>(building)->m_definition;
+        if (def && def->m_Traits.boardsGuests && def->m_Behavior != BuildingBehavior::ComplaintsHut) found.push_back(building);
+    }
+    return found;
+}
+
 // ListByClass: the objects of one class in list order. A copy is returned for every class, so a caller that deletes objects while it walks the list does
 // not see the list shift under it.
 inline ObjectList ListByClass(const object::Manager& m, char objectClass)

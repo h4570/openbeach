@@ -72,10 +72,10 @@ template<class Env> TailReport UpdateWorkingTail(Env& env, object::Building& bui
     }
     env.UpdateOpenState();
 
-    // The toilet's cleaning call; the cheap tests first (the name last).
+    // The toilet's cleaning call; the cheap tests first.
     if (!building.m_calledCleaning && static_cast<uint32_t>(building.m_VisitsSinceCleaned) > kToiletCleanVisits &&
             IsZeroOrNaN(env.IsBuilding()) && IsZeroOrNaN(env.IsDemolishing()) && !env.IsCleanerClaimed() &&
-            building.m_definition->m_Behavior == BuildingBehavior::Toilet) {
+            building.m_definition->m_Traits.toilet) {
         env.SendCleaningMessage();
         env.AddCleaningJob();
         env.SetMoving();
@@ -83,7 +83,7 @@ template<class Env> TailReport UpdateWorkingTail(Env& env, object::Building& bui
     }
 
     // The sound of the toilet (flies near a dirty one) or of the other buildings that keep a scripted sound going.
-    if (building.m_definition->m_Behavior == BuildingBehavior::Toilet) {
+    if (building.m_definition->m_Traits.toilet) {
         if (static_cast<uint32_t>(building.m_VisitsSinceCleaned) > kToiletFliesVisits) {
             env.LoopSoundStart(kFliesSound);
             report.flies = LoopCall::Start;
@@ -96,21 +96,28 @@ template<class Env> TailReport UpdateWorkingTail(Env& env, object::Building& bui
         report.buildingSound = true;
     }
 
-    // The hire buildings idle their engines while they are open and have a vehicle on the quay (a free slot of m_vehicleInUse).
-    const BuildingBehavior behavior = building.m_definition->m_Behavior;
-    if (behavior == BuildingBehavior::JetskiHire || behavior == BuildingBehavior::SpeedboatHire) {
-        bool vehicleFree = false;
+    // Idle loop sound: hire buildings (or any building with vehicles) idle while open with a free vehicle; buildings without vehicles idle while open.
+    const std::string& idleSound = building.m_definition->m_Traits.idleSound;
+    if (!idleSound.empty()) {
+        bool active = false;
         if (building.m_OpenStatus != 1) {
-            const uint8_t* inUse = building.m_vehicleInUse; // m_NumVehicles flags; the data keeps the count within the array
-            for (uint32_t i = 0; i < static_cast<uint32_t>(building.m_NumVehicles); ++i) {
-                if (inUse[i] == 0) {
-                    vehicleFree = true;
-                    break;
+            const BuildingBehavior behavior = building.m_definition->m_Behavior;
+            const bool requiresFreeVehicle = building.m_definition->m_NumVehicles > 0 || behavior == BuildingBehavior::JetskiHire ||
+                    behavior == BuildingBehavior::SpeedboatHire;
+            if (!requiresFreeVehicle) {
+                active = true;
+            } else {
+                const uint8_t* inUse = building.m_vehicleInUse; // m_NumVehicles flags; the data keeps the count within the array
+                for (uint32_t i = 0; i < static_cast<uint32_t>(building.m_NumVehicles); ++i) {
+                    if (inUse[i] == 0) {
+                        active = true;
+                        break;
+                    }
                 }
             }
         }
-        if (vehicleFree) {
-            env.LoopSoundStart(kJetskiIdleSound);
+        if (active) {
+            env.LoopSoundStart(idleSound.c_str());
             report.hire = LoopCall::Start;
         } else {
             env.LoopSoundStop();

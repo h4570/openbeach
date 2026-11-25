@@ -1,0 +1,15 @@
+{
+  "format": "obl.text_patch",
+  "version": 1,
+  "entries": {
+    "TRAIT_PIER": "Trait Pier",
+    "BUILDING_NAME_TRAIT_PIER": "Trait Pier",
+    "BUILD_TIPTEXT_TRAIT_PIER": "Trait Pier",
+    "TRAIT_BAR": "Trait Bar",
+    "BUILDING_NAME_TRAIT_BAR": "Trait Bar",
+    "BUILD_TIPTEXT_TRAIT_BAR": "Trait Bar",
+    "TRAIT_STAGE": "Trait Stage",
+    "BUILDING_NAME_TRAIT_STAGE": "Trait Stage",
+    "BUILD_TIPTEXT_TRAIT_STAGE": "Trait Stage"
+  }
+}

@@ -59,6 +59,7 @@ struct Site {
     {
         def->m_key = key;
         def->m_Behavior = obl::BehaviorFromKey(key);
+        def->m_Traits = obl::DefaultBuildingTraits(def->m_Behavior);
         std::strcpy(building->m_Name, key);
     }
 

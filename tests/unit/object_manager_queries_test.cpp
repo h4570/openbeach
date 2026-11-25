@@ -58,6 +58,7 @@ struct World {
     {
         auto def = std::make_unique<tables::BuildingDef>();
         def->m_Behavior = behavior;
+        def->m_Traits = obl::DefaultBuildingTraits(behavior);
         auto building = std::make_unique<object::Building>();
         obl::unit::FillObject(*building);
         std::snprintf(building->m_Name, sizeof(building->m_Name), "%s", name);
@@ -90,6 +91,37 @@ OBL_TEST_CASE("object_manager.behavior_query_keeps_the_list_order_of_the_buildin
     OBL_CHECK_EQ(om::CountBuildingsByBehavior(*w.manager, BuildingBehavior::AccomBlock), 1u);
     OBL_CHECK_EQ(om::CountBuildingsByBehavior(*w.manager, BuildingBehavior::None), 0u);
     OBL_CHECK_EQ(om::CountBuildingsByBehavior(*w.manager, BuildingBehavior::Hotel), 2u);
+}
+
+OBL_TEST_CASE("object_manager.trait_and_arrival_queries")
+{
+    World w;
+    w.AddBehaviorBuilding(1, "CUSTOM_STOP", BuildingBehavior::None);
+    w.defs.back()->m_Traits.boardsGuests = true;
+    w.defs.back()->m_Traits.countsAsBar = true;
+    w.AddBehaviorBuilding(2, "CUSTOM_HOTEL", BuildingBehavior::None);
+    w.defs.back()->m_Traits.accommodation = obl::AccommodationKind::Hotel;
+    w.AddBehaviorBuilding(3, "HUT", BuildingBehavior::ComplaintsHut);
+
+    const auto bars = om::FindBuildingsByTrait(*w.manager, &obl::BuildingTraits::countsAsBar);
+    OBL_REQUIRE(bars.size() == 1u);
+    OBL_CHECK_EQ(bars[0]->m_id, 1u);
+    OBL_CHECK_EQ(om::CountBuildingsByTrait(*w.manager, &obl::BuildingTraits::boardsGuests), 2u);
+
+    const auto hotels = om::FindBuildingsByAccommodation(*w.manager, obl::AccommodationKind::Hotel);
+    OBL_REQUIRE(hotels.size() == 1u);
+    OBL_CHECK_EQ(hotels[0]->m_id, 2u);
+
+    // Without ShipStop or BusStop, FindArrivalStops returns the mod boards_guests building (not ComplaintsHut).
+    const auto stops = om::FindArrivalStops(*w.manager);
+    OBL_REQUIRE(stops.size() == 1u);
+    OBL_CHECK_EQ(stops[0]->m_id, 1u);
+
+    // Adding a ShipStop takes priority over the mod stop.
+    w.AddBehaviorBuilding(4, "WHARF", BuildingBehavior::ShipStop);
+    const auto wharfStops = om::FindArrivalStops(*w.manager);
+    OBL_REQUIRE(wharfStops.size() == 1u);
+    OBL_CHECK_EQ(wharfStops[0]->m_id, 4u);
 }
 
 OBL_TEST_CASE("object_manager.get_object_searches_the_three_id_lists")

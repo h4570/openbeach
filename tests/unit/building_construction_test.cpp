@@ -48,6 +48,7 @@ struct Env {
     const BuildingDef* Definition(const char* key)
     {
         definition.m_Behavior = BehaviorFromKey(key);
+        definition.m_Traits = obl::DefaultBuildingTraits(definition.m_Behavior);
         return &definition;
     }
     int32_t DayTimeTicks() { return dayTime; }

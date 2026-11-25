@@ -119,7 +119,7 @@ void Claim(Guest& guest, Building& building)
 bool StayDeclined(const Guest& guest)
 {
     if (guest.m_NightsToStay == 0) return false;
-    return om::FindBuildings(*GetObjectManager(), BuildingBehavior::Hotel).empty();
+    return om::FindBuildingsByAccommodation(*GetObjectManager(), AccommodationKind::Hotel).empty();
 }
 
 // The first hotel with room takes the guest; otherwise the first open accommodation block with room and no build or demolish job. A guest who finds
@@ -129,12 +129,12 @@ void Stay(Guest& guest)
     guest.m_StayingAt = -1;
     if (guest.m_NightsToStay != 0) {
         object::Manager* manager = GetObjectManager();
-        const auto hotels = om::FindBuildings(*manager, BuildingBehavior::Hotel);
+        const auto hotels = om::FindBuildingsByAccommodation(*manager, AccommodationKind::Hotel);
         auto* hotel = hotels.empty() ? nullptr : static_cast<Building*>(hotels.front());
         if (hotel && HasRoom(*hotel)) {
             Claim(guest, *hotel);
         } else {
-            for (object::Base* candidate : om::FindBuildings(*manager, BuildingBehavior::AccomBlock)) {
+            for (object::Base* candidate : om::FindBuildingsByAccommodation(*manager, AccommodationKind::Block)) {
                 auto* block = static_cast<Building*>(candidate);
                 if (!HasRoom(*block) || kHasBuildJob(block) || kHasDemolishJob(block) || !kIsOpen(block)) continue;
                 Claim(guest, *block);

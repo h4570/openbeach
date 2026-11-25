@@ -1,0 +1,10 @@
+{
+  "format": "obl.object_script_vocabulary_patch",
+  "version": 1,
+  "states": [
+    "STATE_STAGE_CONCERT"
+  ],
+  "messages": [
+    "MT_STAGE_CHEER"
+  ]
+}

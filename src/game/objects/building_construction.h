@@ -126,7 +126,7 @@ template<class Env> void Construct(Building& building, const char* key, Env& env
     building.m_queue_direction[0] = -12.0f;
 
     // EQPTHIRE (the equipment hire) starts with twenty of each toy.
-    const int32_t toys = building.m_definition->m_Behavior == BuildingBehavior::EquipmentHire ? 20 : 0;
+    const int32_t toys = building.m_definition->m_Traits.initialRentalStock;
     building.m_NumSnorkels = toys;
     building.m_NumLilos = toys;
     building.m_NumBoards = toys;

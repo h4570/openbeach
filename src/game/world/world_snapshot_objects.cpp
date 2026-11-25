@@ -190,6 +190,7 @@ void EmitBuilding(WorldSnapshot& s, const object::Building& b)
 {
     ClassEmitter emitter{s};
     object::VisitFields(b, emitter);
+    if (b.m_script != nullptr) s.Int("building.script_state", b.m_scriptState);
     EmitStatic(s, b);
 }
 

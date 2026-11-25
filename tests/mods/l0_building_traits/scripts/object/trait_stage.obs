@@ -1,0 +1,33 @@
+#obl-script 1 object
+// Evening concert stage: once GameTime reaches 18:00, cheers nearby guests and earns attraction income until morning.
+
+State STATE_NULL
+	OnUpdate
+		If (GameTime >= 18)
+			ChangeState STATE_STAGE_CONCERT;
+		End
+	End
+End
+
+State STATE_STAGE_CONCERT
+	OnEntry
+		Message MT_STAGE_CHEER Me 0 0 Time 1;
+	End
+	OnUpdate
+		If (GameTime < 18)
+			ChangeState STATE_NULL;
+		End
+	End
+	Message MT_STAGE_CHEER
+		OnReceipt
+			Set Arg1 16;
+			Set Arg2 0.2;
+			Function ChangeGuestsHappiness;
+			If (Result > 0)
+				Set Arg1 10;
+				Function PayMoney;
+			End
+			Message MT_STAGE_CHEER Me 0 0 Time 5;
+		End
+	End
+End

@@ -237,8 +237,9 @@ public:
             return building->m_definition->m_GuestCapacity - building->m_NumGuests;
         };
         int32_t free = 0;
-        for (object::Base* hotel : obl::object_manager::FindBuildings(*GetObjectManager(), BuildingBehavior::Hotel)) free += rooms(hotel);
-        for (object::Base* block : obl::object_manager::FindBuildings(*GetObjectManager(), BuildingBehavior::AccomBlock)) {
+        for (object::Base* hotel : obl::object_manager::FindBuildingsByAccommodation(*GetObjectManager(), AccommodationKind::Hotel))
+            free += rooms(hotel);
+        for (object::Base* block : obl::object_manager::FindBuildingsByAccommodation(*GetObjectManager(), AccommodationKind::Block)) {
             if (building_api::HasBuildJob(static_cast<const object::Building*>(block))) continue;
             if (building_api::HasDemolishJob(static_cast<const object::Building*>(block))) continue;
             free += rooms(block);
@@ -267,9 +268,18 @@ public:
     // The first "Wharf" building, its last walk point with z = 0. False without a wharf.
     bool WharfWalkPoint(float out[3])
     {
-        const auto wharves = obl::object_manager::FindBuildings(*GetObjectManager(), BuildingBehavior::ShipStop);
+        auto wharves = obl::object_manager::FindBuildings(*GetObjectManager(), BuildingBehavior::ShipStop);
+        if (wharves.empty()) {
+            for (object::Base* building : GetObjectManager()->m_buildings) {
+                const auto* def = static_cast<const object::Building*>(building)->m_definition;
+                if (def && def->m_Traits.boardsGuests && def->m_Behavior != BuildingBehavior::BusStop &&
+                        def->m_Behavior != BuildingBehavior::ComplaintsHut)
+                    wharves.push_back(building);
+            }
+        }
         if (wharves.empty()) return false;
         auto* wharf = static_cast<object::Building*>(wharves[0]);
+        if (wharf->m_numWalkPoints == 0) return false;
         float point[3];
         building_api::GetWalkPoint(wharf, point, wharf->m_numWalkPoints - 1);
         out[0] = point[0];

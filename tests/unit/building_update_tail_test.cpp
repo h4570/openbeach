@@ -34,6 +34,7 @@ struct Tail {
     void SetName(const char* name)
     {
         definition.m_Behavior = BehaviorFromKey(name);
+        definition.m_Traits = obl::DefaultBuildingTraits(definition.m_Behavior);
         std::memset(building->m_Name, 0, sizeof building->m_Name);
         std::strncpy(building->m_Name, name, sizeof building->m_Name - 1);
     }
@@ -317,6 +318,21 @@ OBL_TEST_CASE("building_update_tail.hire_loop_ignores_other_buildings")
     OBL_CHECK(t.Run().hire == LoopCall::None);
     OBL_CHECK(!t.Called("loop stop"));
     OBL_CHECK(!t.Called("loop newjetskiidle"));
+}
+
+OBL_TEST_CASE("building_update_tail.custom_idle_sound_plays_while_open_without_vehicles")
+{
+    Tail bar;
+    bar.SetName("BAR1");
+    bar.definition.m_Traits.idleSound = "custom_bar_loop";
+    bar.building->m_OpenStatus = 0;
+    OBL_CHECK(bar.Run().hire == LoopCall::Start);
+    OBL_CHECK_EQ(bar.calls.back(), std::string("loop custom_bar_loop"));
+
+    bar.calls.clear();
+    bar.building->m_OpenStatus = 1;
+    OBL_CHECK(bar.Run().hire == LoopCall::Stop);
+    OBL_CHECK_EQ(bar.calls.back(), std::string("loop stop"));
 }
 
 // ---- the sound flag at the end ---------------------------------------------------------------------------------------------------------

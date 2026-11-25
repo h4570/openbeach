@@ -47,6 +47,8 @@
 #include "game/world/world_params.h"
 #include "game/world/world_script.h"
 #include "game/objects/object_manager_queries.h"
+#include "game/objects/script_program_exec.h"
+#include "game/objects/script_program_run.h"
 #include "game/game/diagnostics.h"
 
 #include <cstdint>
@@ -516,6 +518,13 @@ char RunUpdate(Building* building)
         world::DispatchModWorldEvent(*game::GetWorld(), world_script::WorldEvent::BuildingBroken,
                 {building->m_definition->m_key, static_cast<int32_t>(building->m_id), 0});
     }
+    if (building->m_script && (building->m_state == kBuildingStateNull || building->m_state == kBuildingStateOccupied)) {
+        if (!building->m_scriptEntered) {
+            building->m_scriptEntered = 1;
+            ScriptProgramRunOnEntry(*building->m_script, building, building->m_scriptState);
+        }
+        ScriptProgramRunOnUpdate(*building->m_script, building, building->m_scriptState);
+    }
     return 1;
 }
 
@@ -585,7 +594,7 @@ public:
     int CountSwimmingAreaKeepers(int32_t area) const
     {
         int same = 0;
-        for (const object::Base* post : obl::object_manager::FindBuildings(*GetObjectManager(), BuildingBehavior::LifeguardPost)) {
+        for (const object::Base* post : obl::object_manager::FindBuildingsByTrait(*GetObjectManager(), &BuildingTraits::ownsSwimmingArea)) {
             if (static_cast<const Building*>(post)->m_InfluenceArea == area) ++same;
         }
         return same;
@@ -732,7 +741,10 @@ public:
     int32_t CommodityId(const char* key) const { return world::world_params::GetCommodityId(GetWorldParams(), key); }
     object::Base* const* FindBuildings(BuildingBehavior behavior, uint32_t& count) const
     {
-        m_found = obl::object_manager::FindBuildings(*GetObjectManager(), behavior);
+        if (behavior == BuildingBehavior::WaterCleaner)
+            m_found = obl::object_manager::FindBuildingsByTrait(*GetObjectManager(), &BuildingTraits::waterCleaner);
+        else
+            m_found = obl::object_manager::FindBuildings(*GetObjectManager(), behavior);
         count = static_cast<uint32_t>(m_found.size());
         return m_found.data();
     }
@@ -886,6 +898,15 @@ char RunOnEnterState(Building* building, uint32_t state)
     const EnterReport report = EnterState(env, *building, state, LifecycleWorldOf(*GetWorld()));
     g_enter.Count();
     CountEnter(report);
+    if (building->m_script) {
+        if (state == static_cast<uint32_t>(kBuildingStateNull) && !building->m_scriptEntered) {
+            building->m_scriptEntered = 1;
+            ScriptProgramRunOnEntry(*building->m_script, building, building->m_scriptState);
+        } else if ((state == static_cast<uint32_t>(kBuildingStateDemolish) || state == 3u) && building->m_scriptEntered) {
+            ScriptProgramRunOnExit(*building->m_script, building, building->m_scriptState);
+            building->m_scriptEntered = 0;
+        }
+    }
     return 1;
 }
 
@@ -1071,6 +1092,22 @@ char RunReceiveMessage(Building* building, Message* message)
         return 0; // ditto
     }
     default:
+        if (building->m_script) {
+            if (message->type == messages::MT_STATECHANGE && message->flags == kBuildingScriptStateChangeFlag) {
+                if (building->m_state == kBuildingStateNull || building->m_state == kBuildingStateOccupied) {
+                    if (script_program::exec::FindState(*building->m_script, message->data) != nullptr) {
+                        ScriptProgramRunOnExit(*building->m_script, building, building->m_scriptState);
+                        building->m_scriptState = message->data;
+                        ScriptProgramRunOnEntry(*building->m_script, building, building->m_scriptState);
+                    }
+                }
+                return 1;
+            }
+            if ((building->m_state == kBuildingStateNull || building->m_state == kBuildingStateOccupied) &&
+                    ScriptProgramRunOnReceipt(*building->m_script, building, *message)) {
+                return 1;
+            }
+        }
         // Every type that is not one of the building's 19: the static object's own ReceiveMessage.
         g_receiveStaticDefault.Count();
         return building->Prop::ReceiveMessage(message);

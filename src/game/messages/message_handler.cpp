@@ -64,13 +64,22 @@ char DispatchGuestServed(Handler& handler, const Message& message)
 {
     object::Manager* objects = game::GetObjectManager();
     Message copy = message;
-    auto found = om::FindBuildings(*objects, BuildingBehavior::ShipStop);
-    copy.receiver = FirstObjectId(found);
-    if (found.empty()) {
-        found = om::FindBuildings(*objects, BuildingBehavior::BusStop);
-        copy.receiver = FirstObjectId(found);
-    }
+    auto found = om::FindArrivalStops(*objects);
+    const int32_t primary = FirstObjectId(found);
+    copy.receiver = primary;
     RouteToObject(handler, copy);
+    // Any additional mod boarding stops beyond the primary stop also board their queued guests.
+    for (object::Base* building : objects->m_buildings) {
+        const auto* def = static_cast<const object::Building*>(building)->m_definition;
+        if (!def || !def->m_Traits.boardsGuests) continue;
+        if (def->m_Behavior == BuildingBehavior::ShipStop || def->m_Behavior == BuildingBehavior::BusStop ||
+                def->m_Behavior == BuildingBehavior::ComplaintsHut)
+            continue;
+        const int32_t id = static_cast<int32_t>(building->m_id);
+        if (id == primary) continue;
+        copy.receiver = id;
+        RouteToObject(handler, copy);
+    }
     found = om::FindBuildings(*objects, BuildingBehavior::ComplaintsHut);
     copy.receiver = FirstObjectId(found);
     if (!found.empty()) RouteToObject(handler, copy);

@@ -443,8 +443,64 @@ void Reader::Building(tables::BuildingDef& b, const json& d)
     String(b.m_MaleFileName, d, "/staff_files/male", 0x40);
     String(b.m_FemaleFileName, d, "/staff_files/female", 0x40);
     b.m_Category = Enum(d.at("category"), {"hotel", "food", "leisure", "other"});
-    if (!BuildingBehaviorFromName(d.at("behavior").get<std::string>(), b.m_Behavior))
-        throw std::runtime_error("unrecognized behavior " + d.at("behavior").dump());
+    if (d.contains("behavior")) {
+        if (!BuildingBehaviorFromName(d.at("behavior").get<std::string>(), b.m_Behavior))
+            throw std::runtime_error("unrecognized behavior " + d.at("behavior").dump());
+    } else {
+        b.m_Behavior = BuildingBehavior::None;
+    }
+    b.m_Traits = DefaultBuildingTraits(b.m_Behavior);
+    auto readBoolTrait = [&](const char* field, bool& target) {
+        if (!d.contains(field)) return;
+        const json& value = d.at(field);
+        if (!value.is_boolean()) throw std::runtime_error(std::string("building trait \"") + field + "\" must be a boolean");
+        target = value.get<bool>();
+    };
+    readBoolTrait("power_exempt", b.m_Traits.powerExempt);
+    readBoolTrait("boards_guests", b.m_Traits.boardsGuests);
+    readBoolTrait("contamination_safe", b.m_Traits.contaminationSafe);
+    readBoolTrait("counts_as_bar", b.m_Traits.countsAsBar);
+    readBoolTrait("owns_swimming_area", b.m_Traits.ownsSwimmingArea);
+    readBoolTrait("toilet", b.m_Traits.toilet);
+    readBoolTrait("water_cleaner", b.m_Traits.waterCleaner);
+    readBoolTrait("power_generator", b.m_Traits.powerGenerator);
+    readBoolTrait("instant_build", b.m_Traits.instantBuild);
+    readBoolTrait("patrol_exempt", b.m_Traits.patrolExempt);
+    if (d.contains("initial_rental_stock")) {
+        const json& value = d.at("initial_rental_stock");
+        if (!value.is_number_integer() || value.get<int>() < 0)
+            throw std::runtime_error("building trait \"initial_rental_stock\" must be a non-negative integer");
+        b.m_Traits.initialRentalStock = value.get<int>();
+    }
+    if (d.contains("accommodation")) {
+        const json& value = d.at("accommodation");
+        if (!value.is_string() || !AccommodationKindFromName(value.get<std::string>(), b.m_Traits.accommodation))
+            throw std::runtime_error("unrecognized building accommodation " + value.dump());
+    }
+    if (d.contains("idle_sound")) {
+        const json& value = d.at("idle_sound");
+        if (!value.is_string()) throw std::runtime_error("building trait \"idle_sound\" must be a string");
+        b.m_Traits.idleSound = value.get<std::string>();
+        for (char c : b.m_Traits.idleSound) {
+            if (c == '/' || c == '\\' || static_cast<unsigned char>(c) < 0x20)
+                throw std::runtime_error(
+                        "building idle_sound \"" + b.m_Traits.idleSound + "\": must be a sound name without path separators");
+        }
+    }
+    if (d.contains("object_script")) {
+        const json& value = d.at("object_script");
+        if (!value.is_string() || value.get<std::string>().empty())
+            throw std::runtime_error("building trait \"object_script\" must be a non-empty string");
+        b.m_Traits.objectScript = value.get<std::string>();
+        if (b.m_Traits.objectScript == "." || b.m_Traits.objectScript == ".." || b.m_Traits.objectScript.find("..") != std::string::npos)
+            throw std::runtime_error(
+                    "building object_script \"" + b.m_Traits.objectScript + "\": must be a script name without path separators");
+        for (char c : b.m_Traits.objectScript) {
+            if (c == '/' || c == '\\' || static_cast<unsigned char>(c) < 0x20)
+                throw std::runtime_error(
+                        "building object_script \"" + b.m_Traits.objectScript + "\": must be a script name without path separators");
+        }
+    }
     if (d.contains("icon")) Number(b.m_Icon, d.at("icon"));
     Number(b.m_Cost2Build, d.at("cost").at("build"));
     Number(b.m_RefundValue, d.at("cost").at("refund"));

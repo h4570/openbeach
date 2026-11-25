@@ -115,7 +115,7 @@ public:
     bool HasDemolishJob(uint32_t i) { return kHasDemolishJob(Building(i)); }
     int OutputPower(uint32_t i) { return object::BuildingGetPowerOutput(Building(i)); }
     int Rand() { return game::Rand(); }
-    BuildingBehavior Behavior(uint32_t i) { return Building(i)->m_definition->m_Behavior; }
+    bool PowerExempt(uint32_t i) { return Building(i)->m_definition->m_Traits.powerExempt; }
     void SwitchOffConsumer(uint32_t i) { object::BuildingShedPower(Building(i)); }
 
 protected:
