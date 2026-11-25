@@ -60,3 +60,5 @@ A mod that cannot start on the current pack or list is marked in red with the re
 
 If a mod stops the game at start-up before you reach the main menu, remove its id from `[Mods] Active` in `openbeach.ini`
 ([switching-mods.md](switching-mods.md#a-mod-that-stops-the-start-up)).
+
+See [mod errors and conflicts](mod-errors.md) for startup messages.

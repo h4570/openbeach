@@ -1,0 +1,10 @@
+{
+  "format": "obl.catalog_index_patch",
+  "version": 1,
+  "add": {
+    "buildings": [
+      "absent_record",
+      "second_absent_record"
+    ]
+  }
+}

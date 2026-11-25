@@ -36,6 +36,6 @@ bool ParsePatch(std::string_view json, std::vector<std::string>& states, std::ve
 // Loads the pack's vocabulary and merges every active mod's `scripts/object_vocabulary.patch.json` in load order.
 // Returns false and sets `error` (naming the mod and any colliding pack/mod) on failure.
 bool LoadMerged(const std::filesystem::path& packDirectory, std::span<const std::string> mods, std::vector<Entry>& states,
-        std::vector<Entry>& messages, std::string& error);
+        std::vector<Entry>& messages, std::string& error, std::vector<std::string>* errors = nullptr);
 
 } // namespace obl::object_vocabulary

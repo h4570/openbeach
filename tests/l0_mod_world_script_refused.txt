@@ -1,4 +1,4 @@
-# A world mod whose script opens ScenarioWon (tests/mods/l0_world_refused) is refused before the game starts: the scenario
+# A world mod whose script opens ScenarioWon (tests/mods/broken/l0_world_refused) is refused before the game starts: the scenario
 # keeps the last word on winning and losing (docs/modding/reference/world-scripts.md).
 # @env OBL_PACK=l0
 # @env OBL_MODS=l0_world_refused

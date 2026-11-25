@@ -1,0 +1,11 @@
+{
+  "format": "obl.mod",
+  "version": 1,
+  "id": "bad_requirement",
+  "title": "bad_requirement",
+  "mod_version": "1.0.0",
+  "pack": "l0",
+  "requires": [
+    "absent_mod"
+  ]
+}

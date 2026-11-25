@@ -1,0 +1,16 @@
+{
+  "format": "obl.json_patch",
+  "version": 1,
+  "ops": [
+    {
+      "op": "set",
+      "path": "/not/a/path",
+      "value": 1
+    },
+    {
+      "op": "set",
+      "path": "/also/not/a/path",
+      "value": 1
+    }
+  ]
+}

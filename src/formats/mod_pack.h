@@ -120,11 +120,12 @@ void RestoreActive();
 
 // The start-up step: reads the mod list (OBL_MODS, else `configured`), checks it, and makes the mods layers of pack_path.
 // False with `error` when the check fails; the game stops then.
-bool Activate(const std::filesystem::path& gameDirectory, std::string_view packId, std::string_view configured, std::string& error);
+bool Activate(const std::filesystem::path& gameDirectory, std::string_view packId, std::string_view configured, std::string& error,
+        std::vector<std::string>* errors = nullptr, const std::filesystem::path& source = {});
 
 // Activate with a list instead of the setting (the mods screen applies a new list of presentation mods at once). On failure
 // nothing changes.
-bool ActivateList(
-        const std::filesystem::path& gameDirectory, std::string_view packId, std::span<const std::string> ids, std::string& error);
+bool ActivateList(const std::filesystem::path& gameDirectory, std::string_view packId, std::span<const std::string> ids, std::string& error,
+        std::vector<std::string>* errors = nullptr);
 
 } // namespace obl::mod_pack

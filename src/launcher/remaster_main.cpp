@@ -3,6 +3,7 @@
 // is the host.
 
 #include "launch_options.h"
+#include "app/init.h"
 #include "settings_window.h"
 #include "standalone_host.h"
 
@@ -20,6 +21,8 @@ namespace {
 using namespace obl;
 
 struct Options : launcher::GameOptions {
+    bool checkMods = false;
+    std::string modDirectory;
     bool standaloneHost = false; // --standalone-host: this process is the host (set by Launch only)
     bool runEntry = true; // --no-entry: the host stops after the start-up (ctest standalone_host)
     bool forceSettings = false; // --settings: show the settings window even when openbeach.ini turned it off
@@ -29,7 +32,7 @@ struct Options : launcher::GameOptions {
 void PrintUsage()
 {
     std::fprintf(stderr,
-            "Usage: OpenBeach %s [--no-entry]\n"
+            "Usage: OpenBeach %s [--no-entry | --check-mods [dir]]\n"
             "  default game dir: this program's directory when it holds the game's Data, else its userdata/ directory\n"
             "  (a release archive), else %s\n",
             launcher::kSharedUsage, OBL_DEFAULT_GAME_DIR);
@@ -59,6 +62,9 @@ bool ParseArgs(int argc, char** argv, Options& o)
         const std::string a = argv[i];
         if (a == "--standalone-host") {
             o.standaloneHost = true;
+        } else if (a == "--check-mods") {
+            o.checkMods = true;
+            if (i + 1 < argc && !std::string_view(argv[i + 1]).starts_with("--")) o.modDirectory = argv[++i];
         } else if (a == "--no-entry") {
             o.runEntry = false;
         } else if (a == "--settings") {
@@ -93,6 +99,13 @@ int main(int argc, char* argv[])
 {
     Options o;
     if (!ParseArgs(argc, argv, o)) return 1;
+    if (o.checkMods) {
+        if (!o.headless.empty() || !o.script.empty() || o.standaloneHost) {
+            std::fprintf(stderr, "error: --check-mods cannot be combined with --script or --headless\n");
+            return 1;
+        }
+        return CheckMods(std::u8string(o.gameDir.begin(), o.gameDir.end()), std::u8string(o.modDirectory.begin(), o.modDirectory.end()));
+    }
     if (o.standaloneHost) return standalone::HostMain(o.gameDir, o.gameArgs, o.runEntry);
     if (OffersSettings(o) && launcher::RunSettingsWindow(o.gameDir) == launcher::SettingsChoice::Quit) return 0;
     launcher::SetGameEnvironment(o);

@@ -1,0 +1,10 @@
+{
+  "format": "obl.mod",
+  "version": 1,
+  "id": "bad_lua_start",
+  "title": "bad_lua_start",
+  "mod_version": "1.0.0",
+  "pack": "l0",
+  "scope": "presentation",
+  "api": 1
+}

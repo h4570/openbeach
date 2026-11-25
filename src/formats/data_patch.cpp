@@ -117,7 +117,8 @@ void Assign(Document& doc, Json& target, const Json& value, const std::string& p
     target = value;
 }
 
-void Apply(Document& doc, const fs::path& file, const std::string& mod, std::vector<Conflict>& conflicts, std::string& where)
+void Apply(Document& doc, const fs::path& file, const std::string& mod, std::vector<Conflict>& conflicts, std::string& where,
+        std::vector<std::string>* errors)
 {
     const Json patch = Read(file);
     if (patch.at("format") != "obl.json_patch" || !patch.at("version").is_number_integer() || patch.at("version") != 1 ||
@@ -126,24 +127,39 @@ void Apply(Document& doc, const fs::path& file, const std::string& mod, std::vec
     const auto base = where;
     for (size_t i = 0; i < patch.at("ops").size(); ++i) {
         where = base + " op " + std::to_string(i);
-        const auto& op = patch.at("ops").at(i);
-        const auto path = op.at("path").get<std::string>();
-        where += " " + path;
-        std::string pointer;
-        auto& target = Target(doc.value, path, pointer, op.at("op") == "set");
-        if (op.at("op") == "append") {
-            if (!target.is_array() || !op.at("items").is_array()) throw std::runtime_error("append expects arrays");
-            for (const auto& item : op.at("items")) {
-                doc.origins[pointer + "/" + std::to_string(target.size())] = {mod, where, true};
-                target.push_back(item);
-            }
-        } else if (op.at("op") == "merge" || op.at("op") == "set") {
-            const bool merge = op.at("op") == "merge";
-            if (merge && (!target.is_object() || !op.at("value").is_object())) throw std::runtime_error("merge expects objects");
-            Assign(doc, target, op.at("value"), pointer, {mod, where}, merge, conflicts);
-        } else
-            throw std::runtime_error("unknown operation");
-        doc.last = where;
+        auto apply = [&](Document& doc) {
+            const auto& op = patch.at("ops").at(i);
+            const auto path = op.at("path").get<std::string>();
+            where += " " + path;
+            std::string pointer;
+            auto& target = Target(doc.value, path, pointer, op.at("op") == "set");
+            if (op.at("op") == "append") {
+                if (!target.is_array() || !op.at("items").is_array()) throw std::runtime_error("append expects arrays");
+                for (const auto& item : op.at("items")) {
+                    doc.origins[pointer + "/" + std::to_string(target.size())] = {mod, where, true};
+                    target.push_back(item);
+                }
+            } else if (op.at("op") == "merge" || op.at("op") == "set") {
+                const bool merge = op.at("op") == "merge";
+                if (merge && (!target.is_object() || !op.at("value").is_object())) throw std::runtime_error("merge expects objects");
+                Assign(doc, target, op.at("value"), pointer, {mod, where}, merge, conflicts);
+            } else
+                throw std::runtime_error("unknown operation");
+            doc.last = where;
+        };
+        if (!errors) {
+            apply(doc);
+            continue;
+        }
+        auto candidate = doc;
+        const auto conflictCount = conflicts.size();
+        try {
+            apply(candidate);
+            doc = std::move(candidate);
+        } catch (const std::exception& failure) {
+            conflicts.resize(conflictCount);
+            errors->push_back(where + ": " + failure.what());
+        }
     }
 }
 
@@ -192,84 +208,95 @@ Input::Input(const fs::path& file) : std::istream(nullptr)
 
 namespace {
 
-// Applies the patches of `mods` and checks the results; `files` gets the patched documents.
-bool Build(const fs::path& pack, std::span<const std::string> mods, std::vector<Conflict>& conflicts, Files& files, std::string& error)
+// Applies the patches of the active mods and checks the results before publishing them.
+bool Build(const fs::path& pack, std::span<const std::string> mods, std::vector<Conflict>& conflicts, Files& files, std::string& error,
+        std::vector<std::string>* errors = nullptr)
 {
     std::map<fs::path, Document> documents;
     conflicts.clear();
-    try {
-        const auto game = pack_path::GameDirectory(pack);
-        for (const auto& mod : mods) {
-            error = "mod " + mod;
-            const auto directory = pack_path::ModDirectory(game, mod).value();
-            std::map<fs::path, fs::path> patches;
+    const size_t initialErrors = errors ? errors->size() : 0;
+    const auto report = [&](std::string message) {
+        error = std::move(message);
+        if (errors) errors->push_back(error);
+        return errors != nullptr;
+    };
+    const auto game = pack_path::GameDirectory(pack);
+    for (const auto& mod : mods) {
+        error = "mod " + mod;
+        const auto directory = pack_path::ModDirectory(game, mod).value();
+        std::map<fs::path, fs::path> patches;
+        try {
             for (const auto& entry : fs::recursive_directory_iterator(directory)) {
                 if (!entry.is_regular_file()) continue;
                 auto relative = entry.path().lexically_relative(directory);
                 auto name = relative.generic_string();
-                if (!name.ends_with(".patch.json") || relative.parent_path() == "text" || name == "catalog/index.patch.json" ||
-                        name == "scripts/object_vocabulary.patch.json")
+                if (!name.ends_with(".patch.json") || relative.parent_path() == "text" || relative.parent_path() == "recipes" ||
+                        name == "catalog/index.patch.json" || name == "scripts/object_vocabulary.patch.json")
                     continue;
                 // A GUI layout patch belongs to game/ui/gui_patch, which applies it when the layout loads.
                 if (relative.parent_path() == "gui" && PatchFormat(entry.path()) == kGuiPatchFormat) continue;
                 patches.emplace(name.substr(0, name.size() - 11) + ".json", entry.path());
             }
-            for (const auto& [logical, patch] : patches) {
-                error = "mod " + mod + ": " + patch.string();
+        } catch (const std::exception& failure) {
+            if (!report(error + ": " + failure.what())) return false;
+        }
+        for (const auto& [logical, patch] : patches) {
+            error = "mod " + mod + ": " + patch.string();
+            try {
                 if (logical == "pack.json" || logical == "mod.json") throw std::runtime_error("cannot patch a manifest");
-                auto [it, inserted] = documents.try_emplace(logical);
-                auto& doc = it->second;
-                if (inserted) {
-                    doc.source = pack_path::Resolve(pack, logical, mods);
-                    doc.value = Read(doc.source);
-                    doc.format = doc.value.at("format").get<std::string>();
-                    doc.last = error;
-                    doc.logical = logical.generic_string();
+                auto it = documents.find(logical);
+                if (it == documents.end()) {
+                    const auto source = pack_path::Resolve(pack, logical, mods);
+                    auto value = Read(source);
+                    const auto format = value.at("format").get<std::string>();
+                    it = documents.emplace(logical, Document{std::move(value), format, source, {}, error, logical.generic_string()}).first;
                 }
-                Apply(doc, patch, mod, conflicts, error);
+                Apply(it->second, patch, mod, conflicts, error, errors);
+            } catch (const std::exception& failure) {
+                if (!report(error + ": " + failure.what())) return false;
             }
         }
-        if (!documents.empty()) {
-            json_schema::Registry schemas;
-            if (!formats::LoadEmbeddedSchemas(schemas, error)) return false;
-            for (const auto& [logical, doc] : documents) {
-                auto failures = schemas.Validate(doc.format, doc.value);
-                if (!failures.empty()) {
-                    const auto& failure = failures.front();
-                    const auto pointer = failure.substr(0, failure.find(':'));
-                    // Blame the deepest write that touches the failing node, else the last operation on the file.
-                    error = doc.last;
-                    size_t depth = 0;
-                    for (const auto& [path, write] : doc.origins)
-                        if (Related(pointer, path) && path.size() >= depth) {
-                            error = write.where;
-                            depth = path.size();
-                        }
-                    error += ": " + failure;
-                    return false;
-                }
-                files.emplace(fs::absolute(doc.source).lexically_normal(), doc.value.dump());
-            }
+    }
+    if (!documents.empty()) {
+        json_schema::Registry schemas;
+        if (!formats::LoadEmbeddedSchemas(schemas, error)) {
+            report(error);
+            return false;
         }
-    } catch (const std::exception& failure) {
-        error += ": " + std::string(failure.what());
-        return false;
+        for (const auto& [logical, doc] : documents) {
+            const auto failures = schemas.Validate(doc.format, doc.value);
+            for (const auto& failure : failures) {
+                const auto pointer = failure.substr(0, failure.find(':'));
+                // Blame the deepest write that touches the failing node, else the last operation on the file.
+                std::string where = doc.last;
+                size_t depth = 0;
+                for (const auto& [path, write] : doc.origins)
+                    if (Related(pointer, path) && path.size() >= depth) {
+                        where = write.where;
+                        depth = path.size();
+                    }
+                if (!report(where + ": " + failure)) return false;
+            }
+            if (failures.empty()) files.emplace(fs::absolute(doc.source).lexically_normal(), doc.value.dump());
+        }
     }
     error.clear();
-    return true;
+    return !errors || initialErrors == errors->size();
 }
 
 } // namespace
 
-bool Prepare(const fs::path& pack, std::span<const std::string> mods, std::vector<std::string>& conflicts, std::string& error)
+bool Prepare(const fs::path& pack, std::span<const std::string> mods, std::vector<std::string>& conflicts, std::string& error,
+        std::vector<std::string>* errors)
 {
     std::vector<Conflict> found;
     Files files;
-    if (!Build(pack, mods, found, files, error)) return false;
+    const bool valid = Build(pack, mods, found, files, error, errors);
+    if (!valid && !errors) return false;
     conflicts.clear();
     for (const Conflict& conflict : found) conflicts.push_back(conflict.text);
     g_files.swap(files);
-    return true;
+    return valid;
 }
 
 bool FindConflicts(const fs::path& pack, std::span<const std::string> mods, std::vector<Conflict>& conflicts, std::string& error)

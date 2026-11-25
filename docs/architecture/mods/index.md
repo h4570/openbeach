@@ -168,3 +168,12 @@ keep a changed value in memory and leave the player's file alone. The guard of t
 hashes as its bytes did before, so existing recorded hashes stay valid. Binary files are hashed as they are. The test mod
 `tests/mods/l0_crlf` (pinned to CRLF in `.gitattributes`, `tests/l0_mod_crlf.txt`) proves the whole path; the other test mods stay
 pinned to LF because their hashes are in recorded replays.
+
+## Headless checker
+
+`CheckMods` (`src/app/check_mods.cpp`) is the shared desktop and Linux headless entry point for
+[`--check-mods`](../../modding/reference/check-mods.md). It uses the same activation, resolver, patch, format and script
+loaders as startup. The loaders with an error collection path continue across independent inputs and leave failed
+inputs out of the resulting layers or documents. The checker also calls loaders that normal startup defers until
+the first menu or scenario. The shared recipe builder (`src/formats/asset_recipe.cpp`) uses a memory sink in check mode, so source decoding, transforms
+and output validation run without touching the recipe cache. The checker exits before game creation and writes no settings or mod stores.

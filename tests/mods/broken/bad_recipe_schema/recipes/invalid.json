@@ -1,0 +1,7 @@
+{
+  "format": "obl.asset_recipe",
+  "version": 2,
+  "source": "images/screens/l0_title.png",
+  "output": "overlay/derived.png",
+  "operations": []
+}

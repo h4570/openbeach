@@ -19,12 +19,12 @@ bool ParseScriptIds(std::string_view json, script_program::Vocabulary& out, std:
 
 // Loads the pack's `scripts/object_vocabulary.json` merged with active mods' `scripts/object_vocabulary.patch.json`
 // in load order, plus the engine's functions and values. Returns false and sets `error` on failure or name collision.
-bool LoadMergedVocabulary(
-        const std::filesystem::path& packDirectory, std::span<const std::string> mods, script_program::Vocabulary& out, std::string& error);
+bool LoadMergedVocabulary(const std::filesystem::path& packDirectory, std::span<const std::string> mods, script_program::Vocabulary& out,
+        std::string& error, std::vector<std::string>* errors = nullptr);
 
 // Parses every `scripts/object/*.obs` shipped by the active mods (in load order, sorted by filename) against
 // `vocabulary` in strict mode. Returns false with `error` naming the mod, file and line on any failure.
 bool ValidateModObjectScripts(const std::filesystem::path& packDirectory, std::span<const std::string> mods,
-        const script_program::Vocabulary& vocabulary, std::string& error);
+        const script_program::Vocabulary& vocabulary, std::string& error, std::vector<std::string>* errors = nullptr);
 
 } // namespace obl::object

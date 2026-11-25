@@ -21,7 +21,7 @@ struct Settings {
 };
 
 // Loads openbeach.ini from the game directory; writes a default file if it does not exist.
-void Load(const Text16& gameDirectory);
+void Load(const Text16& gameDirectory, bool createDefaults = true);
 
 const Settings& Get();
 

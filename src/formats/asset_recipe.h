@@ -97,9 +97,9 @@ bool EncodeRecipeSprite(const RgbaImage& image, std::string_view outputJsonPath,
 
 // Runs all `recipes/*.json` of one mod against `pack`, caching outputs and `recipe-cache.json` in `cache`.
 // A missing source disables only that recipe's output(s) and records a message in `result.disabled`; a malformed recipe
-// or I/O error returns false with `error`.
+// or I/O error returns false with `error`. With `errors`, continue across recipes and report each failure.
 bool BuildModRecipes(const PackSink& pack, const PackSink& mod, PackSink& cache, const json_schema::Registry& schemas,
-        ModRecipesResult& result, std::string& error);
+        ModRecipesResult& result, std::string& error, std::vector<std::string>* errors = nullptr);
 
 // Desktop convenience: runs recipes for every installed mod under `modsDir` (or only `onlyModId` when non-empty)
 // against `packDir`, writing cached outputs to `<cacheRoot>/<mod id>/`.

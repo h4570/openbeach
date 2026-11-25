@@ -45,6 +45,9 @@ std::optional<std::filesystem::path> ModDirectory(const std::filesystem::path& g
 // `<game dir>/mod-cache/<id>`: recipe-derived assets cached next to the mod; nullopt when `id` is not a valid id.
 std::optional<std::filesystem::path> ModCacheDirectory(const std::filesystem::path& gameDirectory, std::string_view id);
 
+// A checker-only layer rooted at a source directory outside the installed mods.
+void SetModDirectoryOverride(std::string id, std::filesystem::path directory);
+
 // The ids in a comma separated list (`a,b`), blanks around an id dropped, empty items skipped. Not validated.
 std::vector<std::string> ParseModList(std::string_view list);
 

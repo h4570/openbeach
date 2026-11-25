@@ -9,6 +9,7 @@
 #include <fstream>
 #include <iterator>
 #include <map>
+#include <stdexcept>
 #include <set>
 
 namespace obl::object_vocabulary {
@@ -134,7 +135,7 @@ bool ParsePatch(std::string_view json, std::vector<std::string>& states, std::ve
 }
 
 bool LoadMerged(const std::filesystem::path& packDirectory, std::span<const std::string> mods, std::vector<Entry>& states,
-        std::vector<Entry>& messages, std::string& error)
+        std::vector<Entry>& messages, std::string& error, std::vector<std::string>* errors)
 {
     states.clear();
     messages.clear();
@@ -157,6 +158,11 @@ bool LoadMerged(const std::filesystem::path& packDirectory, std::span<const std:
     constexpr int kFirstModMessageId = 109;
     int nextMessageId = std::max(NextId(messages), kFirstModMessageId);
 
+    const auto report = [&](const std::string& message) {
+        if (!errors) return FailBase(states, messages, error, message);
+        errors->push_back(message);
+        return true;
+    };
     const std::filesystem::path gameDirectory = pack_path::GameDirectory(packDirectory);
     for (const std::string& mod : mods) {
         const auto modDirectory = pack_path::ModDirectory(gameDirectory, mod);
@@ -166,28 +172,34 @@ bool LoadMerged(const std::filesystem::path& packDirectory, std::span<const std:
         if (!std::filesystem::is_regular_file(patchFile, ec)) continue;
         std::ifstream in(patchFile, std::ios::binary);
         if (!in) {
-            return FailBase(states, messages, error, "mod \"" + mod + "\" (" + std::string(kPatchPath) + "): cannot open file");
+            if (!report("mod \"" + mod + "\" (" + std::string(kPatchPath) + "): cannot open file")) return false;
+            continue;
         }
         const std::string patchJson{std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>()};
         std::vector<std::string> modStates;
         std::vector<std::string> modMessages;
         std::string patchError;
-        if (!ParsePatch(patchJson, modStates, modMessages, patchError)) {
-            return FailBase(states, messages, error, "mod \"" + mod + "\" (" + std::string(kPatchPath) + "): " + patchError);
+        try {
+            if (!ParsePatch(patchJson, modStates, modMessages, patchError)) throw std::runtime_error(patchError);
+        } catch (const std::exception& failure) {
+            if (!report("mod \"" + mod + "\" (" + std::string(kPatchPath) + "): " + failure.what())) return false;
+            continue;
         }
         const std::string currentOwner = "mod \"" + mod + "\"";
         for (const std::string& name : modStates) {
             if (const auto it = stateOwner.find(name); it != stateOwner.end()) {
-                return FailBase(states, messages, error,
-                        currentOwner + " (" + std::string(kPatchPath) + "): state \"" + name + "\" collides with " + it->second);
+                if (!report(currentOwner + " (" + std::string(kPatchPath) + "): state \"" + name + "\" collides with " + it->second))
+                    return false;
+                continue;
             }
             stateOwner.emplace(name, currentOwner);
             states.push_back({nextStateId++, name});
         }
         for (const std::string& name : modMessages) {
             if (const auto it = messageOwner.find(name); it != messageOwner.end()) {
-                return FailBase(states, messages, error,
-                        currentOwner + " (" + std::string(kPatchPath) + "): message \"" + name + "\" collides with " + it->second);
+                if (!report(currentOwner + " (" + std::string(kPatchPath) + "): message \"" + name + "\" collides with " + it->second))
+                    return false;
+                continue;
             }
             messageOwner.emplace(name, currentOwner);
             messages.push_back({nextMessageId++, name});

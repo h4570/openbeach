@@ -1477,7 +1477,7 @@ bool DeriveControlIds(std::string_view scriptText, std::vector<std::string>& ids
 }
 
 bool ApplyPatches(std::string_view baseScriptText, std::span<const PatchSource> patches, std::span<const std::string> activeMods,
-        int32_t screenWidth, int32_t screenHeight, ApplyResult& out, std::string& error)
+        int32_t screenWidth, int32_t screenHeight, ApplyResult& out, std::string& error, std::vector<std::string>* errors)
 {
     error.clear();
     out = {};
@@ -1494,7 +1494,18 @@ bool ApplyPatches(std::string_view baseScriptText, std::span<const PatchSource> 
         return false;
     }
     for (const auto& patch : patches) {
-        if (!ApplySinglePatch(patch, doc, seenIds, activeMods, error)) return false;
+        if (!errors) {
+            if (!ApplySinglePatch(patch, doc, seenIds, activeMods, error)) return false;
+            continue;
+        }
+        auto candidate = doc;
+        auto candidateIds = seenIds;
+        if (ApplySinglePatch(patch, candidate, candidateIds, activeMods, error)) {
+            doc = std::move(candidate);
+            seenIds = std::move(candidateIds);
+        } else {
+            errors->push_back(error);
+        }
     }
     ResolveSlotsAndAnchors(doc, screenWidth, screenHeight);
     EmitDocument(doc, out);
@@ -1516,7 +1527,7 @@ std::vector<std::filesystem::path> FindPatchFiles(const std::filesystem::path& p
 
 bool ApplyPackPatches(const std::filesystem::path& pack, std::string_view layout, std::string_view baseScriptText,
         std::span<const std::string> activeMods, int32_t screenWidth, int32_t screenHeight, ApplyResult& out, std::string& error,
-        std::span<const PatchSource> leading)
+        std::span<const PatchSource> leading, std::vector<std::string>* errors)
 {
     error.clear();
     out = {};
@@ -1539,7 +1550,7 @@ bool ApplyPackPatches(const std::filesystem::path& pack, std::string_view layout
         src.jsonText.assign(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
         sources.push_back(std::move(src));
     }
-    return ApplyPatches(baseScriptText, sources, activeMods, screenWidth, screenHeight, out, error);
+    return ApplyPatches(baseScriptText, sources, activeMods, screenWidth, screenHeight, out, error, errors);
 }
 
 } // namespace obl::gui_patch

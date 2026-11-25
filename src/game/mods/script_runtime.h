@@ -169,7 +169,7 @@ public:
     // Loads the scripts of every mod in load order (each mod's files in name order), then calls each mod's on_start in load order.
     // A mod whose files do not load, or whose call fails, is switched off with a message naming the mod, the file and the line;
     // the others keep running. Mods without scripts are skipped.
-    void Start(std::span<const ScriptMod> mods);
+    void Start(std::span<const ScriptMod> mods, bool checking = false);
     // on_frame(dt) of every running mod in load order.
     void Frame(float dt);
     // on_input(event) of the running mods, the last in load order first, until one consumes the event; the mod that took over the

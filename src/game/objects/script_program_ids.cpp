@@ -38,13 +38,13 @@ bool ParseScriptIds(std::string_view json, script_program::Vocabulary& out, std:
     return true;
 }
 
-bool LoadMergedVocabulary(
-        const std::filesystem::path& packDirectory, std::span<const std::string> mods, script_program::Vocabulary& out, std::string& error)
+bool LoadMergedVocabulary(const std::filesystem::path& packDirectory, std::span<const std::string> mods, script_program::Vocabulary& out,
+        std::string& error, std::vector<std::string>* errors)
 {
     out = {};
     std::vector<object_vocabulary::Entry> states;
     std::vector<object_vocabulary::Entry> messages;
-    if (!object_vocabulary::LoadMerged(packDirectory, mods, states, messages, error)) return false;
+    if (!object_vocabulary::LoadMerged(packDirectory, mods, states, messages, error, errors)) return false;
     CopyEntries(states, out.states);
     CopyEntries(messages, out.messages);
     out.functions = script_program::EngineFunctions();
@@ -53,10 +53,15 @@ bool LoadMergedVocabulary(
 }
 
 bool ValidateModObjectScripts(const std::filesystem::path& packDirectory, std::span<const std::string> mods,
-        const script_program::Vocabulary& vocabulary, std::string& error)
+        const script_program::Vocabulary& vocabulary, std::string& error, std::vector<std::string>* errors)
 {
     error.clear();
-    if (mods.empty()) return true;
+    bool valid = true;
+    const auto report = [&] {
+        valid = false;
+        if (errors) errors->push_back(error);
+        return errors != nullptr;
+    };
     const std::filesystem::path gameDirectory = pack_path::GameDirectory(packDirectory);
     for (const std::string& mod : mods) {
         const auto modDirectory = pack_path::ModDirectory(gameDirectory, mod);
@@ -74,7 +79,8 @@ bool ValidateModObjectScripts(const std::filesystem::path& packDirectory, std::s
             std::string readError;
             if (!script_pack::ReadScript(file, script_pack::Kind::Object, text, readError)) {
                 error = "mod \"" + mod + "\" (" + relative + ", line 1): " + readError;
-                return false;
+                if (!report()) return false;
+                continue;
             }
             text.push_back(static_cast<char>(file_io::kTerminator));
             auto program = std::make_unique<script::ScriptProgram>();
@@ -84,12 +90,13 @@ bool ValidateModObjectScripts(const std::filesystem::path& packDirectory, std::s
             } catch (const script_program::ParseError& failure) {
                 script_program::Destroy(*program, kValidationMemory);
                 error = "mod \"" + mod + "\" (" + relative + "): " + failure.what();
-                return false;
+                if (!report()) return false;
+                continue;
             }
             script_program::Destroy(*program, kValidationMemory);
         }
     }
-    return true;
+    return valid;
 }
 
 } // namespace obl::object

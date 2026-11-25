@@ -10,5 +10,5 @@ namespace obl::catalog {
 bool LoadIndex(const std::filesystem::path& pack, nlohmann::json& out, std::string& error);
 // Loads the ordered catalog into a reset WorldParams; the records own everything they hold. Failure leaves the destination
 // unchanged.
-bool LoadPack(const std::filesystem::path& pack, tables::WorldParams& out, std::string& error);
+bool LoadPack(const std::filesystem::path& pack, tables::WorldParams& out, std::string& error, std::vector<std::string>* errors = nullptr);
 } // namespace obl::catalog
