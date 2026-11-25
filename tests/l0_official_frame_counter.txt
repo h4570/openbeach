@@ -1,0 +1,45 @@
+# The official Frame Counter draws over L0 and follows both settings while the game is running.
+# @env OBL_PACK=l0
+# @env OBL_MODS=frame_counter
+# @timeout 120
+# @gameini Video.ResWidth=800
+# @gameini Video.ResHeight=600
+# @gameini Video.NudgeScroll=0
+seed 1
+fixed-dt 0.02
+move 400 300
+boot-gameplay scenario 1
+await gameplay
+step 5
+screen-pixel 9 9
+expect-last-range b 1 255
+mod-overlay on
+step 2
+screen-pixel 9 9
+expect-last r 0
+expect-last g 0
+expect-last b 0
+# The first letter of FPS is white on the black badge.
+screen-pixel 13 13
+expect-last r 255
+expect-last g 255
+expect-last b 255
+mod-setting frame_counter corner top_right
+step 2
+screen-pixel 9 9
+expect-last-range b 1 255
+screen-pixel 790 9
+expect-last r 0
+expect-last g 0
+expect-last b 0
+mod-setting frame_counter enabled false
+step 2
+screen-pixel 790 9
+expect-last-range b 1 255
+mod-setting frame_counter enabled true
+step 2
+screen-pixel 790 9
+expect-last r 0
+expect-last g 0
+expect-last b 0
+quit

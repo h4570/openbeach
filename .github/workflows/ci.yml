@@ -115,7 +115,8 @@ jobs:
       - name: Packages
         run: |
           sudo apt-get -o Acquire::Retries=3 update -q
-          sudo apt-get install -y -q --no-install-recommends ninja-build zstd ccache
+          sudo apt-get install -y -q --no-install-recommends ninja-build zstd ccache \
+            libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxi-dev libxfixes-dev libxss-dev
       - name: Compiler cache
         uses: actions/cache@v5
         with:
@@ -123,13 +124,20 @@ jobs:
           key: ccache-sim-${{ github.sha }}
           restore-keys: ccache-sim-
       - name: L0 headless tests
-        run: bash tools/ci/l0_sim_tests.sh $CCACHE_ARGS -DOBL_SIM_FAST_BUILD=ON
+        run: bash tools/ci/l0_sim_tests.sh $CCACHE_ARGS -DOBL_SIM_FAST_BUILD=ON -DOBL_LINUX_WINDOWED=ON
+      - name: Official mod tests on L0
+        run: |
+          cmake --build "$OBL_SIM_BUILD" --target OpenBeach
+          cp -R data/mods build/l0-run/mods
+          python3 tools/obl_sim_tests.py --windowed --no-build --game-dir build/l0-run --filter 'l0_official_*'
       - name: Test logs
         if: failure()
         uses: actions/upload-artifact@v6
         with:
           name: obl-sim-testlogs
-          path: build/l0-run/testlogs/linux
+          path: |
+            build/l0-run/testlogs/linux
+            build/l0-run/testlogs/linux-windowed
           retention-days: 7
           if-no-files-found: ignore
 

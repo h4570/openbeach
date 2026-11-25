@@ -10,6 +10,9 @@ tests/mods/l0_busker/** text eol=lf
 # The script readers compare the header line byte for byte: a CRLF checkout on Windows would refuse every test mod script.
 tests/mods/**/*.wsc text eol=lf
 tests/mods/**/*.obs text eol=lf
+# Ship official manifests and scripts with the same line endings on every platform.
+data/mods/**/mod.json text eol=lf
+data/mods/**/*.lua text eol=lf
 # Binary references: a line-ending rewrite must never touch them.
 *.png binary
 # cmd.exe misreads labels and blocks of a batch file with bare LF endings.
