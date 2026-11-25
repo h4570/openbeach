@@ -243,6 +243,122 @@ async function convertOnHelpers(request, plan, module, bridge, units, helpers) {
     return result.ok;
 }
 
+async function loadOpfsSubtree(rootHandle, prefix, target) {
+    const parts = prefix.split("/").filter(Boolean);
+    let dir;
+    try {
+        dir = await directoryOf(rootHandle, parts, false);
+    } catch (error) {
+        if (error && error.name === "NotFoundError") return false;
+        throw error;
+    }
+    const walk = async (handle, currentPrefix) => {
+        for await (const [name, entry] of handle.entries()) {
+            const key = `${currentPrefix}/${name}`;
+            if (entry.kind === "directory") {
+                await walk(entry, key);
+            } else {
+                target.set(key, await entry.getFile());
+            }
+        }
+    };
+    await walk(dir, parts.join("/"));
+    return true;
+}
+
+async function listInstalledMods(opfs) {
+    let modsDir;
+    try {
+        modsDir = await opfs.getDirectoryHandle("mods");
+    } catch (error) {
+        if (error && error.name === "NotFoundError") return [];
+        throw error;
+    }
+    const ids = [];
+    for await (const [name, entry] of modsDir.entries()) {
+        if (entry.kind === "directory") ids.push(name);
+    }
+    ids.sort();
+    return ids;
+}
+
+async function persistPrefix(opfs, prefix, map) {
+    const parts = prefix.split("/").filter(Boolean);
+    const parent = await directoryOf(opfs, parts.slice(0, -1), true);
+    await parent.removeEntry(parts[parts.length - 1], {recursive: true}).catch(() => {});
+    const prefixSlash = `${parts.join("/")}/`;
+    const entries = [...map.entries()].filter(([key]) => key.startsWith(prefixSlash));
+    if (entries.length === 0) return;
+    const directories = new Map();
+    const directoryFor = async (dirParts) => {
+        const name = dirParts.join("/");
+        let dir = directories.get(name);
+        if (!dir) {
+            dir = dirParts.length === 0 ? opfs : await (await directoryFor(dirParts.slice(0, -1))).getDirectoryHandle(dirParts[dirParts.length - 1], {create: true});
+            directories.set(name, dir);
+        }
+        return dir;
+    };
+    for (const [key, blob] of entries) {
+        const keyParts = key.split("/");
+        const dir = await directoryFor(keyParts.slice(0, -1));
+        const handle = await (await dir.getFileHandle(keyParts[keyParts.length - 1], {create: true})).createSyncAccessHandle();
+        try {
+            handle.truncate(0);
+            handle.write(new Uint8Array(reader.readAsArrayBuffer(blob)), {at: 0});
+            handle.flush();
+        } finally {
+            handle.close();
+        }
+    }
+}
+
+async function runModRecipes(request, existingModule, existingPending) {
+    const opfs = await navigator.storage.getDirectory();
+    const root = request.root || "packs/base";
+    const modIds = request.mods && request.mods.length ? [...request.mods] : await listInstalledMods(opfs);
+    if (modIds.length === 0) return {built: 0, cached: 0, disabled: []};
+    const pending = existingPending || new Map();
+    const targets = [];
+    for (const id of modIds) {
+        const hasRecipes = await loadOpfsSubtree(opfs, `mods/${id}/recipes`, pending);
+        const hasCache = await loadOpfsSubtree(opfs, `mod-cache/${id}`, pending);
+        if (hasRecipes || hasCache) targets.push({id});
+    }
+    if (targets.length === 0) return {built: 0, cached: 0, disabled: []};
+    if (!existingPending) {
+        // Load only the pack files referenced by the recipes (or images/ as fallback).
+        const neededSources = new Set();
+        for (const [key, blob] of pending) {
+            if (!key.includes("/recipes/") || !key.endsWith(".json")) continue;
+            try {
+                const parsed = JSON.parse(new TextDecoder().decode(reader.readAsArrayBuffer(blob)));
+                if (typeof parsed.source === "string") neededSources.add(parsed.source);
+            } catch (_) {}
+        }
+        for (const rel of neededSources) {
+            const parts = `${root}/${rel}`.split("/").filter(Boolean);
+            try {
+                const dir = await directoryOf(opfs, parts.slice(0, -1), false);
+                const file = await (await dir.getFileHandle(parts[parts.length - 1])).getFile();
+                pending.set(parts.join("/"), file);
+            } catch (error) {
+                if (!error || error.name !== "NotFoundError") throw error;
+            }
+        }
+    }
+    const module = existingModule || await createOblImport();
+    const bridge = makeBridge({files: []}, pending, (message) => self.postMessage(message));
+    module.oblImport = bridge;
+    const plan = JSON.stringify({packRoot: root, mods: targets});
+    if (module.ccall("obl_build_mod_recipes", "number", ["string"], [plan]) !== 0) {
+        throw new Error(module.UTF8ToString(module._obl_import_error()));
+    }
+    const report = JSON.parse(module.UTF8ToString(module._obl_build_mod_recipes_report()));
+    for (const {id} of targets) await persistPrefix(opfs, `mod-cache/${id}`, pending);
+    return report;
+}
+
 async function importPack(request) {
     const root = request.root || "packs/base";
     const pending = new Map();
@@ -264,6 +380,7 @@ async function importPack(request) {
     }
     await persist(root, pending, (done, total) => self.postMessage({type: "progress", step: "storing", done, total, at: Date.now()}));
     await writeLanguage(module.UTF8ToString(module._obl_import_language()));
+    await runModRecipes({root}, module, pending);
     self.postMessage({type: "done", files: pending.size});
 }
 
@@ -271,6 +388,15 @@ self.onmessage = async (event) => {
     const request = event.data;
     if (request.type === "shard") {
         runHelper(request);
+        return;
+    }
+    if (request.type === "recipes") {
+        try {
+            const report = await runModRecipes(request, null, null);
+            self.postMessage({type: "recipes-done", ...report});
+        } catch (error) {
+            self.postMessage({type: "error", message: String(error)});
+        }
         return;
     }
     try {

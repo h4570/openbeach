@@ -296,11 +296,46 @@ async function synthetic(createOblImport) {
         check(steps.join() === "gui-tables", `progress: ${steps.join()}`);
         await languageRule(createOblImport, dir);
         await shardedFakeCopy(createOblImport, dir);
+        await recipeSynthetic(createOblImport);
         result = await run(createOblImport, files, JSON.stringify({source: "iso", isoSize: 4096}), new Map(), []);
         check(result.code === 1 && result.error.includes("ISO 9660"), `not a disc image: ${result.error}`);
     } finally {
         fs.rmSync(dir, {recursive: true, force: true});
     }
+}
+
+async function recipeSynthetic(createOblImport) {
+    const module = await createOblImport();
+    const store = new Map();
+    module.oblImport = makeBridge([], store, [], new Map());
+    const l0Title = path.resolve(__dirname, "../../data/packs/l0/images/screens/l0_title.png");
+    store.set("packs/l0/images/screens/l0_title.png", new Uint8Array(fs.readFileSync(l0Title)));
+    const okRecipe = JSON.stringify({
+        format: "obl.asset_recipe",
+        version: 1,
+        source: "images/screens/l0_title.png",
+        output: "overlay/banner.png",
+        operations: [{op: "crop", x: 0, y: 0, width: 16, height: 16}, {op: "mirror", axis: "horizontal"}],
+    });
+    const missingRecipe = JSON.stringify({
+        format: "obl.asset_recipe",
+        version: 1,
+        source: "images/screens/missing.png",
+        output: "overlay/missing.png",
+        operations: [],
+    });
+    store.set("mods/demo/recipes/banner.json", new TextEncoder().encode(okRecipe));
+    store.set("mods/demo/recipes/missing.json", new TextEncoder().encode(missingRecipe));
+    const req = JSON.stringify({packRoot: "packs/l0", mods: [{id: "demo"}]});
+    const code1 = module.ccall("obl_build_mod_recipes", "number", ["string"], [req]);
+    const report1 = code1 === 0 ? JSON.parse(module.UTF8ToString(module._obl_build_mod_recipes_report())) : null;
+    check(code1 === 0 && report1.built === 1 && report1.cached === 0 && report1.disabled.length === 1 &&
+        store.has("mod-cache/demo/overlay/banner.png") && !store.has("mod-cache/demo/overlay/missing.png"),
+        "recipes: wasm builds present recipe and disables missing source");
+    const code2 = module.ccall("obl_build_mod_recipes", "number", ["string"], [req]);
+    const report2 = code2 === 0 ? JSON.parse(module.UTF8ToString(module._obl_build_mod_recipes_report())) : null;
+    check(code2 === 0 && report2.built === 0 && report2.cached === 1 && report2.disabled.length === 1,
+        "recipes: wasm reuses cached output on second run");
 }
 
 // The fake copy, with an archive to prepare, imported with three helper threads: each helper gets the job and its wasm instance
