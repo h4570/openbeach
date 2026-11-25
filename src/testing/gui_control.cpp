@@ -19,8 +19,12 @@
 #include "game/ui/sprite.h"
 #include "core/ascii_case.h"
 #include "core/log.h"
+#include "core/sha256.h"
+#include "game/mods/mod_catalog.h"
 #include "test_util.h"
 #include "platform/sdl_present.h"
+
+#include <nlohmann/json.hpp>
 
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_video.h>
@@ -243,6 +247,88 @@ bool ReadGuiProbe(const std::string& name, double& out)
 
 bool ExecuteGuiControlCommand(const std::string& name, const std::vector<std::string>& args)
 {
+    if (name == "gui-stage-catalog") {
+        if (args.size() != 2 || args[0].empty() || args[1].empty() || args[1].size() % 2 != 0) {
+            OBL_LOG("autotest: FAILED gui-stage-catalog needs <mod-id> <hex-zip>");
+            return true;
+        }
+        const std::string& modId = args[0];
+        const std::string& hex = args[1];
+        std::vector<uint8_t> bytes;
+        for (size_t i = 0; i < hex.size(); i += 2) {
+            unsigned value = 0;
+            const auto result = std::from_chars(hex.data() + i, hex.data() + i + 2, value, 16);
+            if (result.ec != std::errc{} || result.ptr != hex.data() + i + 2) {
+                OBL_LOG("autotest: FAILED gui-stage-catalog malformed hex");
+                return true;
+            }
+            bytes.push_back(static_cast<uint8_t>(value));
+        }
+        std::error_code ec;
+        const std::filesystem::path dir = std::filesystem::path("testlogs") / "local-catalog";
+        std::filesystem::create_directories(dir, ec);
+        const std::string zipName = modId + ".zip";
+        std::ofstream zipOut(dir / zipName, std::ios::binary);
+        zipOut.write(std::bit_cast<const char*>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
+        zipOut.close();
+
+        nlohmann::json doc = {
+                {"format", "obl.mod_catalog"},
+                {"version", 1},
+                {"title", "Local Test Catalog"},
+                {"mods",
+                        nlohmann::json::array({{
+                                {"id", modId},
+                                {"title", "Catalog Test Mod"},
+                                {"mod_version", "1.0.0"},
+                                {"packs", {"l0"}},
+                                {"scope", "presentation"},
+                                {"api", 1},
+                                {"url", zipName},
+                                {"sha256", sha256::Hex(bytes)},
+                                {"size", bytes.size()},
+                                {"license", "MIT"},
+                        }})},
+        };
+        static constexpr ed25519::Seed kTestSeed = {0x9d, 0x61, 0xb1, 0x9d, 0xef, 0xfd, 0x5a, 0x60, 0xba, 0x84, 0x4a, 0xf4, 0x92, 0xec,
+                0x2c, 0xc4, 0x44, 0x49, 0xc5, 0x69, 0x7b, 0x32, 0x69, 0x19, 0x70, 0x3b, 0xac, 0x03, 0x1c, 0xae, 0x7f, 0x60};
+        std::string signedText;
+        std::string error;
+        if (!mods::SignCatalogJson(doc.dump(), kTestSeed, signedText, error)) {
+            OBL_LOG("autotest: FAILED gui-stage-catalog sign failed: %s", error.c_str());
+            return true;
+        }
+        const std::filesystem::path catPath = dir / "catalog.json";
+        std::ofstream catOut(catPath, std::ios::binary);
+        catOut << signedText;
+        catOut.close();
+        const std::string abs = std::filesystem::absolute(catPath, ec).generic_string();
+        const std::string url = abs.starts_with('/') ? ("file://" + abs) : ("file:///" + abs);
+        if (!obl::gui::mods_screen::QueueCatalogUrl(url, true)) {
+            OBL_LOG("autotest: FAILED gui-stage-catalog could not queue %s", url.c_str());
+        } else {
+            OBL_LOG("autotest: gui-stage-catalog %s", url.c_str());
+        }
+        return true;
+    }
+    if (name == "gui-add-catalog") {
+        if (args.size() != 1 || args[0].empty()) {
+            OBL_LOG("autotest: FAILED gui-add-catalog needs a catalog URL or path");
+            return true;
+        }
+        std::string url = args[0];
+        if (!url.starts_with("file://") && !url.starts_with("https://")) {
+            std::error_code ec;
+            const auto abs = std::filesystem::absolute(url, ec).generic_string();
+            url = abs.starts_with('/') ? ("file://" + abs) : ("file:///" + abs);
+        }
+        if (!obl::gui::mods_screen::QueueCatalogUrl(url, true)) {
+            OBL_LOG("autotest: FAILED gui-add-catalog could not queue %s", url.c_str());
+        } else {
+            OBL_LOG("autotest: gui-add-catalog %s", url.c_str());
+        }
+        return true;
+    }
     if (name == "gui-drop-mod") {
         if (args.size() != 1 || args[0].empty() || args[0].size() % 2 != 0) {
             OBL_LOG("autotest: FAILED gui-drop-mod needs a ZIP in hex");

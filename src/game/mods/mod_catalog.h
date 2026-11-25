@@ -1,0 +1,128 @@
+#pragma once
+
+#include "formats/mod_pack.h"
+#include "game/mods/ed25519.h"
+
+#include <cstdint>
+#include <filesystem>
+#include <optional>
+#include <span>
+#include <string>
+#include <string_view>
+#include <vector>
+
+// Mod catalogs (docs/modding/catalogs.md): signed third-party indexes (`obl.mod_catalog`) the player adds by HTTPS URL.
+// Pure logic: no network calls, no OS headers, no simulation state.
+namespace obl::mods {
+
+#ifdef OBL_ENGINE_VERSION
+inline constexpr std::string_view kEngineVersion = OBL_ENGINE_VERSION;
+#else
+inline constexpr std::string_view kEngineVersion = "1.13.0";
+#endif
+
+inline constexpr const char* kCatalogFormat = "obl.mod_catalog";
+inline constexpr int kCatalogVersion = 1;
+inline constexpr const char* kCatalogStoreFormat = "obl.mod_catalogs";
+inline constexpr int kCatalogStoreVersion = 1;
+inline constexpr const char* kCatalogStoreFile = "mod-catalogs.json";
+inline constexpr size_t kMaxCatalogBytes = 4 * 1024 * 1024;
+inline constexpr size_t kMaxCatalogEntries = 2048;
+
+struct SemVer {
+    int major = 0;
+    int minor = 0;
+    int patch = 0;
+};
+
+bool ParseVersion(std::string_view text, SemVer& out);
+int CompareVersion(const SemVer& a, const SemVer& b);
+bool InVersionRange(const SemVer& engine, const std::optional<SemVer>& minVersion, const std::optional<SemVer>& maxVersion);
+
+struct CatalogEntry {
+    std::string id;
+    std::string title;
+    std::string modVersion;
+    std::vector<std::string> packs;
+    mod_pack::Scope scope = mod_pack::Scope::World;
+    int api = 0;
+    std::optional<SemVer> engineMin;
+    std::optional<SemVer> engineMax;
+    std::vector<std::string> requiresMods;
+    std::string url; // resolved HTTPS URL (or file:// for local test catalogs)
+    std::string sha256; // 64 lowercase hex digits of the ZIP archive
+    std::string contentHash; // optional 64 lowercase hex digits of ModContentHash (for save lookup)
+    uint64_t size = 0; // exact byte length of the ZIP archive
+    std::string license;
+};
+
+struct Catalog {
+    std::string title;
+    std::string publicKeyHex;
+    ed25519::PublicKey publicKey{};
+    std::vector<CatalogEntry> mods;
+};
+
+// Validates and parses a signed catalog.json document. `catalogUrl` is the address it was fetched from (used to resolve
+// relative mod URLs and enforce HTTPS on remote catalogs). `allowLocal` permits file:// catalog URLs for local/test catalogs.
+bool ParseCatalog(std::string_view text, std::string_view catalogUrl, bool allowLocal, Catalog& out, std::string& error);
+
+// Signs an unsigned catalog JSON object (setting `public_key` and `signature`) using `seed`.
+bool SignCatalogJson(std::string_view unsignedJson, const ed25519::Seed& seed, std::string& signedOut, std::string& error);
+
+// Checks whether a catalog entry can run on the given engine version, pack and presentation script API.
+bool IsCatalogModCompatible(const CatalogEntry& entry, const SemVer& engineVersion, std::string_view packId, int presentationApi);
+
+// Returns only the entries compatible with the given engine version, pack and presentation script API.
+std::vector<CatalogEntry> FilterCompatibleMods(
+        std::span<const CatalogEntry> mods, const SemVer& engineVersion, std::string_view packId, int presentationApi);
+
+// Computes the install order for `targetId` (dependencies first, ending with `targetId`), skipping mods already in
+// `installedIds` (unless `includeTargetIfInstalled` is true, e.g. for updates). Detects missing dependencies and cycles.
+bool ResolveInstallOrder(std::string_view targetId, std::span<const CatalogEntry> available, std::span<const std::string> installedIds,
+        bool includeTargetIfInstalled, std::vector<CatalogEntry>& orderOut, std::string& error);
+
+// Checks that downloaded archive bytes match the catalog entry's declared size and SHA-256 before passing to ModArchive.
+bool VerifyCatalogDownload(std::span<const uint8_t> bytes, const CatalogEntry& entry, std::string& error);
+
+// Validates a catalog URL entered by the user (`https://...`, or `file://...` when `allowLocal` is true).
+bool IsValidCatalogUrl(std::string_view url, bool allowLocal, std::string& error);
+
+struct StoredCatalog {
+    std::string url;
+    std::string title;
+    std::string pinnedPublicKeyHex;
+    std::vector<CatalogEntry> mods;
+    bool allowLocal = false;
+};
+
+struct CatalogModMatch {
+    std::string catalogTitle;
+    std::string catalogUrl;
+    CatalogEntry entry;
+};
+
+// Persistent store of player-added catalogs (`<game dir>/mod-catalogs.json`) with TOFU key pinning.
+class CatalogStore {
+public:
+    enum class UpdateStatus { Added, Updated, KeyChanged, Failed };
+
+    bool Load(const std::filesystem::path& gameDir, std::string& error);
+    bool Save(const std::filesystem::path& gameDir, std::string& error) const;
+
+    // Adds a new catalog (pinning its key) or updates an existing one. If the catalog's public key changed since it was
+    // pinned and `trustNewKey` is false, returns UpdateStatus::KeyChanged without replacing the pinned key or cached mods.
+    UpdateStatus AddOrUpdate(std::string_view url, const Catalog& catalog, bool allowLocal, bool trustNewKey, std::string& error);
+
+    bool Remove(std::string_view url);
+    const StoredCatalog* Find(std::string_view url) const;
+    const std::vector<StoredCatalog>& Catalogs() const { return m_catalogs; }
+
+    // Looks up a missing save mod by id and content hash across all added catalogs.
+    std::optional<CatalogModMatch> FindModByIdAndHash(std::string_view id, std::string_view contentHash) const;
+
+private:
+    std::vector<StoredCatalog> m_catalogs;
+};
+
+} // namespace obl::mods

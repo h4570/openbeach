@@ -14,6 +14,7 @@ endif()
 
 set(REPO ${CMAKE_CURRENT_SOURCE_DIR}/../..)
 cmake_path(NORMAL_PATH REPO)
+file(STRINGS ${REPO}/version.txt OBL_VERSION LIMIT_COUNT 1)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -267,7 +268,7 @@ foreach(target ${GAME_TARGETS})
     obl_embedded_icon(${target})
     obl_gui_content_schemas(${target})
     obl_catalog_schemas(${target})
-    target_compile_definitions(${target} PRIVATE NOMINMAX OBL_LINUX_HOST=1)
+    target_compile_definitions(${target} PRIVATE NOMINMAX OBL_LINUX_HOST=1 "OBL_ENGINE_VERSION=\"${OBL_VERSION}\"")
     target_compile_options(${target} PRIVATE
         -include ${CMAKE_CURRENT_SOURCE_DIR}/msvc_compat.h
         -fms-extensions -fasm-blocks

@@ -65,6 +65,7 @@ bool SDLCALL DropEvent(void*, SDL_Event* event)
     switch (event->type) {
     case SDL_EVENT_KEY_DOWN:
     case SDL_EVENT_KEY_UP: ++g_eventCounts.keyboard; return true;
+    case SDL_EVENT_TEXT_INPUT: ++g_eventCounts.keyboard; return true;
     case SDL_EVENT_WINDOW_FOCUS_GAINED:
     case SDL_EVENT_WINDOW_FOCUS_LOST:
         if (g_window && event->window.windowID == SDL_GetWindowID(g_window)) g_active = event->type == SDL_EVENT_WINDOW_FOCUS_GAINED;
@@ -469,6 +470,14 @@ SdlPumpResult PumpSdlEvents()
     while (SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_EVENT_DROP_FILE, SDL_EVENT_DROP_POSITION) > 0)
         if (event.type == SDL_EVENT_DROP_FILE && event.drop.windowID == SdlGameWindowId() && event.drop.data)
             gui::mods_screen::QueueArchive(event.drop.data);
+    while (SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_EVENT_TEXT_INPUT, SDL_EVENT_TEXT_INPUT) > 0)
+        if (event.text.text) gui::mods_screen::HandleTextInput(event.text.text);
+    if (gui::mods_screen::IsEditingCatalogUrl()) {
+        while (SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_EVENT_KEY_DOWN, SDL_EVENT_KEY_DOWN) > 0) {
+            const bool ctrl = (event.key.mod & SDL_KMOD_CTRL) != 0;
+            gui::mods_screen::HandleKeyDown(static_cast<int>(event.key.scancode), ctrl);
+        }
+    }
     while (SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_EVENT_QUIT, SDL_EVENT_TERMINATING) > 0) g_quitRequested = true;
     while (SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_EVENT_RENDER_TARGETS_RESET, SDL_EVENT_RENDER_DEVICE_RESET) > 0) {
         // Android can recreate the GLES surface after background/resume; drop the texture so the next frame recreates it.
