@@ -48,7 +48,11 @@ int Beer(const char*)
 
 Vocabulary ModVocabulary()
 {
-    return {{{1, "MT_ONE"}}, {{0, "PauseGame"}, {6, "UnlockNextScenario"}}, {{0xee, "PlayerCash"}, {0xc2, "Var"}}, {}, {}};
+    return {{{1, "MT_ONE"}}, {{0, "PauseGame"}, {6, "UnlockNextScenario"}},
+            {{0xee, "PlayerCash"}, {0xc2, "Var"}, {obl::world_script::kScriptValueEventKey, "EventKey"},
+                    {obl::world_script::kScriptValueEventObjectId, "EventObjectId"},
+                    {obl::world_script::kScriptValueEventValue, "EventValue"}},
+            {}, {}};
 }
 
 // A parsed world script that frees itself.
@@ -173,18 +177,88 @@ OBL_TEST_CASE("world_script_mod.winning_and_losing_calls_are_refused")
 OBL_TEST_CASE("world_script_mod.on_event_blocks_are_lists_of_their_state")
 {
     Script script;
-    OBL_REQUIRE(script.Load("State STATE_WORLD_STARTUP OnEvent DayStarted Add PlayerCash 5; End End\n"
-                            "State STATE_B OnEvent WeatherChanged Add Var0 1; End OnEvent GuestArrived End End\n"));
-    OBL_CHECK(script.script.m_onEvent[0][static_cast<size_t>(WorldEvent::DayStarted)] != nullptr);
-    OBL_CHECK(script.script.m_onEvent[0][static_cast<size_t>(WorldEvent::WeatherChanged)] == nullptr);
-    OBL_CHECK(script.script.m_onEvent[1][static_cast<size_t>(WorldEvent::WeatherChanged)] != nullptr);
-    OBL_CHECK(script.script.m_onEvent[1][static_cast<size_t>(WorldEvent::DayStarted)] == nullptr);
+    OBL_REQUIRE(script.Load("State STATE_WORLD_STARTUP\n"
+                            "  OnEvent DayStarted\n"
+                            "    Add PlayerCash 5;\n"
+                            "  End\n"
+                            "  OnEvent BuildingFinished KIOSK\n"
+                            "    Add ModVar.kiosks 1;\n"
+                            "  End\n"
+                            "  OnEvent BuildingFinished \"HUT\"\n"
+                            "    Add ModVar.huts 1;\n"
+                            "  End\n"
+                            "End\n"
+                            "State STATE_B\n"
+                            "  OnEvent WeatherChanged Add Var0 1; End\n"
+                            "  OnEvent GuestArrived End\n"
+                            "End\n"));
+    OBL_REQUIRE(script.script.m_onEvent[0].size() == 3u);
+    OBL_CHECK(script.script.m_onEvent[0][0].event == WorldEvent::DayStarted);
+    OBL_CHECK(script.script.m_onEvent[0][0].filter.empty());
+    OBL_CHECK(script.script.m_onEvent[0][0].commands != nullptr);
+    OBL_CHECK(script.script.m_onEvent[0][1].event == WorldEvent::BuildingFinished);
+    OBL_CHECK_EQ(script.script.m_onEvent[0][1].filter, "KIOSK");
+    OBL_CHECK(script.script.m_onEvent[0][1].commands != nullptr);
+    OBL_CHECK(script.script.m_onEvent[0][2].event == WorldEvent::BuildingFinished);
+    OBL_CHECK_EQ(script.script.m_onEvent[0][2].filter, "HUT");
+    OBL_CHECK(script.script.m_onEvent[0][2].commands != nullptr);
+
+    OBL_REQUIRE(script.script.m_onEvent[1].size() == 2u);
+    OBL_CHECK(script.script.m_onEvent[1][0].event == WorldEvent::WeatherChanged);
+    OBL_CHECK(script.script.m_onEvent[1][0].filter.empty());
+    OBL_CHECK(script.script.m_onEvent[1][0].commands != nullptr);
+    OBL_CHECK(script.script.m_onEvent[1][1].event == WorldEvent::GuestArrived);
+    OBL_CHECK(script.script.m_onEvent[1][1].filter.empty());
+    OBL_CHECK(script.script.m_onEvent[1][1].commands == nullptr);
+
     Script unknown;
     std::string error;
     OBL_CHECK(!unknown.Load("State STATE_WORLD_STARTUP OnEvent Midnight End End\n", &error));
     OBL_CHECK(error.find("Midnight") != std::string::npos);
-    for (const WorldEventInfo& info : WorldEvents()) OBL_CHECK(FindWorldEvent(info.name) == info.event);
+    for (const WorldEventInfo& info : WorldEvents()) {
+        OBL_CHECK(FindWorldEvent(info.name) == info.event);
+        Script single;
+        OBL_CHECK(single.Load(std::string("State STATE_WORLD_STARTUP OnEvent ") + info.name + " Add ModVar.seen 1; End End\n"));
+    }
     OBL_CHECK_EQ(WorldEvents().size(), kWorldEventCount);
+}
+
+OBL_TEST_CASE("world_script_mod.named_and_shared_mod_variables_parse_and_validate")
+{
+    Script script;
+    OBL_REQUIRE(script.Load("State STATE_WORLD_STARTUP\n"
+                            "  OnEntry\n"
+                            "    Set ModVar.bonus_count 10;\n"
+                            "    Add ModVar.economy.tax_rate 2;\n"
+                            "    If ( ModVar.bonus_count > ModVar.economy.tax_rate )\n"
+                            "      Set ModVar.flag_ok 1;\n"
+                            "    End\n"
+                            "  End\n"
+                            "  OnEvent BuildingFinished\n"
+                            "    If ( EventKey == \"KIOSK\" )\n"
+                            "      Set ModVar.last_id EventObjectId;\n"
+                            "      Set ModVar.last_val EventValue;\n"
+                            "    End\n"
+                            "  End\n"
+                            "End\n"));
+    std::string error;
+    OBL_CHECK(ValidateModWorldScript(script.script, error));
+
+    for (const char* bad : {"ModVar.", "ModVar.a.", "ModVar..b", "ModVar.a.b.c", "ModVar.bad$name"}) {
+        Script invalid;
+        std::string parseError;
+        OBL_CHECK(!invalid.Load(std::string("State STATE_WORLD_STARTUP OnEntry Set ") + bad + " 1; End End\n", &parseError));
+        OBL_CHECK(!parseError.empty());
+    }
+
+    HostEnv env;
+    WorldScriptHost host(env);
+    OBL_CHECK_EQ(host.GetSharedModVar("alpha", "rate"), 0);
+    host.SetSharedModVar("alpha", "rate", 42);
+    OBL_CHECK_EQ(host.GetSharedModVar("alpha", "rate"), 42);
+    OBL_CHECK_EQ(host.GetSharedModVar("beta", "rate"), 0);
+    host.Destroy(env);
+    OBL_CHECK(host.SharedModVars().empty());
 }
 
 OBL_TEST_CASE("world_script_mod.the_reference_page_lists_the_engine_vocabulary")

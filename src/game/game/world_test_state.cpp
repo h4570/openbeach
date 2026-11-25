@@ -454,7 +454,8 @@ void ArrivalOfGuests(WorldTestState* state, Arrival& arrival)
         messages::message_facade::PostDelayed(messages::message_facade::Current(), &leave, static_cast<float>(delay + delay));
         vehicle->m_Guests[vehicle->m_currCap] = static_cast<int32_t>(guest->m_id);
         ++vehicle->m_currCap;
-        world::DispatchModWorldEvent(*world, world_script::WorldEvent::GuestArrived);
+        world::DispatchModWorldEvent(
+                *world, world_script::WorldEvent::GuestArrived, {guestDef->m_key, static_cast<int32_t>(guest->m_id), 0});
     }
     Message depart = MakeMessage(static_cast<int>(vehicle->m_id), 3, 0x47);
     Post(depart);
@@ -468,6 +469,8 @@ void ArrivalOfGuests(WorldTestState* state, Arrival& arrival)
     Char16 line[140];
     ::obl::ui::host_text::Print(line, text, arrival.numGuests);
     feedback::Feedback(world->m_feedbackManager).AddText(line, objectId, 1);
+    world::DispatchModWorldEvent(*world, bus ? world_script::WorldEvent::BusArrived : world_script::WorldEvent::FerryArrived,
+            {bus ? "BUS" : "FERRY", static_cast<int32_t>(vehicle->m_id), arrival.numGuests});
 }
 
 int UpdateWorld(WorldTestState* state)

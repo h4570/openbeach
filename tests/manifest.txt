@@ -63,6 +63,8 @@ l0_mod_action_takeover.txt @l0
 l0_key_binding.txt @l0
 l0_mod_world_script.txt @l0
 l0_mod_world_events.txt @l0
+l0_mod_world_events_ext.txt @l0
+l0_mod_world_vars.txt @l0
 l0_mod_world_script_refused.txt @l0
 l0_mod_crlf.txt @l0
 l0_mod_screen.txt @hidden @l0

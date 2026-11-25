@@ -4,8 +4,10 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <map>
 #include <memory>
 #include <string>
+#include <vector>
 
 // The scenario script's records: the WorldScript state machine the script host owns, the payloads
 // of the commands its interpreter executes and the parser's payloads.
@@ -80,16 +82,55 @@ using WorldScriptState = script::ScriptState<kWorldScriptHandlers>;
 constexpr int kMaxWorldScriptStates = 10;
 constexpr int kWorldScriptVarCount = 0x20;
 
-// World events that mod world scripts can handle with `OnEvent <Name> ... End` inside a state.
+// Script value keys for mod world event arguments and named/shared mod variables.
+constexpr int kScriptValueEventKey = 0xef;
+constexpr int kScriptValueEventObjectId = 0xf0;
+constexpr int kScriptValueEventValue = 0xf1;
+constexpr int kScriptValueModVar = 0xf2;
+constexpr int kScriptValueSharedModVar = 0xf3;
+
+// World events that mod world scripts can handle with `OnEvent <Name> [Filter] ... End` inside a state.
 // Each fires at a fixed point of the simulation tick in mod load order.
 enum class WorldEvent : uint8_t {
     DayStarted = 0,
-    BuildingFinished = 1,
-    GuestArrived = 2,
-    WeatherChanged = 3,
-    Count = 4,
+    HourStarted = 1,
+    NightStarted = 2,
+    DayLightStarted = 3,
+    BuildingFinished = 4,
+    BuildingBroken = 5,
+    BuildingRepaired = 6,
+    BuildingDemolished = 7,
+    Vandalism = 8,
+    GuestArrived = 9,
+    GuestLeft = 10,
+    GuestDrowned = 11,
+    GuestEaten = 12,
+    WeatherChanged = 13,
+    DisasterStarted = 14,
+    DisasterFinished = 15,
+    StaffHired = 16,
+    StaffFired = 17,
+    FerryArrived = 18,
+    BusArrived = 19,
+    ShowStarted = 20,
+    BeerChanged = 21,
+    Count = 22,
 };
 constexpr size_t kWorldEventCount = static_cast<size_t>(WorldEvent::Count);
+
+// Arguments supplied to an `OnEvent` handler while it executes (`EventKey`, `EventObjectId`, `EventValue`).
+struct WorldEventContext {
+    std::string key;
+    int32_t objectId = -1;
+    int32_t value = 0;
+};
+
+// One `OnEvent <Name> [Filter] ... End` handler attached to a state.
+struct WorldEventHandler {
+    WorldEvent event = WorldEvent::DayStarted;
+    std::string filter; // empty matches any event key; non-empty matches context.key ignoring ASCII case
+    ScriptCommand* commands = nullptr;
+};
 
 // The scenario script of the world (`<n>.ble`), a state machine started by StartNewGame/StartLoadedGame at
 // `STATE_WORLD_STARTUP`. The state tables come from construct, the
@@ -102,18 +143,19 @@ struct WorldScript {
     std::string m_stateNames[kMaxWorldScriptStates]; // state i is m_states[i]; empty = never registered (duplicate name)
     int m_parsedList; // list being parsed (0 OnEntry, 1 OnExit, 2 OnUpdate, 3 OnReceipt, 4 OnSend, 5 OnEvent)
     uint32_t m_currentState; // while parsing: the state being filled; at run time: the active state
-    ScriptCommand* m_onEvent[kMaxWorldScriptStates][kWorldEventCount]{}; // OnEvent <Name> command lists per state
+    std::vector<WorldEventHandler> m_onEvent[kMaxWorldScriptStates]; // OnEvent <Name> [Filter] handlers per state
 };
 // The script host owns the parsed program; saves retain only its active state index.
 
 // One world script shipped by a world mod (`scripts/world/<name>.wsc`). Runs beside the scenario script in load order,
-// with its own state table, Flag<n> bits and Var<n> slots so it cannot clobber the scenario's state machine.
+// with its own state table, Flag<n> bits, Var<n> slots and named variables so it cannot clobber the scenario's state machine.
 struct ModWorldScript {
     std::string modId;
     std::string scriptName; // filename inside scripts/world/, e.g. "daily_bonus.wsc"
     std::unique_ptr<WorldScript> script;
     int32_t scriptFlags = 0;
     int32_t scriptVars[kWorldScriptVarCount] = {};
+    std::map<std::string, int32_t> namedVars;
 };
 
 // Parser payloads used by the executor and the destructor.

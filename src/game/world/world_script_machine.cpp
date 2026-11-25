@@ -1,6 +1,7 @@
 #include "game/world/world_script.h"
 #include "game/world/world_script_types.h"
 
+#include "core/ascii_case.h"
 #include "game/game/game_accessors.h"
 #include "core/fatal.h"
 #include "game/messages/message_state.h"
@@ -114,13 +115,19 @@ bool WorldScriptDispatch(WorldScript& script, Message message)
     return receipt.handled;
 }
 
-bool WorldScriptDispatchEvent(WorldScript& script, world_script::WorldEvent event)
+bool WorldScriptDispatchEvent(WorldScript& script, world_script::WorldEvent event, const world_script::WorldEventContext& context)
 {
     if (!script::CurrentStateInRange(script)) return false;
-    const ScriptCommand* list = script::OnEventList(script, script.m_currentState, event);
-    if (!list) return false;
-    RunList(list);
-    return true;
+    bool handled = false;
+    for (const world_script::WorldEventHandler& handler : script::OnEventHandlers(script, script.m_currentState)) {
+        if (handler.event != event) continue;
+        if (!handler.filter.empty() && !ascii::EqualsNoCase(handler.filter, context.key)) continue;
+        if (handler.commands) {
+            RunList(handler.commands);
+            handled = true;
+        }
+    }
+    return handled;
 }
 
 int32_t WorldScriptFindState(const WorldScript& script, const char* name)

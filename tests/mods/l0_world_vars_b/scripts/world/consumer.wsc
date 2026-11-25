@@ -1,0 +1,26 @@
+#obl-script 1 world
+// Loaded after l0_world_vars_a: reads its shared tax_rate and wins the conflict on l0_world_vars_a.winner.
+State STATE_WORLD_STARTUP
+	OnEntry
+		Set ModVar.seen_tax ModVar.l0_world_vars_a.tax_rate;
+		Set ModVar.l0_world_vars_a.winner 2;
+		ChangeState STATE_ACTIVE;
+	End
+	OnUpdate
+	End
+	OnExit
+	End
+End
+
+State STATE_ACTIVE
+	OnEntry
+	End
+	OnUpdate
+	End
+	OnEvent DayStarted
+		Add ModVar.seen_tax ModVar.l0_world_vars_a.tax_rate;
+		Set ModVar.l0_world_vars_a.winner 2;
+	End
+	OnExit
+	End
+End

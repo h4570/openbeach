@@ -335,9 +335,24 @@ bool WriteDocument(
             entry["state"] = std::move(stateName);
             entry["flags"] = mod.scriptFlags;
             entry["variables"] = std::move(vars);
+            if (!mod.namedVars.empty()) {
+                nlohmann::ordered_json named = nlohmann::ordered_json::object();
+                for (const auto& [name, value] : mod.namedVars) named[name] = value;
+                entry["named_variables"] = std::move(named);
+            }
             modScripts.push_back(std::move(entry));
         }
         document["world"]["mod_scripts"] = std::move(modScripts);
+        if (!live.m_worldScriptHost->SharedModVars().empty()) {
+            nlohmann::ordered_json shared = nlohmann::ordered_json::object();
+            for (const auto& [modId, vars] : live.m_worldScriptHost->SharedModVars()) {
+                if (vars.empty()) continue;
+                nlohmann::ordered_json modObj = nlohmann::ordered_json::object();
+                for (const auto& [name, value] : vars) modObj[name] = value;
+                shared[modId] = std::move(modObj);
+            }
+            if (!shared.empty()) document["world"]["mod_variables"] = std::move(shared);
+        }
     }
     world_save::WritePlayerJson(*live.m_player, document["player"]);
     if (!world_save::WriteMapJson(*live.m_grid, document["map"], error)) return false;
@@ -606,8 +621,21 @@ uint32_t ReadWorld(obl::world::World& world)
                         const size_t n = std::min(varsIt->size(), static_cast<size_t>(world_script::kWorldScriptVarCount));
                         for (size_t v = 0; v < n; ++v) mod.scriptVars[v] = (*varsIt)[v].get<int32_t>();
                     }
+                    mod.namedVars.clear();
+                    if (const auto namedIt = entry.find("named_variables"); namedIt != entry.end() && namedIt->is_object()) {
+                        for (const auto& [name, value] : namedIt->items())
+                            if (value.is_number_integer()) mod.namedVars[name] = value.get<int32_t>();
+                    }
                     break;
                 }
+            }
+        }
+        world.m_worldScriptHost->SharedModVars().clear();
+        if (const auto sharedIt = worldJson.find("mod_variables"); sharedIt != worldJson.end() && sharedIt->is_object()) {
+            for (const auto& [modId, varsObj] : sharedIt->items()) {
+                if (!varsObj.is_object()) continue;
+                for (const auto& [name, value] : varsObj.items())
+                    if (value.is_number_integer()) world.m_worldScriptHost->SetSharedModVar(modId, name, value.get<int32_t>());
             }
         }
     }

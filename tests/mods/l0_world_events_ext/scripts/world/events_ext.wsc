@@ -1,0 +1,116 @@
+#obl-script 1 world
+// Counts every world event, verifies header filters and EventKey/EventObjectId/EventValue arguments.
+State STATE_WORLD_STARTUP
+	OnEntry
+		Weather Overcast Day 0 Time 9.2;
+		Disaster WaterContamination Day 0 Time 10.5 Duration 0.5 DisasterValue 0.5;
+		ChangeState STATE_ACTIVE;
+	End
+	OnUpdate
+	End
+	OnExit
+	End
+End
+
+State STATE_ACTIVE
+	OnEntry
+	End
+	OnUpdate
+	End
+	OnEvent DayStarted
+		Add ModVar.days 1;
+		Set ModVar.last_day EventValue;
+	End
+	OnEvent HourStarted
+		Add ModVar.hours 1;
+		Set ModVar.last_hour EventValue;
+	End
+	OnEvent NightStarted
+		Add ModVar.nights 1;
+	End
+	OnEvent DayLightStarted
+		Add ModVar.daylights 1;
+	End
+	OnEvent BuildingFinished
+		Add ModVar.built_any 1;
+	End
+	OnEvent BuildingFinished LOO
+		Add ModVar.built_loo 1;
+		Set ModVar.loo_id EventObjectId;
+	End
+	OnEvent BuildingFinished HUT
+		Add ModVar.built_hut 1;
+	End
+	OnEvent BuildingBroken
+		Add ModVar.broken_any 1;
+	End
+	OnEvent BuildingBroken HUT
+		Add ModVar.broken_hut 1;
+	End
+	OnEvent BuildingRepaired LOO
+		Add ModVar.repaired_loo 1;
+		Set ModVar.repaired_broken EventValue;
+	End
+	OnEvent BuildingDemolished
+		Add ModVar.demolished_any 1;
+	End
+	OnEvent BuildingDemolished LOO
+		Add ModVar.demolished_loo 1;
+	End
+	OnEvent Vandalism BIN
+		Add ModVar.vandalism 1;
+		Set ModVar.vandal_id EventObjectId;
+	End
+	OnEvent GuestArrived
+		Add ModVar.guests_in 1;
+	End
+	OnEvent GuestLeft
+		Add ModVar.guests_out 1;
+	End
+	OnEvent GuestDrowned
+		Add ModVar.drowned 1;
+		Set ModVar.drowned_id EventObjectId;
+	End
+	OnEvent GuestEaten
+		Add ModVar.eaten 1;
+		Set ModVar.eaten_id EventObjectId;
+	End
+	OnEvent WeatherChanged Overcast
+		Add ModVar.overcast 1;
+	End
+	OnEvent WeatherChanged
+		If ( EventKey == "Overcast" )
+			Add ModVar.key_overcast 1;
+		End
+	End
+	OnEvent DisasterStarted WaterContamination
+		Add ModVar.disaster_start 1;
+	End
+	OnEvent DisasterFinished WaterContamination
+		Add ModVar.disaster_end 1;
+	End
+	OnEvent StaffHired
+		Add ModVar.staff_hired 1;
+	End
+	OnEvent StaffFired
+		Add ModVar.staff_fired 1;
+	End
+	OnEvent FerryArrived
+		Add ModVar.ferries 1;
+		Set ModVar.ferry_guests EventValue;
+	End
+	OnEvent BusArrived
+		Add ModVar.buses 1;
+		Set ModVar.bus_guests EventValue;
+	End
+	OnEvent ShowStarted FIREWORKS
+		Add ModVar.shows 1;
+		Set ModVar.show_id EventValue;
+	End
+	OnEvent BeerChanged LAGER
+		Add ModVar.beers 1;
+		Set ModVar.beer_id EventValue;
+	End
+	OnExit
+	End
+End

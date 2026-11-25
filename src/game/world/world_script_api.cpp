@@ -62,14 +62,38 @@ const NamedRow kValues[] = {
         {236, "ResortRating"},
         {237, "GameDay"},
         {238, "PlayerCash"},
+        {world_script::kScriptValueEventKey, "EventKey"},
+        {world_script::kScriptValueEventObjectId, "EventObjectId"},
+        {world_script::kScriptValueEventValue, "EventValue"},
 };
 
 const WorldEventInfo kWorldEvents[] = {
         {world_script::WorldEvent::DayStarted, "DayStarted"},
+        {world_script::WorldEvent::HourStarted, "HourStarted"},
+        {world_script::WorldEvent::NightStarted, "NightStarted"},
+        {world_script::WorldEvent::DayLightStarted, "DayLightStarted"},
         {world_script::WorldEvent::BuildingFinished, "BuildingFinished"},
+        {world_script::WorldEvent::BuildingBroken, "BuildingBroken"},
+        {world_script::WorldEvent::BuildingRepaired, "BuildingRepaired"},
+        {world_script::WorldEvent::BuildingDemolished, "BuildingDemolished"},
+        {world_script::WorldEvent::Vandalism, "Vandalism"},
         {world_script::WorldEvent::GuestArrived, "GuestArrived"},
+        {world_script::WorldEvent::GuestLeft, "GuestLeft"},
+        {world_script::WorldEvent::GuestDrowned, "GuestDrowned"},
+        {world_script::WorldEvent::GuestEaten, "GuestEaten"},
         {world_script::WorldEvent::WeatherChanged, "WeatherChanged"},
+        {world_script::WorldEvent::DisasterStarted, "DisasterStarted"},
+        {world_script::WorldEvent::DisasterFinished, "DisasterFinished"},
+        {world_script::WorldEvent::StaffHired, "StaffHired"},
+        {world_script::WorldEvent::StaffFired, "StaffFired"},
+        {world_script::WorldEvent::FerryArrived, "FerryArrived"},
+        {world_script::WorldEvent::BusArrived, "BusArrived"},
+        {world_script::WorldEvent::ShowStarted, "ShowStarted"},
+        {world_script::WorldEvent::BeerChanged, "BeerChanged"},
 };
+
+constexpr const char* kWeatherKindNames[] = {"HeatWave", "Normal", "Overcast", "LightRain", "HeavyRain", "ThunderStorm"};
+constexpr const char* kDisasterKindNames[] = {"Sharks", "WaterContamination", "BeerShortage", "Lightning", "Strike"};
 
 // Dialogs that announce a scenario win or loss (bot::OutcomeOfDialog). A mod world script may not open them.
 constexpr std::string_view kRefusedModMenus[] = {"ScenarioWon", "GameWon", "ScenarioLost"};
@@ -113,6 +137,16 @@ const char* WorldEventName(world_script::WorldEvent event)
     for (const WorldEventInfo& info : kWorldEvents)
         if (info.event == event) return info.name;
     return "";
+}
+
+const char* WeatherKindName(uint32_t state)
+{
+    return state < std::size(kWeatherKindNames) ? kWeatherKindNames[state] : "";
+}
+
+const char* DisasterKindName(int kind)
+{
+    return kind >= 0 && static_cast<size_t>(kind) < std::size(kDisasterKindNames) ? kDisasterKindNames[kind] : "";
 }
 
 bool IsRefusedModFunction(int functionId)

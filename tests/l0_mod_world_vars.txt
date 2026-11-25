@@ -1,0 +1,63 @@
+# Named (>32) and cross-mod shared world script variables, load-order conflict rule, and save/load round trip.
+# @env OBL_PACK=l0
+# @env OBL_MODS=l0_world_vars_a,l0_world_vars_b
+# @timeout 180
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario 1
+await gameplay
+world-script-change STATE_WORLD_AFTERGAME
+command set-game-speed level=2
+step 1
+mod-world-script-report l0_world_vars_a/a_first.wsc
+expect-last state 1
+expect-last v01 1
+expect-last v33 33
+expect-last v35 35
+mod-world-script-report l0_world_vars_a/b_second.wsc
+expect-last state 1
+expect-last v01 99
+mod-world-script-report l0_world_vars_b/consumer.wsc
+expect-last state 1
+expect-last seen_tax 15
+mod-var-report l0_world_vars_a
+expect-last shared_sum 17
+expect-last tax_rate 15
+expect-last winner 2
+set-hour 23.5
+step 200
+expect day 1
+mod-world-script-report l0_world_vars_a/a_first.wsc
+expect-last v35 36
+mod-world-script-report l0_world_vars_b/consumer.wsc
+expect-last seen_tax 30
+mod-var-report l0_world_vars_a
+expect-last shared_sum 25
+expect-last winner 2
+save-obl testlogs/l0_mod_world_vars.obl.save
+load-obl-save testlogs/l0_mod_world_vars.obl.save
+await world-loaded
+command set-game-speed level=2
+step 1
+mod-world-script-report l0_world_vars_a/a_first.wsc
+expect-last state 1
+expect-last v01 1
+expect-last v35 36
+mod-world-script-report l0_world_vars_a/b_second.wsc
+expect-last v01 99
+mod-world-script-report l0_world_vars_b/consumer.wsc
+expect-last seen_tax 30
+mod-var-report l0_world_vars_a
+expect-last shared_sum 25
+expect-last winner 2
+set-hour 23.5
+step 200
+expect day 2
+mod-world-script-report l0_world_vars_a/a_first.wsc
+expect-last v35 37
+mod-world-script-report l0_world_vars_b/consumer.wsc
+expect-last seen_tax 45
+mod-var-report l0_world_vars_a
+expect-last shared_sum 33
+expect-last winner 2
+quit

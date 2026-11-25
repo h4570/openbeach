@@ -4,6 +4,7 @@
 #include "game/objects/guest.h"
 #include "game/feedback/feedback_manager.h"
 #include "game/world/world_queries_api.h"
+#include "game/world/world_script.h"
 
 #include "game/game/game_accessors.h"
 #include "game/game/rng.h"
@@ -87,6 +88,8 @@ void RunSendOutDeathMessage(Guest& guest)
         if (list[i]->m_type != object::ObjectType::Guest) continue;
         Post(guest.m_id, static_cast<int32_t>(list[i]->m_id), messages::MT_SPOT_OPINION, 0, notice.spotKind);
     }
+    world::DispatchModWorldEvent(*world, notice.eaten ? world_script::WorldEvent::GuestEaten : world_script::WorldEvent::GuestDrowned,
+            {guest.m_definition ? guest.m_definition->m_key : std::string(), static_cast<int32_t>(guest.m_id), 0});
 }
 
 void RunUpdateDrowning(Guest& guest)

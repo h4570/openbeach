@@ -29,6 +29,7 @@
 #include "game/weather/weather_strike.h"
 #include "game/weather/weather_update.h"
 #include "game/world/world_script.h"
+#include "game/world/world_script_api.h"
 #include "game/messages/message_handler.h"
 #include "game/objects/building_methods.h"
 #include "game/objects/object_scenery.h"
@@ -262,7 +263,10 @@ void RunSchedule(Weather* weatherState)
     const uint32_t previous = weatherState->m_currentState;
     ScheduleEnv env(*weatherState);
     weather::UpdateSchedule(*weatherState, static_cast<uint32_t>(world->m_gameDay), world->m_gameDayTime, env);
-    if (weatherState->m_currentState != previous) world::DispatchModWorldEvent(*world, world_script::WorldEvent::WeatherChanged);
+    if (weatherState->m_currentState != previous)
+        world::DispatchModWorldEvent(*world, world_script::WorldEvent::WeatherChanged,
+                {world_script_parse::WeatherKindName(weatherState->m_currentState), -1,
+                        static_cast<int32_t>(weatherState->m_currentState)});
 }
 
 void UpdateSchedule(Weather* weatherState)

@@ -24,10 +24,12 @@ struct WorldEventInfo {
 const std::vector<NamedId>& EngineFunctions();
 const std::vector<NamedId>& EngineValues();
 
-// World events available to `OnEvent <Name> ... End` blocks in world scripts.
+// World events available to `OnEvent <Name> [Filter] ... End` blocks in world scripts.
 std::span<const WorldEventInfo> WorldEvents();
 std::optional<world_script::WorldEvent> FindWorldEvent(std::string_view name);
 const char* WorldEventName(world_script::WorldEvent event);
+const char* WeatherKindName(uint32_t state);
+const char* DisasterKindName(int kind);
 
 // Calls that a mod world script is not allowed to make (the scenario keeps the last word on winning and losing).
 bool IsRefusedModFunction(int functionId);
