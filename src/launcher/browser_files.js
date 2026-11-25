@@ -304,11 +304,14 @@ Module["preRun"] = [].concat(Module["preRun"] || [], function oblLoadGameFiles()
         // The cursors of the player's copy; an import by an older site has none, and the game then logs each missing cursor once.
         {path: "remaster", kind: "directory", required: false},
         {path: "BeachLife.ini", kind: "file", required: false},
+        {path: "openbeach.ini", kind: "file", required: false},
+        {path: "mods", kind: "directory", required: false},
+        {path: "mod-cache", kind: "directory", required: false},
         {path: "SaveGames", kind: "directory", required: false},
         {path: "progress.json", kind: "file", required: false},
     ];
     // What the game writes and the flush returns to OPFS.
-    const writtenFiles = ["BeachLife.ini", "progress.json"];
+    const writtenFiles = ["BeachLife.ini", "openbeach.ini", "progress.json"];
     const writtenDirectory = "SaveGames";
     const flushIntervalMs = oblBrowserLog.tickMs;
     const lockName = "openbeach-game";
@@ -366,6 +369,7 @@ Module["preRun"] = [].concat(Module["preRun"] || [], function oblLoadGameFiles()
     async function load() {
         const root = await navigator.storage.getDirectory();
         let files = 0;
+        const installedMods = new Set();
         for (const entry of entries) {
             const handle = await lookup(root, entry.path, entry.kind);
             if (!handle) {
@@ -374,11 +378,89 @@ Module["preRun"] = [].concat(Module["preRun"] || [], function oblLoadGameFiles()
             }
             const to = target + "/" + entry.path;
             FS.mkdirTree(to.slice(0, to.lastIndexOf("/")));
-            files += await copyFiles(entry.kind === "file" ? [{handle, to}] : await listDirectory(handle, to, []));
+            if (entry.path === "mods" || entry.path === "mod-cache") {
+                for await (const [id, mod] of handle.entries()) {
+                    if (mod.kind !== "directory" || !/^[a-z0-9_-]+$/.test(id)) continue;
+                    if (entry.path === "mods") {
+                        // An interrupted write has no committed manifest; leave it out of the game copy.
+                        if (!await lookup(mod, "mod.json", "file")) continue;
+                        installedMods.add(id);
+                    } else if (!installedMods.has(id)) {
+                        continue;
+                    }
+                    files += await copyFiles(await listDirectory(mod, to + "/" + id, []));
+                }
+            } else {
+                files += await copyFiles(entry.kind === "file" ? [{handle, to}] : await listDirectory(handle, to, []));
+            }
         }
         // The game writes its saves there even when the player has none yet.
         FS.mkdirTree(target + "/SaveGames");
         return files;
+    }
+
+    // Archive bytes stay in memory until the game's shared validator accepts them.
+    let archiveInput = false;
+    let archiveRequest = 0;
+    let archive = null;
+    let archiveError = 0;
+    let archiveBusy = false;
+    Module["enableModArchiveInput"] = (enabled) => {
+        archiveInput = enabled;
+        archiveRequest++;
+        archive = null;
+        archiveError = 0;
+        archiveBusy = false;
+    };
+    async function acceptModArchive(file) {
+        if (!archiveInput || !file || archiveBusy || archive || archiveError) return;
+        if (file.size === 0 || file.size > 64 * 1024 * 1024) {
+            archiveError = file.size === 0 ? -1 : -2;
+            return;
+        }
+        const request = archiveRequest;
+        archiveBusy = true;
+        try {
+            const bytes = new Uint8Array(await file.arrayBuffer());
+            if (request === archiveRequest) archive = bytes;
+        } catch {
+            if (request === archiveRequest) archiveError = -1;
+        } finally {
+            if (request === archiveRequest) archiveBusy = false;
+        }
+    }
+    Module["pickModArchive"] = () => {
+        if (!archiveInput || archiveBusy) return;
+        const request = archiveRequest;
+        const picker = document.createElement("input");
+        picker.type = "file";
+        picker.accept = ".zip,application/zip";
+        picker.onchange = () => {
+            if (request === archiveRequest) acceptModArchive(picker.files[0]);
+        };
+        picker.click();
+    };
+    Module["modArchiveSize"] = () => {
+        if (archive) return archive.length;
+        const error = archiveError;
+        archiveError = 0;
+        return error;
+    };
+    Module["copyModArchive"] = (heap, offset) => {
+        heap.set(archive, offset);
+        archive = null;
+    };
+
+    const canvas = Module["canvas"];
+    if (canvas) {
+        canvas.addEventListener("dragover", (event) => {
+            if (event.dataTransfer.types.includes("Files")) event.preventDefault();
+        });
+        canvas.addEventListener("drop", (event) => {
+            if (!event.dataTransfer.files.length) return;
+            event.preventDefault();
+            acceptModArchive(event.dataTransfer.files[0]);
+        });
     }
 
     // ---- Writes back ----
@@ -386,6 +468,54 @@ Module["preRun"] = [].concat(Module["preRun"] || [], function oblLoadGameFiles()
     // last flush, so a save reaches OPFS within one interval without a callback in the game.
     const flushed = new Map(); // MEMFS path -> "mtime:size" as last written to OPFS
     let flushing = Promise.resolve();
+    const pendingMods = new Map(); // id -> current change, while older changes are being flushed
+
+    function modFiles(directory) {
+        const files = [];
+        for (const name of FS.readdir(directory)) {
+            if (name === "." || name === "..") continue;
+            const path = directory + "/" + name;
+            if (FS.isDir(FS.stat(path).mode)) files.push(...modFiles(path));
+            else files.push(path);
+        }
+        return files;
+    }
+
+    function snapshotModFiles(relative, marker) {
+        if (stamp(relative + "/" + marker) === null) return [];
+        return modFiles(target + "/" + relative).map((path) => ({
+            name: path.slice(target.length + 1),
+            bytes: FS.readFile(path),
+        }));
+    }
+
+    async function flushMods(root) {
+        const removals = [];
+        for (const [id, revision] of [...pendingMods]) {
+            const relative = "mods/" + id;
+            const cache = "mod-cache/" + id;
+            const manifest = relative + "/mod.json";
+            // Copy a whole version even when a replacement has the same file sizes and timestamps.
+            const files = snapshotModFiles(relative, "mod.json");
+            if (!files.length) {
+                removals.push([id, revision]);
+                continue;
+            }
+            const outputs = snapshotModFiles(cache, "recipe-cache.json");
+            await removeOpfs(root, relative, {recursive: true});
+            await removeOpfs(root, cache, {recursive: true});
+            for (const file of outputs) await writeOpfs(root, file.name, file.bytes);
+            for (const file of files) if (file.name !== manifest) await writeOpfs(root, file.name, file.bytes);
+            await writeOpfs(root, manifest, files.find((file) => file.name === manifest).bytes);
+            if (pendingMods.get(id) === revision) pendingMods.delete(id);
+        }
+        return removals;
+    }
+
+    Module["persistModChange"] = function oblPersistModChange(id) {
+        pendingMods.set(id, Symbol());
+        return Module["flushGameFiles"]();
+    };
 
     function listWritten() {
         const found = [];
@@ -424,11 +554,11 @@ Module["preRun"] = [].concat(Module["preRun"] || [], function oblLoadGameFiles()
         await stream.close();
     }
 
-    async function removeOpfs(root, relative) {
+    async function removeOpfs(root, relative, options) {
         const slash = relative.lastIndexOf("/");
         try {
             const dir = await opfsDirectory(root, slash < 0 ? "" : relative.slice(0, slash), false);
-            await dir.removeEntry(relative.slice(slash + 1));
+            await dir.removeEntry(relative.slice(slash + 1), options);
         } catch (error) {
             if (!error || error.name !== "NotFoundError") throw error;
         }
@@ -436,12 +566,20 @@ Module["preRun"] = [].concat(Module["preRun"] || [], function oblLoadGameFiles()
 
     async function flushNow() {
         const root = await navigator.storage.getDirectory();
+        const removals = await flushMods(root);
+        let canRemoveMods = true;
         const present = new Set();
         let count = 0;
         for (const relative of listWritten()) {
             const now = stamp(relative);
             if (now === null) continue;
             present.add(relative);
+            // Persist the archive before the configuration can refer to its id.
+            if (relative === "openbeach.ini" &&
+                    [...pendingMods.keys()].some((id) => stamp("mods/" + id + "/mod.json") !== null)) {
+                canRemoveMods = false;
+                continue;
+            }
             if (flushed.get(relative) === now) continue;
             await writeOpfs(root, relative, FS.readFile(target + "/" + relative));
             flushed.set(relative, now);
@@ -453,6 +591,15 @@ Module["preRun"] = [].concat(Module["preRun"] || [], function oblLoadGameFiles()
             await removeOpfs(root, relative);
             flushed.delete(relative);
             count++;
+        }
+        // Remove only after saving the configuration that switched the mod off.
+        if (canRemoveMods) {
+            for (const [id, revision] of removals) {
+                if (pendingMods.get(id) !== revision) continue;
+                await removeOpfs(root, "mods/" + id, {recursive: true});
+                await removeOpfs(root, "mod-cache/" + id, {recursive: true});
+                if (pendingMods.get(id) === revision) pendingMods.delete(id);
+            }
         }
         return count;
     }

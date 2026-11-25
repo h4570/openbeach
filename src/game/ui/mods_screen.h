@@ -24,6 +24,9 @@ void SetGameDirectory(const std::filesystem::path& gameDirectory);
 // The ModsPanel control of the own layer.
 ui::GuiWidget* CreatePanel(int x0, int y0, int x1, int y1);
 
+// A desktop drop is accepted only while the Mods screen is open.
+bool QueueArchive(std::string_view path);
+
 // Test support (`gui-click ModsScreen target <name>`): the centre of a tap target of the open screen, false when it shows none of
 // that name. Names: `toggle.<mod>`, `select.<mod>`, `up.<mod>`, `down.<mod>`, `setting.<id>.prev`, `setting.<id>.next` (of the
 // selected mod), `page.prev`, `page.next`, `help`, `back`.

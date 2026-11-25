@@ -5,6 +5,9 @@ paths (`catalog/...`, `text/...`, `sprites/...`), the same paths a pack uses. A 
 same path below it. Text tables, the catalog's record list, object script vocabularies and GUI layouts merge instead (see "Text patches", "Catalog patches",
 [object-scripts.md](object-scripts.md) and [gui-patches.md](gui-patches.md)); every other JSON data file takes a [JSON data patch](data-patches.md).
 
+To distribute a mod as a ZIP, archive the `<id>/` directory itself so the archive contains `<id>/mod.json`.
+Players install it from the [Mods screen](../players/mods-screen.md#installing-and-removing-mods).
+
 ## mod.json
 ```json
 {

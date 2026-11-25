@@ -81,7 +81,10 @@ function runPreJs(source, opfs, {click = true, clickFirst = false, lock = "none"
     let clock = 1000;
     const FS = {
         mkdirTree(dir) {
-            dirs.add(dir);
+            while (dir && dir !== "/") {
+                dirs.add(dir);
+                dir = dir.slice(0, dir.lastIndexOf("/"));
+            }
         },
         writeFile(file, bytes, {canOwn = false} = {}) {
             if (canOwn) owned.add(file);
@@ -93,13 +96,17 @@ function runPreJs(source, opfs, {click = true, clickFirst = false, lock = "none"
             return new Uint8Array(files.get(file));
         },
         stat(file) {
+            if (dirs.has(file)) return {mode: 0x4000, mtime: new Date(0), size: 0};
             if (!files.has(file)) throw new Error("ENOENT");
-            return {mtime: new Date(mtimes.get(file)), size: files.get(file).length};
+            return {mode: 0x8000, mtime: new Date(mtimes.get(file)), size: files.get(file).length};
         },
+        isDir(mode) { return mode === 0x4000; },
         readdir(dir) {
-            const names = [".", ".."];
-            for (const file of files.keys()) if (file.startsWith(dir + "/")) names.push(file.slice(dir.length + 1));
-            return names;
+            const names = new Set([".", ".."]);
+            for (const entry of [...files.keys(), ...dirs]) {
+                if (entry.startsWith(dir + "/")) names.add(entry.slice(dir.length + 1).split("/")[0]);
+            }
+            return [...names];
         },
         unlink(file) {
             files.delete(file);
@@ -110,6 +117,7 @@ function runPreJs(source, opfs, {click = true, clickFirst = false, lock = "none"
     const timeline = {now: 100000};
     const downloads = [];
     const failed = [];
+    let picker;
     const blobs = new Map();
     const fakeUrl = {
         createObjectURL(blob) {
@@ -120,8 +128,9 @@ function runPreJs(source, opfs, {click = true, clickFirst = false, lock = "none"
     };
     const events = {
         document: {visibilityState: "visible", addEventListener(type, fn) { listeners[type] = fn; },
-            createElement: () => ({click() {
-                downloads.push({name: this.download, blob: blobs.get(this.href)});
+            createElement: (tag) => ({click() {
+                if (tag === "input") picker = this;
+                else downloads.push({name: this.download, blob: blobs.get(this.href)});
             }})},
         window: {addEventListener(type, fn) { listeners[type] = fn; }},
         setInterval(fn) { ticks.push(fn); },
@@ -131,12 +140,17 @@ function runPreJs(source, opfs, {click = true, clickFirst = false, lock = "none"
             },
         },
     };
-    const Module = {arguments: ["--hidden"], onGameFailed: (info) => failed.push(info)};
+    const canvasEvents = {};
+    const Module = {
+        arguments: ["--hidden"],
+        onGameFailed: (info) => failed.push(info),
+        canvas: {addEventListener(type, fn) { canvasEvents[type] = fn; }},
+    };
     return new Promise((resolve) => {
         const dependencies = new Set();
         let ready = false;
         const done = (error) => resolve({files, dirs, owned, Module, error, ready, waiting: [...dependencies], logged, FS, ticks, listeners, events,
-            clock: timeline, downloads, failed});
+            clock: timeline, downloads, failed, canvasEvents, getPicker: () => picker});
         const addRunDependency = (id) => dependencies.add(id);
         const removeRunDependency = (id) => {
             dependencies.delete(id);
@@ -168,6 +182,8 @@ function runPreJs(source, opfs, {click = true, clickFirst = false, lock = "none"
 async function main() {
     const source = fs.readFileSync(process.argv[2] || path.join(__dirname, "browser_files.js"), "utf8");
     const bytes = (text) => new Uint8Array(Buffer.from(text));
+
+    const pack = () => ({packs: {base: {"pack.json": bytes("{}")}}});
 
     const full = await runPreJs(source, {
         packs: {
@@ -346,6 +362,58 @@ async function main() {
         "no click: files copied, main waits for the click-to-start layer");
     const early = await runPreJs(source, {packs: {base: {"pack.json": bytes("{}")}}}, {clickFirst: true});
     check(!early.error && early.ready && early.files.size === 1, "click before the copy ends: main runs after the copy");
+
+    // The Mods screen hands picker/drop bytes to WASM in memory and persists only validated output from MEMFS.
+    const modOpfs = pack();
+    const modRun = await runPreJs(source, modOpfs);
+    const modModule = modRun.Module;
+    const archive = {size: 3, async arrayBuffer() { return new Uint8Array([1, 2, 3]).buffer; }};
+    let prevented = false;
+    const drop = {dataTransfer: {files: [archive]}, preventDefault() { prevented = true; }};
+    modRun.canvasEvents.drop(drop);
+    check(prevented && modModule.modArchiveSize() === 0, "mod archive: drop outside the screen is ignored");
+    modModule.enableModArchiveInput(true);
+    modModule.pickModArchive();
+    const picker = modRun.getPicker();
+    picker.files = [archive];
+    picker.onchange();
+    await settle();
+    const heap = new Uint8Array(5);
+    check(modModule.modArchiveSize() === 3, "mod archive: picked bytes are ready");
+    modModule.copyModArchive(heap, 1);
+    check(heap.join() === "0,1,2,3,0" && modModule.modArchiveSize() === 0 && !modOpfs.mods,
+        "mod archive: picker supplies bytes without writing to OPFS");
+    modRun.canvasEvents.drop(drop);
+    await settle();
+    check(modModule.modArchiveSize() === 3, "mod archive: canvas drop supplies bytes");
+    modModule.copyModArchive(heap, 1);
+    modRun.canvasEvents.drop({dataTransfer: {files: [{size: 65 * 1024 * 1024}]}, preventDefault() {}});
+    check(modModule.modArchiveSize() === -2, "mod archive: oversized input is rejected before reading it");
+
+    const modDir = "/game/mods/zip_test";
+    const cacheDir = "/game/mod-cache/zip_test";
+    modRun.FS.mkdirTree(modDir + "/overlay");
+    modRun.FS.mkdirTree(cacheDir + "/overlay");
+    modRun.FS.writeFile(modDir + "/mod.json", bytes("v1"));
+    modRun.FS.writeFile(modDir + "/overlay/test.png", bytes("asset"));
+    modRun.FS.writeFile(cacheDir + "/recipe-cache.json", bytes("{}"));
+    modRun.FS.writeFile(cacheDir + "/overlay/generated.png", bytes("built"));
+    modRun.FS.writeFile("/game/openbeach.ini", bytes("[Mods]\nActive=zip_test\n"));
+    await modModule.persistModChange("zip_test");
+    const reload = await runPreJs(source, modOpfs);
+    check(reload.files.get(modDir + "/mod.json")?.toString() === "v1" &&
+        reload.files.get(cacheDir + "/overlay/generated.png")?.toString() === "built" &&
+        reload.files.get("/game/openbeach.ini")?.toString().includes("Active=zip_test"),
+        "mod archive: installed files, generated assets and active list reload from OPFS");
+    modRun.FS.writeFile(modDir + "/mod.json", bytes("v2"));
+    modRun.FS.unlink(modDir + "/overlay/test.png");
+    modRun.FS.unlink(cacheDir + "/recipe-cache.json");
+    await modModule.persistModChange("zip_test");
+    check(Buffer.from(modOpfs.mods.zip_test["mod.json"]).toString() === "v2" && !modOpfs.mods.zip_test.overlay &&
+        !modOpfs["mod-cache"].zip_test, "mod archive: replacement drops obsolete files and cache");
+    modRun.FS.unlink(modDir + "/mod.json");
+    await modModule.persistModChange("zip_test");
+    check(!modOpfs.mods.zip_test, "mod archive: removal deletes the OPFS directory");
 
     // Writes back: the game changes MEMFS, the tick (or pagehide) flushes it to OPFS.
     const opfs = {

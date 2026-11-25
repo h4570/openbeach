@@ -46,7 +46,9 @@ All operations use integer or 16.16 fixed-point arithmetic only, so the same sou
 
 ## Running, caching and missing sources
 - **CLI:** `obl-convert recipes <pack dir> <mods dir> [--mod <id>] [--cache <dir>] [--schemas <dir>]`. `obl-convert import` also runs recipes for installed mods sitting beside `packs/` after the pack import, without writing into the pack directory.
-- **Browser:** `import_worker.js` runs installed mods' recipes after a pack import and accepts `{type: "recipes", root?, mods?}` (via `obl_build_mod_recipes`) when a mod is installed or updated.
+- **Mods screen:** installing a ZIP calls the same recipe builder on every platform against the current pack.
+  Replacing or removing a mod clears its obsolete outputs. The running browser game's file bridge saves these outputs to OPFS.
+- **Browser importer:** `import_worker.js` runs installed mods' recipes after a pack import and accepts `{type: "recipes", root?, mods?}` (via `obl_build_mod_recipes`) when a mod is installed or updated.
 - **Cache:** outputs are written to `<game dir>/mod-cache/<id>/` next to `mods/<id>/`, with `recipe-cache.json` recording each recipe's SHA-256 and its source's SHA-256. A recipe re-runs only when its JSON, its source file, or a cached output changes; stale outputs from removed or disabled recipes are deleted.
 - **Missing source:** when `source` does not exist in the pack (for example on another pack or an L0-only install), only that recipe's output is disabled and a warning message is reported; other recipes still build.
 - **Layer order:** `pack_path` resolves an active mod's shipped files (`mods/<id>/`) first, then its cached recipe outputs (`mod-cache/<id>/`), then earlier mods and the pack. Presentation scripts (`obl.overlay.image`) also fall back to `mod-cache/<id>/overlay/`. Because outputs live outside `mods/<id>/`, `ModContentHash` is unchanged across packs.

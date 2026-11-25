@@ -24,6 +24,8 @@
 #include "core/platform_main.h"
 #include "openbeach_icon.gen.h"
 
+#include "game/ui/mods_screen.h"
+
 #include <SDL3/SDL.h>
 #ifdef _WIN32
 #define SDL_MAIN_HANDLED // only SDL_RegisterApp: no main() of SDL's here
@@ -72,7 +74,11 @@ bool SDLCALL DropEvent(void*, SDL_Event* event)
     case SDL_EVENT_TERMINATING:
     case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
     case SDL_EVENT_RENDER_TARGETS_RESET:
-    case SDL_EVENT_RENDER_DEVICE_RESET: ++g_eventCounts.other; return true; // taken by PumpSdlEvents
+    case SDL_EVENT_RENDER_DEVICE_RESET:
+    case SDL_EVENT_DROP_BEGIN:
+    case SDL_EVENT_DROP_FILE:
+    case SDL_EVENT_DROP_POSITION:
+    case SDL_EVENT_DROP_COMPLETE: ++g_eventCounts.other; return true; // taken by PumpSdlEvents
     case SDL_EVENT_WINDOW_MOUSE_LEAVE: ++g_eventCounts.other; return true;
     case SDL_EVENT_MOUSE_MOTION: ++g_eventCounts.mouseMotion; return true;
     case SDL_EVENT_MOUSE_BUTTON_DOWN:
@@ -460,6 +466,9 @@ SdlPumpResult PumpSdlEvents()
     // Taken here, before the input adapter drains its range (which contains the window events), so both the intro movie
     // and the game loop see them. The close button hides the window SDL owns; DestroySdlGameWindow ends it after the game.
     SDL_Event event;
+    while (SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_EVENT_DROP_FILE, SDL_EVENT_DROP_POSITION) > 0)
+        if (event.type == SDL_EVENT_DROP_FILE && event.drop.windowID == SdlGameWindowId() && event.drop.data)
+            gui::mods_screen::QueueArchive(event.drop.data);
     while (SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_EVENT_QUIT, SDL_EVENT_TERMINATING) > 0) g_quitRequested = true;
     while (SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_EVENT_RENDER_TARGETS_RESET, SDL_EVENT_RENDER_DEVICE_RESET) > 0) {
         // Android can recreate the GLES surface after background/resume; drop the texture so the next frame recreates it.

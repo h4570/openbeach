@@ -72,6 +72,15 @@ bool AreIncompatible(const Manifest& a, const Manifest& b);
 // False with `error` when `text` is not a valid mod.json.
 bool ParseManifest(std::string_view text, Manifest& manifest, std::string& error);
 
+// Shared by start-up and the archive reader, which checks bytes before writing any files.
+inline bool IsRecipePath(std::string_view relative)
+{
+    return relative.starts_with("recipes/") && relative.ends_with(".json") && relative.find('/', 8) == std::string_view::npos;
+}
+bool PresentationMayShip(std::string_view relative, std::string_view patchFormat, std::string_view recipeText);
+bool CheckManifestContent(
+        const Manifest& manifest, std::string_view packId, bool hasScripts, std::string_view refusedFile, std::string& error);
+
 // Checks that every id in `active` names an existing mod directory with a valid manifest whose id is the directory name,
 // lists `packId`, and whose `requires` are active and earlier; a presentation mod ships only what that scope allows, and a mod
 // with presentation scripts names an API version the game has. On success `mods` holds them in load order; on failure

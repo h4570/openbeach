@@ -2,7 +2,7 @@
 
 #include "importer/src/writers/guest_set_convert.h"
 #include "importer/src/writers/ordered_pool.h"
-#include "importer/src/writers/png_write.h"
+#include "core/png_write.h"
 #include "core/ascii_case.h"
 #include "formats/schemas.h"
 #include "core/sha256.h"

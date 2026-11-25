@@ -12,6 +12,7 @@
 #include "game/game/game_api.h"
 #include "game/game/game_accessors.h"
 #include "game/game/start_settings.h"
+#include "game/mods/mod_archive.h"
 #include "game/mods/mod_list.h"
 #include "game/mods/presentation_scripts.h"
 #include "game/tables/text_load.h"
@@ -21,14 +22,25 @@
 #include "game/ui/own_widgets.h"
 #include "game/ui/text_table.h"
 
+#include <SDL3/SDL_dialog.h>
+#include <SDL3/SDL_iostream.h>
+#include <SDL3/SDL_keyboard.h>
 #include <SDL3/SDL_misc.h>
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
+
 #include <algorithm>
+#include <array>
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <mutex>
+#include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace obl::gui::mods_screen {
@@ -38,7 +50,6 @@ namespace {
 namespace own = own_widgets;
 
 constexpr const char* kHelpUrl = "https://github.com/h4570/openbeach/blob/main/docs/modding/players/mods-screen.md";
-constexpr int kScriptApiVersion = 1;
 constexpr int kPageSize = 9;
 constexpr int kMaxSettingRows = 5;
 constexpr int kMaxConflictRows = 4;
@@ -52,6 +63,60 @@ std::string g_selectedId;
 int g_page = 0;
 std::u16string g_statusText;
 bool g_statusIsError = false;
+
+#ifndef __EMSCRIPTEN__
+// SDL can complete the picker on another thread and after the dialog has closed.
+std::mutex g_pickerMutex;
+bool g_pickerOpen = false;
+bool g_acceptPickerResult = false;
+std::string g_pickedFile;
+std::string g_pickerError;
+
+void SDLCALL ModFilePicked(void*, const char* const* files, int)
+{
+    const std::lock_guard lock(g_pickerMutex);
+    g_pickerOpen = false;
+    if (!g_acceptPickerResult) return;
+    if (!files)
+        g_pickerError = SDL_GetError();
+    else if (*files)
+        g_pickedFile = *files;
+}
+#endif
+
+void SetArchiveInputEnabled(bool enabled)
+{
+#ifdef __EMSCRIPTEN__
+    EM_ASM(
+            {
+                if (Module["enableModArchiveInput"]) Module["enableModArchiveInput"](!!$0);
+            },
+            enabled);
+#else
+    const std::lock_guard lock(g_pickerMutex);
+    g_acceptPickerResult = enabled && !g_pickerOpen;
+    g_pickedFile.clear();
+    g_pickerError.clear();
+#endif
+}
+
+void PersistModChange(const std::string& id)
+{
+#ifdef __EMSCRIPTEN__
+    EM_ASM(
+            {
+                if (Module["persistModChange"]) Module["persistModChange"](UTF8ToString($0));
+            },
+            id.c_str());
+#else
+    (void)id;
+#endif
+}
+
+std::filesystem::path GameDirectory()
+{
+    return g_gameDirectory.empty() ? std::filesystem::current_path() : g_gameDirectory;
+}
 
 std::u16string Utf8ToEngine(std::string_view utf8)
 {
@@ -198,7 +263,10 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
 
     ~GuiModsPanel() override
     {
-        if (g_openPanel == this) g_openPanel = nullptr;
+        if (g_openPanel == this) {
+            SetArchiveInputEnabled(false);
+            g_openPanel = nullptr;
+        }
     }
 
     const char* ClassName() const override { return "GuiModsPanel"; }
@@ -208,8 +276,13 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
         VisibleInvalidate(visible);
         if (visible) {
             g_openPanel = this;
+            SetArchiveInputEnabled(true);
             LoadList();
         } else if (g_openPanel == this) {
+            SetArchiveInputEnabled(false);
+            m_pendingReplace.reset();
+            m_pendingRemove.clear();
+            m_droppedFile.clear();
             g_openPanel = nullptr;
         }
     }
@@ -228,7 +301,9 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
         if (m_pendingReload) {
             m_pendingReload = false;
             game::game_api::ReloadFrontEnd(own_layer::kModsDialog);
+            return;
         }
+        if (m_visible && !IsConfirming()) PollArchiveInput();
     }
 
     bool MouseLeft(int x, int y, int state) override
@@ -269,6 +344,10 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
         // Header bar.
         own::Fill(m_x0, m_y0, m_x1, m_y0 + 48, own::kSea);
         own::Text(2, m_x0 + 16, m_y0 + 14, 560, Lookup("OBL_MODS_TITLE").c_str(), own::kWhite, 0);
+        DrawButton(m_x0 + 248, m_y0 + 8, m_x0 + 460, m_y0 + 40, Lookup("OBL_MODS_INSTALL").c_str(), own::kSeaDark, own::kWhite);
+        const bool canRemove = m_list && m_list->Find(g_selectedId);
+        DrawButton(m_x0 + 468, m_y0 + 8, m_x0 + 602, m_y0 + 40, Lookup("OBL_MODS_REMOVE").c_str(), canRemove ? own::kSeaDark : own::kSand,
+                canRemove ? own::kWhite : own::kGrey);
         DrawButton(m_x0 + 610, m_y0 + 8, m_x0 + 692, m_y0 + 40, Lookup("OBL_MODS_HELP").c_str(), own::kSeaDark, own::kWhite);
         DrawButton(m_x0 + 700, m_y0 + 8, m_x0 + 784, m_y0 + 40, Lookup("OBL_MODS_BACK").c_str(), own::kFoam, own::kInk);
 
@@ -280,7 +359,12 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
         own::Fill(m_x0, footerY, m_x0 + w, m_y1, own::kSeaDark);
         std::u16string footer;
         uint32_t footerColor = own::kWhite;
-        if (!g_statusText.empty()) {
+        if (IsConfirming()) {
+            const auto& id = m_pendingReplace ? m_pendingReplace->Id() : m_pendingRemove;
+            footer = Format(Lookup(m_pendingReplace ? "OBL_MODS_REPLACE_CONFIRM" : "OBL_MODS_REMOVE_CONFIRM"), {Utf8ToEngine(id)});
+            DrawButton(m_x0 + 570, footerY + 6, m_x0 + 672, footerY + 38, Lookup("OBL_MODS_CONFIRM").c_str(), own::kSea, own::kWhite);
+            DrawButton(m_x0 + 680, footerY + 6, m_x0 + 784, footerY + 38, Lookup("OBL_MODS_CANCEL").c_str(), own::kFoam, own::kInk);
+        } else if (!g_statusText.empty()) {
             footer = g_statusText;
             footerColor = g_statusIsError ? 0xffc8c8 : own::kWhite;
         } else if (m_list && !m_list->CanStart()) {
@@ -290,7 +374,7 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
             footer = Lookup("OBL_MODS_WORLD_NEXT");
             footerColor = own::kFoam;
         }
-        if (!footer.empty()) own::Text(1, m_x0 + 16, footerY + 14, w - 32, footer.c_str(), footerColor, 0);
+        if (!footer.empty()) own::Text(1, m_x0 + 16, footerY + 14, IsConfirming() ? 546 : w - 32, footer.c_str(), footerColor, 0);
 
         m_dirty = 0;
     }
@@ -304,10 +388,10 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
     void LoadList()
     {
         RecordStartupOnce();
-        const std::filesystem::path gameDir = g_gameDirectory.empty() ? std::filesystem::current_path() : g_gameDirectory;
+        const std::filesystem::path gameDir = GameDirectory();
         const std::string packId = pack_path::SelectedId();
         auto installed = mod_pack::ListInstalled(gameDir);
-        m_list = std::make_unique<mods::ModList>(std::move(installed), packId, g_desiredActive, kScriptApiVersion);
+        m_list = std::make_unique<mods::ModList>(std::move(installed), packId, g_desiredActive, mod_pack::kPresentationApi);
 
         const std::optional<std::filesystem::path> packRel = pack_path::PackDirectory(packId);
         if (packRel) {
@@ -402,7 +486,7 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
         }
         const std::vector<std::string> desired = m_list->ActiveIds();
         g_desiredActive = desired;
-        const std::filesystem::path gameDir = g_gameDirectory.empty() ? std::filesystem::current_path() : g_gameDirectory;
+        const std::filesystem::path gameDir = GameDirectory();
         if (!os::HasEnv("OBL_SCRIPT")) {
             const std::filesystem::path iniPath = gameDir / game::start_settings::kFileName;
             game::start_settings::CreateDefaultFile(iniPath);
@@ -498,6 +582,167 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
         MarkDirty();
     }
 
+    bool IsConfirming() const { return m_pendingReplace || !m_pendingRemove.empty(); }
+
+    bool CanChangeFiles(const std::string& id)
+    {
+        const auto* entry = m_list ? m_list->Find(id) : nullptr;
+        const auto& live = mod_pack::Active();
+        if ((!entry || !entry->on) && std::none_of(live.begin(), live.end(), [&](const auto& mod) { return mod.manifest.id == id; }))
+            return true;
+        SetArchiveStatus("OBL_MODS_ARCHIVE_ACTIVE", id, true);
+        return false;
+    }
+
+    void SetArchiveStatus(const char* key, std::string_view detail, bool error)
+    {
+        g_statusText = Format(Lookup(key), {Utf8ToEngine(detail)});
+        g_statusIsError = error;
+        OBL_LOG("mods screen: %s: %.*s", key, static_cast<int>(detail.size()), detail.data());
+        RebuildTargets();
+        MarkDirty();
+    }
+
+    void OnInstall()
+    {
+        if (os::HasEnv("OBL_SCRIPT")) return;
+#ifdef __EMSCRIPTEN__
+        EM_ASM({
+            if (Module["pickModArchive"]) Module["pickModArchive"]();
+        });
+#else
+        {
+            const std::lock_guard lock(g_pickerMutex);
+            if (g_pickerOpen) return;
+            g_pickerOpen = true;
+            g_acceptPickerResult = true;
+        }
+        static constexpr SDL_DialogFileFilter kFilters[] = {{"Mod ZIP", "zip"}};
+        SDL_ShowOpenFileDialog(ModFilePicked, nullptr, SDL_GetKeyboardFocus(), kFilters, 1, nullptr, false);
+#endif
+    }
+
+    void ReadArchiveFile(const std::string& path)
+    {
+        // SDL also opens content:// URIs returned by Android's system picker.
+        const std::unique_ptr<SDL_IOStream, decltype(&SDL_CloseIO)> stream(SDL_IOFromFile(path.c_str(), "rb"), SDL_CloseIO);
+        if (!stream) {
+            SetArchiveStatus("OBL_MODS_INSTALL_ERROR", SDL_GetError(), true);
+            return;
+        }
+        const auto size = SDL_GetIOSize(stream.get());
+        if (size > static_cast<int64_t>(mods::kMaxModZipBytes)) {
+            SetArchiveStatus("OBL_MODS_INSTALL_ERROR", "ZIP exceeds 64 MiB", true);
+            return;
+        }
+        // A document provider may offer a stream that cannot seek.
+        std::vector<uint8_t> bytes;
+        if (size > 0) bytes.reserve(static_cast<size_t>(size));
+        std::array<uint8_t, 65536> block;
+        while (const size_t count = SDL_ReadIO(stream.get(), block.data(), block.size())) {
+            if (count > mods::kMaxModZipBytes - bytes.size()) {
+                SetArchiveStatus("OBL_MODS_INSTALL_ERROR", "ZIP exceeds 64 MiB", true);
+                return;
+            }
+            bytes.insert(bytes.end(), block.begin(), block.begin() + static_cast<std::ptrdiff_t>(count));
+        }
+        if (SDL_GetIOStatus(stream.get()) != SDL_IO_STATUS_EOF) {
+            SetArchiveStatus("OBL_MODS_INSTALL_ERROR", "cannot read the complete file", true);
+            return;
+        }
+        InspectArchive(bytes);
+    }
+
+    void PollArchiveInput()
+    {
+        if (!m_droppedFile.empty()) {
+            ReadArchiveFile(std::exchange(m_droppedFile, {}));
+            return;
+        }
+#ifdef __EMSCRIPTEN__
+        const int size = EM_ASM_INT({ return Module["modArchiveSize"] ? Module["modArchiveSize"]() : 0; });
+        if (!size) return;
+        if (size < 0) {
+            SetArchiveStatus("OBL_MODS_INSTALL_ERROR", size == -2 ? "ZIP exceeds 64 MiB" : "cannot read archive", true);
+            return;
+        }
+        std::vector<uint8_t> bytes(static_cast<size_t>(size));
+        EM_ASM({ Module["copyModArchive"](HEAPU8, $0); }, bytes.data());
+        InspectArchive(bytes);
+#else
+        std::string path;
+        std::string error;
+        {
+            const std::lock_guard lock(g_pickerMutex);
+            path.swap(g_pickedFile);
+            error.swap(g_pickerError);
+        }
+        if (!error.empty()) SetArchiveStatus("OBL_MODS_INSTALL_ERROR", error, true);
+        if (!path.empty()) ReadArchiveFile(path);
+#endif
+    }
+
+    void InspectArchive(std::span<const uint8_t> bytes)
+    {
+        mods::ModArchive archive;
+        std::string error;
+        if (!archive.Read(bytes, pack_path::SelectedId(), error)) {
+            SetArchiveStatus("OBL_MODS_INSTALL_ERROR", error, true);
+            return;
+        }
+        const auto result = archive.Write(GameDirectory(), false, error);
+        if (result == mods::ModArchive::Result::AlreadyInstalled) {
+            if (!CanChangeFiles(archive.Id())) return;
+            m_pendingReplace.emplace(std::move(archive));
+            RebuildTargets();
+            MarkDirty();
+        } else if (result == mods::ModArchive::Result::Installed) {
+            OnInstalled(archive.Id());
+        } else {
+            SetArchiveStatus("OBL_MODS_INSTALL_ERROR", error, true);
+        }
+    }
+
+    void OnInstalled(const std::string& id)
+    {
+        PersistModChange(id);
+        g_selectedId = id;
+        LoadList();
+        EnsureVisible(id);
+        SetArchiveStatus("OBL_MODS_INSTALLED", id, false);
+    }
+
+    void OnRemove()
+    {
+        if (CanChangeFiles(g_selectedId)) {
+            m_pendingRemove = g_selectedId;
+            RebuildTargets();
+            MarkDirty();
+        }
+    }
+
+    void ConfirmArchiveChange()
+    {
+        auto replace = std::exchange(m_pendingReplace, std::nullopt);
+        const auto remove = std::exchange(m_pendingRemove, {});
+        const auto& id = replace ? replace->Id() : remove;
+        if (!CanChangeFiles(id)) return;
+
+        std::string error;
+        if (replace) {
+            if (replace->Write(GameDirectory(), true, error) == mods::ModArchive::Result::Installed)
+                OnInstalled(id);
+            else
+                SetArchiveStatus("OBL_MODS_INSTALL_ERROR", error, true);
+        } else if (mods::RemoveMod(GameDirectory(), id, error)) {
+            PersistModChange(id);
+            LoadList();
+            SetArchiveStatus("OBL_MODS_REMOVED", id, false);
+        } else {
+            SetArchiveStatus("OBL_MODS_REMOVE_ERROR", error, true);
+        }
+    }
+
     void OnHelp()
     {
         OBL_LOG("mods screen: help %s", kHelpUrl);
@@ -510,6 +755,20 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
     void RebuildTargets()
     {
         m_targets.clear();
+        if (IsConfirming()) {
+            const int footerY = m_y1 - 44;
+            m_targets.push_back({"archive.confirm", m_x0 + 570, footerY + 6, m_x0 + 672, footerY + 38, [this] { ConfirmArchiveChange(); }});
+            m_targets.push_back({"archive.cancel", m_x0 + 680, footerY + 6, m_x0 + 784, footerY + 38, [this] {
+                                     m_pendingReplace.reset();
+                                     m_pendingRemove.clear();
+                                     RebuildTargets();
+                                     MarkDirty();
+                                 }});
+            return;
+        }
+        m_targets.push_back({"install", m_x0 + 248, m_y0 + 8, m_x0 + 460, m_y0 + 40, [this] { OnInstall(); }});
+        if (m_list && m_list->Find(g_selectedId))
+            m_targets.push_back({"remove", m_x0 + 468, m_y0 + 8, m_x0 + 602, m_y0 + 40, [this] { OnRemove(); }});
         m_targets.push_back({"help", m_x0 + 610, m_y0 + 8, m_x0 + 692, m_y0 + 40, [this] { OnHelp(); }});
         m_targets.push_back({"back", m_x0 + 700, m_y0 + 8, m_x0 + 784, m_y0 + 40, [this] { m_pendingBack = true; }});
         if (!m_list) return;
@@ -760,6 +1019,9 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
 
     std::unique_ptr<mods::ModList> m_list;
     std::vector<Target> m_targets;
+    std::string m_droppedFile;
+    std::optional<mods::ModArchive> m_pendingReplace;
+    std::string m_pendingRemove;
     bool m_pendingBack = false;
     bool m_pendingReload = false;
 };
@@ -775,6 +1037,13 @@ ui::GuiWidget* CreatePanel(int x0, int y0, int x1, int y1)
 {
     // NOLINTNEXTLINE(cppcoreguidelines-owning-memory): the dialog's widget tree owns its children (gui_widget_virtual.h)
     return new GuiModsPanel(x0, y0, x1, y1);
+}
+
+bool QueueArchive(std::string_view path)
+{
+    if (!g_openPanel || !g_openPanel->m_visible || g_openPanel->IsConfirming() || !g_openPanel->m_droppedFile.empty()) return false;
+    g_openPanel->m_droppedFile = path;
+    return true;
 }
 
 bool FindTarget(std::string_view name, int& x, int& y)

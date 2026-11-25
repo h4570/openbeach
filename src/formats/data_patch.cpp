@@ -149,12 +149,25 @@ void Apply(Document& doc, const fs::path& file, const std::string& mod, std::vec
 
 } // namespace
 
+namespace {
+
+std::string FormatName(const Json& doc)
+{
+    const auto it = doc.is_object() ? doc.find("format") : doc.end();
+    return it != doc.end() && it->is_string() ? it->get<std::string>() : std::string();
+}
+
+} // namespace
+
 std::string PatchFormat(const fs::path& file)
 {
     std::ifstream stream(file, std::ios::binary);
-    const Json doc = Json::parse(stream, nullptr, false);
-    const auto it = doc.is_object() ? doc.find("format") : doc.end();
-    return it != doc.end() && it->is_string() ? it->get<std::string>() : std::string();
+    return FormatName(Json::parse(stream, nullptr, false));
+}
+
+std::string PatchFormatText(std::string_view text)
+{
+    return FormatName(Json::parse(text.begin(), text.end(), nullptr, false));
 }
 
 bool IsSimulationDataPath(const fs::path& logical)

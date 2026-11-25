@@ -5,7 +5,7 @@
 #include "core/image_decode.h"
 #include "core/sha256.h"
 #include "importer/src/writers/image_convert.h"
-#include "importer/src/writers/png_write.h"
+#include "core/png_write.h"
 #include "importer/src/writers/font_convert.h"
 #include "importer/src/source/source.h"
 #include "formats/schemas.h"

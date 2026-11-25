@@ -298,44 +298,16 @@ bool IsFile(const std::filesystem::path& path)
 
 // Whether a recipe file's declared output is a presentation-only image (overlay or menu screen PNG).
 // Screen pictures and overlay images are only drawn by the UI and never read by the simulation or its RNG.
-bool PresentationRecipeOutputAllowed(const std::filesystem::path& file)
+bool PresentationRecipeOutputAllowed(std::string_view text)
 {
-    std::ifstream in(file, std::ios::binary);
-    if (!in) return false;
-    const auto doc = nlohmann::json::parse(in, nullptr, false);
-    if (!doc.is_object() || doc.value("format", "") != "obl.asset_recipe") return false;
+    const auto doc = nlohmann::json::parse(text.begin(), text.end(), nullptr, false);
+    if (!doc.is_object() || doc.find("format") == doc.end() || doc["format"] != "obl.asset_recipe") return false;
     const auto out = doc.find("output");
     if (out == doc.end() || !out->is_string()) return false;
     const std::string output = out->get<std::string>();
     if (!output.ends_with(".png") || output.find("..") != std::string::npos) return false;
     if (output.starts_with("overlay/") && output.find('/', 8) == std::string::npos) return true;
     if (output.starts_with("images/screens/") && output.find('/', 15) == std::string::npos) return true;
-    return false;
-}
-
-// Whether `relative` (a generic path inside the mod) is a file a presentation mod may ship: the manifest, its scripts, text
-// patches (the text loader lets them only add keys) and documents at the top. Anything else may reach the simulation: a sprite's
-// frame count times an animation, a sound bank's size changes a random pick.
-bool PresentationMayShip(const std::filesystem::path& file, const std::string& relative)
-{
-    if (relative == "mod.json") return true;
-    // A GUI layout patch changes only what the screen shows; a JSON data patch under gui/ is judged by its target below.
-    if (relative.starts_with("gui/") && relative.find('/', 4) == std::string::npos && relative.ends_with(".patch.json")) {
-        if (data_patch::PatchFormat(file) == data_patch::kGuiPatchFormat) return true;
-        return !data_patch::IsSimulationDataPath(relative.substr(0, relative.size() - 11) + ".json");
-    }
-    if (relative.starts_with(std::string(kPresentationScripts) + "/")) return true;
-    if (relative.starts_with("text/") && relative.find('/', 5) == std::string::npos && relative.ends_with(".patch.json")) return true;
-    // Images for the scripts' overlay: only obl.overlay.image reads overlay/, and no pack has that directory, so nothing is shadowed.
-    if (relative.starts_with(std::string(kOverlayImages) + "/") && relative.find('/', 8) == std::string::npos && relative.ends_with(".png"))
-        return true;
-    // Asset recipes whose output is a screen picture or overlay PNG cannot reach the simulation.
-    if (relative.starts_with("recipes/") && relative.find('/', 8) == std::string::npos && relative.ends_with(".json"))
-        return PresentationRecipeOutputAllowed(file);
-    if (relative.find('/') == std::string::npos) {
-        const std::string extension = std::filesystem::path(relative).extension().string();
-        return extension.empty() || extension == ".md" || extension == ".txt";
-    }
     return false;
 }
 
@@ -347,7 +319,14 @@ std::string FirstRefusedFile(const std::filesystem::path& directory)
     for (std::filesystem::recursive_directory_iterator it(directory, ec), end; !ec && it != end; it.increment(ec)) {
         if (it->is_directory(ec)) continue;
         const std::string relative = it->path().lexically_relative(directory).generic_string();
-        if (!PresentationMayShip(it->path(), relative)) refused.push_back(relative);
+        const auto format =
+                relative.starts_with("gui/") && relative.ends_with(".patch.json") ? data_patch::PatchFormat(it->path()) : std::string();
+        std::string recipe;
+        if (IsRecipePath(relative)) {
+            std::ifstream in(it->path(), std::ios::binary);
+            recipe.assign(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
+        }
+        if (!PresentationMayShip(relative, format, recipe)) refused.push_back(relative);
     }
     if (refused.empty()) return {};
     return *std::min_element(refused.begin(), refused.end());
@@ -384,7 +363,7 @@ bool ParseManifest(std::string_view text, Manifest& manifest, std::string& error
         error = "format \"" + format + "\" is not " + kFormat;
         return false;
     }
-    if (!doc.contains("version") || !doc["version"].is_number_integer() || doc["version"].get<int>() != kVersion) {
+    if (!doc.contains("version") || !doc["version"].is_number_integer() || doc["version"].get<int64_t>() != kVersion) {
         error = "version is not " + std::to_string(kVersion);
         return false;
     }
@@ -460,6 +439,63 @@ bool ParseManifest(std::string_view text, Manifest& manifest, std::string& error
     return true;
 }
 
+// Whether `relative` (a generic path inside the mod) is a file a presentation mod may ship: the manifest, its scripts, text
+// patches (the text loader lets them only add keys) and documents at the top. Anything else may reach the simulation: a sprite's
+// frame count times an animation, a sound bank's size changes a random pick.
+bool PresentationMayShip(std::string_view relative, std::string_view patchFormat, std::string_view recipeText)
+{
+    if (relative == "mod.json") return true;
+    // A GUI layout patch changes only what the screen shows; a JSON data patch under gui/ is judged by its target below.
+    if (relative.starts_with("gui/") && relative.find('/', 4) == std::string::npos && relative.ends_with(".patch.json")) {
+        if (patchFormat == data_patch::kGuiPatchFormat) return true;
+        return !data_patch::IsSimulationDataPath(std::string(relative.substr(0, relative.size() - 11)) + ".json");
+    }
+    if (relative.starts_with(std::string(kPresentationScripts) + "/")) return true;
+    if (relative.starts_with("text/") && relative.find('/', 5) == std::string::npos && relative.ends_with(".patch.json")) return true;
+    // Images for the scripts' overlay: only obl.overlay.image reads overlay/, and no pack has that directory, so nothing is shadowed.
+    if (relative.starts_with(std::string(kOverlayImages) + "/") && relative.find('/', 8) == std::string::npos && relative.ends_with(".png"))
+        return true;
+    // Screen pictures and overlay PNGs cannot reach the simulation.
+    if (IsRecipePath(relative)) return PresentationRecipeOutputAllowed(recipeText);
+    if (relative.find('/') == std::string::npos) {
+        const std::string extension = std::filesystem::path(relative).extension().string();
+        return extension.empty() || extension == ".md" || extension == ".txt";
+    }
+    return false;
+}
+
+bool CheckManifestContent(
+        const Manifest& manifest, std::string_view packId, bool hasScripts, std::string_view refusedFile, std::string& error)
+{
+    const auto fail = [&](std::string reason) {
+        error = std::move(reason);
+        return false;
+    };
+    const auto& packs = manifest.packs;
+    if (std::find(packs.begin(), packs.end(), packId) == packs.end()) {
+        std::string names;
+        for (const std::string& pack : packs) names += (names.empty() ? "\"" : ", \"") + pack + "\"";
+        return fail("made for the pack " + names + ", not \"" + std::string(packId) + "\"");
+    }
+    // Nothing in a world mod can read a setting, and world scripts must never see one: the simulation takes no setting.
+    if (manifest.scope == Scope::World && !manifest.settings.empty())
+        return fail("a world mod may not declare \"settings\" (no setting reaches the simulation; make it a presentation mod)");
+    if (!refusedFile.empty())
+        return fail("a presentation mod may not ship \"" + std::string(refusedFile) +
+                "\" (only scripts/presentation/, overlay/<name>.png, text/<lang>.patch.json, gui/<name>.patch.json and recipes of "
+                "presentation "
+                "data and documents at the top)");
+    if (manifest.api > kPresentationApi)
+        return fail("needs the presentation script API " + std::to_string(manifest.api) + ", this game has " +
+                std::to_string(kPresentationApi) + "; update the game");
+    if (manifest.api == 0 && hasScripts) return fail("ships presentation scripts but names no \"api\" in mod.json");
+    // Only a script can do what a taken-over default did.
+    if (!manifest.takesOver.empty() && !hasScripts) return fail("takes over \"" + manifest.takesOver[0] + "\" but ships no scripts");
+    // An action's press calls the mod's on_action.
+    if (!manifest.actions.empty() && !hasScripts) return fail("declares actions but ships no scripts");
+    return true;
+}
+
 bool CheckActive(const std::filesystem::path& gameDirectory, std::string_view packId, std::span<const std::string> active,
         std::vector<ActiveMod>& mods, std::string& error)
 {
@@ -479,30 +515,8 @@ bool CheckActive(const std::filesystem::path& gameDirectory, std::string_view pa
         std::string reason;
         if (!ParseManifest(text, mod.manifest, reason)) return fail(reason);
         if (mod.manifest.id != id) return fail("mod.json names the id \"" + mod.manifest.id + "\"");
-        const auto& packs = mod.manifest.packs;
-        if (std::find(packs.begin(), packs.end(), packId) == packs.end()) {
-            std::string names;
-            for (const std::string& pack : packs) names += (names.empty() ? "\"" : ", \"") + pack + "\"";
-            return fail("made for the pack " + names + ", not \"" + std::string(packId) + "\"");
-        }
-        // Nothing in a world mod can read a setting, and world scripts must never see one: the simulation takes no setting.
-        if (mod.manifest.scope == Scope::World && !mod.manifest.settings.empty())
-            return fail("a world mod may not declare \"settings\" (no setting reaches the simulation; make it a presentation mod)");
-        if (mod.manifest.scope == Scope::Presentation)
-            if (const std::string file = FirstRefusedFile(*directory); !file.empty())
-                return fail("a presentation mod may not ship \"" + file +
-                        "\" (only scripts/presentation/, overlay/<name>.png, recipes/<name>.json for presentation images, "
-                        "text/<lang>.patch.json, gui/<name>.patch.json of presentation data and documents at the top)");
-        if (mod.manifest.api > kPresentationApi)
-            return fail("needs the presentation script API " + std::to_string(mod.manifest.api) + ", this game has " +
-                    std::to_string(kPresentationApi) + "; update the game");
-        const bool scripts = HasPresentationScripts(*directory);
-        if (mod.manifest.api == 0 && scripts) return fail("ships presentation scripts but names no \"api\" in mod.json");
-        // Only a script can do what a taken-over default did.
-        if (!mod.manifest.takesOver.empty() && !scripts)
-            return fail("takes over \"" + mod.manifest.takesOver[0] + "\" but ships no scripts");
-        // An action's press calls the mod's on_action.
-        if (!mod.manifest.actions.empty() && !scripts) return fail("declares actions but ships no scripts");
+        const std::string refused = mod.manifest.scope == Scope::Presentation ? FirstRefusedFile(*directory) : std::string();
+        if (!CheckManifestContent(mod.manifest, packId, HasPresentationScripts(*directory), refused, reason)) return fail(reason);
         for (const std::string& need : mod.manifest.requiredMods) {
             const bool earlier = std::any_of(mods.begin(), mods.end(), [&](const ActiveMod& m) { return m.manifest.id == need; });
             if (!earlier) {

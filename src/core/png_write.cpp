@@ -1,4 +1,4 @@
-#include "importer/src/writers/png_write.h"
+#include "core/png_write.h"
 
 #include <bit>
 #include <cstdint>
@@ -262,7 +262,7 @@ unsigned char* ZlibCompress(unsigned char* data, int length, int* outLength, int
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-function"
 #endif
-#include "../../../third_party/stb/stb_image_write.h"
+#include "../../third_party/stb/stb_image_write.h"
 #if defined(_MSC_VER)
 #pragma warning(pop)
 #elif defined(__GNUC__)

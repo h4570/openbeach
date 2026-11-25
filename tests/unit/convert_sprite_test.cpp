@@ -6,7 +6,7 @@
 #include "unit_test.h"
 
 #include "core/json_schema.h"
-#include "importer/src/writers/png_write.h"
+#include "core/png_write.h"
 #include "importer/src/source/cabinet.h"
 #include "importer/src/source/cd_source.h"
 #include "formats/schemas.h"

@@ -1,10 +1,10 @@
-#include "openbeach/importer/asset_recipe.h"
+#include "formats/asset_recipe.h"
 
 #include "core/json_schema.h"
 #include "core/png_read.h"
 #include "core/sha256.h"
 #include "formats/schemas.h"
-#include "importer/src/writers/png_write.h"
+#include "core/png_write.h"
 
 #include <nlohmann/json.hpp>
 
