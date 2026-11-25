@@ -1,0 +1,125 @@
+# Extended world events, event arguments (EventKey/EventObjectId/EventValue), header filters, and save/load round trip.
+# @env OBL_PACK=l0
+# @env OBL_MODS=l0_world_events_ext
+# @timeout 300
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario 1
+await gameplay
+world-script-change STATE_WORLD_AFTERGAME
+command set-game-speed level=2
+step 1
+
+# WeatherChanged (Overcast scheduled at Day 0 Time 9.2) with filter and EventKey check.
+step 100
+mod-world-script-report l0_world_events_ext/events_ext.wsc
+expect-last state 1
+expect-last overcast 1
+expect-last key_overcast 1
+
+# Place LOO and HUT -> BuildingFinished (unfiltered + LOO/HUT filters), GuestArrived, BusArrived, GuestLeft,
+# plus WaterContamination DisasterStarted and DisasterFinished (Day 0 10:30..11:00).
+command place-building key=LOO x=59 y=63 dir=0
+step 25
+command place-building key=HUT x=63 y=61 dir=0
+step 1200
+mod-world-script-report l0_world_events_ext/events_ext.wsc
+expect-last built_any 2
+expect-last built_loo 1
+expect-last built_hut 1
+expect-last buses 1
+expect-last bus_guests 6
+expect-last guests_in 6
+expect-last guests_out 6
+expect-last disaster_start 1
+expect-last disaster_end 1
+
+# BuildingDemolished (LOO) while builders are active.
+object-find building LOO
+log loo loo=$id
+command demolish object=$loo
+step 1000
+mod-world-script-report l0_world_events_ext/events_ext.wsc
+expect-last demolished_any 1
+expect-last demolished_loo 1
+
+# StaffFired (Builder at BUILDERYARD).
+object-find staff Builder 0
+log builder builder=$id
+command dismiss-staff staff=$builder
+step 50
+mod-world-script-report l0_world_events_ext/events_ext.wsc
+expect-last staff_fired 1
+
+# BuildingBroken (lightning strikes) on HUT.
+fail-lightning-all 3
+step 50
+mod-world-script-report l0_world_events_ext/events_ext.wsc
+expect-last broken_hut 1
+
+# NightStarted (19:00), DayStarted (00:00), DayLightStarted (07:00), HourStarted.
+set-hour 18.9
+step 100
+mod-world-script-report l0_world_events_ext/events_ext.wsc
+expect-last-range nights 1 10
+set-hour 23.9
+step 100
+mod-world-script-report l0_world_events_ext/events_ext.wsc
+expect-last-range days 1 10
+set-hour 6.9
+step 100
+mod-world-script-report l0_world_events_ext/events_ext.wsc
+expect-last-range daylights 1 10
+expect-last last_hour 7
+expect-last-range hours 3 200
+
+# Events whose catalog entries are not in L0 (StaffHired, BuildingRepaired, Vandalism, GuestDrowned, GuestEaten,
+# FerryArrived, ShowStarted, BeerChanged): exercise dispatch, header filters, and EventKey/EventObjectId/EventValue.
+mod-world-event StaffHired BUILDERYARD 1 0
+mod-world-event BuildingRepaired LOO 5 1
+mod-world-event BuildingRepaired HUT 6 0
+mod-world-event Vandalism BIN 101 0
+mod-world-event Vandalism BENCH 102 0
+mod-world-event GuestDrowned MALE_STD 201 0
+mod-world-event GuestEaten FEMALE_STD 202 0
+mod-world-event FerryArrived FERRY 301 12
+mod-world-event ShowStarted FIREWORKS 401 3
+mod-world-event ShowStarted LASER 401 4
+mod-world-event BeerChanged LAGER 501 2
+mod-world-event BeerChanged STOUT 501 3
+mod-world-script-report l0_world_events_ext/events_ext.wsc
+expect-last staff_hired 1
+expect-last repaired_loo 1
+expect-last repaired_broken 1
+expect-last vandalism 1
+expect-last vandal_id 101
+expect-last drowned 1
+expect-last drowned_id 201
+expect-last eaten 1
+expect-last eaten_id 202
+expect-last ferries 1
+expect-last ferry_guests 12
+expect-last shows 1
+expect-last show_id 3
+expect-last beers 1
+expect-last beer_id 2
+
+# Save/load round trip preserves every named event counter and the active state.
+save-obl testlogs/l0_mod_world_events_ext.obl.save
+load-obl-save testlogs/l0_mod_world_events_ext.obl.save
+await world-loaded
+mod-world-script-report l0_world_events_ext/events_ext.wsc
+expect-last state 1
+expect-last built_loo 1
+expect-last broken_hut 1
+expect-last demolished_loo 1
+expect-last disaster_start 1
+expect-last disaster_end 1
+expect-last staff_hired 1
+expect-last staff_fired 1
+expect-last repaired_loo 1
+expect-last vandalism 1
+expect-last ferries 1
+expect-last shows 1
+expect-last beers 1
+quit

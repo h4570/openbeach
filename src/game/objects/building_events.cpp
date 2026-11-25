@@ -15,6 +15,7 @@
 #include "core/call_counter.h"
 #include "game/messages/message_handler.h"
 #include "game/world/world_params.h"
+#include "game/world/world_script.h"
 #include "game/objects/building_methods.h"
 #include "game/world/save_objects_load.h"
 
@@ -183,6 +184,10 @@ void Update(BuildingEvents* events)
     for (int i = 0, id = 0; i < Current(events).m_NumGuests; ++i)
         if (IdAt(Current(events).m_guests, i, id)) PostDelayed(events, id, messages::MT_EVENT_STARTING, 2.0f);
     events->m_eventActive = 1; // Unknown event keys also become active, without an actor.
+    const int eventId = Current(events).m_EventID;
+    const tables::EventDef* def = Definition(eventId);
+    world::DispatchModWorldEvent(
+            *GetWorld(), world_script::WorldEvent::ShowStarted, {def ? def->m_key : std::string(), events->m_OwnerID, eventId});
 }
 
 void Observe(BuildingEventsCall call, BuildingEvents* events, bool after)

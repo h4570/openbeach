@@ -213,7 +213,15 @@ void UpdateDayCycleEntry(World* world)
     const float current = world->m_gameDayTime;
     DayEnv env(*world);
     day_cycle::UpdateDayCycle(*world, env);
-    if (day_cycle::Truncate(previous) > day_cycle::Truncate(current)) DispatchModWorldEvent(*world, world_script::WorldEvent::DayStarted);
+    const int prevHour = day_cycle::Truncate(previous);
+    const int currHour = day_cycle::Truncate(current);
+    if (prevHour > currHour)
+        DispatchModWorldEvent(*world, world_script::WorldEvent::DayStarted, {{}, -1, static_cast<int32_t>(world->m_gameDay)});
+    if (prevHour != currHour) DispatchModWorldEvent(*world, world_script::WorldEvent::HourStarted, {{}, -1, currHour});
+    if (day_cycle::Below(previous, day_cycle::kNightStart) && !day_cycle::Below(current, day_cycle::kNightStart))
+        DispatchModWorldEvent(*world, world_script::WorldEvent::NightStarted, {{}, -1, static_cast<int32_t>(world->m_gameDay)});
+    else if (day_cycle::Below(previous, day_cycle::kDayStart) && !day_cycle::Below(current, day_cycle::kDayStart))
+        DispatchModWorldEvent(*world, world_script::WorldEvent::DayLightStarted, {{}, -1, static_cast<int32_t>(world->m_gameDay)});
 }
 
 } // namespace

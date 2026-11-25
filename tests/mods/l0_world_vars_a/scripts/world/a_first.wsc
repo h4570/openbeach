@@ -1,0 +1,63 @@
+#obl-script 1 world
+// Exercises >32 named per-script variables and shared cross-mod variables (first script in load order).
+State STATE_WORLD_STARTUP
+	OnEntry
+		Set ModVar.v01 1;
+		Set ModVar.v02 2;
+		Set ModVar.v03 3;
+		Set ModVar.v04 4;
+		Set ModVar.v05 5;
+		Set ModVar.v06 6;
+		Set ModVar.v07 7;
+		Set ModVar.v08 8;
+		Set ModVar.v09 9;
+		Set ModVar.v10 10;
+		Set ModVar.v11 11;
+		Set ModVar.v12 12;
+		Set ModVar.v13 13;
+		Set ModVar.v14 14;
+		Set ModVar.v15 15;
+		Set ModVar.v16 16;
+		Set ModVar.v17 17;
+		Set ModVar.v18 18;
+		Set ModVar.v19 19;
+		Set ModVar.v20 20;
+		Set ModVar.v21 21;
+		Set ModVar.v22 22;
+		Set ModVar.v23 23;
+		Set ModVar.v24 24;
+		Set ModVar.v25 25;
+		Set ModVar.v26 26;
+		Set ModVar.v27 27;
+		Set ModVar.v28 28;
+		Set ModVar.v29 29;
+		Set ModVar.v30 30;
+		Set ModVar.v31 31;
+		Set ModVar.v32 32;
+		Set ModVar.v33 33;
+		Set ModVar.v34 34;
+		Set ModVar.v35 35;
+		Set ModVar.l0_world_vars_a.shared_sum 10;
+		Set ModVar.l0_world_vars_a.tax_rate 15;
+		Set ModVar.l0_world_vars_a.winner 1;
+		ChangeState STATE_ACTIVE;
+	End
+	OnUpdate
+	End
+	OnExit
+	End
+End
+
+State STATE_ACTIVE
+	OnEntry
+	End
+	OnUpdate
+	End
+	OnEvent DayStarted
+		Add ModVar.v35 1;
+		Add ModVar.l0_world_vars_a.shared_sum 5;
+		Set ModVar.l0_world_vars_a.winner 1;
+	End
+	OnExit
+	End
+End

@@ -90,9 +90,11 @@ save written without mods is byte for byte what it was before mods existed.
 - Presentation mods (`"scope": "presentation"`) cannot change the simulation and are not in the list (`mod_pack::Recorded`); a
   save neither records nor asks for them.
 - Mod world scripts ([world-scripts.md](../../modding/reference/world-scripts.md)) store their state in `world.mod_scripts`: one
-  entry per script with `mod`, `script` (the file name), `state` (the state's name), `flags` and the 32 `variables`. The key is
-  written only while a mod script is active, so other saves stay as they were; on load an entry is matched by mod and file name,
-  and a script without an entry (or a state name it no longer has) starts in `STATE_WORLD_STARTUP`.
+  entry per script with `mod`, `script` (the file name), `state` (the state's name), `flags`, the 32 `variables` and optional
+  `named_variables` (`ModVar.<name>` map, omitted when empty). Shared cross-mod variables (`ModVar.<modId>.<name>`) live in
+  optional `world.mod_variables` (omitted when empty). Those keys are written only while a mod script is active, so other saves
+  stay as they were; older saves without `named_variables` or `mod_variables` load cleanly. On load an entry is matched by mod
+  and file name, and a script without an entry (or a state name it no longer has) starts in `STATE_WORLD_STARTUP`.
 
 ## Initial schema and implementation boundary
 `data/schemas/save.schema.json` defines the envelope, pack identity, scalar world state, histories, grid arrays,

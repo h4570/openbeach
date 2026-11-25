@@ -10,6 +10,7 @@
 #include "test_util.h"
 #include "world_state.h"
 #include "game/world/world_script.h"
+#include "game/world/world_script_api.h"
 #include "game/world/world_script_host.h"
 
 #include <cmath>
@@ -245,8 +246,36 @@ bool ExecuteFlowCommand(const std::string& name, const std::vector<std::string>&
             return true;
         }
         const int32_t* v = found->scriptVars;
-        OBL_LOG("autotest: mod-world-script-report %s state=%u flags=%d var0=%d var1=%d var2=%d var3=%d var4=%d var5=%d var6=%d var7=%d",
-                args[0].c_str(), found->script->m_currentState, found->scriptFlags, v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7]);
+        std::string extra;
+        for (const auto& [varName, value] : found->namedVars) extra += " " + varName + "=" + std::to_string(value);
+        OBL_LOG("autotest: mod-world-script-report %s state=%u flags=%d var0=%d var1=%d var2=%d var3=%d var4=%d var5=%d var6=%d var7=%d%s",
+                args[0].c_str(), found->script->m_currentState, found->scriptFlags, v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7],
+                extra.c_str());
+    } else if (name == "mod-var-report") {
+        world_data::World* world = World();
+        if (!world || !world->m_worldScriptHost || args.size() != 1) {
+            OBL_LOG("autotest: FAILED mod-var-report (needs a world and one mod id)");
+            return true;
+        }
+        std::string extra;
+        const auto& shared = world->m_worldScriptHost->SharedModVars();
+        if (const auto it = shared.find(args[0]); it != shared.end())
+            for (const auto& [varName, value] : it->second) extra += " " + varName + "=" + std::to_string(value);
+        OBL_LOG("autotest: mod-var-report %s count=%zu%s", args[0].c_str(), shared.count(args[0]) ? shared.at(args[0]).size() : size_t{0},
+                extra.c_str());
+    } else if (name == "mod-world-event") {
+        world_data::World* world = World();
+        const auto event = args.empty() ? std::nullopt : world_script_parse::FindWorldEvent(args[0]);
+        if (!world || !event || args.size() > 4) {
+            OBL_LOG("autotest: FAILED mod-world-event (needs a world and <EventName> [key] [objectId] [value])");
+            return true;
+        }
+        world_script::WorldEventContext ctx;
+        if (args.size() >= 2 && args[1] != "-") ctx.key = args[1];
+        if (args.size() >= 3) ctx.objectId = static_cast<int32_t>(std::strtol(args[2].c_str(), nullptr, 10));
+        if (args.size() >= 4) ctx.value = static_cast<int32_t>(std::strtol(args[3].c_str(), nullptr, 10));
+        world::DispatchModWorldEvent(*world, *event, ctx);
+        OBL_LOG("autotest: mod-world-event %s key=%s objectId=%d value=%d", args[0].c_str(), ctx.key.c_str(), ctx.objectId, ctx.value);
     } else if (name == "speed" || name == "speed-level" || name == "speed-table") {
         world_data::World* world = World();
         if (name == "speed-table") {

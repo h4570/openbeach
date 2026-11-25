@@ -21,6 +21,8 @@
 #include "game/messages/message_handler.h"
 #include "game/weather/weather.h"
 #include "game/world/world_receive.h"
+#include "game/world/world_script.h"
+#include "game/world/world_script_api.h"
 #include <algorithm>
 #include <cstddef>
 #include <cstring>
@@ -119,6 +121,18 @@ struct GameEnv {
     void Thunder(int level) { weather::runtime::SetThunderLevel(game::GetWeather(), level); }
     void Area(const int* rect) { weather::runtime::SetLightningArea(game::GetWeather(), rect[0], rect[1], rect[2], rect[3]); }
     void Target(const char* name) { weather::runtime::SetLightningTargetByName(game::GetWeather(), name); }
+    void OnDisasterStarted(const disaster::Event& event)
+    {
+        if (auto* world = game::GetWorld())
+            world::DispatchModWorldEvent(
+                    *world, world_script::WorldEvent::DisasterStarted, {world_script_parse::DisasterKindName(event.type), -1, event.type});
+    }
+    void OnDisasterFinished(const disaster::Event& event)
+    {
+        if (auto* world = game::GetWorld())
+            world::DispatchModWorldEvent(
+                    *world, world_script::WorldEvent::DisasterFinished, {world_script_parse::DisasterKindName(event.type), -1, event.type});
+    }
 };
 
 test::CallCounter g_addCalls("events.manager-add-event"), g_updateCalls("events.manager-update");

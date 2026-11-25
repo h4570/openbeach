@@ -41,7 +41,8 @@ void WorldScriptRunOnExit(world_script::WorldScript& script);
 void WorldScriptEnterState(world_script::WorldScript& script, uint32_t state);
 void WorldScriptSetState(world_script::WorldScript& script, uint32_t state);
 bool WorldScriptDispatch(world_script::WorldScript& script, messages::Message message);
-bool WorldScriptDispatchEvent(world_script::WorldScript& script, world_script::WorldEvent event);
+bool WorldScriptDispatchEvent(
+        world_script::WorldScript& script, world_script::WorldEvent event, const world_script::WorldEventContext& context = {});
 int32_t WorldScriptFindState(const world_script::WorldScript& script, const char* name);
 void WorldScriptStartNewGame(world_script::WorldScript& script, float span);
 void WorldScriptStartLoadedGame(world_script::WorldScript& script);
@@ -65,7 +66,7 @@ private:
 void StartModWorldScripts(world_data::World& world);
 // The scenario script's OnUpdate list, then each mod world script's, in load order (one tick).
 void RunWorldScriptsOnUpdate(world_data::World& world);
-void DispatchModWorldEvent(world_data::World& world, world_script::WorldEvent event);
+void DispatchModWorldEvent(world_data::World& world, world_script::WorldEvent event, const world_script::WorldEventContext& context = {});
 void DispatchModWorldMessage(world_data::World& world, const messages::Message& message);
 // False when no mod world script has that index (the message then belongs to the scenario script).
 bool ChangeModWorldScriptState(world_data::World& world, uint32_t modIndex, uint32_t state);

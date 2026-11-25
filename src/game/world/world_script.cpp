@@ -75,6 +75,7 @@ struct ActiveModScript {
     uint32_t index = 0;
 };
 ActiveModScript g_activeMod;
+const world_script::WorldEventContext* g_activeEvent = nullptr;
 
 class ScopedModScript {
 public:
@@ -86,6 +87,27 @@ public:
 private:
     ActiveModScript m_previous;
 };
+
+class ScopedEventContext {
+public:
+    explicit ScopedEventContext(const world_script::WorldEventContext* context) : m_previous(g_activeEvent) { g_activeEvent = context; }
+    ~ScopedEventContext() { g_activeEvent = m_previous; }
+    ScopedEventContext(const ScopedEventContext&) = delete;
+    ScopedEventContext& operator=(const ScopedEventContext&) = delete;
+
+private:
+    const world_script::WorldEventContext* m_previous;
+};
+
+bool SplitSharedModVar(const char* raw, std::string& modId, std::string& varName)
+{
+    if (!raw) return false;
+    const char* dot = std::strchr(raw, '.');
+    if (!dot || dot == raw || dot[1] == '\0') return false;
+    modId.assign(raw, static_cast<size_t>(dot - raw));
+    varName.assign(dot + 1);
+    return true;
+}
 
 // Types of a script value (Entity::getValue uses the same numbers).
 constexpr int32_t kByte = 0, kString = 1, kInt = 2, kFloat = 3;
@@ -300,6 +322,19 @@ ScriptValue GetScriptValue(World& world, int key, const int32_t* data)
     case 0xec: return {kInt, ResortRating(*objects)};
     case 0xed: return {kInt, world.m_gameDay};
     case 0xee: return {kFloat, FloatBits(world.m_player->m_cash)}; // PlayerCash
+    case world_script::kScriptValueEventKey: return {kString, script::text::Id(g_activeEvent ? g_activeEvent->key.c_str() : "")};
+    case world_script::kScriptValueEventObjectId: return {kInt, g_activeEvent ? g_activeEvent->objectId : -1};
+    case world_script::kScriptValueEventValue: return {kInt, g_activeEvent ? g_activeEvent->value : 0};
+    case world_script::kScriptValueModVar: {
+        if (!g_activeMod.mod || !data) return {kInt, 0};
+        const auto it = g_activeMod.mod->namedVars.find(reinterpret_cast<const char*>(data));
+        return {kInt, it != g_activeMod.mod->namedVars.end() ? it->second : 0};
+    }
+    case world_script::kScriptValueSharedModVar: {
+        std::string modId, varName;
+        if (!world.m_worldScriptHost || !SplitSharedModVar(reinterpret_cast<const char*>(data), modId, varName)) return {kInt, 0};
+        return {kInt, world.m_worldScriptHost->GetSharedModVar(modId, varName)};
+    }
     default: return {key, static_cast<int32_t>(reinterpret_cast<uintptr_t>(data))};
     }
 }
@@ -418,6 +453,15 @@ void SetScriptValue(World& world, int key, const void* index, int type, int32_t 
     case 0xee: // PlayerCash
         world.m_player->m_cash = ToFloat(type, bits);
         break;
+    case world_script::kScriptValueModVar:
+        if (g_activeMod.mod && index) g_activeMod.mod->namedVars[static_cast<const char*>(index)] = ToInt(type, bits);
+        break;
+    case world_script::kScriptValueSharedModVar: {
+        std::string modId, varName;
+        if (world.m_worldScriptHost && SplitSharedModVar(static_cast<const char*>(index), modId, varName))
+            world.m_worldScriptHost->SetSharedModVar(modId, varName, ToInt(type, bits));
+        break;
+    }
     default: break;
     }
 }
@@ -997,9 +1041,11 @@ void RunWorldScriptsOnUpdate(World& world)
     });
 }
 
-void DispatchModWorldEvent(World& world, world_script::WorldEvent event)
+void DispatchModWorldEvent(World& world, world_script::WorldEvent event, const world_script::WorldEventContext& context)
 {
-    ForEachMod(world, [event](world_script::WorldScript& script) { WorldScriptDispatchEvent(script, event); });
+    if (!world.m_worldScriptHost || world.m_worldScriptHost->ModWorldScriptCount() == 0) return;
+    ScopedEventContext eventScope(&context);
+    ForEachMod(world, [event, &context](world_script::WorldScript& script) { WorldScriptDispatchEvent(script, event, context); });
 }
 
 void DispatchModWorldMessage(World& world, const messages::Message& message)

@@ -17,6 +17,7 @@
 #include "game/objects/object_scenery.h"
 #include "game/objects/scenery_record.h"
 #include "game/tables/world_params_tables.h"
+#include "game/world/world_script.h"
 #include "game/objects/scenery_placement.h"
 #include "game/objects/scenery_queries.h"
 #include "game/objects/scenery_actions.h"
@@ -327,6 +328,11 @@ void Scenery::Vandalise()
 {
     ActionEnv env;
     g_actions.Count();
+    const bool wasVandalised = m_vandalised == 1;
     scenery::Vandalise(*this, env);
+    if (!wasVandalised && m_vandalised == 1 && game::GetWorld()) {
+        world::DispatchModWorldEvent(*game::GetWorld(), world_script::WorldEvent::Vandalism,
+                {m_definition ? m_definition->m_key : std::string(), static_cast<int32_t>(m_id), 0});
+    }
 }
 } // namespace obl::object
