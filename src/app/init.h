@@ -17,4 +17,7 @@ int InitGame(const Text16& gameDir);
 // trailing separator.
 int OpenGame(const std::filesystem::path& gameDir);
 
+// Validates the selected mods without creating a game or writing settings.
+int CheckMods(const std::filesystem::path& gameDir, const std::filesystem::path& source);
+
 } // namespace obl

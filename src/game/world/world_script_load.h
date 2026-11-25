@@ -25,7 +25,7 @@ bool LoadWorldScriptVocabulary(const Text16& gameDirectory);
 std::vector<ModWorldScriptFile> DiscoverModWorldScripts();
 // Start-up check: parses and validates every active mod's `scripts/world/*.wsc` before any world exists. False after a
 // `FatalError:` line naming the mod, the file and the reason (a refused call, a missing STATE_WORLD_STARTUP, a parse error).
-bool CheckModWorldScripts();
+bool CheckModWorldScripts(std::vector<std::string>* errors = nullptr);
 // Loads and validates one mod world script into a constructed WorldScript (with the live WorldParams beers and modifiers).
 bool LoadModWorldScript(world_script::WorldScript& script, const ModWorldScriptFile& file, std::string& error);
 // What the last WorldScriptLoad returned (= the size in bytes of the script's .ble file; WorldScriptHost::LoadScript passes it on, ConstructWorld

@@ -112,17 +112,23 @@ void InitFaultHandlers() {}
 int main(int argc, char** argv)
 {
     std::string gameDir, headless;
+    bool checkMods = false;
+    std::filesystem::path modDirectory;
     for (int i = 1; i < argc; ++i) {
         if (!std::strcmp(argv[i], "--game-dir") && i + 1 < argc)
             gameDir = Absolute(argv[++i]);
         else if (!std::strcmp(argv[i], "--headless") && i + 1 < argc)
             headless = Absolute(argv[++i]);
-        else {
-            std::fprintf(stderr, "usage: obl-sim --game-dir <dir> --headless <replay|bot|script>\n");
+        else if (!std::strcmp(argv[i], "--check-mods")) {
+            checkMods = true;
+            if (i + 1 < argc && !std::string_view(argv[i + 1]).starts_with("--")) modDirectory = argv[++i];
+        } else {
+            std::fprintf(stderr, "usage: obl-sim --game-dir <dir> (--headless <replay|bot|script> | --check-mods [dir])\n");
             return kExitUsage;
         }
     }
-    if (gameDir.empty() || headless.empty()) {
+    if (checkMods && !gameDir.empty() && headless.empty()) return obl::CheckMods(gameDir, modDirectory);
+    if (gameDir.empty() || headless.empty() || checkMods) {
         std::fprintf(stderr, "error: obl-sim: --game-dir and --headless must name existing paths\n");
         return kExitUsage;
     }

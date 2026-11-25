@@ -1,0 +1,9 @@
+{
+  "format": "obl.mod",
+  "version": 1,
+  "id": "bad_gui_patch",
+  "title": "bad_gui_patch",
+  "mod_version": "1.0.0",
+  "pack": "l0",
+  "scope": "presentation"
+}

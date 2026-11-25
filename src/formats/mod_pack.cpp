@@ -311,8 +311,8 @@ bool PresentationRecipeOutputAllowed(std::string_view text)
     return false;
 }
 
-// The first file of the mod a presentation mod may not ship, in name order; empty when there is none.
-std::string FirstRefusedFile(const std::filesystem::path& directory)
+// The files a presentation mod may not ship, in name order.
+std::vector<std::string> RefusedFiles(const std::filesystem::path& directory)
 {
     std::vector<std::string> refused;
     std::error_code ec;
@@ -328,8 +328,8 @@ std::string FirstRefusedFile(const std::filesystem::path& directory)
         }
         if (!PresentationMayShip(relative, format, recipe)) refused.push_back(relative);
     }
-    if (refused.empty()) return {};
-    return *std::min_element(refused.begin(), refused.end());
+    std::sort(refused.begin(), refused.end());
+    return refused;
 }
 
 bool HasPresentationScripts(const std::filesystem::path& directory)
@@ -496,45 +496,94 @@ bool CheckManifestContent(
     return true;
 }
 
+static bool CheckActive(const std::filesystem::path& gameDirectory, std::string_view packId, std::span<const std::string> active,
+        std::vector<ActiveMod>& mods, std::string& error, std::vector<std::string>* errors)
+{
+    mods.clear();
+    bool valid = true;
+    for (const std::string& id : active) {
+        const size_t initialErrors = errors ? errors->size() : 0;
+        const bool accepted = [&] {
+            const auto fail = [&](const std::string& reason) {
+                error = "mod \"" + id + "\": " + reason;
+                return false;
+            };
+            const auto directory = pack_path::ModDirectory(gameDirectory, id);
+            if (!directory) return fail("not a mod id (lowercase letters, digits, _ and -)");
+            if (std::any_of(mods.begin(), mods.end(), [&](const ActiveMod& m) { return m.manifest.id == id; })) return fail("listed twice");
+            std::ifstream in(*directory / "mod.json", std::ios::binary);
+            if (!in) return fail("no mod.json in " + directory->generic_string());
+            const std::string text((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+            ActiveMod mod;
+            std::string reason;
+            if (!ParseManifest(text, mod.manifest, reason)) return fail(reason);
+            if (mod.manifest.id != id) return fail("mod.json names the id \"" + mod.manifest.id + "\"");
+            bool usable = true;
+            const auto refuse = [&](const std::string& reason) {
+                usable = false;
+                fail(reason);
+                if (errors) errors->push_back(error);
+                return !errors;
+            };
+            const auto& packs = mod.manifest.packs;
+            if (std::find(packs.begin(), packs.end(), packId) == packs.end()) {
+                std::string names;
+                for (const std::string& pack : packs) names += (names.empty() ? "\"" : ", \"") + pack + "\"";
+                if (refuse("made for the pack " + names + ", not \"" + std::string(packId) + "\"")) return false;
+            }
+            // The simulation takes no setting.
+            if (mod.manifest.scope == Scope::World && !mod.manifest.settings.empty() &&
+                    refuse("a world mod may not declare \"settings\" (no setting reaches the simulation; make it a presentation mod)"))
+                return false;
+            if (mod.manifest.scope == Scope::Presentation)
+                for (const std::string& file : RefusedFiles(*directory))
+                    if (refuse("a presentation mod may not ship \"" + file +
+                                "\" (only scripts/presentation/, overlay/<name>.png, recipes/<name>.json for presentation images, "
+                                "text/<lang>.patch.json, gui/<name>.patch.json of presentation data and documents at the top)"))
+                        return false;
+            if (mod.manifest.api > kPresentationApi &&
+                    refuse("needs the presentation script API " + std::to_string(mod.manifest.api) + ", this game has " +
+                            std::to_string(kPresentationApi) + "; update the game"))
+                return false;
+            const bool scripts = HasPresentationScripts(*directory);
+            if (mod.manifest.api == 0 && scripts && refuse("ships presentation scripts but names no \"api\" in mod.json")) return false;
+            // Only a script can do what a taken-over default did or handle a new action.
+            if (!mod.manifest.takesOver.empty() && !scripts &&
+                    refuse("takes over \"" + mod.manifest.takesOver[0] + "\" but ships no scripts"))
+                return false;
+            if (!mod.manifest.actions.empty() && !scripts && refuse("declares actions but ships no scripts")) return false;
+            for (const std::string& need : mod.manifest.requiredMods) {
+                const bool earlier = std::any_of(mods.begin(), mods.end(), [&](const ActiveMod& m) { return m.manifest.id == need; });
+                if (!earlier) {
+                    const bool listed = std::find(active.begin(), active.end(), need) != active.end();
+                    if (refuse(listed ? "requires \"" + need + "\", which must come earlier in the list"
+                                      : "requires \"" + need + "\", which is not active"))
+                        return false;
+                }
+            }
+            for (const ActiveMod& other : mods)
+                if (AreIncompatible(mod.manifest, other.manifest) &&
+                        refuse("does not work with \"" + other.manifest.id + "\" (\"conflicts\" in mod.json); remove one of them"))
+                    return false;
+            if (!usable) return false;
+            mod.directory = *directory;
+            mod.hash = pack_path::ModContentHash(*directory);
+            if (mod.hash.empty()) return fail("a file cannot be read");
+            mods.push_back(std::move(mod));
+            return true;
+        }();
+        if (accepted) continue;
+        if (!errors) return false;
+        if (initialErrors == errors->size()) errors->push_back(error);
+        valid = false;
+    }
+    return valid;
+}
+
 bool CheckActive(const std::filesystem::path& gameDirectory, std::string_view packId, std::span<const std::string> active,
         std::vector<ActiveMod>& mods, std::string& error)
 {
-    mods.clear();
-    for (const std::string& id : active) {
-        const auto fail = [&](const std::string& reason) {
-            error = "mod \"" + id + "\": " + reason;
-            return false;
-        };
-        const auto directory = pack_path::ModDirectory(gameDirectory, id);
-        if (!directory) return fail("not a mod id (lowercase letters, digits, _ and -)");
-        if (std::any_of(mods.begin(), mods.end(), [&](const ActiveMod& m) { return m.manifest.id == id; })) return fail("listed twice");
-        std::ifstream in(*directory / "mod.json", std::ios::binary);
-        if (!in) return fail("no mod.json in " + directory->generic_string());
-        const std::string text((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
-        ActiveMod mod;
-        std::string reason;
-        if (!ParseManifest(text, mod.manifest, reason)) return fail(reason);
-        if (mod.manifest.id != id) return fail("mod.json names the id \"" + mod.manifest.id + "\"");
-        const std::string refused = mod.manifest.scope == Scope::Presentation ? FirstRefusedFile(*directory) : std::string();
-        if (!CheckManifestContent(mod.manifest, packId, HasPresentationScripts(*directory), refused, reason)) return fail(reason);
-        for (const std::string& need : mod.manifest.requiredMods) {
-            const bool earlier = std::any_of(mods.begin(), mods.end(), [&](const ActiveMod& m) { return m.manifest.id == need; });
-            if (!earlier) {
-                const bool later = std::find(active.begin(), active.end(), need) != active.end();
-                return fail(later ? "requires \"" + need + "\", which must come earlier in the list"
-                                  : "requires \"" + need + "\", which is not active");
-            }
-        }
-        for (const ActiveMod& other : mods) {
-            if (AreIncompatible(mod.manifest, other.manifest))
-                return fail("does not work with \"" + other.manifest.id + "\" (\"conflicts\" in mod.json); remove one of them");
-        }
-        mod.directory = *directory;
-        mod.hash = pack_path::ModContentHash(*directory);
-        if (mod.hash.empty()) return fail("a file cannot be read");
-        mods.push_back(std::move(mod));
-    }
-    return true;
+    return CheckActive(gameDirectory, packId, active, mods, error, nullptr);
 }
 
 std::vector<std::string> TakeOverConflicts(std::span<const ActiveMod> mods)
@@ -612,30 +661,55 @@ void RestoreActive()
     g_override.reset();
 }
 
-bool Activate(const std::filesystem::path& gameDirectory, std::string_view packId, std::string_view configured, std::string& error)
+bool Activate(const std::filesystem::path& gameDirectory, std::string_view packId, std::string_view configured, std::string& error,
+        std::vector<std::string>* errors, const std::filesystem::path& source)
 {
     // OBL_MODS replaces the setting for tests and tools, even when it is empty.
     const auto env = os::GetEnv("OBL_MODS");
-    const std::vector<std::string> ids = pack_path::ParseModList(env ? std::string_view(*env) : configured);
-    return ActivateList(gameDirectory, packId, ids, error);
+    auto ids = pack_path::ParseModList(env ? std::string_view(*env) : configured);
+    if (!source.empty()) {
+        std::ifstream in(source / "mod.json", std::ios::binary);
+        if (!in) {
+            error = "no mod.json in " + source.generic_string();
+            return false;
+        }
+        Manifest manifest;
+        const std::string text((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+        if (!ParseManifest(text, manifest, error)) {
+            error = (source / "mod.json").string() + ": " + error;
+            return false;
+        }
+        ids = {manifest.id};
+        pack_path::SetModDirectoryOverride(manifest.id, source);
+    }
+    return ActivateList(gameDirectory, packId, ids, error, errors);
 }
 
-bool ActivateList(const std::filesystem::path& gameDirectory, std::string_view packId, std::span<const std::string> ids, std::string& error)
+bool ActivateList(const std::filesystem::path& gameDirectory, std::string_view packId, std::span<const std::string> requested,
+        std::string& error, std::vector<std::string>* errors)
 {
+    std::vector<std::string> ids(requested.begin(), requested.end());
     std::vector<ActiveMod> mods;
-    if (!CheckActive(gameDirectory, packId, ids, mods, error)) return false;
+    const bool valid = CheckActive(gameDirectory, packId, ids, mods, error, errors);
+    if (!valid && !errors) return false;
+    if (!valid) {
+        ids.clear();
+        for (const auto& mod : mods) ids.push_back(mod.manifest.id);
+    }
     std::vector<std::string> conflicts;
     const auto pack = pack_path::PackDirectory(packId);
     if (!pack) {
         error = "invalid pack id";
         return false;
     }
-    if (!data_patch::Prepare(gameDirectory / *pack, ids, conflicts, error)) return false;
+    const bool patched = data_patch::Prepare(gameDirectory / *pack, ids, conflicts, error, errors);
+    if (!patched && !errors) return false;
     for (const auto& conflict : conflicts) OBL_LOG("mod patch: %s", conflict.c_str());
     for (const auto& conflict : TakeOverConflicts(mods)) OBL_LOG("mod takes_over: %s", conflict.c_str());
     g_active = std::move(mods);
-    pack_path::SetActiveMods({ids.begin(), ids.end()});
-    return true;
+    pack_path::SetActiveMods(ids);
+    error.clear();
+    return valid && patched;
 }
 
 } // namespace obl::mod_pack

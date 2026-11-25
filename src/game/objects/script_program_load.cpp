@@ -62,9 +62,9 @@ ScriptProgram* Construct(ScriptProgram* objectScript)
     return objectScript;
 }
 
-bool LoadVocabulary(const std::filesystem::path& packDirectory)
+bool LoadVocabulary(const std::filesystem::path& packDirectory, std::vector<std::string>* errors)
 {
-    return LoadMergedVocabulary(packDirectory, pack_path::ActiveMods(), g_vocabulary, g_loadError);
+    return LoadMergedVocabulary(packDirectory, pack_path::ActiveMods(), g_vocabulary, g_loadError, errors);
 }
 
 // Whether `resolved` sits inside an active mod directory rather than the pack (mod scripts are parsed strictly).
@@ -125,22 +125,26 @@ void ScriptProgramLoad(ScriptProgram& script, const char* path)
     if (!TryParse(script, path, kGameMemory, error)) FatalError("%s (%s)", error.c_str(), path);
 }
 
-bool LoadScriptProgramVocabulary(const Text16& gameDirectory)
+bool LoadScriptProgramVocabulary(const Text16& gameDirectory, std::vector<std::string>* errors)
 {
     g_packDirectory = WidePath(gameDirectory) / pack_path::Selected();
-    g_vocabularyOk = LoadVocabulary(g_packDirectory);
+    g_vocabularyOk = LoadVocabulary(g_packDirectory, errors);
     if (g_vocabularyOk) {
         OBL_LOG("object script: %u states, %u messages, %u functions, %u values loaded", static_cast<unsigned>(g_vocabulary.states.size()),
                 static_cast<unsigned>(g_vocabulary.messages.size()), static_cast<unsigned>(g_vocabulary.functions.size()),
                 static_cast<unsigned>(g_vocabulary.values.size()));
         std::string modError;
-        if (!ValidateModObjectScripts(g_packDirectory, pack_path::ActiveMods(), g_vocabulary, modError)) {
+        if (!ValidateModObjectScripts(g_packDirectory, pack_path::ActiveMods(), g_vocabulary, modError, errors)) {
+            if (errors) return false;
             OBL_LOG("FatalError: object script: %s", modError.c_str());
             return false;
         }
     } else {
         if (!pack_path::ActiveMods().empty()) {
-            OBL_LOG("FatalError: object script vocabulary: %s", g_loadError.c_str());
+            if (errors)
+                errors->push_back("object script vocabulary: " + g_loadError);
+            else
+                OBL_LOG("FatalError: object script vocabulary: %s", g_loadError.c_str());
             return false;
         }
         OBL_LOG("object script: scripts/object_vocabulary.json not usable (%s) - the script parser cannot run", g_loadError.c_str());

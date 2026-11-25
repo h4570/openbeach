@@ -41,6 +41,7 @@ std::u16string EngineValue(std::u16string_view value, bool polish);
 // Reads `<pack>/text/<language>.json` (validated against obl.text) into `entries` in file order, with the engine's units. A pack
 // without this language's file gives no entries and no error, as an empty table is given for a missing file. An invalid
 // file fails, with its name and the reason in `error`.
-bool LoadPack(const std::filesystem::path& pack, std::string_view language, std::vector<text::Entry>& entries, std::string& error);
+bool LoadPack(const std::filesystem::path& pack, std::string_view language, std::vector<text::Entry>& entries, std::string& error,
+        std::vector<std::string>* errors = nullptr);
 
 } // namespace obl::text_load

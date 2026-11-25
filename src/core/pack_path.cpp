@@ -14,6 +14,8 @@ namespace obl::pack_path {
 namespace {
 
 std::vector<std::string> g_activeMods;
+std::string g_overrideId;
+std::filesystem::path g_overrideDirectory;
 
 } // namespace
 
@@ -71,6 +73,7 @@ std::filesystem::path ModLayer(const std::filesystem::path& pack)
 
 std::optional<std::filesystem::path> ModDirectory(const std::filesystem::path& gameDirectory, std::string_view id)
 {
+    if (!g_overrideDirectory.empty() && id == g_overrideId) return g_overrideDirectory;
     // The same character rules as a pack id, so an id can only name a directory under `mods/`.
     const auto directory = PackDirectory(id);
     if (!directory) return std::nullopt;
@@ -82,6 +85,12 @@ std::optional<std::filesystem::path> ModCacheDirectory(const std::filesystem::pa
     const auto directory = PackDirectory(id);
     if (!directory) return std::nullopt;
     return gameDirectory / "mod-cache" / std::string(id);
+}
+
+void SetModDirectoryOverride(std::string id, std::filesystem::path directory)
+{
+    g_overrideId = std::move(id);
+    g_overrideDirectory = std::move(directory);
 }
 
 std::vector<std::string> ParseModList(std::string_view list)

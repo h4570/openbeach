@@ -29,12 +29,12 @@ bool ReadBool(const std::filesystem::path& path, const char* section, const char
 
 } // namespace
 
-void Load(const Text16& gameDirectory)
+void Load(const Text16& gameDirectory, bool createDefaults)
 {
     const std::filesystem::path path = WidePath(gameDirectory) / game::start_settings::kFileName;
     g_path = path;
     std::error_code ec;
-    if (!std::filesystem::exists(path, ec) && !ec && game::start_settings::CreateDefaultFile(path))
+    if (createDefaults && !std::filesystem::exists(path, ec) && !ec && game::start_settings::CreateDefaultFile(path))
         OBL_LOG("config: created default openbeach.ini");
 
     g_settings.windowed = ReadBool(path, "Display", "Windowed", g_settings.windowed);

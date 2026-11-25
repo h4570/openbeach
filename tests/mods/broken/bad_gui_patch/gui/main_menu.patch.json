@@ -1,0 +1,10 @@
+{
+  "format": "obl.gui_patch",
+  "version": 1,
+  "ops": [
+    {
+      "op": "hide_control",
+      "id": "absent_control"
+    }
+  ]
+}

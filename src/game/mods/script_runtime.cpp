@@ -861,6 +861,7 @@ int OpenSandbox(lua_State* L)
 struct LoadRequest {
     const std::string* text;
     const std::string* chunk;
+    bool compileOnly;
 };
 
 // Text chunks only: a precompiled chunk could break the interpreter's memory safety.
@@ -868,7 +869,7 @@ int LoadAndRun(lua_State* L)
 {
     const auto& request = *static_cast<const LoadRequest*>(lua_touserdata(L, 1));
     if (luaL_loadbufferx(L, request.text->data(), request.text->size(), request.chunk->c_str(), "t") != LUA_OK) return lua_error(L);
-    lua_call(L, 0, 0);
+    if (!request.compileOnly) lua_call(L, 0, 0);
     return 0;
 }
 
@@ -1067,7 +1068,7 @@ void ScriptRuntime::SwitchOff(Mod& mod, const std::string& why)
     Close(mod);
 }
 
-void ScriptRuntime::Start(std::span<const ScriptMod> mods)
+void ScriptRuntime::Start(std::span<const ScriptMod> mods, bool checking)
 {
     Stop();
     m_failures.clear();
@@ -1079,7 +1080,7 @@ void ScriptRuntime::Start(std::span<const ScriptMod> mods)
         mod->limits = &m_limits;
         mod->id = source.id;
         mod->directory = source.directory;
-        mod->storeFile = source.storeFile;
+        if (!checking) mod->storeFile = source.storeFile;
         mod->fields = source.settings;
         ReadSettings(*mod);
         mod->takesOver = source.takesOver;
@@ -1097,15 +1098,17 @@ void ScriptRuntime::Start(std::span<const ScriptMod> mods)
             const std::string chunk = "@" + file.lexically_relative(source.directory).generic_string();
             std::ifstream in(file, std::ios::binary);
             const std::string text((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
-            LoadRequest request{&text, &chunk};
-            if (!in.good() && !in.eof()) {
-                SwitchOff(m, chunk.substr(1) + ": cannot be read");
-                break;
-            }
-            if (!Protected(m, LoadAndRun, &request, error)) {
+            LoadRequest request{&text, &chunk, !m.running};
+            if (!in.good() && !in.eof())
+                error = chunk.substr(1) + ": cannot be read";
+            else if (Protected(m, LoadAndRun, &request, error))
+                continue;
+            if (!checking) {
                 SwitchOff(m, error);
                 break;
             }
+            m.running = false;
+            m_failures.push_back("mod \"" + m.id + "\" (" + chunk.substr(1) + "): " + error);
         }
         if (m.running) m_host.Log("presentation scripts: mod \"" + m.id + "\" loaded " + std::to_string(files.size()) + " file(s)");
     }

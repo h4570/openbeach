@@ -763,7 +763,7 @@ bool EncodeRecipeSprite(const RgbaImage& image, std::string_view outputJsonPath,
 }
 
 bool BuildModRecipes(const PackSink& pack, const PackSink& mod, PackSink& cache, const json_schema::Registry& schemas,
-        ModRecipesResult& result, std::string& error)
+        ModRecipesResult& result, std::string& error, std::vector<std::string>* errors)
 {
     std::vector<std::string> recipeFiles;
     for (const std::string& file : mod.Files()) {
@@ -778,7 +778,7 @@ bool BuildModRecipes(const PackSink& pack, const PackSink& mod, PackSink& cache,
     std::set<std::string> claimedOutputs;
     std::set<std::string> liveOutputs;
 
-    for (const std::string& recipePath : recipeFiles) {
+    const auto build = [&](const std::string& recipePath) {
         const auto recipeBytes = mod.Read(recipePath);
         if (!recipeBytes) {
             error = "cannot read " + mod.Describe(recipePath);
@@ -801,7 +801,7 @@ bool BuildModRecipes(const PackSink& pack, const PackSink& mod, PackSink& cache,
             result.disabled.push_back({recipePath, recipe.source, recipe.output,
                     "recipe \"" + recipePath + "\": source \"" + recipe.source + "\" not found in pack; output \"" + recipe.output +
                             "\" disabled"});
-            continue;
+            return true;
         }
 
         const std::string recipeSha = sha256::Hex(*recipeBytes);
@@ -821,7 +821,7 @@ bool BuildModRecipes(const PackSink& pack, const PackSink& mod, PackSink& cache,
                 for (const std::string& outFile : it->second.outputs) liveOutputs.insert(outFile);
                 newCache[recipePath] = it->second;
                 result.cached++;
-                continue;
+                return true;
             }
         }
 
@@ -858,6 +858,15 @@ bool BuildModRecipes(const PackSink& pack, const PackSink& mod, PackSink& cache,
         }
         newCache[recipePath] = std::move(entry);
         result.built++;
+        return true;
+    };
+
+    bool valid = true;
+    for (const std::string& recipePath : recipeFiles) {
+        if (build(recipePath)) continue;
+        if (!errors) return false;
+        errors->push_back(error);
+        valid = false;
     }
 
     // Remove stale outputs left behind by removed, renamed, or newly disabled recipes.
@@ -869,9 +878,9 @@ bool BuildModRecipes(const PackSink& pack, const PackSink& mod, PackSink& cache,
 
     if (newCache.empty()) {
         cache.Remove(kCacheFile);
-        return true;
+        return valid;
     }
-    return SaveCache(cache, newCache, error);
+    return SaveCache(cache, newCache, error) && valid;
 }
 
 bool BuildInstalledModRecipes(const std::filesystem::path& packDir, const std::filesystem::path& modsDir,

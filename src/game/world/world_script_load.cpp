@@ -184,21 +184,33 @@ int StartupBeerId(const char*)
 }
 } // namespace
 
-bool CheckModWorldScripts()
+bool CheckModWorldScripts(std::vector<std::string>* errors)
 {
     const std::vector<ModWorldScriptFile> files = DiscoverModWorldScripts();
     if (files.empty()) return true;
-    std::string error;
-    if (!g_vocabularyOk) error = "Cannot load scripts/world_vocabulary.json (" + g_error + ")";
-    for (size_t i = 0; error.empty() && i < files.size(); ++i) {
+    const auto report = [&](const std::string& error) {
+        if (errors)
+            errors->push_back(error);
+        else
+            OBL_LOG("FatalError: %s", error.c_str());
+    };
+    if (!g_vocabularyOk) {
+        report("Cannot load scripts/world_vocabulary.json (" + g_error + ")");
+        return false;
+    }
+    bool valid = true;
+    for (const auto& file : files) {
         WorldScript script{};
         ws::Construct(script);
-        ParseAndValidateModScript(script, files[i], g_vocabulary, &StartupBeerId, false, error);
+        std::string error;
+        const bool parsed = ParseAndValidateModScript(script, file, g_vocabulary, &StartupBeerId, false, error);
         ws::Destroy(script, kMemory);
+        if (parsed) continue;
+        report(error);
+        valid = false;
+        if (!errors) break;
     }
-    if (error.empty()) return true;
-    OBL_LOG("FatalError: %s", error.c_str());
-    return false;
+    return valid;
 }
 
 bool LoadModWorldScript(world_script::WorldScript& script, const ModWorldScriptFile& file, std::string& error)

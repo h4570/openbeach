@@ -94,10 +94,13 @@ std::string ModName(const std::filesystem::path& file)
 // the world hash covers it, so a changed value would make a replay depend on the mod.
 bool OnlyAdds(const std::filesystem::path& file)
 {
-    const std::string mod = ModName(file);
     const auto& active = mod_pack::Active();
-    return std::any_of(active.begin(), active.end(),
-            [&](const mod_pack::ActiveMod& m) { return m.manifest.id == mod && m.manifest.scope == mod_pack::Scope::Presentation; });
+    return std::any_of(active.begin(), active.end(), [&](const mod_pack::ActiveMod& mod) {
+        if (mod.manifest.scope != mod_pack::Scope::Presentation) return false;
+        if (mod.directory.empty()) return mod.manifest.id == ModName(file);
+        return std::filesystem::absolute(file.parent_path().parent_path()).lexically_normal() ==
+                std::filesystem::absolute(mod.directory).lexically_normal();
+    });
 }
 
 void ApplyPatch(const std::filesystem::path& file, bool polish, std::vector<text::Entry>& entries, std::map<std::string, size_t>& index)
@@ -213,7 +216,8 @@ std::u16string EngineValue(std::u16string_view value, bool polish)
     return units;
 }
 
-bool LoadPack(const std::filesystem::path& pack, std::string_view language, std::vector<text::Entry>& entries, std::string& error)
+bool LoadPack(const std::filesystem::path& pack, std::string_view language, std::vector<text::Entry>& entries, std::string& error,
+        std::vector<std::string>* errors)
 {
     error.clear();
     entries.clear();
@@ -241,7 +245,14 @@ bool LoadPack(const std::filesystem::path& pack, std::string_view language, std:
         std::map<std::string, size_t> index;
         // The first of equal keys is the one a lookup finds, so a patch changes that one.
         for (size_t at = 0; at < entries.size(); ++at) index.emplace(LowerKey(entries[at].key), at);
-        for (const auto& patch : patches) ApplyPatch(patch, language == "pl", entries, index);
+        for (const auto& patch : patches) {
+            try {
+                ApplyPatch(patch, language == "pl", entries, index);
+            } catch (const PatchFailure& failure) {
+                if (!errors) throw;
+                errors->push_back(failure.what());
+            }
+        }
         return true;
     } catch (const PatchFailure& failure) {
         entries.clear();

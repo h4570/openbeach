@@ -43,7 +43,8 @@ struct Conflict {
 // Applies the `<logical>.patch.json` files of `mods` (load order) to the files they name and checks each result against
 // its schema. All documents are built before any is published, so a failure keeps the previous state. `conflicts` lists
 // each value a later mod sets over an earlier one's, naming both; `error` names the mod, the file, the op and the path.
-bool Prepare(const std::filesystem::path& pack, std::span<const std::string> mods, std::vector<std::string>& conflicts, std::string& error);
+bool Prepare(const std::filesystem::path& pack, std::span<const std::string> mods, std::vector<std::string>& conflicts, std::string& error,
+        std::vector<std::string>* errors = nullptr);
 
 // What Prepare would find for `mods`, without publishing anything: the mods screen lists the conflicts of a list it has not applied.
 bool FindConflicts(

@@ -89,7 +89,7 @@ bool DeriveControlIds(std::string_view scriptText, std::vector<std::string>& ids
 // (`screenWidth`, `screenHeight`), validates `Mod:<id>.<event>` actions against `activeMods`, and emits the patched
 // `.gui` text and control ID bindings.
 bool ApplyPatches(std::string_view baseScriptText, std::span<const PatchSource> patches, std::span<const std::string> activeMods,
-        int32_t screenWidth, int32_t screenHeight, ApplyResult& out, std::string& error);
+        int32_t screenWidth, int32_t screenHeight, ApplyResult& out, std::string& error, std::vector<std::string>* errors = nullptr);
 
 // Discovers `gui/<layout>.patch.json` files across `pack_path::Layers(pack)` in load order (bottom-up, later mod wins).
 std::vector<std::filesystem::path> FindPatchFiles(const std::filesystem::path& pack, std::string_view layout);
@@ -99,6 +99,6 @@ std::vector<std::filesystem::path> FindPatchFiles(const std::filesystem::path& p
 // `out.scriptText = baseScriptText` untouched and returns true.
 bool ApplyPackPatches(const std::filesystem::path& pack, std::string_view layout, std::string_view baseScriptText,
         std::span<const std::string> activeMods, int32_t screenWidth, int32_t screenHeight, ApplyResult& out, std::string& error,
-        std::span<const PatchSource> leading = {});
+        std::span<const PatchSource> leading = {}, std::vector<std::string>* errors = nullptr);
 
 } // namespace obl::gui_patch

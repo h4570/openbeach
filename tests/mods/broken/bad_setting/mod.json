@@ -1,0 +1,17 @@
+{
+  "format": "obl.mod",
+  "version": 1,
+  "id": "bad_setting",
+  "title": "bad_setting",
+  "mod_version": "1.0.0",
+  "pack": "l0",
+  "scope": "presentation",
+  "settings": [
+    {
+      "id": "flag",
+      "type": "unsupported",
+      "label": "Flag",
+      "default": true
+    }
+  ]
+}

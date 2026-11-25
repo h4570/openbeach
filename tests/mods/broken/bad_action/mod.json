@@ -1,0 +1,12 @@
+{
+  "format": "obl.mod",
+  "version": 1,
+  "id": "bad_action",
+  "title": "bad_action",
+  "mod_version": "1.0.0",
+  "pack": "l0",
+  "scope": "presentation",
+  "bindings": {
+    "missing.action": "A"
+  }
+}

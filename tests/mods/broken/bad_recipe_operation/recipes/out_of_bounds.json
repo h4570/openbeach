@@ -1,0 +1,15 @@
+{
+  "format": "obl.asset_recipe",
+  "version": 1,
+  "source": "images/screens/l0_title.png",
+  "output": "overlay/derived.png",
+  "operations": [
+    {
+      "op": "crop",
+      "x": 4095,
+      "y": 4095,
+      "width": 2,
+      "height": 2
+    }
+  ]
+}

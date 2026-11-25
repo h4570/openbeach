@@ -129,6 +129,7 @@ add_library(openbeach OBJECT
     ../testing/savegame_managers.h
     ${PROJECT_SOURCE_DIR}/src/platform/config.cpp
     game_start.cpp
+    check_mods.cpp
     init.h
     ../platform/headless_main.cpp
     ../platform/headless_main.h

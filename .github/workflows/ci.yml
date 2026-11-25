@@ -125,6 +125,8 @@ jobs:
           restore-keys: ccache-sim-
       - name: L0 headless tests
         run: bash tools/ci/l0_sim_tests.sh $CCACHE_ARGS -DOBL_SIM_FAST_BUILD=ON -DOBL_LINUX_WINDOWED=ON
+      - name: Mod checker on L0
+        run: python3 tools/tests/check_mods_engine.py "$OBL_SIM_BUILD/bin/obl-sim"
       - name: Official mod tests on L0
         run: |
           cmake --build "$OBL_SIM_BUILD" --target OpenBeach
