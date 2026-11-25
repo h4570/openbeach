@@ -8,6 +8,8 @@ add_library(obl_formats STATIC
     data_patch.h
     gui_content.cpp
     gui_content.h
+    key_actions.cpp
+    key_actions.h
     mod_pack.cpp
     mod_pack.h
     map_pack.cpp

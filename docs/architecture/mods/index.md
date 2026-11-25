@@ -75,6 +75,14 @@ GUI, overlay and game-state calls, each with a do-nothing default), so its unit 
   asks (`mod-overlay on`). Scripts change the world only through commands, so reading the state or drawing keeps the world
   hashes (`tests/l0_mod_script_state.txt` replays a reference with a mod reading everything).
 
+## Actions and key bindings
+The engine's hotkeys are named actions (`src/formats/key_actions.h`); `mod.json` may declare `actions` (a press calls `on_action(id)`),
+move actions with `bindings`, or take an engine action over with `takes_over: ["action.<name>"]` (the same owner tracking as the
+areas, `presentation_scripts.cpp` `SyncAreas`). The player's `[Keys]` section of `openbeach.ini` beats every mod. Conflicts are settled
+by `key_actions::Resolve`, logged at start-up and offered to the mods screen as `mod_pack::KeyConflicts`. A mod that stops gives its keys
+back (the table is rebuilt from the running mods). Nothing here reads the simulation or is recorded in saves and replays. Reference:
+[actions.md](../../modding/reference/actions.md); the input side: [input.md](../input.md).
+
 ## Saves and replays
 - With no active mods nothing changes: saves have no `mods` key, replays no `mods` line, and the world hashes and goldens stay.
 - Only world mods are listed ([saves.md](../data-formats/saves.md#mods), [commands.md](../commands.md#replay-file)).

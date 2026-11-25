@@ -38,6 +38,14 @@ request resets the object, as the SDL backend does when it cannot start a drag. 
   update are seen as a click: the release is deferred to the next update.
 - **Cursor shape:** `Input_SetCursorShape` ignores the current shape, otherwise the backend loads the system cursor (resources
   106, 101-103, 107, 108, 111 for shapes 1-7) before the object stores the id at `m_cursorShape`.
+- **Actions and key bindings:** the game's hotkeys read named actions, not key codes (`formats/key_actions.h`, the table of
+  [actions.md](../modding/reference/actions.md)). `key_actions::Resolve` settles the layers once at start-up
+  (`mods::ConfigureKeyBindings`, called from `game_start.cpp`): engine defaults, the active mods' `actions` and `bindings` in load
+  order, then `[Keys]` of `openbeach.ini`; one key belongs to one action, the strongest layer keeps it. The sites ask
+  `ui::ActionPressed/ActionHeld` (place and tool modes) or `world_view::AnyKey` (the world's hotkeys and camera keys), which loop over the
+  keys bound to the action and give none while a mod has taken the action over. With no mod and no `[Keys]` line the table is the
+  keys the game always had. A mod's own action fires `on_action(id)` from `mods::PresentationInput`, before the raw key event goes to
+  `on_input`. Bindings are presentation data: they never reach the simulation.
 - **Mod scripts:** after `Input_Update` the presentation scripts see the update's events and may take a consumed one back out
   of the object, or add a made-up click ([mods/index.md](mods/index.md#the-input-path)). Finger events go to the scripts
   (`mods::RouteTouch`) before `TouchGestures`; a finger whose down a script consumed, or every finger while a mod owns

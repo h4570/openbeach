@@ -1,5 +1,6 @@
 #pragma once
 
+#include "formats/key_actions.h"
 #include "core/settings_schema.h"
 
 #include <filesystem>
@@ -23,6 +24,10 @@ inline constexpr const char* kOverlayImages = "overlay";
 
 // Settings a mod may declare in mod.json (docs/modding/reference/mods.md#settings).
 inline constexpr size_t kMaxSettings = 32;
+// Actions a mod may declare in mod.json (docs/modding/reference/actions.md).
+inline constexpr size_t kMaxActions = 64;
+// takes_over names for the engine's actions: "action." and the action's name from formats/key_actions.h.
+inline constexpr std::string_view kTakeOverActionPrefix = "action.";
 
 // What a mod may change. A world mod is recorded in saves and replays; a presentation mod reaches the simulation only through
 // game commands, so it ships no data the simulation reads and saves and replays leave it out (docs/architecture/mods/index.md).
@@ -41,7 +46,9 @@ struct Manifest {
     Scope scope = Scope::World;
     std::vector<settings_schema::Field> settings; // `settings`: kept in openbeach.ini under [Mod.<id>], never read by the simulation
     int api = 0; // the presentation API version the scripts were written for; 0 when the manifest names none
-    std::vector<std::string> takesOver; // names from kTakeOverAreas
+    std::vector<std::string> takesOver; // names from kTakeOverAreas, or "action.<engine action>"
+    std::vector<key_actions::ModAction> actions; // `actions`: named, bindable; a press calls on_action(id)
+    std::vector<key_actions::Binding> bindings; // `bindings`: moves any action to other keys
 };
 
 // What the start-up check learned about an active mod.
@@ -69,6 +76,14 @@ bool CheckActive(const std::filesystem::path& gameDirectory, std::string_view pa
 
 // One line per default behavior that more than one of `mods` (in load order) takes over: the later mod wins it.
 std::vector<std::string> TakeOverConflicts(std::span<const ActiveMod> mods);
+
+// The mods' actions and bindings as the resolver takes them, in load order (formats/key_actions.h).
+std::vector<key_actions::ModKeys> ActionLayers(std::span<const ActiveMod> mods);
+
+// One line per key that actions of `mods` (in load order) and the engine's share, naming the winner; lines for bindings that name no
+// action or no key come after them. The later mod wins, the player's `[Keys]` (`player`, may be empty) beats every mod. A source for
+// the mods screen's conflict list.
+std::vector<std::string> KeyConflicts(std::span<const ActiveMod> mods, const key_actions::PlayerLookup& player);
 
 // The result of the last successful start-up check (SetActive), in load order.
 const std::vector<ActiveMod>& Active();

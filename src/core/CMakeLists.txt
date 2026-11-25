@@ -33,6 +33,8 @@ add_library(obl_core STATIC
     log.cpp
     log.h
     ini_file.cpp
+    key_names.cpp
+    key_names.h
     ini_file.h
     mp3info.cpp
     mp3info.h

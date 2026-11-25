@@ -1,5 +1,6 @@
 #pragma once
 
+#include "formats/key_actions.h"
 #include "game/ui/input_types.h"
 
 #include <cstdint>
@@ -23,6 +24,20 @@ bool InputUpdateKeyboard(ui::Input& input);
 bool InputUpdateMouse(ui::Input& input);
 bool InputKeyHeld(const ui::Input& input, int code);
 bool InputKeyPressed(const ui::Input& input, int code);
+// A named action (formats/key_actions.h): any key bound to it is held, or was pressed in this update. Nothing while a mod has taken the
+// action over.
+inline bool ActionHeld(const ui::Input& input, key_actions::Engine action)
+{
+    for (uint8_t key : key_actions::Keys(action))
+        if (InputKeyHeld(input, key)) return true;
+    return false;
+}
+inline bool ActionPressed(const ui::Input& input, key_actions::Engine action)
+{
+    for (uint8_t key : key_actions::Keys(action))
+        if (InputKeyPressed(input, key)) return true;
+    return false;
+}
 void InputSetRelativeMode(ui::Input& input, int enable);
 void InputShowSystemCursor();
 void InputHideSystemCursor();

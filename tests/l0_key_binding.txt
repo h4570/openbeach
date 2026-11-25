@@ -1,0 +1,32 @@
+# The player's `[Keys]` binding (docs/modding/reference/actions.md): `bind-key` does what a line of openbeach.ini does. game.pause moves
+# from P to F10; "default" gives the key back. SDL scancodes: P 19, F10 67.
+# @env OBL_PACK=l0
+# @timeout 120
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario 1
+await gameplay
+step 5
+bind-key game.pause F10
+sdl-key 19 1
+step 3
+sdl-key 19 0
+step 3
+expect paused 0
+sdl-key 67 1
+step 3
+sdl-key 67 0
+step 3
+expect paused 1
+sdl-key 67 1
+step 3
+sdl-key 67 0
+step 3
+expect paused 0
+bind-key game.pause default
+sdl-key 19 1
+step 3
+sdl-key 19 0
+step 3
+expect paused 1
+quit

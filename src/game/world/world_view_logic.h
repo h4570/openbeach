@@ -1,5 +1,6 @@
 #pragma once
 
+#include "formats/key_actions.h"
 #include "core/key_code.h"
 
 #include "game/objects/object_manager_state.h"
@@ -18,6 +19,17 @@
 // world::DrawObjectOverlays the visible-object pass over the same three lists
 namespace obl::world_view {
 
+using key_actions::Engine;
+
+// Whether a key bound to the action passes `test` (the Env's KeyHeld or KeyPressed); none does while a mod has taken it over.
+template<class Test> bool AnyKey(Engine action, Test test)
+{
+    for (uint8_t key : key_actions::Keys(action))
+        if (test(key)) return true;
+    return false;
+}
+
+// The default keys of the actions below (formats/key_actions.h holds the table the game reads).
 constexpr auto kKeyLeft = input::KeyCode::Left;
 constexpr auto kKeyRight = input::KeyCode::Right;
 constexpr auto kKeyUp = input::KeyCode::Up;
@@ -95,13 +107,13 @@ template<class Env> void UpdateCameraInput(ui::ViewState& view, Env& env)
 {
     const float scroll = env.ScrollSpeed();
     const float step = env.FrameDelta() * kKeyScrollPixelsPerSecond * scroll;
-    const bool left = env.KeyHeld(kKeyLeft);
+    const bool left = AnyKey(Engine::CameraLeft, [&](int key) { return env.KeyHeld(key); });
     if (left) env.AddVelocity(-step, 0.0f);
-    const bool right = env.KeyHeld(kKeyRight);
+    const bool right = AnyKey(Engine::CameraRight, [&](int key) { return env.KeyHeld(key); });
     if (right) env.AddVelocity(step, 0.0f);
-    const bool up = env.KeyHeld(kKeyUp);
+    const bool up = AnyKey(Engine::CameraUp, [&](int key) { return env.KeyHeld(key); });
     if (up) env.AddVelocity(0.0f, -step);
-    const bool down = env.KeyHeld(kKeyDown);
+    const bool down = AnyKey(Engine::CameraDown, [&](int key) { return env.KeyHeld(key); });
     if (down) env.AddVelocity(0.0f, step);
     if (down || up || right || left) env.ClearKeyHover();
 
@@ -145,7 +157,7 @@ template<class Env> void UpdateCameraInput(ui::ViewState& view, Env& env)
 // The speed level is clamped on the way up (`< 2`) and down (`!= 0`); the executor rejects an invalid requested level.
 template<class Env> void UpdateHotkeys(const world::World& world, ui::ViewState& view, Env& env)
 {
-    if (env.KeyPressed(kKeyPause) && world.m_forcedPaused == 0) {
+    if (AnyKey(Engine::GamePause, [&](int key) { return env.KeyPressed(key); }) && world.m_forcedPaused == 0) {
         const bool paused = world.m_paused == 0;
         env.SetPaused(paused);
         if (paused)
@@ -153,30 +165,30 @@ template<class Env> void UpdateHotkeys(const world::World& world, ui::ViewState&
         else
             env.ClosePause();
     }
-    if (env.KeyPressed(kKeyLoadMenu)) env.TogglePanel(Panel::LoadGame);
-    if (env.KeyPressed(kKeySaveMenu)) env.TogglePanel(Panel::SaveGame);
-    if (env.KeyPressed(kKeyOptions)) env.TogglePanel(Panel::Options);
-    if (env.KeyPressed(kKeyMusic)) env.TogglePanel(Panel::Music);
-    if (env.KeyPressed(kKeyBuild)) env.TogglePanel(Panel::Build);
-    if (env.KeyPressed(kKeyScenery)) env.TogglePanel(Panel::Scenery);
-    if (env.KeyPressed(kKeyZoomIn)) {
+    if (AnyKey(Engine::PanelLoadGame, [&](int key) { return env.KeyPressed(key); })) env.TogglePanel(Panel::LoadGame);
+    if (AnyKey(Engine::PanelSaveGame, [&](int key) { return env.KeyPressed(key); })) env.TogglePanel(Panel::SaveGame);
+    if (AnyKey(Engine::PanelOptions, [&](int key) { return env.KeyPressed(key); })) env.TogglePanel(Panel::Options);
+    if (AnyKey(Engine::PanelMusic, [&](int key) { return env.KeyPressed(key); })) env.TogglePanel(Panel::Music);
+    if (AnyKey(Engine::PanelBuild, [&](int key) { return env.KeyPressed(key); })) env.TogglePanel(Panel::Build);
+    if (AnyKey(Engine::PanelScenery, [&](int key) { return env.KeyPressed(key); })) env.TogglePanel(Panel::Scenery);
+    if (AnyKey(Engine::CameraZoomIn, [&](int key) { return env.KeyPressed(key); })) {
         if (env.ZoomLevel() == 1)
             view.m_zoomRequest = 0;
         else if (env.ZoomLevel() == 2)
             view.m_zoomRequest = 1;
     }
-    if (env.KeyPressed(kKeyZoomOut)) {
+    if (AnyKey(Engine::CameraZoomOut, [&](int key) { return env.KeyPressed(key); })) {
         if (env.ZoomLevel() == 0)
             view.m_zoomRequest = 1;
         else if (env.ZoomLevel() == 1)
             view.m_zoomRequest = 2;
     }
     int level = world.m_gameSpeedLevel;
-    if (env.KeyPressed(kKeySpeedUp)) {
+    if (AnyKey(Engine::GameSpeedUp, [&](int key) { return env.KeyPressed(key); })) {
         if (static_cast<uint32_t>(level) < 2) ++level;
         env.SetGameSpeed(level);
     }
-    if (env.KeyPressed(kKeySpeedDown)) {
+    if (AnyKey(Engine::GameSpeedDown, [&](int key) { return env.KeyPressed(key); })) {
         if (level != 0) --level;
         env.SetGameSpeed(level);
     }

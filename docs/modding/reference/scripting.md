@@ -51,7 +51,7 @@ The runtime starts with the first game frame after the start-up check. Every fun
 | `on_input_observe(event)` | for every input event after `on_input`, consumed or not, the last mod first; it cannot consume |
 | `on_frame(dt)` | every game frame after the state's update, in load order; `dt` is the frame's seconds (game tests with `fixed-dt` get that value) |
 | `on_setting(id, value)` | after the player changed a setting the mod declares ([Settings](#settings)): once per changed setting, in load order, with the new value |
-| `on_action(event)` | when the player clicks a button of a GUI patch whose action is `Mod:<this mod's id>.<event>` ([gui-patches.md](gui-patches.md)) |
+| `on_action(event)` | when the player clicks a button of a GUI patch whose action is `Mod:<this mod's id>.<event>` ([gui-patches.md](gui-patches.md)), or presses a key of one of the mod's own actions, with the action's id ([actions.md](actions.md)) |
 | `on_stop()` | when the game ends, the last mod first; then the stores are written |
 
 ## Input events
@@ -87,6 +87,7 @@ does its work with the calls below.
 | `input.touch` | the touch gestures: a tap is a left click, a held finger a held button, a drag moves the camera, two fingers scroll or right-click. The mod gets every touch event first and turns fingers into `obl.input` clicks and `obl.camera` moves |
 | `input.mouse_drag` | the camera drag with the right button held (the right click itself still reaches the game); the mod gets mouse and pointer events first |
 | `camera.edge_scroll` | the camera scrolling while the cursor touches the screen edge |
+| `action.<name>` | an engine action such as `action.game.pause`: the engine ignores its keys ([actions.md](actions.md)) |
 
 - **Safety net:** when the mod fails, runs out of its budget or stops, the default comes back at once, so a broken mod cannot
   leave a phone without touch. The log says `presentation scripts: "input.touch" is the engine's again (mod "<id>" stopped)`.

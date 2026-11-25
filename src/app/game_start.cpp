@@ -7,6 +7,8 @@
 #include "core/wide_path.h"
 #include "core/pack_path.h"
 #include "formats/mod_pack.h"
+#include "game/game/start_settings.h"
+#include "game/mods/presentation_scripts.h"
 #include "game/ui/gui_content_runtime.h"
 #include "game/ui/gui_layouts_runtime.h"
 #include "game/ui/blit.h"
@@ -193,6 +195,7 @@ int obl::InitGame(const Text16& gameDir)
         OBL_LOG("FatalError: %s", modError.c_str());
         return 8;
     }
+    mods::ConfigureKeyBindings(WidePath(gameDir) / game::start_settings::kFileName);
     // Converted GUI tables and layouts (packs/base/gui/); missing files stop the game only when the GUI first needs them.
     gui::gui_content::Load(gameDir);
     gui::gui_layouts::Load(gameDir);

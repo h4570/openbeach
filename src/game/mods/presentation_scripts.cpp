@@ -2,6 +2,8 @@
 
 #include "core/ascii_case.h"
 #include "core/ini_file.h"
+#include "formats/key_actions.h"
+#include "core/key_names.h"
 #include "core/log.h"
 #include "core/os.h"
 #include "formats/mod_pack.h"
@@ -61,6 +63,10 @@ bool g_snapshotTaken = false;
 std::string g_lastPointer;
 int g_fingersDown = 0;
 std::array<std::string, kAreaCount> g_areaOwners;
+std::array<std::string, key_actions::kEngineCount> g_actionOwners;
+std::filesystem::path g_keysFile; // openbeach.ini, for `[Keys]`
+std::map<std::string, std::string> g_testKeys; // `bind-key`: action -> keys
+size_t g_keyRunning = 0; // how many mods ran when the installed table was built
 
 ScreenInfo CurrentScreen()
 {
@@ -207,6 +213,33 @@ public:
 
 GameScriptHost g_host;
 
+// The table of key bindings from the mods that run (all active ones before the scripts start) and the player's file. `log` reports the
+// conflicts, which is wanted once at start-up and not on every change of the running mods.
+void RebuildKeys(bool log)
+{
+    std::vector<mod_pack::ActiveMod> mods;
+    const std::vector<std::string> running = g_runtime ? g_runtime->RunningMods() : std::vector<std::string>{};
+    for (const mod_pack::ActiveMod& mod : mod_pack::Active())
+        // A mod without scripts (api 0) only moves keys and cannot stop; one with scripts counts while it runs.
+        if (!g_runtime || mod.manifest.api == 0 || std::find(running.begin(), running.end(), mod.manifest.id) != running.end())
+            mods.push_back(mod);
+    const bool scripted = os::HasEnv("OBL_SCRIPT");
+    const auto player = [&](std::string_view name) -> std::optional<std::string> {
+        if (const auto it = g_testKeys.find(std::string(name)); it != g_testKeys.end()) return it->second;
+        if (scripted || g_keysFile.empty()) return std::nullopt;
+        const std::string value = ini::ReadString(g_keysFile, "Keys", name, "", 256);
+        if (value == "") return std::nullopt;
+        return value;
+    };
+    const key_actions::Table table = key_actions::Resolve(mod_pack::ActionLayers(mods), player);
+    if (log) {
+        for (const auto& line : table.conflicts) OBL_LOG("key bindings: %s", line.c_str());
+        for (const auto& line : table.problems) OBL_LOG("key bindings: %s", line.c_str());
+    }
+    key_actions::Install(table);
+    g_keyRunning = running.size();
+}
+
 // The taken-over defaults follow the running mods: a mod that is switched off gives its areas back at once.
 void SyncAreas()
 {
@@ -221,6 +254,19 @@ void SyncAreas()
         g_areaOwners[i] = owner;
         SetTakenOver(static_cast<Area>(i), !owner.empty());
     }
+    for (size_t i = 0; i < key_actions::kEngineCount; ++i) {
+        const std::string name = std::string(mod_pack::kTakeOverActionPrefix) + std::string(key_actions::EngineActions()[i].name);
+        const std::string owner = g_runtime ? g_runtime->AreaOwner(name) : std::string();
+        if (owner == g_actionOwners[i]) continue;
+        if (!owner.empty())
+            OBL_LOG("presentation scripts: mod \"%s\" takes over \"%s\"", owner.c_str(), name.c_str());
+        else
+            OBL_LOG("presentation scripts: \"%s\" is the engine's again (mod \"%s\" stopped)", name.c_str(), g_actionOwners[i].c_str());
+        g_actionOwners[i] = owner;
+        key_actions::SetTakenOver(static_cast<key_actions::Engine>(i), !owner.empty());
+    }
+    // A mod that stopped frees its keys.
+    if (g_runtime && g_runtime->RunningMods().size() != g_keyRunning) RebuildKeys(false);
 }
 
 // The platform's finger events, before its own touch recognizer (input_routing.h).
@@ -250,6 +296,7 @@ void Start()
     if (mods.empty()) return;
     g_runtime = std::make_unique<ScriptRuntime>(g_host);
     g_runtime->Start(mods);
+    RebuildKeys(false); // a mod that failed to load gives its keys back
     SetTouchHandler(&RouteTouchToScripts);
     gui_patch_runtime::SetModActionHandler([](std::string_view modId, std::string_view event) {
         if (!g_runtime) return;
@@ -268,6 +315,10 @@ void PresentationInput(ui::Input* input)
     g_snapshotTaken = false;
     if (input) {
         for (const InputEvent& event : g_events.Take(*input)) {
+            // Named actions sit in front of the raw event: a mod's action fires on its key, and the key still reaches on_input.
+            if (event.kind == "key" && event.phase == "down")
+                for (const key_actions::Entry* action : key_actions::ModActionsFor(input::FindKey(event.key)))
+                    g_runtime->Action(action->mod, action->id);
             if ((event.kind == "mouse" || event.kind == "pointer") && g_fingersDown == 0) g_lastPointer = "mouse";
             if (!g_runtime->Input(event).empty()) g_events.Consume(*input, event);
         }
@@ -331,6 +382,30 @@ bool SetModSetting(const std::string& mod, const std::string& id, const std::str
     }
     if (g_runtime) g_runtime->SettingsChanged();
     return true;
+}
+
+void ConfigureKeyBindings(const std::filesystem::path& iniFile)
+{
+    g_keysFile = iniFile;
+    RebuildKeys(true);
+}
+
+void SetTestKeyBinding(const std::string& action, const std::string& keys)
+{
+    if (keys.empty())
+        g_testKeys.erase(action);
+    else
+        g_testKeys[action] = keys;
+    RebuildKeys(true);
+    SyncAreas();
+}
+
+void ClearTestKeyBindings()
+{
+    if (g_testKeys.empty()) return;
+    g_testKeys.clear();
+    RebuildKeys(false);
+    SyncAreas();
 }
 
 void StopPresentationScripts()

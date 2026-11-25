@@ -30,6 +30,7 @@ same path below it. Text tables, the catalog's record list, object script vocabu
 - `api` (optional): the presentation script API version the mod's scripts were written for; a mod with
   `scripts/presentation/*.lua` must name it ([scripting.md](scripting.md)).
 - `settings` (optional): what the player can set for the mod, see [Settings](#settings); presentation mods only.
+- `actions`, `bindings` (optional): named actions the mod adds and keys it moves, see [actions.md](actions.md).
 
 ## Settings
 A mod lists the choices it offers the player in `settings`, at most 32. Every entry has an `id` (lowercase letters, digits, `_`

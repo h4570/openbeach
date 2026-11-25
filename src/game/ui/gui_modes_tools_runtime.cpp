@@ -188,10 +188,6 @@ int LeftButton()
 {
     return game::GetInput()->m_leftButton;
 }
-bool KeyPressed(int scancode)
-{
-    return InputKeyPressed(*game::GetInput(), scancode);
-}
 bool OverGui(Manager* manager)
 {
     return manager->IsCursorOverGui(true);
@@ -239,7 +235,7 @@ void UpdateDefault(ui::GuiModeDefault* mode, float dt)
     Manager* manager = mode->m_manager;
     TickerAnimation(manager, dt);
     FollowCamera(manager);
-    if (!KeyPressed(obl::input::KeyCode::Escape)) return;
+    if (!ActionPressed(*game::GetInput(), key_actions::Engine::ToolCancel)) return;
     View(manager)->m_selection = -1;
     if (gui_modes_tools::EscapeOpensOptions(DialogCount(manager)))
         ShowOptions(manager);
@@ -301,7 +297,7 @@ void TileUnder(const float (&world)[3], uint32_t (&tile)[2])
 // Esc leaves the photo mode: back to the default mode, the CameraControls window closed.
 bool OnMouseCamera(Mode* mode)
 {
-    if (KeyPressed(obl::input::KeyCode::Escape)) {
+    if (ActionPressed(*game::GetInput(), key_actions::Engine::ToolCancel)) {
         Manager* manager = mode->m_manager;
         SetMode(manager, kModeDefault);
         char name[] = "CameraControls";
@@ -331,7 +327,7 @@ bool OnMouseDozer(ui::GuiModeDozer* mode, int x, int y, int left)
             game::SubmitCommand(command::Dozer{static_cast<int32_t>(mode->m_tile[0]), static_cast<int32_t>(mode->m_tile[1])});
         PlaySound(gui_modes_tools::DozerClickSound(gui_modes_tools::DozerRemoves(mode->m_overMap != 0, mode->m_canRemove != 0)));
     }
-    if (KeyPressed(obl::input::KeyCode::Escape)) {
+    if (ActionPressed(*game::GetInput(), key_actions::Engine::ToolCancel)) {
         AnimateSceneryPanelOut(manager);
         SetMode(manager, kModeDefault);
     }
@@ -359,7 +355,7 @@ bool OnMouseSendStaff(ui::GuiModeSendStaff* mode, int x, int y, int left)
         else
             game::SubmitCommand(command::SendStaffTo{staffId, static_cast<uint32_t>(targetId)});
     }
-    if (KeyPressed(obl::input::KeyCode::Escape) || sent) SetMode(manager, kModeDefault);
+    if (ActionPressed(*game::GetInput(), key_actions::Engine::ToolCancel) || sent) SetMode(manager, kModeDefault);
     return false;
 }
 

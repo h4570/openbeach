@@ -1,5 +1,6 @@
 #include "formats/mod_pack.h"
 
+#include "formats/key_actions.h"
 #include "core/log.h"
 #include "core/os.h"
 #include "core/pack_path.h"
@@ -182,6 +183,92 @@ bool ReadSetting(const nlohmann::json& item, settings_schema::Field& field, std:
     return true;
 }
 
+// A key list in mod.json: "F9", "P, F5" or ["P", "F5"].
+bool ReadKeyList(const nlohmann::json& value, key_actions::KeyList& keys, std::string& error)
+{
+    std::string text;
+    if (value.is_string()) {
+        text = value.get<std::string>();
+    } else if (value.is_array()) {
+        for (const auto& item : value) {
+            if (!item.is_string()) {
+                error = "a key list holds something that is not a key name";
+                return false;
+            }
+            text += (text.empty() ? "" : ",") + item.get<std::string>();
+        }
+    } else {
+        error = "a key list is not a string or a list of strings";
+        return false;
+    }
+    return key_actions::ParseKeys(text, keys, error);
+}
+
+bool ReadActions(const nlohmann::json& doc, std::vector<key_actions::ModAction>& actions, std::string& error)
+{
+    const auto it = doc.find("actions");
+    if (it == doc.end()) return true;
+    if (!it->is_array() || it->size() > kMaxActions) {
+        error = "actions is not a list of at most " + std::to_string(kMaxActions) + " actions";
+        return false;
+    }
+    for (const auto& item : *it) {
+        key_actions::ModAction action;
+        if (!item.is_object()) {
+            error = "an action is not an object";
+            return false;
+        }
+        if (!ReadString(item, "id", action.id, error)) return false;
+        const std::string where = "action \"" + action.id + "\": ";
+        if (action.id.find_first_not_of("abcdefghijklmnopqrstuvwxyz0123456789_") != std::string::npos) {
+            error = where + "the id may hold only lowercase letters, digits and _";
+            return false;
+        }
+        for (const auto& other : actions)
+            if (other.id == action.id) {
+                error = where + "listed twice";
+                return false;
+            }
+        if (const auto label = item.find("label"); label != item.end()) {
+            if (!label->is_string()) {
+                error = where + "\"label\" is not a string";
+                return false;
+            }
+            action.label = label->get<std::string>();
+        }
+        if (const auto keys = item.find("keys"); keys != item.end()) {
+            std::string reason;
+            if (!ReadKeyList(*keys, action.keys, reason)) {
+                error = where + reason;
+                return false;
+            }
+        }
+        actions.push_back(std::move(action));
+    }
+    return true;
+}
+
+bool ReadBindings(const nlohmann::json& doc, std::vector<key_actions::Binding>& bindings, std::string& error)
+{
+    const auto it = doc.find("bindings");
+    if (it == doc.end()) return true;
+    if (!it->is_object() || it->size() > kMaxActions) {
+        error = "bindings is not an object of at most " + std::to_string(kMaxActions) + " entries";
+        return false;
+    }
+    for (const auto& [name, value] : it->items()) {
+        key_actions::Binding binding;
+        binding.action = name;
+        std::string reason;
+        if (!ReadKeyList(value, binding.keys, reason)) {
+            error = "binding \"" + name + "\": " + reason;
+            return false;
+        }
+        bindings.push_back(std::move(binding));
+    }
+    return true;
+}
+
 bool ReadSettings(const nlohmann::json& doc, std::vector<settings_schema::Field>& settings, std::string& error)
 {
     const auto it = doc.find("settings");
@@ -311,6 +398,7 @@ bool ParseManifest(std::string_view text, Manifest& manifest, std::string& error
         }
     }
     if (!ReadSettings(doc, m.settings, error)) return false;
+    if (!ReadActions(doc, m.actions, error) || !ReadBindings(doc, m.bindings, error)) return false;
     if (const auto it = doc.find("takes_over"); it != doc.end()) {
         if (!it->is_array()) {
             error = "takes_over is not an array";
@@ -318,7 +406,9 @@ bool ParseManifest(std::string_view text, Manifest& manifest, std::string& error
         }
         for (const auto& item : *it) {
             const std::string area = item.is_string() ? item.get<std::string>() : std::string();
-            if (std::find(std::begin(kTakeOverAreas), std::end(kTakeOverAreas), area) == std::end(kTakeOverAreas)) {
+            const bool action =
+                    area.starts_with(kTakeOverActionPrefix) && key_actions::FindEngine(area.substr(kTakeOverActionPrefix.size()));
+            if (!action && std::find(std::begin(kTakeOverAreas), std::end(kTakeOverAreas), area) == std::end(kTakeOverAreas)) {
                 error = "takes_over names \"" + area + "\", which is not a default behavior a mod can take over";
                 return false;
             }
@@ -370,6 +460,8 @@ bool CheckActive(const std::filesystem::path& gameDirectory, std::string_view pa
         // Only a script can do what a taken-over default did.
         if (!mod.manifest.takesOver.empty() && !scripts)
             return fail("takes over \"" + mod.manifest.takesOver[0] + "\" but ships no scripts");
+        // An action's press calls the mod's on_action.
+        if (!mod.manifest.actions.empty() && !scripts) return fail("declares actions but ships no scripts");
         for (const std::string& need : mod.manifest.requiredMods) {
             const bool earlier = std::any_of(mods.begin(), mods.end(), [&](const ActiveMod& m) { return m.manifest.id == need; });
             if (!earlier) {
@@ -389,18 +481,34 @@ bool CheckActive(const std::filesystem::path& gameDirectory, std::string_view pa
 std::vector<std::string> TakeOverConflicts(std::span<const ActiveMod> mods)
 {
     std::vector<std::string> lines;
-    for (std::string_view area : kTakeOverAreas) {
+    std::vector<std::string> names(std::begin(kTakeOverAreas), std::end(kTakeOverAreas));
+    for (const auto& action : key_actions::EngineActions()) names.push_back(std::string(kTakeOverActionPrefix) + std::string(action.name));
+    for (const std::string& area : names) {
         std::vector<std::string> takers;
         for (const ActiveMod& mod : mods)
             if (std::find(mod.manifest.takesOver.begin(), mod.manifest.takesOver.end(), area) != mod.manifest.takesOver.end())
                 takers.push_back(mod.manifest.id);
         if (takers.size() < 2) continue;
-        std::string names;
-        for (const std::string& id : takers) names += (names.empty() ? "\"" : ", \"") + id + "\"";
+        std::string list;
+        for (const std::string& id : takers) list += (list.empty() ? "\"" : ", \"") + id + "\"";
         lines.push_back(
-                "\"" + std::string(area) + "\" is taken over by " + names + "; \"" + takers.back() + "\" wins (later in load order)");
+                "\"" + std::string(area) + "\" is taken over by " + list + "; \"" + takers.back() + "\" wins (later in load order)");
     }
     return lines;
+}
+
+std::vector<key_actions::ModKeys> ActionLayers(std::span<const ActiveMod> mods)
+{
+    std::vector<key_actions::ModKeys> layers;
+    for (const ActiveMod& mod : mods) layers.push_back({mod.manifest.id, mod.manifest.actions, mod.manifest.bindings});
+    return layers;
+}
+
+std::vector<std::string> KeyConflicts(std::span<const ActiveMod> mods, const key_actions::PlayerLookup& player)
+{
+    key_actions::Table table = key_actions::Resolve(ActionLayers(mods), player);
+    table.conflicts.insert(table.conflicts.end(), table.problems.begin(), table.problems.end());
+    return table.conflicts;
 }
 
 const std::vector<ActiveMod>& Active()

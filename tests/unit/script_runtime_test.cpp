@@ -6,7 +6,7 @@
 #include "core/key_code.h"
 #include "game/game/command.h"
 #include "game/game/start_settings.h"
-#include "game/mods/key_names.h"
+#include "core/key_names.h"
 #include "game/mods/mod_settings_file.h"
 #include "game/mods/script_runtime.h"
 #include "temp_dir.h"
@@ -494,10 +494,10 @@ OBL_TEST_CASE("script_runtime.every_key_code_has_its_name")
         std::smatch match;
         if (!std::regex_search(line, match, row) || match[1] == "None") continue;
         ++count;
-        OBL_CHECK_EQ(std::string(mods::KeyName(static_cast<uint8_t>(std::stoi(match[2], nullptr, 16)))), std::string(match[1]));
+        OBL_CHECK_EQ(std::string(input::KeyName(static_cast<uint8_t>(std::stoi(match[2], nullptr, 16)))), std::string(match[1]));
     }
     OBL_CHECK(count > 100);
-    OBL_CHECK(mods::KeyName(0).empty());
+    OBL_CHECK(input::KeyName(0).empty());
 }
 
 OBL_TEST_CASE("script_runtime.a_consumed_event_stops_at_its_mod_and_every_mod_observes_it")

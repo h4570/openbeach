@@ -319,14 +319,6 @@ template<class T> void PlaceTile(T* mode, uint32_t* tile, bool playSound)
     RunPlaceTile(mode, tile, playSound);
 }
 
-bool KeyPressed(int scancode)
-{
-    return InputKeyPressed(*game::GetInput(), scancode);
-}
-bool KeyHeld(int scancode)
-{
-    return InputKeyHeld(*game::GetInput(), scancode);
-}
 int LeftButton()
 {
     return game::GetInput()->m_leftButton;
@@ -397,7 +389,7 @@ template<class T> bool TileMouse(T* mode, int x, int y, int left)
         PlaceTileByGame(mode, &mode->m_tileX, false);
     }
 
-    const bool leave = KeyPressed(obl::input::KeyCode::Escape);
+    const bool leave = ActionPressed(*game::GetInput(), key_actions::Engine::ToolCancel);
     const bool justPlaced = mode->m_tileX == static_cast<uint32_t>(mode->m_lastX) && mode->m_tileY == static_cast<uint32_t>(mode->m_lastY);
     const int shape = gui_modes_place::PlaceCursorShape(mode->m_canPlace != 0, justPlaced, [&] { return OverGui(manager); });
     CursorSetShape(game::GetCursor(), shape);
@@ -433,13 +425,13 @@ void BuildingUpdate(Building* building, float dt)
             const bool affordable =
                     gui_modes_place::CashCoversBuilding(game::GetWorld()->m_player->m_cash, building->m_definition->m_Cost2Build);
             PlaySound(affordable ? "Cash" : "click_bad_01", 1, 0.0f);
-            if (!KeyHeld(obl::input::KeyCode::LeftShift) && !KeyHeld(obl::input::KeyCode::RightShift)) leave = true;
+            if (!ActionHeld(*game::GetInput(), key_actions::Engine::PlaceKeep)) leave = true;
         } else {
             PlaySound("click_bad_01", 1, 0.0f);
         }
     }
-    if (KeyPressed(obl::input::KeyCode::Escape)) leave = true;
-    if (KeyPressed(obl::input::KeyCode::Space)) Wheel(building->m_preview, 1, true);
+    if (ActionPressed(*game::GetInput(), key_actions::Engine::ToolCancel)) leave = true;
+    if (ActionPressed(*game::GetInput(), key_actions::Engine::PlaceRotate)) Wheel(building->m_preview, 1, true);
     if (leave) SetMode(manager, kModeDefault);
 }
 
@@ -480,8 +472,8 @@ bool SceneryMouse(Scenery* scenery, int x, int y, int left)
             PlaySound("click_bad_01", 1, 0.0f);
         }
     }
-    const bool leave = KeyPressed(obl::input::KeyCode::Escape);
-    if (KeyPressed(obl::input::KeyCode::Space)) Wheel(scenery->m_preview, 1, false);
+    const bool leave = ActionPressed(*game::GetInput(), key_actions::Engine::ToolCancel);
+    if (ActionPressed(*game::GetInput(), key_actions::Engine::PlaceRotate)) Wheel(scenery->m_preview, 1, false);
     if (leave) {
         char panel[] = "SceneryPanel";
         manager->AnimateDialog(panel, 2, 1.0f, 0);
