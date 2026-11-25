@@ -25,7 +25,7 @@ const kGuideTexts = {
         st3: "Wait a few minutes, once, while it converts.",
         st4: "Press Play. Next time the game starts at once.",
         limits: "OpenBeach is an unofficial fan project and still under development. The campaign and sandbox scenarios can be played, but you may meet bugs; please report them on GitHub.",
-        cta: "Open OpenBeach",
+        cta: "Play Beach Life in your browser",
         languages: "Other languages",
     },
     pl: {
@@ -49,7 +49,7 @@ const kGuideTexts = {
         st3: "Poczekaj kilka minut, jednorazowo, aż się skonwertuje.",
         st4: "Naciśnij Graj. Następnym razem gra uruchomi się od razu.",
         limits: "OpenBeach to nieoficjalny projekt fanowski, wciąż rozwijany. Scenariusze kampanii i trybu piaskownicy da się przejść, ale mogą zdarzyć się błędy; zgłaszaj je na GitHubie.",
-        cta: "Otwórz OpenBeach",
+        cta: "Zagraj w Beach Life w przeglądarce",
         languages: "Inne języki",
     },
     de: {
@@ -73,7 +73,7 @@ const kGuideTexts = {
         st3: "Warte einmalig ein paar Minuten, bis die Umwandlung fertig ist.",
         st4: "Klicke auf Spielen. Beim nächsten Mal startet das Spiel sofort.",
         limits: "OpenBeach ist ein inoffizielles Fanprojekt und noch in Entwicklung. Kampagne und Sandbox-Szenarien sind spielbar, aber es können Fehler auftreten; bitte melde sie auf GitHub.",
-        cta: "OpenBeach öffnen",
+        cta: "Beach Life im Browser spielen",
         languages: "Andere Sprachen",
     },
     fr: {
@@ -97,7 +97,7 @@ const kGuideTexts = {
         st3: "Patientez quelques minutes, une seule fois, pendant la conversion.",
         st4: "Cliquez sur Jouer. La prochaine fois, le jeu démarre aussitôt.",
         limits: "OpenBeach est un projet de fans non officiel, encore en développement. La campagne et les scénarios du mode bac à sable sont jouables, mais vous pouvez rencontrer des bugs ; signalez-les sur GitHub.",
-        cta: "Ouvrir OpenBeach",
+        cta: "Jouer à Beach Life dans le navigateur",
         languages: "Autres langues",
     },
     it: {
@@ -121,7 +121,7 @@ const kGuideTexts = {
         st3: "Attendi qualche minuto, una volta sola, durante la conversione.",
         st4: "Premi Gioca. La volta dopo il gioco parte subito.",
         limits: "OpenBeach è un progetto amatoriale non ufficiale ed è ancora in sviluppo. Campagna e scenari sandbox si possono giocare, ma potresti incontrare dei bug: segnalali su GitHub.",
-        cta: "Apri OpenBeach",
+        cta: "Gioca a Beach Life nel browser",
         languages: "Altre lingue",
     },
     es: {
@@ -145,7 +145,7 @@ const kGuideTexts = {
         st3: "Espera unos minutos, una sola vez, mientras se convierte.",
         st4: "Pulsa Jugar. La próxima vez el juego arranca al momento.",
         limits: "OpenBeach es un proyecto de aficionados no oficial y sigue en desarrollo. La campaña y los escenarios del modo libre se pueden jugar, pero puedes encontrar errores; infórmalos en GitHub.",
-        cta: "Abrir OpenBeach",
+        cta: "Jugar a Beach Life en el navegador",
         languages: "Otros idiomas",
     },
 };

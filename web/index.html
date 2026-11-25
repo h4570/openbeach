@@ -15,7 +15,7 @@
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
 </script>
-<title>OpenBeach: play the Beach Life game in your browser</title>
+<title>Play the Beach Life game in your browser — OpenBeach</title>
 <meta name="description" content="Play the Beach Life game (Virtual Resort: Spring Break in the UK/US) in your browser on Windows 11, Mac or Linux. Open-source engine for your copy. No install.">
 <link rel="canonical" href="https://openbeach.app/">
 <link rel="icon" href="favicon.ico" sizes="48x48">
@@ -24,18 +24,18 @@
 <meta name="theme-color" content="#176b87">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="OpenBeach">
-<meta property="og:title" content="OpenBeach: play the Beach Life game in your browser">
+<meta property="og:title" content="Play the Beach Life game in your browser — OpenBeach">
 <meta property="og:description" content="Play the Beach Life game (Virtual Resort: Spring Break in the UK/US) in your browser on Windows 11, Mac or Linux. Open-source engine for your copy. No install.">
 <meta property="og:url" content="https://openbeach.app/">
 <meta property="og:image" content="https://openbeach.app/social/openbeach-featured-en.jpg">
 <meta property="og:image:width" content="1920">
 <meta property="og:image:height" content="1080">
-<meta property="og:image:alt" content="OpenBeach running the game in a browser tab">
+<meta property="og:image:alt" content="Play the Beach Life game in your browser — OpenBeach">
 <meta name="twitter:card" content="summary_large_image">
 <!-- The name Google shows above the result (its "site name" comes from this WebSite block). -->
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebSite", "name": "OpenBeach", "url": "https://openbeach.app/"}</script>
 <!-- Ties the page to the game itself: searches say "Beach Life game", and the bare name is an everyday phrase. -->
-<script type="application/ld+json">{"@context": "https://schema.org", "@type": "VideoGame", "name": "Beach Life", "alternateName": "Virtual Resort: Spring Break", "genre": "Business simulation", "datePublished": "2002", "gamePlatform": ["Web browser", "Windows", "macOS", "Linux", "Android", "iOS"], "url": "https://openbeach.app/"}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "VideoGame", "name": "Beach Life", "alternateName": "Virtual Resort: Spring Break", "description": "Play the Beach Life game (Virtual Resort: Spring Break in the UK/US) in your browser on Windows 11, Mac or Linux. Open-source engine for your copy. No install.", "genre": "Business simulation", "datePublished": "2002", "applicationCategory": "Game", "playMode": "SinglePlayer", "gamePlatform": ["Web browser", "Windows", "macOS", "Linux", "Android", "iOS"], "image": "https://openbeach.app/social/openbeach-featured-en.jpg", "sameAs": "https://en.wikipedia.org/wiki/Beach_Life", "url": "https://openbeach.app/"}</script>
 <style>
     :root { --navy: #0a1f3c; --sea: #176b87; --lagoon: #37b3b0; --logo: #398ff5; --coral: #ff7a59; --red: #c9472a; --sun: #ffc266;
         --sand: #f4e3c1; --mist: #d5e6f2; }
@@ -246,6 +246,10 @@
     .shots img { display: block; width: 100%; height: auto; border-radius: 12px; box-shadow: 0 10px 28px #06152c66; }
     .shots .phone img { border-radius: 0; box-shadow: none; }
     .shots figcaption { margin-top: 6px; color: #fff; font-size: 14px; text-align: center; }
+    .about { margin-top: 28px; padding: 18px 24px 20px; border-radius: 16px; background: #ffffffd9; }
+    .about h2 { margin: 0 0 10px; }
+    .about p { margin: 0 0 10px; }
+    .about p:last-child { margin-bottom: 0; }
     .faq details { margin: 0 0 8px; padding: 0 18px; border-radius: 12px; background: #ffffffd9; }
     .faq summary { padding: 12px 0; font-weight: 600; cursor: pointer; }
     .faq details[open] summary { color: var(--red); }
@@ -401,11 +405,16 @@
 <section class="hide-playing">
     <h2 data-t="shotsTitle">Screenshots</h2>
     <div class="shots">
-        <figure><a href="screenshots/night.jpg"><img src="screenshots/night.jpg" alt="A night at the resort in OpenBeach" width="1097" height="816" loading="lazy"></a><figcaption data-t="shot1">A night at the resort</figcaption></figure>
-        <figure><a href="screenshots/staff.jpg"><img src="screenshots/staff.jpg" alt="Managing the staff in OpenBeach" width="1094" height="819" loading="lazy"></a><figcaption data-t="shot2">Managing the staff</figcaption></figure>
-        <figure><a href="screenshots/browser.jpg"><img src="screenshots/browser.jpg" alt="OpenBeach running the game in a browser tab" width="1193" height="1002" loading="lazy"></a><figcaption data-t="shot3">The game in your browser</figcaption></figure>
-        <figure class="phone"><img src="screenshots/phone.webp" alt="OpenBeach on a phone, with the Space and Esc keys under the game" width="654" height="729" loading="lazy"><figcaption data-t="phoneShot">The game on a phone</figcaption></figure>
+        <figure><a href="screenshots/night.jpg"><img src="screenshots/night.jpg" alt="Beach Life game screenshot: a night at the resort in OpenBeach" data-alt="shot1Alt" width="1097" height="816" loading="lazy"></a><figcaption data-t="shot1">A night at the resort</figcaption></figure>
+        <figure><a href="screenshots/staff.jpg"><img src="screenshots/staff.jpg" alt="Beach Life game screenshot: managing the staff in OpenBeach" data-alt="shot2Alt" width="1094" height="819" loading="lazy"></a><figcaption data-t="shot2">Managing the staff</figcaption></figure>
+        <figure><a href="screenshots/browser.jpg"><img src="screenshots/browser.jpg" alt="Beach Life game running in a browser tab with OpenBeach" data-alt="shot3Alt" width="1193" height="1002" loading="lazy"></a><figcaption data-t="shot3">The game in your browser</figcaption></figure>
+        <figure class="phone"><img src="screenshots/phone.webp" alt="Beach Life game running on a phone in OpenBeach, with Space and Esc keys" data-alt="phoneShotAlt" width="654" height="729" loading="lazy"><figcaption data-t="phoneShot">The game on a phone</figcaption></figure>
     </div>
+</section>
+<section class="about hide-playing">
+    <h2 data-t="aboutTitle">About the Beach Life game</h2>
+    <p data-t="about1">Beach Life (released as Virtual Resort: Spring Break in the UK and US) is a 2002 tropical resort tycoon game developed by Deep Red Games and published by Eidos Interactive. You build and manage an island holiday resort — placing hotels, beach bars, nightclubs, attractions and paths, hiring staff and keeping holidaymakers happy.</p>
+    <p data-t="about2">The game includes a twelve-island campaign and a sandbox mode where you design your own resort at your own pace. OpenBeach is an open-source engine that lets you play your own copy of this classic PC game in a modern browser or as a desktop app.</p>
 </section>
 <section class="faq hide-playing" id="faq">
     <h2 data-t="faqTitle">Questions and answers</h2>

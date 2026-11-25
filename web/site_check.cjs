@@ -90,6 +90,8 @@ async function loadPage({opfs = {}, search = "", languages = ["pl-PL"], stored =
     Object.assign(elements["key-escape"].dataset, {code: "Escape", key: "Escape"});
     const translated = fakeElement("translated");
     translated.dataset.t = "play";
+    const translatedImg = fakeElement("translated-img");
+    translatedImg.dataset.alt = "shot1Alt";
     const body = fakeElement("body");
     body.appendChild = (child) => scripts.push(child);
     for (const id of ["import", "start", "ended", "failed", "start-language-row", "import-bars", "import-sub", "game-bar", "previous-log"]) {
@@ -97,7 +99,7 @@ async function loadPage({opfs = {}, search = "", languages = ["pl-PL"], stored =
     }
     const scripts = [];
     const workers = [];
-    const page = {reloads: 0, persistCalls: 0, elements, scripts, workers, translated, body, stored};
+    const page = {reloads: 0, persistCalls: 0, elements, scripts, workers, translated, translatedImg, body, stored};
     class FakeMutationObserver {
         constructor(callback) {
             page.observed = callback;
@@ -162,7 +164,7 @@ async function loadPage({opfs = {}, search = "", languages = ["pl-PL"], stored =
             documentElement: {lang: fixed, dataset: fixed ? {fixedLanguage: ""} : {}, requestFullscreen() {
                 page.fullscreenRequests = (page.fullscreenRequests || 0) + 1;
             }},
-            querySelectorAll: () => [translated],
+            querySelectorAll: (selector) => (selector === "[data-alt]" ? [translatedImg] : selector === "[data-t]" ? [translated] : []),
             pointerLockElement: null,
             exitFullscreen() {
                 page.fullscreenExits = (page.fullscreenExits || 0) + 1;
@@ -213,6 +215,16 @@ function checkLanguagePages(siteDir) {
             check(!html.includes('href="?import"'), `pages: ${name} does not expose ?import as a crawled link`);
             const description = html.match(/<meta name="description" content="([^"]+)"/);
             check(description !== null && description[1].length <= 160, `pages: the description of ${name} fits a search result`);
+            const title = html.match(/<title>([^<]+)<\/title>/);
+            check(title !== null && !/^OpenBeach\s*:/.test(title[1]) && /^[A-ZÁÉÍÓÚÀÈÌÒÙÄÖÜŁŚŹŻĆŃ]/.test(title[1]),
+                `pages: the title of ${name} starts capitalized without a brand prefix`);
+            if (slug === "") {
+                const blocks = [...html.matchAll(/<script type="application\/ld\+json">(.+)<\/script>/g)].map((m) => JSON.parse(m[1]));
+                const game = blocks.find((data) => data["@type"] === "VideoGame");
+                check(game && game.inLanguage === code && game.url === url && game.sameAs === "https://en.wikipedia.org/wiki/Beach_Life",
+                    `pages: ${name} carries localized VideoGame structured data`);
+                check(html.includes(`alt="${kSiteTexts[code].shot1Alt}"`), `pages: ${name} translates screenshot alt text`);
+            }
             check(!/@[A-Z0-9]+@/.test(html), `pages: ${name} has no unfilled marker`);
             check(!/(?:src|href)="(?![a-z]+:|\/|#|\?)/.test(html), `pages: ${name} loads its files by absolute path`);
             check(sitemap.includes(`<loc>${url}</loc>`), `pages: the sitemap lists ${url}`);
@@ -249,7 +261,8 @@ async function main() {
     const fixedPage = await loadPage({languages: ["en-US"], stored: {"openbeach-page-language": "fr"}, fixed: "pl"});
     check(fixedPage.translated.textContent === "Graj" && fixedPage.context.document.documentElement.lang === "pl",
         "page language: a language page keeps its language");
-    check(fixedPage.context.document.title === "OpenBeach: zagraj w grę Beach Life w przeglądarce", "page language: the title is in the language");
+    check(fixedPage.context.document.title === "Zagraj w grę Beach Life w przeglądarce — OpenBeach", "page language: the title is in the language");
+    check(fixedPage.translatedImg.alt.includes("Beach Life"), "page language: screenshot alt text is translated");
     const none = await loadPage({languages: ["ja-JP"]});
     check(none.translated.textContent === "Play", "page language: English is the fallback");
     page.elements["site-language"].value = "pl";
@@ -307,9 +320,12 @@ async function main() {
 
     // Every text the page names exists in every language.
     const named = [...html.matchAll(/data-t="(\w+)"/g)].map((match) => match[1]);
+    const namedAlt = [...html.matchAll(/data-alt="(\w+)"/g)].map((match) => match[1]);
     const texts = vm.runInContext("kSiteTexts", page.context);
     check(named.length > 0 && Object.values(texts).every((language) => named.every((key) => key in language)),
         "texts: every data-t key is in all six languages");
+    check(namedAlt.length > 0 && Object.values(texts).every((language) => namedAlt.every((key) => key in language)),
+        "texts: every data-alt key is in all six languages");
 
     // The right button locks the pointer inside its press; the left one does not, and the lock ends with the button.
     await canvas.fire("pointerdown", {button: 0, pointerType: "mouse", buttons: 1});
