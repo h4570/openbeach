@@ -4,6 +4,9 @@
 #include "core/sha256.h"
 
 #include <algorithm>
+#include <fstream>
+#include <iterator>
+#include <optional>
 #include <set>
 
 namespace obl::pack_path {
@@ -124,6 +127,29 @@ std::vector<std::filesystem::path> Layers(const std::filesystem::path& pack)
     return Layers(pack, g_activeMods);
 }
 
+// Line ends of a text file depend on the checkout (CRLF on Windows, LF elsewhere) and the engine reads both, so the hash
+// sees CRLF as LF there; a file without CRLF keeps the hash of its bytes, and binary files are hashed as they are.
+static std::optional<std::string> FileHash(const std::filesystem::path& file)
+{
+    static constexpr std::string_view kTextExtensions[] = {".json", ".lua", ".wsc", ".obs", ".md", ".txt"};
+    const std::string extension = file.extension().string();
+    bool isText = false;
+    for (const auto text : kTextExtensions) isText = isText || extension == text;
+    if (!isText) return sha256::OfFile(file);
+    std::ifstream in(file, std::ios::binary);
+    if (!in) return std::nullopt;
+    std::string content{std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>()};
+    std::string normalized;
+    normalized.reserve(content.size());
+    for (size_t i = 0; i < content.size(); ++i) {
+        if (content[i] == '\r' && i + 1 < content.size() && content[i + 1] == '\n') continue;
+        normalized.push_back(content[i]);
+    }
+    sha256::Hasher hasher;
+    hasher.Update({reinterpret_cast<const uint8_t*>(normalized.data()), normalized.size()});
+    return hasher.HexDigest();
+}
+
 std::string ModContentHash(const std::filesystem::path& modDirectory)
 {
     std::vector<std::filesystem::path> files;
@@ -138,7 +164,7 @@ std::string ModContentHash(const std::filesystem::path& modDirectory)
     std::sort(names.begin(), names.end());
     sha256::Hasher hasher;
     for (const auto& name : names) {
-        const auto fileHash = sha256::OfFile(modDirectory / name);
+        const auto fileHash = FileHash(modDirectory / name);
         if (!fileHash) return {};
         const std::string line = name + '\n' + *fileHash + '\n';
         hasher.Update({reinterpret_cast<const uint8_t*>(line.data()), line.size()});

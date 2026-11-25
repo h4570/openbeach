@@ -1,0 +1,9 @@
+{
+  "format": "obl.mod",
+  "version": 1,
+  "id": "l0_crlf",
+  "title": "L0 CRLF line ends",
+  "mod_version": "1.0.0",
+  "pack": "l0",
+  "scope": "world"
+}

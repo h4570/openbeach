@@ -108,6 +108,25 @@ OBL_TEST_CASE("mod_pack.check_accepts_a_fit_list_and_refuses_the_others")
     refused({"broken"}, "broken", "JSON");
 }
 
+OBL_TEST_CASE("mod_pack.hash_ignores_crlf_in_text_files_only")
+{
+    test::TempPath game("mod-hash-crlf");
+    Write(game.path / "lf" / "a.json", "{\n}\n");
+    Write(game.path / "lf" / "s.wsc", "x\ny\n");
+    Write(game.path / "lf" / "d.bin", "x\ny\n");
+    Write(game.path / "crlf" / "a.json", "{\r\n}\r\n");
+    Write(game.path / "crlf" / "s.wsc", "x\r\ny\r\n");
+    Write(game.path / "crlf" / "d.bin", "x\ny\n");
+    OBL_CHECK(!pack_path::ModContentHash(game.path / "lf").empty());
+    OBL_CHECK(pack_path::ModContentHash(game.path / "lf") == pack_path::ModContentHash(game.path / "crlf"));
+    // Binary files are hashed as they are, and a lone CR in a text file is content.
+    Write(game.path / "crlf" / "d.bin", "x\r\ny\n");
+    OBL_CHECK(pack_path::ModContentHash(game.path / "lf") != pack_path::ModContentHash(game.path / "crlf"));
+    Write(game.path / "crlf" / "d.bin", "x\ny\n");
+    Write(game.path / "crlf" / "s.wsc", "x\ry\n");
+    OBL_CHECK(pack_path::ModContentHash(game.path / "lf") != pack_path::ModContentHash(game.path / "crlf"));
+}
+
 OBL_TEST_CASE("mod_pack.hash_follows_names_and_contents")
 {
     test::TempPath game("mod-hash");

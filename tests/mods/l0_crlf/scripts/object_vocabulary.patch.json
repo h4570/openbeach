@@ -1,0 +1,11 @@
+{
+  "format": "obl.object_script_vocabulary_patch",
+  "version": 1,
+  "states": [
+    "STATE_BUSKER_WALK",
+    "STATE_BUSKER_PERFORM"
+  ],
+  "messages": [
+    "MT_BUSKER_DONE"
+  ]
+}

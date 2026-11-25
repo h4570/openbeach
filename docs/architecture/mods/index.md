@@ -149,3 +149,11 @@ keep a changed value in memory and leave the player's file alone. The guard of t
   Presentation mod changes apply at once (`mod_pack::ActivateList`, `mods::RestartPresentationScripts`,
   `mods::ConfigureKeyBindings`, `game_api::ReloadFrontEnd`); world mod changes wait for the next start and the footer says so.
   Settings step through `settings_schema::Field` and call `mods::SetModSetting`.
+
+## Line ends
+`script_pack::ReadScript` takes a header line ending in LF or CRLF for pack and mod scripts alike and returns the body unchanged
+(the script parsers already skip a trailing CR). `pack_path::ModContentHash` hashes `.json`, `.lua`, `.wsc`, `.obs`, `.md` and
+`.txt` files with CRLF turned into LF, so a Windows checkout and a Linux checkout of one mod record one hash; a file without CRLF
+hashes as its bytes did before, so existing recorded hashes stay valid. Binary files are hashed as they are. The test mod
+`tests/mods/l0_crlf` (pinned to CRLF in `.gitattributes`, `tests/l0_mod_crlf.txt`) proves the whole path; the other test mods stay
+pinned to LF because their hashes are in recorded replays.

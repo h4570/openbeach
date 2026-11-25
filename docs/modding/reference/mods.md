@@ -79,6 +79,13 @@ vocabulary loads, `world::CheckModWorldScripts` parses every `scripts/world/*.ws
 refused call ([world-scripts.md](world-scripts.md#refused-calls)). It also computes each mod's content hash once
 (`pack_path::ModContentHash`: SHA-256 over the sorted relative file names and the hash of every file).
 
+## Line ends
+Save mod files with LF or CRLF, as your editor does. The script readers (`.obs`, `.wsc`) accept a header line that ends in
+either and take the body as it comes; JSON and Lua never cared. The content hash that saves and replays record
+(`pack_path::ModContentHash`) reads CRLF as LF in text files (`.json`, `.lua`, `.wsc`, `.obs`, `.md`, `.txt`), so a mod checked
+out with CRLF on Windows and with LF on Linux has one hash. Other files are hashed byte for byte, a lone CR counts as content,
+and a file without CRLF keeps the hash it always had.
+
 ## Text patches
 A mod may ship `text/<lang>.patch.json` instead of a whole table:
 ```json
