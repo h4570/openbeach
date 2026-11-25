@@ -1,0 +1,7 @@
+{
+  "format": "obl.asset_recipe",
+  "version": 1,
+  "source": "images/screens/not_in_l0.png",
+  "output": "overlay/missing.png",
+  "operations": []
+}

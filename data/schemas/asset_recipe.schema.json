@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "obl.asset_recipe",
+  "title": "Mod asset recipe (recipes/<name>.json)",
+  "description": "Deterministic image operations that derive a mod asset from a logical file of the player's pack (docs/modding/reference/recipes.md).",
+  "type": "object",
+  "properties": {
+    "format": { "const": "obl.asset_recipe" },
+    "version": { "const": 1 },
+    "source": {
+      "description": "Logical path of the source PNG inside the pack (e.g. images/screens/title.png).",
+      "$ref": "obl.common#/$defs/path"
+    },
+    "output": {
+      "description": "Logical path of the derived asset inside the mod (a .png image, or sprites/<key>.json for an indexed obl.sprite).",
+      "$ref": "obl.common#/$defs/path"
+    },
+    "operations": {
+      "description": "Ordered list of deterministic integer/fixed-point image operations.",
+      "type": "array",
+      "maxItems": 32,
+      "items": { "$ref": "#/$defs/operation" }
+    },
+    "sprite": {
+      "description": "Metadata for an indexed obl.sprite output (only when output is sprites/<key>.json).",
+      "type": "object",
+      "properties": {
+        "kind": { "enum": ["ui", "character", "building", "object_variants", "special"] },
+        "animation": { "$ref": "obl.common#/$defs/key" },
+        "hotspot": { "$ref": "obl.common#/$defs/vec2i" },
+        "palette_colors": { "enum": [64, 256] }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": ["format", "version", "source", "output", "operations"],
+  "additionalProperties": false,
+  "$defs": {
+    "operation": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "op": { "const": "crop" },
+            "x": { "type": "integer", "minimum": 0 },
+            "y": { "type": "integer", "minimum": 0 },
+            "width": { "type": "integer", "minimum": 1, "maximum": 4096 },
+            "height": { "type": "integer", "minimum": 1, "maximum": 4096 }
+          },
+          "required": ["op", "x", "y", "width", "height"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "op": { "const": "mirror" },
+            "axis": { "enum": ["horizontal", "vertical"] }
+          },
+          "required": ["op", "axis"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "op": { "const": "scale" },
+            "width": { "type": "integer", "minimum": 1, "maximum": 4096 },
+            "height": { "type": "integer", "minimum": 1, "maximum": 4096 },
+            "filter": { "enum": ["bilinear", "nearest"] }
+          },
+          "required": ["op", "width", "height"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "op": { "const": "blur" },
+            "radius": { "type": "integer", "minimum": 1, "maximum": 64 },
+            "passes": { "type": "integer", "minimum": 1, "maximum": 5 }
+          },
+          "required": ["op", "radius"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "op": { "const": "pad" },
+            "width": { "type": "integer", "minimum": 1, "maximum": 4096 },
+            "height": { "type": "integer", "minimum": 1, "maximum": 4096 },
+            "x": { "type": "integer" },
+            "y": { "type": "integer" },
+            "mode": { "enum": ["color", "edge", "mirror"] },
+            "color": {
+              "type": "array",
+              "items": { "$ref": "obl.common#/$defs/byte" },
+              "minItems": 4,
+              "maxItems": 4
+            }
+          },
+          "required": ["op", "width", "height"],
+          "additionalProperties": false
+        }
+      ]
+    }
+  }
+}

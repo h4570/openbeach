@@ -214,6 +214,20 @@ OBL_TEST_CASE("mod_pack.a_presentation_mod_ships_no_simulation_data")
     Write(game.path / "mods/layout/gui/object_browser.patch.json", R"({"format":"obl.json_patch","version":1,"ops":[]})");
     OBL_CHECK(Accepted(game.path, "l0", "layout", error));
 
+    // A presentation mod may ship recipes that output overlay or menu screen PNGs, never sprites or other pack files.
+    WriteManifest(game.path, "recipes_ok", fields);
+    Write(game.path / "mods/recipes_ok/recipes/banner.json",
+            R"({"format":"obl.asset_recipe","version":1,"source":"images/screens/l0_title.png","output":"overlay/banner.png","operations":[]})");
+    Write(game.path / "mods/recipes_ok/recipes/title.json",
+            R"({"format":"obl.asset_recipe","version":1,"source":"images/screens/l0_title.png","output":"images/screens/l0_title.png","operations":[]})");
+    OBL_CHECK(Accepted(game.path, "l0", "recipes_ok", error));
+
+    WriteManifest(game.path, "recipes_sprite", fields);
+    Write(game.path / "mods/recipes_sprite/recipes/icon.json",
+            R"({"format":"obl.asset_recipe","version":1,"source":"images/screens/l0_title.png","output":"sprites/icon.json","operations":[]})");
+    OBL_CHECK(!Accepted(game.path, "l0", "recipes_sprite", error));
+    OBL_CHECK(error.find("recipes/icon.json") != std::string::npos);
+
     // A world mod (the default scope) may ship all of it and is recorded.
     WriteManifest(game.path, "world", "\"pack\":\"l0\"");
     Write(game.path / "mods/world/catalog/buildings/kiosk.json", "{}");

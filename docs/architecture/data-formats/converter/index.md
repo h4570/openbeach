@@ -47,6 +47,7 @@ the producers' order, `pack.json` last), `cli/` (`main.cpp`) and `web/` (the bro
 | `sha256.h/.cpp` | Portable SHA-256 (`Sha256`, `Sha256Hex`, `Sha256OfFile`); the unit tests also hash `run/BeachLife.exe` with it. |
 | `game_parameters_convert.h/.cpp` | `ParseGameParameters` (the engine's `.pis` grammar, the type letter of each key, the first entry of a repeated key wins) and `ConvertGameParameters`: `rules/game_parameters.json`, validated. The engine's node list is built by `game/game/game_parameters_construct.*` (the data test compares the JSON with it) ([game-data.md](../game-data.md#game-parameters-and-rule-constants)). |
 | `media_convert.h/.cpp` | `ConvertMedia`: the soundtrack as `music/<name>.mp3` and the intro movie as `video/intro.mpg`, byte copies checked by their magic bytes ([assets.md](../assets.md#music-and-video)). |
+| `asset_recipe.h/.cpp` | `BuildModRecipes` / `BuildInstalledModRecipes`: deterministic integer/fixed-point image operations (`crop`, `mirror`, `scale`, `blur`, `pad`) for mod `recipes/*.json` (`obl.asset_recipe`), PNG and indexed `obl.sprite` outputs cached in `mod-cache/<id>/` by recipe and source SHA-256 ([recipes.md](../../../modding/reference/recipes.md)). |
 | `cli/main.cpp` | The CLI, one command per line under "CLI commands" below. Exit 0, 1 on an error, 2 on wrong usage. |
 
 CLI commands (one line each, so parallel converter work adds its own line):
@@ -73,6 +74,7 @@ CLI commands (one line each, so parallel converter work adds its own line):
   first), so a CD always imports; the Windows installer passes the player's choice
 - `obl-convert save-info <save<N>.dat>` reads an old slot to its end and prints the header (floats as value and bits, the title as escaped raw bytes) and record counts per type, with `--objects` the typed sections, objects per class and consistency problems
 - `obl-convert save <save<N>.dat> <pack> <out.json> [--schemas <dir>]` writes the converted save
+- `obl-convert recipes <pack> <mods> [--mod <id>] [--cache <dir>] [--schemas <dir>]` builds installed mods' `recipes/*.json` against `<pack>` into `<cache>/<id>/` (default `<mods>/../mod-cache`)
 
 Dependencies: zlib (inflate only, target `obl_zlib` from `cmake/zlib_inflate.cmake`),
 `stb_image_write` (in `third_party/`, compiled privately in `png_write.cpp`) and nlohmann/json with the schema validator

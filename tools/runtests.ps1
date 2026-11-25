@@ -162,6 +162,17 @@ if ($gameTests.Count -gt 0) {
             if (Test-Path -LiteralPath $target) { Remove-Item -LiteralPath $target -Recurse -Force }
             Copy-Item -LiteralPath $mod.FullName -Destination $target -Recurse -Force
         }
+        # Build any mod asset recipes against the staged L0 pack into run/mod-cache/.
+        $converterCandidates = @(
+            (Join-Path $repo "build\x64\bin\$Config\obl-convert.exe"),
+            (Join-Path $repo 'build\x64\bin\Debug\obl-convert.exe'),
+            (Join-Path $repo 'build\x64\bin\RelWithDebInfo\obl-convert.exe')
+        )
+        $converter = $converterCandidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+        if ($converter) {
+            & $converter recipes $l0Installed $modsInstalled --cache (Join-Path $repo 'run\mod-cache') | Out-Null
+            if ($LASTEXITCODE -ne 0) { throw "obl-convert recipes failed with exit code $LASTEXITCODE" }
+        }
     }
     # The public set needs no imported installation: a tree without one gets the settings Assert-TestGameIni expects.
     $gameIni = Join-Path $repo 'run\BeachLife.ini'

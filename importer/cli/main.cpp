@@ -27,8 +27,10 @@
 #include "formats/schemas.h"
 #include "importer/src/writers/script_convert.h"
 #include "importer/src/source/source.h"
+#include "openbeach/importer/asset_recipe.h"
 #include "openbeach/importer/import.h"
 #include "openbeach/importer/pack_sink.h"
+#include "core/pack_path.h"
 #include "importer/src/writers/sound_convert.h"
 #include "importer/src/writers/sound_script_convert.h"
 #include "importer/src/writers/sprite_convert.h"
@@ -136,7 +138,10 @@ int Usage()
             "  every section and object by its emitter's field table and checks counts and object references\n"
             "       obl-convert save <save<N>.dat> <pack directory> <output.json> [--schemas <dir>]\n"
             "  writes a validated obl.save JSON with keys from <pack directory>/catalog/index.json and the identity and\n"
-            "  language of <pack directory>/pack.json (run pack first); write the output outside the pack directory\n");
+            "  language of <pack directory>/pack.json (run pack first); write the output outside the pack directory\n"
+            "       obl-convert recipes <pack directory> <mods directory> [--mod <id>] [--cache <dir>] [--schemas <dir>]\n"
+            "  runs recipes/*.json of installed mods against <pack directory>, caching outputs in <cache>/<id>/ (default:\n"
+            "  <mods directory>/../mod-cache); a missing source disables only the outputs that need it\n");
     return 2;
 }
 
@@ -601,13 +606,74 @@ int Import(const std::vector<std::string>& args)
     options.progress = [](std::string_view step) { std::printf("%.*s\n", static_cast<int>(step.size()), step.data()); };
     obl::json_schema::Registry schemas;
     std::string error;
+    const auto packPath = std::filesystem::path(args[2]);
     const auto installation = obl::convert::OpenDirectorySource(std::filesystem::path(args[1]));
-    const auto pack = obl::convert::OpenDirectorySink(std::filesystem::path(args[2]));
+    const auto pack = obl::convert::OpenDirectorySink(packPath);
     if (!obl::formats::LoadEmbeddedSchemas(schemas, error) || !obl::convert::ImportPack(*installation, *pack, schemas, options, error)) {
         std::fprintf(stderr, "error: %s\n", error.c_str());
         return 1;
     }
     std::printf("pack written to %s\n", args[2].c_str());
+    // Run recipes of any installed mods sitting beside packs/ (never writing into the pack directory itself).
+    const auto gameDir = obl::pack_path::GameDirectory(std::filesystem::absolute(packPath).lexically_normal());
+    const auto modsDir = gameDir / "mods";
+    std::error_code ec;
+    if (std::filesystem::is_directory(modsDir, ec)) {
+        obl::convert::ModRecipesResult recipeResult;
+        if (!obl::convert::BuildInstalledModRecipes(packPath, modsDir, gameDir / "mod-cache", schemas, recipeResult, error)) {
+            std::fprintf(stderr, "error: recipes: %s\n", error.c_str());
+            return 1;
+        }
+        for (const auto& disabled : recipeResult.disabled) std::fprintf(stderr, "warning: %s\n", disabled.message.c_str());
+        if (recipeResult.built > 0 || recipeResult.cached > 0 || !recipeResult.disabled.empty()) {
+            std::printf("mod recipes: %d built, %d cached, %zu disabled\n", recipeResult.built, recipeResult.cached,
+                    recipeResult.disabled.size());
+        }
+    }
+    return 0;
+}
+
+int Recipes(const std::vector<std::string>& args)
+{
+    std::string onlyMod;
+    std::optional<std::filesystem::path> cacheDir;
+    std::optional<std::filesystem::path> schemaDir;
+    for (size_t i = 3; i < args.size(); i += 2) {
+        if (i + 1 >= args.size()) return Usage();
+        if (args[i] == "--mod")
+            onlyMod = args[i + 1];
+        else if (args[i] == "--cache")
+            cacheDir = std::filesystem::path(args[i + 1]);
+        else if (args[i] == "--schemas")
+            schemaDir = std::filesystem::path(args[i + 1]);
+        else
+            return Usage();
+    }
+    obl::json_schema::Registry schemas;
+    std::string error;
+    const bool loaded =
+            schemaDir ? obl::formats::LoadSchemaDirectory(*schemaDir, schemas, error) : obl::formats::LoadEmbeddedSchemas(schemas, error);
+    if (!loaded) {
+        std::fprintf(stderr, "error: %s\n", error.c_str());
+        return 1;
+    }
+    const std::filesystem::path packDir = std::filesystem::path(args[1]);
+    const std::filesystem::path modsDir = std::filesystem::path(args[2]);
+    std::filesystem::path cacheRoot;
+    if (cacheDir) {
+        cacheRoot = *cacheDir;
+    } else {
+        auto normMods = std::filesystem::absolute(modsDir).lexically_normal();
+        if (!normMods.has_filename()) normMods = normMods.parent_path();
+        cacheRoot = normMods.parent_path() / "mod-cache";
+    }
+    obl::convert::ModRecipesResult result;
+    if (!obl::convert::BuildInstalledModRecipes(packDir, modsDir, cacheRoot, schemas, result, error, onlyMod)) {
+        std::fprintf(stderr, "error: %s\n", error.c_str());
+        return 1;
+    }
+    for (const auto& disabled : result.disabled) std::fprintf(stderr, "warning: %s\n", disabled.message.c_str());
+    std::printf("%d built, %d cached, %zu disabled\n", result.built, result.cached, result.disabled.size());
     return 0;
 }
 
@@ -631,6 +697,7 @@ int main(int argc, char** argv)
     if (args.size() == 5 && args[0] == "cabinet" && args[1] == "extract") return CabinetCommand(args[1], {args[2], args[3], args[4]});
     if (args.size() >= 3 && args[0] == "pack") return Pack(args);
     if (args.size() >= 3 && args[0] == "import") return Import(args);
+    if (args.size() >= 3 && args[0] == "recipes") return Recipes(args);
     if (args.size() >= 4 && args[0] == "save") return Save(args);
     if (args.size() == 2 && args[0] == "save-info") return SaveInfo(args[1], false);
     if (args.size() == 3 && args[0] == "save-info" && args[2] == "--objects") return SaveInfo(args[1], true);

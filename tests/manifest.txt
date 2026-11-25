@@ -47,6 +47,7 @@ l0_mod_script_camera.txt @l0
 l0_mod_script_overlay.txt @hidden @l0
 l0_official_frame_counter.txt @hidden @l0
 l0_official_frame_counter_replay.txt @l0
+l0_mod_recipe.txt @hidden @l0
 l0_mod_script_state.txt @l0
 l0_mods_mixed.txt @l0
 l0_mods_world_scripts.txt @l0

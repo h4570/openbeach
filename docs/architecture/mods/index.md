@@ -8,8 +8,14 @@ script or a change of the scope rule adds its line here.
 - `mod_pack::Activate` (`src/formats/mod_pack.cpp`) runs once in `InitGame`, after the pack check: it reads `[Mods] Active` (or
   `OBL_MODS`), checks every manifest (including `conflicts` incompatibilities) and stops the game on a refusal. Its result, `mod_pack::Active()`, is the one list the rest
   reads, in load order ([mods.md](../../modding/reference/mods.md#start-up-check)). `mod_pack::ActivateList` applies a new list at runtime when the mods screen changes presentation mods.
-- `pack_path` resolves every logical path through the layers: the active mods from last to first, the legacy `mod/`, the pack. A
-  file in a mod shadows the whole file below it.
+- `pack_path` resolves every logical path through the layers: the active mods from last to first (each mod's `mods/<id>/`
+  followed by its recipe-derived cache `mod-cache/<id>/`), the legacy `mod/`, the pack. A file in a mod shadows the whole file
+  below it.
+- Asset recipes (`recipes/*.json`, `obl.asset_recipe`, [recipes.md](../../modding/reference/recipes.md)): `obl-convert recipes`
+  (and `obl-convert import` / the browser worker `obl_build_mod_recipes`) run deterministic integer/fixed-point image operations
+  (`crop`, `mirror`, `scale`, `blur`, `pad`) over pack PNGs and cache PNG or indexed `obl.sprite` outputs in `mod-cache/<id>/`
+  keyed by recipe and source SHA-256 (`importer/src/writers/asset_recipe.cpp`). Keeping outputs outside `mods/<id>/` leaves
+  `ModContentHash` unchanged across packs. Missing sources disable only the outputs that need them.
 - Some files merge instead of shadowing: text tables (`text/<lang>.patch.json`, `text_load.cpp`), the catalog's record list
   (`catalog/index.patch.json`, `catalog_load.cpp`), the object script vocabulary (`scripts/object_vocabulary.patch.json`,
   `object_vocabulary.cpp`), JSON data patches (`*.patch.json`, `data_patch.cpp`), and GUI layout
@@ -66,7 +72,8 @@ GUI, overlay and game-state calls, each with a do-nothing default), so its unit 
 - A presentation mod reaches the simulation only through the commands open to scripts, which the replay records, so a replay
   never needs it (`mod_pack::Recorded`, used by `ActiveReplayMods` and the save writer). For that to hold, the start-up check
   allows it only a list of files: `mod.json`, `scripts/presentation/`, documents at the top, `overlay/<name>.png` (images only
-  the overlay draws), `gui/<name>.patch.json` (a GUI
+  the overlay draws), `recipes/<name>.json` whose `output` is `overlay/<name>.png` or `images/screens/<name>.png` (screen and
+  overlay pictures never reach the simulation), `gui/<name>.patch.json` (a GUI
   layout patch, or a JSON data patch of a presentation file), and text patches that only add keys
   (feedback messages keep their formatted text in the world hash, so a changed text would reach it). Sprites, sounds and other pack
   files are not on the list, since a frame count or the size of a sound bank can steer the simulation.

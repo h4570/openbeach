@@ -19,6 +19,7 @@
 #include "importer/web/web_source.h"
 
 #include "formats/schemas.h"
+#include "openbeach/importer/asset_recipe.h"
 #include "openbeach/importer/import.h"
 
 #include "core/json_schema.h"
@@ -181,6 +182,7 @@ void GiveUnit(std::string_view step, size_t unit, UnitOutput& output)
 
 std::string g_error;
 std::string g_language;
+std::string g_recipesReport;
 
 bool Run(const char* requestText)
 {
@@ -256,6 +258,55 @@ bool Run(const char* requestText)
     return true;
 }
 
+bool RunRecipes(const char* requestText)
+{
+    const auto request = nlohmann::json::parse(requestText);
+    obl::json_schema::Registry schemas;
+    std::string error;
+    if (!obl::formats::LoadEmbeddedSchemas(schemas, error)) {
+        g_error = error;
+        return false;
+    }
+    JsStorage storage;
+    const std::string packRoot = request.value("packRoot", std::string("packs/base"));
+    const auto pack = web::OpenStorageSink(storage, packRoot);
+    ModRecipesResult total;
+
+    std::vector<std::pair<std::string, std::string>> targets;
+    if (request.contains("mods") && request.at("mods").is_array()) {
+        for (const auto& entry : request.at("mods")) {
+            const std::string id = entry.at("id").get<std::string>();
+            const std::string modRoot = entry.value("modRoot", "mods/" + id);
+            const std::string cacheRoot = entry.value("cacheRoot", "mod-cache/" + id);
+            targets.emplace_back(modRoot, cacheRoot);
+        }
+    } else {
+        const std::string modRoot = request.at("modRoot").get<std::string>();
+        const std::string cacheRoot = request.at("cacheRoot").get<std::string>();
+        targets.emplace_back(modRoot, cacheRoot);
+    }
+
+    for (const auto& [modRoot, cacheRoot] : targets) {
+        const auto mod = web::OpenStorageSink(storage, modRoot);
+        const auto cache = web::OpenStorageSink(storage, cacheRoot);
+        if (!BuildModRecipes(*pack, *mod, *cache, schemas, total, error)) {
+            g_error = error;
+            return false;
+        }
+    }
+
+    nlohmann::json report;
+    report["built"] = total.built;
+    report["cached"] = total.cached;
+    nlohmann::json disabled = nlohmann::json::array();
+    for (const auto& item : total.disabled) {
+        disabled.push_back({{"recipe", item.recipe}, {"source", item.source}, {"output", item.output}, {"message", item.message}});
+    }
+    report["disabled"] = std::move(disabled);
+    g_recipesReport = report.dump();
+    return true;
+}
+
 } // namespace
 
 extern "C" {
@@ -270,6 +321,23 @@ EMSCRIPTEN_KEEPALIVE int obl_import(const char* request)
         g_error = std::string("bad import request: ") + e.what();
         return 1;
     }
+}
+
+EMSCRIPTEN_KEEPALIVE int obl_build_mod_recipes(const char* request)
+{
+    g_error.clear();
+    g_recipesReport.clear();
+    try {
+        return RunRecipes(request) ? 0 : 1;
+    } catch (const std::exception& e) {
+        g_error = std::string("bad recipes request: ") + e.what();
+        return 1;
+    }
+}
+
+EMSCRIPTEN_KEEPALIVE const char* obl_build_mod_recipes_report()
+{
+    return g_recipesReport.c_str();
 }
 
 EMSCRIPTEN_KEEPALIVE const char* obl_import_error()
