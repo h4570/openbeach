@@ -591,7 +591,8 @@ async function main() {
         const wanted = new Set(["index.html", "site.js", ...loaded, "OpenBeach.wasm", "obl-import-web.js",
             "obl-import-web.wasm"]);
         const html = fs.readFileSync(path.join(siteDir, "index.html"), "utf8");
-        for (const match of html.matchAll(/<(?:script|img)[^>]*\ssrc="([^"]+)"/g)) wanted.add(match[1]);
+        for (const match of html.matchAll(/<(?:script|img)[^>]*\ssrc="([^"]+)"/g))
+            if (!/^https?:/.test(match[1])) wanted.add(match[1]);
         const worker = fs.readFileSync(path.join(siteDir, "import_worker.js"), "utf8");
         for (const match of worker.matchAll(/importScripts\(([^)]+)\)/g))
             for (const name of match[1].matchAll(/"([^"]+)"/g)) wanted.add(name[1]);
