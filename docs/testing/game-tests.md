@@ -56,7 +56,7 @@ New tests use the fast flow, not clicks and wall-clock waits:
 - Time-dependent tests start with `seed 1` + `fixed-dt 0.02` and advance game time with `step N`
   ([determinism.md](determinism.md)); without fixed time assert ranges, not exact values.
 - World fixtures after `await gameplay`: `spawn-building <NAME> <tx> <ty>`, `remove-building [id]`, `set-cash <n>`,
-  `set-hour <h>`, `spawn-guests <n>`; then `step` so start-up messages are processed.
+  `set-hour <h>`, `spawn-guests <n> [type]`; then `step` so start-up messages are processed.
 - Speed: `speed <x>`, `speed-level <0..2>` (8x is the game's top level). Campaign scenarios stop at a day limit; a longer
   run first does `world-script-change STATE_WORLD_AFTERGAME`.
 - `$key` in any directive's arguments (not `await`) is the value of a probe or report key when the directive runs, so ids
@@ -65,7 +65,7 @@ New tests use the fast flow, not clicks and wall-clock waits:
   form, e.g. `command set-price building=$id slot=0 price=3.25`; it runs at the start of the next gameplay frame, so `step 1`
   before checking. `command-report` gives `applied=`/`rejected=`/`dropped=`/`tick=`; `object-find` (`building|scenery <KEY>`, `staff <Class>`, `guest * [n]`), `place-find` (a spot
   where a footprint fits, `place-find surface <KEY>` a tile to paint, `place-find dozer` a tile to clear), `object-report <id>`
-  (building and staff fields) and `tile-report <x> <y>` (grid flags) find and read the objects (`src/testing/commands.h`).
+  (building, staff and guest fields) and `tile-report <x> <y>` (grid flags) find and read the objects (`src/testing/commands.h`).
   Probes `income-today`, `demolish-income-today`, `costs-today`, `scenery-costs-today` read the day's money counters.
   Scenario 1 surface keys: `GRASS02` (30), `PATH1` (15). Prebuilt objects of scenario 1: HOTEL, POWERGEN, BUILDERYARD (6 of 8 builders), GENSTORE;
   `spawn-building` creates a construction site, which rejects the building commands.

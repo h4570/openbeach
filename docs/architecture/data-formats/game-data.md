@@ -38,7 +38,7 @@ catalog/commodity_families/<key>.json   catalog/commodities/<key>.json   catalog
 catalog/desires/<key>.json              catalog/staff/<key>.json         catalog/events/<key>.json
 catalog/beers/<key>.json                catalog/fines/<key>.json         catalog/vehicles/<key>.json
 catalog/tables/<key>.json               catalog/scenery/<key>.json       catalog/buildings/<key>.json
-catalog/desire_slots/<key>.json
+catalog/desire_slots/<key>.json         catalog/guest_needs/<key>.json (optional, mods)
 ```
 - **Ids are positions in `index.json`.** The source assigns ids in file order, saves and world hashes contain them
   (`m_ValidBuildingIDs`, object type ids). Saves reference keys ([saves.md](saves.md)).

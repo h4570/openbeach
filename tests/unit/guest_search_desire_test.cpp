@@ -647,3 +647,30 @@ OBL_TEST_CASE("guest_search.refusals_cost_variety_per_provider_with_the_floor_on
     ClampOpinion(opinion);
     OBL_CHECK_EQ(opinion, 0.0f);
 }
+
+OBL_TEST_CASE("guest_search.mod_need_ties_and_family_lookup")
+{
+    float needs[2] = {0.5f, 0.0f};
+    float best = 0.5f;
+    uint32_t desire = 5u;
+    PickStrongestNeed(needs, 2, best, desire);
+    OBL_CHECK_EQ(desire, 5u); // tie goes to the pack desire
+
+    needs[0] = 0.6f;
+    PickStrongestNeed(needs, 2, best, desire);
+    OBL_CHECK_EQ(desire, uint32_t(kDesireCount));
+    OBL_CHECK_EQ(best, 0.6f);
+
+    float zero[1] = {0.0f};
+    best = 0.0f;
+    desire = kNoDesire;
+    PickStrongestNeed(zero, 1, best, desire);
+    OBL_CHECK_EQ(desire, kNoDesire);
+
+    GuestDef def{};
+    def.m_Needs.push_back({"yoga", "yoga", "GUEST_DESIRE_YOGA", true, {0.1f, 0.2f}, 2});
+    OBL_CHECK_EQ(DesireOfFamily("MEALS", def), 5u);
+    OBL_CHECK_EQ(DesireOfFamily("YOGA", def), uint32_t(kDesireCount));
+    OBL_CHECK_EQ(DesireOfFamily("yoga", def), uint32_t(kDesireCount));
+    OBL_CHECK_EQ(DesireOfFamily("UNKNOWN", def), kNoDesire);
+}

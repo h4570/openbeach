@@ -4398,6 +4398,21 @@
         "worst": {
           "description": "The worst spot of the day (object id), the counterpart of `best`.",
           "$ref": "#/$defs/i32"
+        },
+        "needs": {
+          "description": "The guest needs mods add (catalog guest_needs), by key: [growth rate, desire]. Absent when the guest's type has none.",
+          "type": "object",
+          "propertyNames": {
+            "$ref": "obl.common#/$defs/key"
+          },
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/f32"
+            },
+            "minItems": 2,
+            "maxItems": 2
+          }
         }
       },
       "additionalProperties": false

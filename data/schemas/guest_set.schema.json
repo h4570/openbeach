@@ -129,7 +129,13 @@
                 "$ref": "obl.common#/$defs/range"
               }
             },
-            "additionalProperties": false
+            "propertyNames": {
+              "$ref": "obl.common#/$defs/key"
+            },
+            "additionalProperties": {
+              "description": "The range of a guest need a mod adds (catalog guest_needs); the loader refuses any other name.",
+              "$ref": "obl.common#/$defs/range"
+            }
           },
           "tolerances": {
             "type": "object",
@@ -342,7 +348,13 @@
                 "type": "integer"
               }
             },
-            "additionalProperties": false
+            "propertyNames": {
+              "$ref": "obl.common#/$defs/key"
+            },
+            "additionalProperties": {
+              "description": "The repeat limit of a guest need a mod adds (catalog guest_needs); the loader refuses any other name.",
+              "type": "integer"
+            }
           }
         },
         "required": [

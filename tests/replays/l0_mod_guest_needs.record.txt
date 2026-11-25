@@ -1,0 +1,19 @@
+# Records l0_mod_guest_needs.replay: places the yoga studio of l0_yoga and plays on at speed 2 while the bus brings guests, the
+# yogis among them wanting a yoga class, so replay_l0_mod_guest_needs verifies that guest needs added by mods replay deterministically.
+# @env OBL_PACK=l0
+# @env OBL_MODS=l0_yoga
+# @timeout 240
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario 1
+record replays/l0_mod_guest_needs.replay every 500
+await gameplay
+command set-game-speed level=2
+step 50
+place-find building YOGA_STUDIO
+command place-building key=YOGA_STUDIO x=$x y=$y dir=0
+step 3500
+record end
+object-find building YOGA_STUDIO
+object-report $id
+quit

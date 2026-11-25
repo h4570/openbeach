@@ -16,6 +16,7 @@
 #include "game/objects/object_table.h"
 #include "game/objects/object_vehicle.h"
 #include "game/objects/staff_serial.h"
+#include "game/tables/world_params_leaves.h"
 #include "game/ui/sprite.h"
 #include "formats/save_states.h"
 #include "core/code_page.h"
@@ -106,6 +107,13 @@ void GuestExtras(const object::Guest& guest, ordered_json& out)
     out["times_blocked"] = guest.m_NumTimesBlocked;
     out["mood_icon_time"] = world_save::Float(guest.m_moodIconTime);
     out["worst"] = guest.m_Worst;
+    // The needs mods add, by name as [growth rate, desire]: only when the guest's type has needs, so saves without them stay the same.
+    if (guest.m_definition && !guest.m_definition->m_Needs.empty()) {
+        ordered_json& needs = out["needs"];
+        needs = ordered_json::object();
+        for (size_t i = 0; i < guest.m_definition->m_Needs.size() && i < static_cast<size_t>(tables::kMaxGuestNeeds); ++i)
+            needs[guest.m_definition->m_Needs[i].m_key] = {world_save::Float(guest.m_needRates[i]), world_save::Float(guest.m_needs[i])};
+    }
 }
 
 void StaffExtras(const object::Staff& staff, ordered_json& out)

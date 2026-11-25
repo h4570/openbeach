@@ -22,10 +22,18 @@ public:
     uint64_t signature = 0;
     bool hasSignature = false;
     std::array<std::vector<ProviderRecord>, kFamilies> records;
+    // The providers of the needs mods add (WorldParams::m_guestNeeds order), searched as families kFamilies and up. They have no complaint
+    // counter: the feedback manager knows only the pack's families.
+    std::vector<std::vector<ProviderRecord>> needRecords;
     // Missed-desire counters feedback::Feedback::Update reads.
     std::array<uint32_t, kFamilies> complaints{};
 
-    int Count(int family) const { return static_cast<int>(records[family].size()); }
+    std::vector<ProviderRecord>& List(int family) { return family < kFamilies ? records[family] : needRecords[family - kFamilies]; }
+    const std::vector<ProviderRecord>& List(int family) const
+    {
+        return family < kFamilies ? records[family] : needRecords[family - kFamilies];
+    }
+    int Count(int family) const { return static_cast<int>(List(family).size()); }
     // The next Rebuild runs whatever the building count says.
     void Invalidate() { buildingCount = -1; }
 };

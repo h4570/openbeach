@@ -1,0 +1,13 @@
+{
+  "format": "obl.text_patch",
+  "version": 1,
+  "entries": {
+    "YOGA_STUDIO": "Yoga Studio",
+    "BUILDING_NAME_YOGA_STUDIO": "Yoga Studio",
+    "BUILD_TIPTEXT_YOGA_STUDIO": "Yoga Studio",
+    "YOGA": "Yoga",
+    "YOGA_CLASS": "Yoga class",
+    "GUEST_NEED_YOGA": "Wants a yoga class",
+    "YOGI": "Yogi"
+  }
+}

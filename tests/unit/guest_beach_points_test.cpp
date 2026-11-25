@@ -321,3 +321,10 @@ OBL_TEST_CASE("guest_beach.wander_declines_a_chain_it_does_not_model")
     g.Flags(3, 3) = 2 | 0x10;
     OBL_CHECK(!WanderTileOk(g.grid, 3, 3));
 }
+
+OBL_TEST_CASE("guest_beach.need_repeat_action_uses_the_needs_limit")
+{
+    OBL_CHECK_EQ(NeedRepeatAction(4, 0.8f), 3);
+    OBL_CHECK_EQ(NeedRepeatAction(4, 0.0f), 1);
+    OBL_CHECK_EQ(NeedRepeatAction(0, 1.0f), 1);
+}

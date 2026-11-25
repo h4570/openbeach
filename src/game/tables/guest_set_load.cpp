@@ -84,7 +84,46 @@ template<size_t N> void Pairs(std::vector<std::array<float, 2>>& out, const json
         if (group.contains(names[i])) Pair(out[i], group[names[i]]);
 }
 
-void Guest(GuestDef& d, int index, const json& type)
+template<size_t N> bool Contains(const char* const (&names)[N], const std::string& name)
+{
+    for (const char* known : names)
+        if (name == known) return true;
+    return false;
+}
+
+// The needs mods added (catalog guest_needs): a member of `preferences` or `max` that is not one of the pack's names must name one of
+// them. A type that gives a need no `preferences` range never wants it, so guest sets written before the need keep working.
+void Needs(GuestDef& d, const json& type, const std::vector<tables::GuestNeedDef>& needs)
+{
+    d.m_Needs.resize(needs.size());
+    for (size_t i = 0; i < needs.size(); ++i) {
+        d.m_Needs[i].m_key = needs[i].m_key;
+        d.m_Needs[i].m_family = needs[i].m_familyKey;
+        d.m_Needs[i].m_name = needs[i].m_name;
+    }
+    const auto find = [&](const std::string& name) -> tables::GuestNeedPref* {
+        for (auto& need : d.m_Needs)
+            if (need.m_key == name) return &need;
+        return nullptr;
+    };
+    const json preferences = type.value("preferences", json::object());
+    for (const auto& [name, value] : preferences.items()) {
+        if (Contains(kPreferenceNames, name)) continue;
+        tables::GuestNeedPref* need = find(name);
+        if (!need) throw std::runtime_error("guest " + d.m_key + ": preferences." + name + " is neither a preference nor a guest need");
+        Pair(need->m_pref, value);
+        need->m_named = true;
+    }
+    const json max = type.value("max", json::object());
+    for (const auto& [name, value] : max.items()) {
+        if (Contains(kMaxNames, name)) continue;
+        tables::GuestNeedPref* need = find(name);
+        if (!need) throw std::runtime_error("guest " + d.m_key + ": max." + name + " is neither a desire nor a guest need");
+        need->m_max = value.get<int>();
+    }
+}
+
+void Guest(GuestDef& d, int index, const json& type, const std::vector<tables::GuestNeedDef>& needs)
 {
     d.m_id = index;
     Text(d.m_key, type["key"].get<std::string>(), kGuestKeyCapacity, "guest key");
@@ -140,6 +179,7 @@ void Guest(GuestDef& d, int index, const json& type)
     const json max = type.value("max", json::object());
     for (size_t i = 0; i < std::size(kMaxNames); ++i)
         if (max.contains(kMaxNames[i])) d.m_Max[i] = max[kMaxNames[i]].get<int>();
+    Needs(d, type, needs);
 }
 
 // Name pools: the text keys of one pool, from `base`, and the pool's count.
@@ -151,8 +191,11 @@ void Pool(WorldParams& p, size_t base, size_t capacity, const json& names, int& 
 }
 
 // Fills `p` (zeroed) from the document; every check the file needs beyond the schema is here.
-void Fill(WorldParams& p, const json& document)
+void Fill(WorldParams& p, const json& document, const std::vector<tables::GuestNeedDef>& needs)
 {
+    for (const auto& need : needs)
+        if (Contains(kPreferenceNames, need.m_key) || Contains(kMaxNames, need.m_key))
+            throw std::runtime_error("guest need " + need.m_key + ": a preference or desire of the pack has that name");
     const json& types = document["types"];
     if (types.size() > kMaxTypes) throw std::runtime_error("more than 20 guest types");
     std::set<std::string> keys;
@@ -160,7 +203,7 @@ void Fill(WorldParams& p, const json& document)
     for (size_t i = 0; i < types.size(); ++i) {
         const json& type = types[i];
         if (!keys.insert(type["key"].get<std::string>()).second) throw std::runtime_error("guest key appears twice");
-        Guest(p.m_guests[i], static_cast<int>(i), type);
+        Guest(p.m_guests[i], static_cast<int>(i), type, needs);
     }
     p.m_numGuests = static_cast<int>(types.size());
 
@@ -184,7 +227,7 @@ bool LoadPack(const std::filesystem::path& pack, const char* set, WorldParams& o
         const json document = Read(file, schemas);
         // Heap-allocated: a WorldParams is far too large for the stack. Value-initialization zeroes it, like the constructor's reset.
         auto scratch = std::make_unique<WorldParams>();
-        Fill(*scratch, document);
+        Fill(*scratch, document, out.m_guestNeeds);
         // Only the guest part is replaced: the catalog loaded before the guests stays as it is.
         out.m_numGuests = scratch->m_numGuests;
         out.m_guests = scratch->m_guests;

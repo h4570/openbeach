@@ -3,6 +3,7 @@
 #include "core/char16.h"
 #include "game/objects/object_fields.h"
 #include "game/objects/object_moving.h"
+#include "game/tables/guest_needs.h"
 
 #include <cstdint>
 
@@ -188,6 +189,10 @@ struct Guest : Person {
     float m_timeOfOffence = 0;
     float m_lastUpdateHappened = 0;
     int32_t m_Thoughts[3] = {}; // text keys, [0] newest
+    // Needs added by mods (GuestDef::m_Needs order): growth rate and desire, both zero for a type that does not name the need. Outside
+    // VisitFields: saved by name and hashed only when the world has needs (save_objects_json.cpp, world_snapshot_objects.cpp).
+    float m_needRates[tables::kMaxGuestNeeds] = {};
+    float m_needs[tables::kMaxGuestNeeds] = {};
 };
 
 // The guest's save records in the one order Save and Load share, then Person's (the caller). Two oddities of the format are kept:

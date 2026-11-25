@@ -201,6 +201,7 @@ const NamedRow kFunctions[] = {
         {1007, "CreateObject"},
         {1008, "RemoveObject"},
         {1009, "SendToNearby"},
+        {1010, "GetGuestDesire"},
 };
 
 const NamedRow kValues[] = {

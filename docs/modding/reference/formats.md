@@ -19,6 +19,7 @@ the schemas for recipes and object vocabulary patches.
 - [fine](../../../data/schemas/fine.schema.json)
 - [font](../../../data/schemas/font.schema.json)
 - [game parameters](../../../data/schemas/game_parameters.schema.json)
+- [guest need](../../../data/schemas/guest_need.schema.json)
 - [guest set](../../../data/schemas/guest_set.schema.json)
 - [gui layouts](../../../data/schemas/gui_layouts.schema.json)
 - [image](../../../data/schemas/image.schema.json)

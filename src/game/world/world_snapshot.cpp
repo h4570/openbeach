@@ -27,7 +27,7 @@ constexpr std::string_view kObjectFields[]{"class", "active_objects", "active_bu
         "guest.cash", "guest.happiness", "staff.happiness", "guest.vehicle", "guest.activity", "guest.action_state", "builder.action_state",
         "cleaner.action_state", "lifeguard.action_state", "rep.action_state", "security.action_state", "guest.staying_at",
         "guest.wake_time", "guest.bed_time", "guest.nights_to_stay", "guest.day_arrived", "guest.time_arrived", "guest.time_to_leave",
-        "guest.sunburn", "guest.food_ill", "guest.ill", "building.staff", "building.male_staff", "building.female_staff",
+        "guest.sunburn", "guest.food_ill", "guest.ill", "guest.needs", "building.staff", "building.male_staff", "building.female_staff",
         "building.non_serve_staff", "building.non_serve_staff_count", "building.staff_busy", "building.current_capacity",
         "building.open_status", "building.guests", "building.satisfaction", "building.beer_strength", "building.beer",
         "building.income_today", "building.cost_today", "building.profit_today", "building.average_profit", "building.age",

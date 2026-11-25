@@ -1,8 +1,10 @@
 #pragma once
 
+#include "core/ascii_case.h"
 #include "core/text16.h"
 #include "core/float_to_int.h"
 #include "game/objects/object_guest.h"
+#include "game/tables/world_params_leaves.h"
 
 #include <cstring>
 #include <cwchar>
@@ -27,6 +29,29 @@ inline int StrongestDesire(const object::Guest& guest)
         }
     }
     return index;
+}
+
+// The need a mod added that is stronger than every desire of the pack (strictly), -1 when none.
+inline int StrongestNeed(const object::Guest& guest)
+{
+    if (!guest.m_definition) return -1;
+    float highest = guest.m_desires[StrongestDesire(guest)];
+    int found = -1;
+    for (size_t i = 0; i < guest.m_definition->m_Needs.size() && i < static_cast<size_t>(tables::kMaxGuestNeeds); ++i) {
+        if (guest.m_needs[i] > highest) {
+            highest = guest.m_needs[i];
+            found = static_cast<int>(i);
+        }
+    }
+    return found;
+}
+
+// GUEST_DESIRE_<KEY>: the variable of a need a mod added, by its key in capitals.
+inline std::string NeedVariable(const tables::GuestNeedPref& need)
+{
+    std::string name = "GUEST_DESIRE_" + need.m_key;
+    for (char& c : name) c = ascii::Upper(c);
+    return name;
 }
 
 template<class Env> std::string Activity(const object::Guest& guest, Env& env)
@@ -89,6 +114,11 @@ template<class Env> void GetVariableText(const object::Guest& guest, const char*
         return;
     }
     if (is("GUEST_DESIRE") || is("GUEST_DESIRE_0")) {
+        // A need a mod added shows its own name text when it is the strongest.
+        if (const int need = StrongestNeed(guest); need >= 0) {
+            text16::Copy(out, env.Lookup(guest.m_definition->m_Needs[need].m_name.c_str()));
+            return;
+        }
         const std::string desire = "GUEST_DESIRE_" + std::string(env.DesireName(StrongestDesire(guest)));
         text16::Copy(out, env.Lookup(desire.c_str()));
         return;
@@ -113,6 +143,12 @@ template<class Env> void GetVariableText(const object::Guest& guest, const char*
             return;
         }
     }
+    if (guest.m_definition)
+        for (size_t i = 0; i < guest.m_definition->m_Needs.size() && i < static_cast<size_t>(tables::kMaxGuestNeeds); ++i)
+            if (is(NeedVariable(guest.m_definition->m_Needs[i]).c_str())) {
+                real(guest.m_needs[i]);
+                return;
+            }
     for (int i = 0; i < 7; ++i) {
         const std::string opinion = "GUEST_OPINION_" + std::string(kOpinions[i]);
         if (is(opinion.c_str())) {

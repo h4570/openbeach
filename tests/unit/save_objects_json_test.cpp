@@ -362,6 +362,19 @@ OBL_TEST_CASE("save_objects_json.guest_writes_name_arrays_and_catalog_building_k
     guest->m_BestType = 9; // no catalog entry
     OBL_CHECK(!world_save::WriteObjectJson(*guest, context, out, error));
     OBL_CHECK(error.find("best_type") != std::string::npos);
+
+    // Mod guest needs: omitted when the guest type has none, written as [rate, desire] pairs when present.
+    guest->m_BestType = 4;
+    OBL_CHECK(!g.contains("needs"));
+    tables::GuestDef def{};
+    def.m_Needs.push_back({"yoga", "yoga", "GUEST_DESIRE_YOGA", true, {0.1f, 0.2f}, 2});
+    guest->m_definition = &def;
+    guest->m_needRates[0] = 0.25f;
+    guest->m_needs[0] = 0.5f;
+    OBL_REQUIRE(world_save::WriteObjectJson(*guest, context, out, error));
+    OBL_REQUIRE(out["guest"].contains("needs"));
+    OBL_CHECK_EQ(out["guest"]["needs"]["yoga"].dump(), std::string("[0.25,0.5]"));
+    guest->m_definition = nullptr;
 }
 
 OBL_TEST_CASE("save_objects_json.building_writes_sprites_schedule_thoughts_queue_and_its_rotation")

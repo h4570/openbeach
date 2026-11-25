@@ -5,6 +5,8 @@
 #include "core/pack_path.h"
 #include "formats/cell_state.h"
 #include "formats/data_patch.h"
+#include "game/objects/guest_desire_names.h"
+#include "core/ascii_case.h"
 
 #include <algorithm>
 #include <array>
@@ -21,19 +23,26 @@ namespace {
 using nlohmann::json;
 using tables::WorldParams;
 
+// `capacity` bounds the pack's own index, `modCapacity` what the mods' index patches may grow the kind to (0: the same). An optional
+// kind may be missing from the pack's index.
 struct Kind {
     const char* name;
     const char* format;
     size_t capacity;
+    size_t modCapacity = 0;
+    bool optional = false;
+
+    size_t PatchedCapacity() const { return modCapacity != 0 ? modCapacity : capacity; }
 };
-constexpr Kind kKinds[] = {{"commodity_families", "obl.commodity_family", WorldParams::kMaxCommodityFamilies},
-        {"commodities", "obl.commodity", WorldParams::kMaxCommodities},
+constexpr Kind kKinds[] = {{"commodity_families", "obl.commodity_family", WorldParams::kMaxCommodityFamilies,
+                                   WorldParams::kMaxCommodityFamilies + WorldParams::kModCommodityFamilies},
+        {"commodities", "obl.commodity", WorldParams::kMaxCommodities, WorldParams::kMaxCommodities + WorldParams::kModCommodities},
         {"opening_hours", "obl.opening_hours", WorldParams::kMaxOpeningHours}, {"desires", "obl.desire", WorldParams::kMaxDesires},
         {"desire_slots", "obl.desire_slot", WorldParams::kDesireSlots}, {"staff", "obl.staff", WorldParams::kMaxStaff},
         {"events", "obl.event", WorldParams::kMaxEvents}, {"beers", "obl.beer", WorldParams::kMaxBeers},
         {"fines", "obl.fine", WorldParams::kMaxFines}, {"vehicles", "obl.vehicle", WorldParams::kMaxVehicles},
         {"tables", "obl.table", WorldParams::kMaxTables}, {"scenery", "obl.scenery", WorldParams::kMaxScenery},
-        {"buildings", "obl.building", WorldParams::kMaxBuildings}};
+        {"buildings", "obl.building", WorldParams::kMaxBuildings}, {"guest_needs", "obl.guest_need", tables::kMaxGuestNeeds, 0, true}};
 
 // A refused mod patch: the message names the mod and the record already, so LoadPack reports it as it is.
 struct PatchFailure : std::runtime_error {
@@ -102,9 +111,10 @@ public:
         m_current = indexFile.string();
         const json index = Read(indexFile, "obl.catalog_index", schemas);
         for (const Kind& kind : kKinds) {
+            auto& docs = m_docs[kind.name];
+            if (kind.optional && !index.contains(kind.name)) continue;
             const auto& keys = index.at(kind.name);
             if (keys.size() > kind.capacity) throw std::runtime_error(std::string(kind.name) + ": engine capacity exceeded");
-            auto& docs = m_docs[kind.name];
             for (const auto& key : keys) {
                 const auto file =
                         pack_path::Resolve(m_root, std::filesystem::path("catalog") / kind.name / (key.get<std::string>() + ".json"));
@@ -135,7 +145,7 @@ private:
                     const std::string record = "mod " + mod + ": " + kind.name + " record " + key;
                     for (const auto& existing : docs)
                         if (existing.at("key") == key) throw PatchFailure(record + ": already exists");
-                    if (docs.size() >= kind.capacity) throw PatchFailure(record + ": engine capacity exceeded");
+                    if (docs.size() >= kind.PatchedCapacity()) throw PatchFailure(record + ": engine capacity exceeded");
                     const auto recordFile = pack_path::Resolve(m_root, std::filesystem::path("catalog") / kind.name / (key + ".json"));
                     std::error_code ec;
                     if (!std::filesystem::is_regular_file(recordFile, ec))
@@ -261,6 +271,7 @@ private:
         }
     }
     void Populate();
+    void GuestNeeds();
     void Table(tables::TableDef& t, const json& d);
     void Building(tables::BuildingDef& b, const json& d);
     void Footprint(tables::BuildingDef& b, const json& d);
@@ -296,6 +307,7 @@ void Reader::Populate()
         throw std::runtime_error("desire_slots: every guest desire slot must be listed");
     int desireSlots = 0;
     Records("desire_slots", p.m_desireSlots, desireSlots, [&](auto& r, const auto& d) { String(r.m_scriptName, d, "/script_name"); });
+    GuestNeeds();
     Records("staff", p.m_staff, p.m_numStaff, [&](auto& r, const auto& d) {
         String(r.m_Name, d, "/name");
         String(r.m_Sprite, d, "/sprite");
@@ -374,6 +386,30 @@ void Reader::Populate()
         r.m_water = d.at("water").template get<bool>();
     });
     Records("buildings", p.m_buildings, p.m_numBuildings, [&](auto& r, const auto& d) { Building(r, d); });
+}
+
+// The needs mods add (guest_needs.h). Each one is an extra desire served by the buildings of its family, so the family must not be
+// one the pack's own desires already ask for, and two needs cannot share one; its key must not hide a desire slot of the same name.
+void Reader::GuestNeeds()
+{
+    auto& p = *m_params;
+    int count = 0;
+    Records("guest_needs", p.m_guestNeeds, count, [&](tables::GuestNeedDef& r, const json& d) {
+        String(r.m_name, d, "/name");
+        r.m_family = Ref("commodity_families", d.at("family"));
+        r.m_familyKey = p.m_commodityFamilies[r.m_family].m_key;
+        for (const auto& slot : p.m_desireSlots)
+            if (slot.m_key == r.m_key) throw std::runtime_error("guest need " + r.m_key + ": a desire slot has that key");
+        if (ascii::EqualsNoCase(r.m_familyKey.c_str(), "none"))
+            throw std::runtime_error("guest need " + r.m_key + ": family none serves nothing");
+        for (const char* desire : guest_search::kDesireNames)
+            if (ascii::EqualsNoCase(r.m_familyKey.c_str(), desire))
+                throw std::runtime_error("guest need " + r.m_key + ": family " + r.m_familyKey + " already serves a desire of the pack");
+        for (int other = 0; other < r.m_id; ++other)
+            if (p.m_guestNeeds[other].m_family == r.m_family)
+                throw std::runtime_error(
+                        "guest need " + r.m_key + ": family " + r.m_familyKey + " already serves the need " + p.m_guestNeeds[other].m_key);
+    });
 }
 
 void Reader::Table(tables::TableDef& t, const json& d)
@@ -614,7 +650,7 @@ bool LoadIndex(const std::filesystem::path& pack, nlohmann::json& out, std::stri
         if (!file) throw std::runtime_error("cannot open " + indexFile.string());
         json index = json::parse(file, nullptr, false);
         if (index.is_discarded() || !index.is_object()) throw std::runtime_error(indexFile.string() + ": invalid JSON");
-        ForEachIndexPatch(pack, [&](const std::string&, const Kind& kind, const std::string& key) { index.at(kind.name).push_back(key); });
+        ForEachIndexPatch(pack, [&](const std::string&, const Kind& kind, const std::string& key) { index[kind.name].push_back(key); });
         out = std::move(index);
         return true;
     } catch (const PatchFailure& failure) {

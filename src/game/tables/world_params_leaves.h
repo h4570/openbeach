@@ -1,6 +1,7 @@
 #pragma once
 
 #include "game/tables/building_behavior.h"
+#include "game/tables/guest_needs.h"
 
 #include <array>
 #include <cstdint>
@@ -149,6 +150,8 @@ struct GuestDef {
     float m_StartIll{}; // -> FoodIll
     float m_StartSunburn{}; // -> SunBurnLevel
     float m_StartVandalise{};
+    // One entry per need of WorldParams::m_guestNeeds (empty for a bare pack); filled by the guest set loader.
+    std::vector<GuestNeedPref> m_Needs;
 };
 
 // SCENERY_<key>: bins, benches, lamps, plants... Its text fields are strings; the flags keep the byte type of the reader contract.

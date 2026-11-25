@@ -35,6 +35,13 @@ inline int32_t RepeatAction(int desire, const std::vector<int>& max, float value
     return repeat == 0 ? 1 : repeat;
 }
 
+// The same rule for a need a mod added, by its own limit.
+inline int32_t NeedRepeatAction(int max, float value)
+{
+    const int32_t repeat = script::FloatToIntWrap(static_cast<double>(static_cast<uint32_t>(max)) * static_cast<double>(value));
+    return repeat == 0 ? 1 : repeat;
+}
+
 // Result buffers of the finders (shared by all callers): the point of the chosen vertex and the point the guest walks to.
 struct BeachPoints {
     float vertex[3];

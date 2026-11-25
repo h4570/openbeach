@@ -189,10 +189,13 @@ void Rebuild(Providers& providers)
     const int buildings = GetWorld()->m_numBuildings;
     object::Manager* objects = GetObjectManager();
     const uint64_t signature = BuildingSetSignature(*objects);
-    if (providers.buildingCount == buildings && providers.hasSignature && providers.signature == signature) return;
+    WorldParams* params = GetWorldParams();
+    const size_t needs = params ? params->m_guestNeeds.size() : 0;
+    if (providers.buildingCount == buildings && providers.hasSignature && providers.signature == signature &&
+            providers.needRecords.size() == needs)
+        return;
     providers.hasSignature = true;
     providers.signature = signature;
-    WorldParams* params = GetWorldParams();
     const char* const* keys = kProviderFamilyKeys;
     for (int family = 0; family < commodity::kFamilies; ++family) {
         // The id is looked up for every family first; the data has every family.
@@ -203,6 +206,23 @@ void Rebuild(Providers& providers)
             auto* building = static_cast<Building*>(objects->m_buildings[b]);
             const BuildingDef& def = *building->m_definition;
             // The slot counter is unsigned; a definition without commodities skips the loop.
+            for (uint32_t slot = 0; slot < static_cast<uint32_t>(def.m_NumCommodities); ++slot) {
+                if (params->m_commodities[def.m_Commodity[slot]].m_family != familyId) continue;
+                int tile[2];
+                building->GetTilePosition(tile);
+                records.push_back({static_cast<int>(building->m_id), static_cast<int>(slot), tile[0], tile[1]});
+            }
+        }
+    }
+    // The needs mods add, collected the same way after the pack's families.
+    providers.needRecords.resize(needs);
+    for (size_t need = 0; need < needs; ++need) {
+        const int familyId = params->m_guestNeeds[need].m_family;
+        std::vector<commodity::ProviderRecord>& records = providers.needRecords[need];
+        records.clear();
+        for (uint32_t b = 0; b < objects->m_buildings.size(); ++b) {
+            auto* building = static_cast<Building*>(objects->m_buildings[b]);
+            const BuildingDef& def = *building->m_definition;
             for (uint32_t slot = 0; slot < static_cast<uint32_t>(def.m_NumCommodities); ++slot) {
                 if (params->m_commodities[def.m_Commodity[slot]].m_family != familyId) continue;
                 int tile[2];
@@ -237,7 +257,7 @@ ProviderAnswer FindProvider(
     if (!sink) sink = &WriteThought;
     const int family = search.family;
     ProviderAnswer answer;
-    if (providers.records[family].empty()) {
+    if (providers.List(family).empty()) {
         // Nobody offers the family: the complaint counter of the feedback manager grows, except for souvenirs while no souvenir shop
         // may be built yet (nothing to complain about).
         closed = 0;
@@ -247,14 +267,14 @@ ProviderAnswer FindProvider(
             int shop = world::world_params::GetBuildingId(GetWorldParams(), "SOUVSHOP");
             complain = GetWorld()->BuildingAllowed(shop);
         }
-        if (complain) ++providers.complaints[family];
+        if (complain && family < commodity::kFamilies) ++providers.complaints[family];
         return answer;
     }
 
     object::Manager* objects = GetObjectManager();
     const WorldParams& params = *GetWorldParams();
     float best = -1.0f;
-    for (const commodity::ProviderRecord& record : providers.records[family]) {
+    for (const commodity::ProviderRecord& record : providers.List(family)) {
         auto* building = static_cast<Building*>(object_manager::ObjectById(objects, record.id));
         if (static_cast<int>(building->m_id) == search.excludedId) {
             if (!answer.found) answer.retry = true;
@@ -361,7 +381,7 @@ int FindProvider(Providers* providers, int* slot, char* found, int* broken, int*
     const ProviderSearch search{preference, family, tile, excludedId, guestId};
     ProviderSearchRecord record{search, {tile[0], tile[1]}, *closed, *beachClosed};
     g_find.Count();
-    const bool searched = !providers->records[family].empty();
+    const bool searched = !providers->List(family).empty();
     ProviderAnswer answer = FindProvider(*providers, search, *closed, *beachClosed);
     // A search over a non-empty list always writes the slot, one over an empty list never does.
     if (searched) *slot = answer.slot;

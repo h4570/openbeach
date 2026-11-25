@@ -7,6 +7,7 @@ data/packs/** -text
 tests/mods/l0_rule/** text eol=lf
 tests/mods/l0_world_script/** text eol=lf
 tests/mods/l0_busker/** text eol=lf
+tests/mods/l0_yoga/** text eol=lf
 # Keep stable LF bytes for script fixtures, except where a test exercises CRLF.
 tests/mods/broken/l0_world_refused/** text eol=lf
 tests/mods/**/*.wsc text eol=lf

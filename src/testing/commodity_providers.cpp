@@ -99,7 +99,7 @@ void CheckSearch(const object::ProviderSearchRecord& call)
     const int family = call.search.family;
     const int preference = call.search.preference;
     const int* tile = call.tile;
-    const std::vector<ProviderRecord> records = providers->records[family];
+    const std::vector<ProviderRecord> records = providers->List(family);
     const int count = static_cast<int>(records.size());
     int wantClosed = call.closedBefore, wantBeach = call.beachClosedBefore;
     int wantBroken = 0;

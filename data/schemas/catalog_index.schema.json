@@ -62,6 +62,11 @@
     "buildings": {
       "$ref": "obl.common#/$defs/key_list",
       "uniqueItems": true
+    },
+    "guest_needs": {
+      "description": "Optional: guest needs beyond the 26 desires (catalog/guest_needs/<key>.json); mods add them with catalog/index.patch.json.",
+      "$ref": "obl.common#/$defs/key_list",
+      "uniqueItems": true
     }
   },
   "required": [

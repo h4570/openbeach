@@ -671,16 +671,26 @@ bool ExecuteWorldStateCommand(const std::string& name, const std::vector<std::st
         ui::MapView* view = ui::GetMapView();
         view->SetCameraPos(x, y);
         OBL_LOG("autotest: camera x=%d y=%d fx=%g fy=%g", x, y, view->m_cameraPositionX, view->m_cameraPositionY);
-    } else if (name == "spawn-guests" && args.size() == 1 && Integer(args[0], x) && x >= 0 &&
+    } else if (name == "spawn-guests" && (args.size() == 1 || args.size() == 2) && Integer(args[0], x) && x >= 0 &&
             x <= object::Manager::kMaxGuests - static_cast<int>(world->m_objectManager->m_guests.size())) {
         tables::WorldParams* params = game::GetWorldParams();
         if (params->m_numGuests < 1) {
             OBL_LOG("autotest: FAILED spawn-guests no guest definitions");
             return true;
         }
-        // Use the first loaded guest type and the random walkable-point selection (game CRT rand).
+        // The named guest type, else the first loaded one, at random walkable points (game CRT rand).
+        const tables::GuestDef* type = &params->m_guests[0];
+        if (args.size() == 2) {
+            type = nullptr;
+            for (const auto& candidate : params->m_guests)
+                if (candidate.m_key == args[1]) type = &candidate;
+            if (!type) {
+                OBL_LOG("autotest: FAILED spawn-guests no guest type %s", args[1].c_str());
+                return true;
+            }
+        }
         object::GuestCreateParams record{};
-        std::strncpy(record.m_key, params->m_guests[0].m_key.c_str(), sizeof(record.m_key));
+        std::strncpy(record.m_key, type->m_key.c_str(), sizeof(record.m_key) - 1);
         for (int i = 0; i < x; ++i) {
             obl::world::World::RandomWalkPoint(record.m_pos);
             world::CreateObject(*world, object::ObjectType::Guest, &record);

@@ -1,0 +1,63 @@
+# Guest needs (l0_yoga, #134): a mod adds the need "yoga", a guest type that wants it ("yogi") and a studio that sells it. Visitors,
+# whose type does not name the need, never get it and never visit the studio; yogis do (the L0 guest leaves after one purchase). A
+# save reloads with the needs intact, the reloaded yogis still take their class, the world plays on to the same hash, and a load
+# without the mod is refused.
+# @env OBL_PACK=l0
+# @env OBL_MODS=l0_yoga
+# @timeout 180
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario 1
+await gameplay
+step 50
+place-find building YOGA_STUDIO
+command place-building key=YOGA_STUDIO x=$x y=$y dir=0
+step 10
+object-find building YOGA_STUDIO
+expect-last count 1
+log studio studio=$id
+object-report $studio
+expect-last state 0
+set-hour 12
+# 1. Visitors only: no yoga need, no visit.
+spawn-guests 4
+step 600
+object-find guest visitor
+expect-last count 4
+object-report $id
+expect-last need-yoga 0
+expect-last rate-yoga 0
+object-report $studio
+expect-last income-today 0
+# 2. Yogis: the need grows from its own drawn rate.
+spawn-guests 3 yogi
+step 5
+object-find guest yogi
+expect-last count 3
+log yogi yogi=$id
+object-report $yogi
+expect-last-range rate-yoga 0.9 1.0
+expect-last-range need-yoga 0.01 0.5
+log saved need=$need-yoga rate=$rate-yoga
+# 3. Save and reload: the needs come back by name, the yogis take their class and the world plays on the same.
+save-obl testlogs/l0_mod_guest_needs.obl.save
+seed 1
+load-obl-save testlogs/l0_mod_guest_needs.obl.save
+await world-loaded
+object-report $yogi
+# The world steps a couple of frames before world-loaded; a need lost on the way would restart below the saved value.
+expect-last-range need-yoga $need 0.5
+expect-last rate-yoga $rate 0.000001
+step 1200
+object-report $studio
+expect-last-range income-today 5 100000
+world-hash
+seed 1
+load-obl-save testlogs/l0_mod_guest_needs.obl.save
+await world-loaded
+step 1200
+world-hash expect-same
+claim-mods none
+expect-obl-save-refused testlogs/l0_mod_guest_needs.obl.save l0_yoga
+claim-mods l0_yoga
+quit

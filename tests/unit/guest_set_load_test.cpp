@@ -244,6 +244,55 @@ OBL_TEST_CASE("guest_set.optional_script_field")
     OBL_CHECK(error.find("script") != std::string::npos);
 }
 
+OBL_TEST_CASE("guest_set.mod_guest_needs_and_refusals")
+{
+    const obl::test::TempPath tmp("obl-guest-set-needs");
+    ordered_json doc = DocumentOfTypes(2);
+    doc["types"][1]["preferences"]["yoga"] = {0.05, 0.1};
+    doc["types"][1]["max"]["yoga"] = 3;
+    WriteSet(tmp.path, "l0", doc);
+
+    auto loaded = Zeroed();
+    loaded->m_guestNeeds.push_back({0, "yoga", "GUEST_DESIRE_YOGA", 24, "yoga"});
+    std::string error;
+    OBL_REQUIRE(guest_set::LoadPack(tmp.path, "l0", *loaded, error));
+    OBL_REQUIRE(loaded->m_guests.size() == 2u);
+    OBL_REQUIRE(loaded->m_guests[0].m_Needs.size() == 1u);
+    OBL_CHECK(!loaded->m_guests[0].m_Needs[0].m_named);
+    OBL_CHECK_EQ(loaded->m_guests[0].m_Needs[0].m_max, 0);
+    OBL_REQUIRE(loaded->m_guests[1].m_Needs.size() == 1u);
+    const auto& need = loaded->m_guests[1].m_Needs[0];
+    OBL_CHECK(need.m_named);
+    OBL_CHECK_EQ(need.m_key, std::string("yoga"));
+    OBL_CHECK_EQ(need.m_family, std::string("yoga"));
+    OBL_CHECK_EQ(need.m_name, std::string("GUEST_DESIRE_YOGA"));
+    OBL_CHECK_EQ(need.m_pref[0], 0.05f);
+    OBL_CHECK_EQ(need.m_pref[1], 0.1f);
+    OBL_CHECK_EQ(need.m_max, 3);
+
+    // Unknown preference name refused.
+    ordered_json badPref = DocumentOfTypes(1);
+    badPref["types"][0]["preferences"]["unknown_need"] = {0.1, 0.2};
+    WriteSet(tmp.path, "bad_pref", badPref);
+    OBL_CHECK(!guest_set::LoadPack(tmp.path, "bad_pref", *loaded, error));
+    OBL_CHECK(error.find("preferences.unknown_need") != std::string::npos);
+
+    // Unknown max name refused.
+    ordered_json badMax = DocumentOfTypes(1);
+    badMax["types"][0]["max"]["unknown_need"] = 2;
+    WriteSet(tmp.path, "bad_max", badMax);
+    OBL_CHECK(!guest_set::LoadPack(tmp.path, "bad_max", *loaded, error));
+    OBL_CHECK(error.find("max.unknown_need") != std::string::npos);
+
+    // A need named like a pack preference or max name is refused.
+    auto colliding = Zeroed();
+    colliding->m_guestNeeds.push_back({0, "alcohol", "GUEST_DESIRE_ALC", 24, "yoga"});
+    ordered_json plain = DocumentOfTypes(1);
+    WriteSet(tmp.path, "plain", plain);
+    OBL_CHECK(!guest_set::LoadPack(tmp.path, "plain", *colliding, error));
+    OBL_CHECK(error.find("preference or desire of the pack") != std::string::npos);
+}
+
 OBL_TEST_CASE("data.guest_set_load_matches_engine")
 {
     // Every installed guest file, converted and loaded by the loader, must hold the same guest records and name pools as the

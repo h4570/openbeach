@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "obl.guest_need",
+  "title": "Guest need (catalog/guest_needs/<key>.json)",
+  "description": "A need a mod adds to the guests: guest sets give it a range in `preferences` and a limit in `max`, buildings serve it through commodities of `family` (docs/modding/reference/guest-needs.md).",
+  "type": "object",
+  "properties": {
+    "format": {
+      "const": "obl.guest_need"
+    },
+    "version": {
+      "const": 1
+    },
+    "key": {
+      "$ref": "obl.common#/$defs/key"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Text key of the need's name, shown by the guest panel's desire texts."
+    },
+    "family": {
+      "$ref": "obl.common#/$defs/key",
+      "description": "Commodity family whose buildings serve the need; one need per family, and not a family of the pack's own desires."
+    }
+  },
+  "required": [
+    "format",
+    "version",
+    "key",
+    "name",
+    "family"
+  ],
+  "additionalProperties": false
+}

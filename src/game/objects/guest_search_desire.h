@@ -33,7 +33,8 @@
 // looks at the double. "below" also holds for NaN, "above" does not.
 namespace obl::guest_search {
 
-constexpr uint32_t kNoDesire = 26;
+// The 26 desires of the pack, then the needs mods add (tables::kFirstGuestNeed + their index), then "none".
+constexpr uint32_t kNoDesire = 0xffffffffu;
 
 // Indices of Guest::m_desires that have a branch of their own.
 enum Desire : uint32_t {
@@ -145,12 +146,52 @@ inline void PickStrongest(const float* desires, float& best, uint32_t& desire)
     }
 }
 
+// The needs mods add take part after the 26 desires, with the same test, so a tie goes to the pack's desire.
+inline void PickStrongestNeed(const float* needs, size_t count, float& best, uint32_t& desire)
+{
+    for (size_t i = 0; i < count; ++i) {
+        if (!guest_opinions::Below(best, needs[i])) continue;
+        desire = kDesireCount + static_cast<uint32_t>(i);
+        best = needs[i];
+    }
+}
+
+inline bool IsNeed(uint32_t desire)
+{
+    return desire != kNoDesire && desire >= kDesireCount;
+}
+
 // The desire whose family name is `family`, or kNoDesire.
 inline uint32_t DesireOfFamily(const char* family)
 {
     for (uint32_t i = 0; i < kDesireCount; ++i)
         if (ascii::EqualsNoCase(family, kDesireNames[i])) return i;
     return kNoDesire;
+}
+
+// The same, then the needs of the guest's type.
+inline uint32_t DesireOfFamily(const char* family, const tables::GuestDef& def)
+{
+    const uint32_t desire = DesireOfFamily(family);
+    if (desire != kNoDesire) return desire;
+    for (size_t i = 0; i < def.m_Needs.size(); ++i)
+        if (ascii::EqualsNoCase(family, def.m_Needs[i].m_family)) return kDesireCount + static_cast<uint32_t>(i);
+    return kNoDesire;
+}
+
+// The family name a thought about the desire uses: the pack's table, or a need's family in capitals.
+inline std::string DesireName(const tables::GuestDef& def, uint32_t desire)
+{
+    if (!IsNeed(desire)) return kDesireNames[desire];
+    std::string name = def.m_Needs[desire - kDesireCount].m_family;
+    for (char& c : name) c = ascii::Upper(c);
+    return name;
+}
+
+// The guest's desire or need by its number.
+inline float& DesireValue(object::Guest& guest, uint32_t desire)
+{
+    return IsNeed(desire) ? guest.m_needs[desire - kDesireCount] : guest.m_desires[desire];
 }
 
 // How often the activity repeats: MAX_<desire> (read as unsigned) times the desire, truncated; 0 becomes 1 (an unsigned test, negatives stay).
@@ -232,7 +273,8 @@ template<class Env> void Thought(object::Guest& guest, Env& env, const std::stri
 }
 
 // Why no provider took the guest, by the first counter that is set: closed, broken, beach closed, or simply nothing there.
-template<class Env> void RefusalThought(object::Guest& guest, Env& env, const Refusals& refusals, const Provider& provider, uint32_t desire)
+template<class Env>
+void RefusalThought(object::Guest& guest, Env& env, const Refusals& refusals, const Provider& provider, const std::string& desire)
 {
     std::string stem;
     if (refusals.closed != 0)
@@ -242,7 +284,7 @@ template<class Env> void RefusalThought(object::Guest& guest, Env& env, const Re
     else if (refusals.beachClosed != 0)
         stem = std::string(kThoughtBeachClosed) + env.CommodityName(provider.id, provider.slot);
     else
-        stem = std::string(kThoughtMissed) + kDesireNames[desire];
+        stem = std::string(kThoughtMissed) + desire;
     Thought(guest, env, stem);
 }
 
@@ -289,12 +331,20 @@ template<class Env> bool SearchDesire(object::Guest& guest, Env& env)
     if (env.CheckLeaveResort()) return true;
     float desires[kDesireCount];
     std::memcpy(desires, guest.m_desires, sizeof(desires));
+    // The needs mods add, copied the same way; a bare pack has none.
+    float needs[tables::kMaxGuestNeeds];
+    std::memcpy(needs, guest.m_needs, sizeof(needs));
+    const size_t needCount = std::min(def.m_Needs.size(), static_cast<size_t>(tables::kMaxGuestNeeds));
     if (env.CheckBedTime()) return true;
 
     if (const int32_t now = env.Weather(); now != 1) Thought(guest, env, WeatherThought(now));
 
     float best = 0.0f;
     uint32_t desire = kNoDesire;
+    const auto pickStrongest = [&] {
+        PickStrongest(desires, best, desire);
+        PickStrongestNeed(needs, needCount, best, desire);
+    };
     const auto findProvider = [&](uint32_t family) {
         provider.id = env.FindProvider(
                 &provider.slot, &found, &refusals.broken, &refusals.closed, &refusals.beachClosed, &retry, static_cast<int32_t>(family));
@@ -307,12 +357,12 @@ template<class Env> bool SearchDesire(object::Guest& guest, Env& env)
         if (guest.m_missedDesire != 0 && guest.m_activity == 0 && guest.m_CurID != guest.m_StayingAt) {
             // The last building failed the guest once: try the same family again. A hit keeps `best` at 0; family 0 (the test is on the index, not on
             // "none") falls back to the strongest desire.
-            desire = DesireOfFamily(env.RetryFamilyName());
-            if (desire == Accommodation) PickStrongest(desires, best, desire);
+            desire = DesireOfFamily(env.RetryFamilyName(), def);
+            if (desire == Accommodation) pickStrongest();
             guest.m_missedDesire = 0;
         } else {
             guest.m_activity = 0;
-            PickStrongest(desires, best, desire);
+            pickStrongest();
         }
         if (desire == kNoDesire) {
             if (guest.m_person[kWalkingPerson] > 0.0f)
@@ -321,7 +371,7 @@ template<class Env> bool SearchDesire(object::Guest& guest, Env& env)
                 env.Fatal(guest.m_Name);
             return true;
         }
-        desires[desire] = 0.0f;
+        (IsNeed(desire) ? needs[desire - kDesireCount] : desires[desire]) = 0.0f;
 
         if (desire == Stroll) {
             if (weather >= kBadWeather) continue;
@@ -357,7 +407,7 @@ template<class Env> bool SearchDesire(object::Guest& guest, Env& env)
                 if (const uint32_t total = refusals.Total(); total != 0) {
                     VarietyPenalty(guest, total);
                     if (!retry) {
-                        RefusalThought(guest, env, refusals, provider, SwimFun);
+                        RefusalThought(guest, env, refusals, provider, kDesireNames[SwimFun]);
                         missed = true;
                         WalkAway(guest, env);
                         found = 1;
@@ -454,7 +504,7 @@ template<class Env> bool SearchDesire(object::Guest& guest, Env& env)
                 return true;
             }
             if (!retry) {
-                RefusalThought(guest, env, refusals, provider, desire);
+                RefusalThought(guest, env, refusals, provider, DesireName(def, desire));
                 missed = true;
                 WalkAway(guest, env);
                 found = 1;
@@ -473,7 +523,7 @@ template<class Env> bool SearchDesire(object::Guest& guest, Env& env)
                 GoHome(guest, env);
                 return true;
             }
-            if (desire != Pills) guest.m_desires[desire] = 0.0f;
+            if (desire != Pills) DesireValue(guest, desire) = 0.0f;
         }
     }
 

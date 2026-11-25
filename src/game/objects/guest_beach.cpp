@@ -46,6 +46,12 @@ BeachPoints* NearestSeaBuffer()
 
 void SetRepeat(Guest& guest, int desire, float value)
 {
+    // A need added by mod (after the 26 desires) repeats like the desires with a limit, by the type's `max` for it.
+    const auto need = static_cast<size_t>(desire - tables::kFirstGuestNeed);
+    if (desire >= tables::kFirstGuestNeed && need < guest.m_definition->m_Needs.size()) {
+        guest.m_RepeatAction = guest_beach::NeedRepeatAction(guest.m_definition->m_Needs[need].m_max, value);
+        return;
+    }
     guest.m_RepeatAction = guest_beach::RepeatAction(desire, guest.m_definition->m_Max, value, guest.m_RepeatAction);
 }
 

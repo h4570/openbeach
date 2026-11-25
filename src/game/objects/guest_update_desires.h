@@ -33,6 +33,12 @@ inline void UpdateGuestDesires(object::Guest& guest, const tables::GuestDef& def
     for (const auto& pair : kGrowth) guest.m_desires[pair[0]] = static_cast<float>(grow(guest.m_desires[pair[0]], guest.m_person[pair[1]]));
     for (float& desire : guest.m_desires)
         if (1.0f < desire) desire = 1.0f;
+    // Needs added by mods grow like the pack's desires, after them, and are held at one as well.
+    for (size_t i = 0; i < def.m_Needs.size() && i < static_cast<size_t>(tables::kMaxGuestNeeds); ++i) {
+        float& need = guest.m_needs[i];
+        need = static_cast<float>(grow(need, guest.m_needRates[i]));
+        if (1.0f < need) need = 1.0f;
+    }
 
     if (guest.m_imIll == 0) {
         if (0.99f < guest.m_foodIll) {

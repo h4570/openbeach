@@ -1,5 +1,6 @@
 #pragma once
 
+#include "game/tables/guest_needs.h"
 #include "game/tables/world_params_leaves.h"
 #include <vector>
 
@@ -16,6 +17,8 @@ struct WorldParams {
     static constexpr int kMaxCommodityFamilies = 24, kMaxCommodities = 41, kMaxOpeningHours = 5, kMaxBuildings = 59, kMaxDesires = 14,
                          kMaxStaff = 21, kMaxGuests = 20, kMaxVehicles = 6, kMaxNames = 0x370, kMaxEvents = 20, kMaxBeers = 5,
                          kMaxFines = 2, kMaxTables = 19, kMaxScenery = 94, kDesireSlots = 26;
+    // Room that mod catalog patches have beyond the pack's own families and commodities, so a mod can bring a new kind of business.
+    static constexpr int kModCommodityFamilies = 16, kModCommodities = 32;
 
     int m_numCommodityFamilies{};
     int m_numCommodities{};
@@ -43,6 +46,7 @@ struct WorldParams {
     std::vector<CommodityDef> m_commodities;
     std::vector<DesireDef> m_desires;
     std::vector<DesireSlotDef> m_desireSlots;
+    std::vector<GuestNeedDef> m_guestNeeds; // needs added by mods, in load order (guest_needs.h); empty for a bare pack
     std::vector<VehicleDef> m_vehicles;
     std::vector<SceneryDef> m_scenery;
     std::vector<BuildingDef> m_buildings;

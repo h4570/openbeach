@@ -862,7 +862,7 @@ void ParseMod(Parsed& parsed, const std::string& text, bool strict)
 }
 
 const char* const kModFunctionNames[] = {"FindNearestBuilding", "FindNearestCommodity", "WalkToObject", "ChangeGuestsHappiness",
-        "ChangeGuestsDesire", "PayMoney", "ChargeMoney", "CreateObject", "RemoveObject", "SendToNearby"};
+        "ChangeGuestsDesire", "PayMoney", "ChargeMoney", "CreateObject", "RemoveObject", "SendToNearby", "GetGuestDesire"};
 
 } // namespace
 

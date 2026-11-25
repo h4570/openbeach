@@ -199,6 +199,25 @@ void ApplyDroppedFields(const DroppedFields& fields)
         Put(section, "times_blocked", guest->m_NumTimesBlocked);
         Put(section, "mood_icon_time", guest->m_moodIconTime);
         Put(section, "worst", guest->m_Worst);
+        // The needs mods add, by name; a name the world does not have is left (the mod list check warned the player before the load).
+        // A guest from an old save without an entry for a named need gets the midpoint of its type's preference range (no RNG draw).
+        if (guest->m_definition && !guest->m_definition->m_Needs.empty()) {
+            const auto needs = section.find("needs");
+            const bool hasNeeds = needs != section.end() && needs->is_object();
+            const auto& defs = guest->m_definition->m_Needs;
+            for (size_t i = 0; i < defs.size() && i < static_cast<size_t>(tables::kMaxGuestNeeds); ++i) {
+                if (hasNeeds) {
+                    const auto need = needs->find(defs[i].m_key);
+                    if (need != needs->end() && need->is_array() && need->size() == 2) {
+                        guest->m_needRates[i] = std::bit_cast<float>(formats::SaveFloatBits(need->at(0)).value_or(0));
+                        guest->m_needs[i] = std::bit_cast<float>(formats::SaveFloatBits(need->at(1)).value_or(0));
+                        continue;
+                    }
+                }
+                guest->m_needRates[i] = defs[i].m_named ? (defs[i].m_pref[0] + defs[i].m_pref[1]) * 0.5f : 0.0f;
+                guest->m_needs[i] = 0.0f;
+            }
+        }
     }
     for (const auto& [id, section] : fields.staff) {
         const auto found = live.find(id);
