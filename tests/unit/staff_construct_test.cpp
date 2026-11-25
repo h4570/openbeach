@@ -220,6 +220,17 @@ OBL_TEST_CASE("staff_construct.second_cleaner_does_not_touch_the_button")
     Free(*cleaner);
 }
 
+OBL_TEST_CASE("staff_construct.custom_object_script_overrides_default_logic")
+{
+    FakeEnv env;
+    env.definition.m_ObjectScript = "custom_cleaner";
+    auto cleaner = std::make_unique<Cleaner>();
+    cons::Construct(*cleaner, "CLEANER", env);
+    cons::ConstructCleaner(*cleaner, "CLEANER", env);
+    OBL_CHECK(env.log.find("Script(custom_cleaner)") != std::string::npos);
+    Free(*cleaner);
+}
+
 OBL_TEST_CASE("staff_construct.names_come_from_the_list_of_the_gender")
 {
     FakeEnv env;

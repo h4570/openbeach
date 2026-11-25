@@ -1,0 +1,14 @@
+# Recording script of tests/replays/l0_mod_object_script.replay: L0 scenario 1 with the world mod l0_busker.
+# Steps naturally past the 14:00 boat arrival so buskers arrive, walk, perform, and leave with no test-only cheats.
+# Re-record with: ./tools/replay.ps1 -Record tests/replays/l0_mod_object_script.record.txt
+# @env OBL_PACK=l0
+# @env OBL_MODS=l0_busker
+# @timeout 180
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario 1
+record replays/l0_mod_object_script.replay every 500
+await gameplay
+step 8500
+record end
+quit

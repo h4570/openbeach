@@ -1,38 +1,26 @@
 #include "script_program_ids.h"
 
+#include "core/file_io.h"
+#include "core/pack_path.h"
+#include "formats/object_vocabulary.h"
+#include "formats/script_pack.h"
 #include "game/objects/script_program_api.h"
 
-#include <nlohmann/json.hpp>
+#include <algorithm>
+#include <memory>
+#include <vector>
 
 namespace obl::object {
-
 namespace {
 
-constexpr char kScriptIdsFormat[] = "obl.object_script_vocabulary";
-constexpr int kScriptIdsVersion = 1;
+const script_program::Memory kValidationMemory = {
+        [](size_t size) { return ::operator new(size); }, [](void* block) { ::operator delete(block); }};
 
-bool Fail(script_program::Vocabulary& out, std::string& error, const std::string& message)
+void CopyEntries(const std::vector<object_vocabulary::Entry>& source, std::vector<script_program::NamedId>& out)
 {
-    error = message;
-    out = {};
-    return false;
-}
-
-bool ReadTable(const nlohmann::json& doc, const char* key, size_t minimum, std::vector<script_program::NamedId>& table, std::string& error)
-{
-    if (!doc.contains(key) || !doc[key].is_array() || doc[key].size() < minimum) {
-        error = std::string(key) + ": expected at least " + std::to_string(minimum) + " entries";
-        return false;
-    }
-    for (const auto& row : doc[key]) {
-        if (!row.is_object() || !row.contains("id") || !row["id"].is_number_integer() || !row.contains("name") ||
-                !row["name"].is_string() || row["name"].get<std::string>().empty()) {
-            error = std::string(key) + ": expected {id, name} rows";
-            return false;
-        }
-        table.push_back({row["id"].get<int>(), row["name"].get<std::string>()});
-    }
-    return true;
+    out.clear();
+    out.reserve(source.size());
+    for (const auto& entry : source) out.push_back({entry.id, entry.name});
 }
 
 } // namespace
@@ -40,17 +28,67 @@ bool ReadTable(const nlohmann::json& doc, const char* key, size_t minimum, std::
 bool ParseScriptIds(std::string_view json, script_program::Vocabulary& out, std::string& error)
 {
     out = {};
-    nlohmann::json doc = nlohmann::json::parse(json, nullptr, /*allow_exceptions=*/false);
-    if (doc.is_discarded() || !doc.is_object()) return Fail(out, error, "not valid JSON");
-    if (doc.value("format", "") != kScriptIdsFormat || doc.value("version", 0) != kScriptIdsVersion)
-        return Fail(out, error, "unsupported format/version");
-    // The converter writes the shipped build's counts (135 states, 108 messages); an own pack lists the messages in full and
-    // only the states its scripts use. Functions and values are the engine's own (script_program_api.h).
-    if (!ReadTable(doc, "states", 1, out.states, error) || !ReadTable(doc, "messages", 100, out.messages, error))
-        return Fail(out, error, error);
+    std::vector<object_vocabulary::Entry> states;
+    std::vector<object_vocabulary::Entry> messages;
+    if (!object_vocabulary::ParseBase(json, states, messages, error)) return false;
+    CopyEntries(states, out.states);
+    CopyEntries(messages, out.messages);
     out.functions = script_program::EngineFunctions();
     out.values = script_program::EngineValues();
+    return true;
+}
+
+bool LoadMergedVocabulary(
+        const std::filesystem::path& packDirectory, std::span<const std::string> mods, script_program::Vocabulary& out, std::string& error)
+{
+    out = {};
+    std::vector<object_vocabulary::Entry> states;
+    std::vector<object_vocabulary::Entry> messages;
+    if (!object_vocabulary::LoadMerged(packDirectory, mods, states, messages, error)) return false;
+    CopyEntries(states, out.states);
+    CopyEntries(messages, out.messages);
+    out.functions = script_program::EngineFunctions();
+    out.values = script_program::EngineValues();
+    return true;
+}
+
+bool ValidateModObjectScripts(const std::filesystem::path& packDirectory, std::span<const std::string> mods,
+        const script_program::Vocabulary& vocabulary, std::string& error)
+{
     error.clear();
+    if (mods.empty()) return true;
+    const std::filesystem::path gameDirectory = pack_path::GameDirectory(packDirectory);
+    for (const std::string& mod : mods) {
+        const auto modDirectory = pack_path::ModDirectory(gameDirectory, mod);
+        if (!modDirectory) continue;
+        const std::filesystem::path objectDir = *modDirectory / "scripts" / "object";
+        std::error_code ec;
+        if (!std::filesystem::is_directory(objectDir, ec)) continue;
+        std::vector<std::filesystem::path> files;
+        for (const auto& entry : std::filesystem::directory_iterator(objectDir, ec))
+            if (entry.is_regular_file(ec) && entry.path().extension() == ".obs") files.push_back(entry.path());
+        std::sort(files.begin(), files.end());
+        for (const auto& file : files) {
+            const std::string relative = file.lexically_relative(*modDirectory).generic_string();
+            std::string text;
+            std::string readError;
+            if (!script_pack::ReadScript(file, script_pack::Kind::Object, text, readError)) {
+                error = "mod \"" + mod + "\" (" + relative + ", line 1): " + readError;
+                return false;
+            }
+            text.push_back(static_cast<char>(file_io::kTerminator));
+            auto program = std::make_unique<script::ScriptProgram>();
+            script_program::Construct(*program);
+            try {
+                script_program::Parse(*program, text.data(), text.size() - 1, vocabulary, kValidationMemory, {true, 2});
+            } catch (const script_program::ParseError& failure) {
+                script_program::Destroy(*program, kValidationMemory);
+                error = "mod \"" + mod + "\" (" + relative + "): " + failure.what();
+                return false;
+            }
+            script_program::Destroy(*program, kValidationMemory);
+        }
+    }
     return true;
 }
 

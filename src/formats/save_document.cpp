@@ -6,6 +6,7 @@
 #include "core/pack_path.h"
 #include "core/sha256.h"
 #include "formats/data_patch.h"
+#include "formats/object_vocabulary.h"
 #include "formats/schemas.h"
 
 #include <algorithm>
@@ -275,9 +276,14 @@ bool ReadSavePackOrigin(const std::filesystem::path& packRoot, SaveOrigin& origi
         if (entry.is_array() && entry.size() == 2 && entry[0].is_string() && entry[1].is_string())
             origin.texts.emplace(entry[0].get<std::string>(), entry[1].get<std::string>()); // the first value wins
     origin.objectStates.clear();
-    if (const auto vocabulary = ReadJsonFile(pack_path::Resolve(packRoot, "scripts/object_vocabulary.json")))
-        if (const auto states = vocabulary->find("states"); states != vocabulary->end() && states->is_array())
-            for (const auto& state : *states) origin.objectStates.emplace(state.value("id", -1), state.value("name", std::string()));
+    std::vector<object_vocabulary::Entry> states;
+    std::vector<object_vocabulary::Entry> messages;
+    std::string vocabularyError;
+    if (object_vocabulary::LoadMerged(packRoot, pack_path::ActiveMods(), states, messages, vocabularyError))
+        for (const auto& state : states) origin.objectStates.emplace(state.id, state.name);
+    else if (const auto vocabulary = ReadJsonFile(pack_path::Resolve(packRoot, "scripts/object_vocabulary.json")))
+        if (const auto rawStates = vocabulary->find("states"); rawStates != vocabulary->end() && rawStates->is_array())
+            for (const auto& state : *rawStates) origin.objectStates.emplace(state.value("id", -1), state.value("name", std::string()));
     return true;
 }
 

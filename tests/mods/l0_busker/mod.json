@@ -1,0 +1,9 @@
+{
+  "format": "obl.mod",
+  "version": 1,
+  "id": "l0_busker",
+  "title": "L0 Busker",
+  "mod_version": "1.0.0",
+  "pack": "l0",
+  "scope": "world"
+}

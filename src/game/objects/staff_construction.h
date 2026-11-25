@@ -44,6 +44,12 @@ inline void SetScript(Staff& employee, void* script)
 {
     employee.m_definition = reinterpret_cast<const tables::GuestDef*>(script);
 }
+inline const char* StaffScriptName(const Staff& employee, const char* fallback)
+{
+    return (employee.m_staffDefinition && !employee.m_staffDefinition->m_ObjectScript.empty())
+            ? employee.m_staffDefinition->m_ObjectScript.c_str()
+            : fallback;
+}
 inline void SetNameBuffer(Staff& employee, Char16* name)
 {
     employee.m_script = reinterpret_cast<script::ScriptProgram*>(name);
@@ -197,7 +203,7 @@ template<class Env> object::Cleaner* ConstructCleaner(object::Cleaner& employee,
     employee.m_ActionState = 0;
     employee.m_UrgentType = 0;
     employee.m_urgentClean = 0;
-    SetScript(employee, env.ScriptLookup("CleanerLogic"));
+    SetScript(employee, env.ScriptLookup(StaffScriptName(employee, "CleanerLogic")));
     employee.m_lastTaskTime = std::bit_cast<float>(moving::lifecycle::QuietNaN(env.DayTimeBits()));
     CountIn(Kind::Cleaner, kButtonCleaner, "FEEDBACK_NO_CLEANERS", env);
     ++env.Counter(Kind::Cleaner);
@@ -226,7 +232,7 @@ template<class Env> object::Mechanic* ConstructMechanic(object::Mechanic& employ
     employee.m_repairsToday = 0;
     employee.m_vandalsToday = 0;
     employee.m_wateredToday = 0;
-    SetScript(employee, env.ScriptLookup("MechanicLogic"));
+    SetScript(employee, env.ScriptLookup(StaffScriptName(employee, "MechanicLogic")));
     employee.m_lastTaskTime = std::bit_cast<float>(moving::lifecycle::QuietNaN(env.DayTimeBits()));
     CountIn(Kind::Mechanic, kButtonMechanic, "FEEDBACK_NO_MECHANICS", env);
     ++env.Counter(Kind::Mechanic);
@@ -260,7 +266,7 @@ template<class Env> object::Lifeguard* ConstructLifeguard(object::Lifeguard& emp
     employee.m_AttachedOffsetY = 0;
     employee.m_ReturnAnimation[0] = 0;
     employee.m_CurrAnimation[0] = 0;
-    SetScript(employee, env.ScriptLookup("LifeGuardLogic"));
+    SetScript(employee, env.ScriptLookup(StaffScriptName(employee, "LifeGuardLogic")));
     AttachSprite(employee, env, true);
     employee.m_maxVel = 50.0f;
     employee.m_maxForce = 30.0f;
@@ -304,7 +310,7 @@ template<class Env> object::Rep* ConstructRep(object::Rep& employee, const char*
     employee.m_AttachedOffsetY = 0;
     employee.m_ReturnAnimation[0] = 0;
     employee.m_CurrAnimation[0] = 0;
-    SetScript(employee, env.ScriptLookup("RepresentiveLogic"));
+    SetScript(employee, env.ScriptLookup(StaffScriptName(employee, "RepresentiveLogic")));
     std::memset(employee.m_counters, 0, sizeof(employee.m_counters));
     CountIn(Kind::Rep, kButtonRep, "FEEDBACK_NO_REPS", env);
     AttachSprite(employee, env, false);
@@ -352,7 +358,7 @@ template<class Env> object::SecurityGuard* ConstructSecurity(object::SecurityGua
     employee.m_CurrentFeedback = 0;
     employee.m_ActionState = 0;
     employee.m_fineTotalToday = 0.0f;
-    SetScript(employee, env.ScriptLookup("SecurityLogic"));
+    SetScript(employee, env.ScriptLookup(StaffScriptName(employee, "SecurityLogic")));
     employee.m_offenderId = -1;
     employee.m_fightWithId = -1;
     employee.m_toleranceClass = 1;
@@ -382,7 +388,7 @@ template<class Env> void DestructSecurity(object::SecurityGuard& employee, Env& 
 // Unlike the other professions there is no "no builders" complaint to clear, and the work-day fields are set.
 template<class Env> object::Builder* ConstructBuilder(object::Builder& employee, const char* name, Env& env)
 {
-    SetScript(employee, env.ScriptLookup("BuilderLogic"));
+    SetScript(employee, env.ScriptLookup(StaffScriptName(employee, "BuilderLogic")));
     employee.m_maxForce = 65.0f;
     employee.m_maxVel = 65.0f;
     AttachSprite(employee, env, true);
@@ -425,7 +431,7 @@ inline bool StandsStill(const char* sprite)
 
 template<class Env> object::ServiceStaff* ConstructService(object::ServiceStaff& employee, const char* name, Env& env)
 {
-    employee.m_logic = env.ScriptLookup("GuestLogic");
+    employee.m_logic = env.ScriptLookup(StaffScriptName(employee, "GuestLogic"));
     AttachSprite(employee, env, false);
     if (StandsStill(employee.m_staffDefinition->m_Sprite.c_str())) env.PlayStand(employee);
     employee.m_actionState = 0;

@@ -10,4 +10,5 @@ the DSL commands and the actions.
 | [buildings.md](buildings.md) | Building records (`obl.building` v2), own icon/preview sprites, behaviors open to mods, and `tools/make_sprite.py`. |
 | [data-patches.md](data-patches.md) | Set or merge a member, address an array by key, append records, and resolve conflicts between mods. |
 | [gui-patches.md](gui-patches.md) | GUI layout patches (`gui/<layout>.patch.json`, `obl.gui_patch` v1): control IDs, slots, anchors, patch operations, `Mod:<id>.<event>` button actions, and runtime control lookup. |
+| [object-scripts.md](object-scripts.md) | Object scripts (`scripts/object/*.obs`), `scripts/object_vocabulary.patch.json`, per-type guest/staff script selection, and the built-in DSL functions and values. |
 | [scripting.md](scripting.md) | Presentation scripts: `scripts/presentation/*.lua`, the `presentation` scope, the lifecycle, the sandbox and its limits, the `obl` API, the commands open to scripts, the per-mod store, the API version and the interpreter. |

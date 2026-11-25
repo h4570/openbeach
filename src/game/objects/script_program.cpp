@@ -50,8 +50,8 @@ enum List : int { OnEntry = 0, OnExit = 1, OnUpdate = 2, OnReceipt = 3, OnSend =
 
 class Parser {
 public:
-    Parser(ScriptProgram& script, const char* text, size_t size, const Vocabulary& vocabulary, const Memory& memory)
-        : m_script(script), m_vocabulary(vocabulary), m_memory(memory), m_size(size)
+    Parser(ScriptProgram& script, const char* text, size_t size, const Vocabulary& vocabulary, const Memory& memory, ParseOptions options)
+        : m_script(script), m_vocabulary(vocabulary), m_memory(memory), m_options(options), m_size(size)
     {
         // The terminator the decoded script reader appends, then a tail that stops every scan: a newline ends a comment, and a `;` is a
         // token that needs no look further (so no scan reads past the buffer).
@@ -71,7 +71,7 @@ public:
             if (token == "State")
                 ParseState();
             else
-                Fail("unrecognized top-level command in the object script: " + token);
+                FailAt("unrecognized top-level command in the object script: " + token);
         } while (m_pos < m_size);
     }
 
@@ -79,13 +79,26 @@ private:
     ScriptProgram& m_script;
     const Vocabulary& m_vocabulary;
     const Memory& m_memory;
+    ParseOptions m_options;
     size_t m_size;
     std::string m_text;
     size_t m_pos = 0;
+    size_t m_tokenPos = 0;
     IfCommand* m_openIf = nullptr; // the `If` being filled, null at state level
     SwitchCommand* m_openSwitch = nullptr; // the `Switch` being filled, null outside one
     bool m_inIf = false; // an `If` body is being parsed, so commands skip the open switch
     std::vector<IfCommand*> m_ifStack; // the `If`s a nested one interrupted
+
+    size_t LineNumber(size_t pos) const
+    {
+        size_t line = m_options.firstLine;
+        const size_t limit = pos < m_size ? pos : m_size;
+        for (size_t i = 0; i < limit; ++i)
+            if (m_text[i] == '\n') ++line;
+        return line;
+    }
+
+    [[noreturn]] void FailAt(const std::string& message) const { Fail("line " + std::to_string(LineNumber(m_tokenPos)) + ": " + message); }
 
     // ---- Memory ------------------------------------------------------------------------------------------------------------------
 
@@ -131,15 +144,29 @@ private:
     // token boundaries follow the same rules as path tile scripts.
     std::string Read()
     {
+        size_t start = m_pos;
+        while (start < m_size) {
+            if (path_tile_script::IsSpace(m_text[start])) {
+                ++start;
+                continue;
+            }
+            const size_t skipped = path_tile_script::SkipComments(m_text.c_str() + start);
+            if (skipped > 0) {
+                start += skipped;
+                continue;
+            }
+            break;
+        }
+        m_tokenPos = start;
         std::string token;
         m_pos += static_cast<size_t>(path_tile_script::ReadToken(m_text.c_str() + m_pos, token));
-        if (m_pos > m_size) Fail("script ends inside a command");
+        if (m_pos > m_size) FailAt("script ends inside a command");
         return token;
     }
 
     char At(size_t at) const
     {
-        if (at > m_size) Fail("script ends inside a command");
+        if (at > m_size) FailAt("script ends inside a command");
         return m_text[at];
     }
 
@@ -148,6 +175,7 @@ private:
     {
         size_t at = m_pos;
         while (At(at) != '(') ++at;
+        m_tokenPos = at;
         std::string text;
         while (At(at) != ')') text.push_back(m_text[at++]);
         text.push_back(')');
@@ -191,11 +219,11 @@ private:
         if (StartsWith(token, "Random")) return {ValueRandom, NewInt(std::atoi(token.c_str() + 6))};
         if (StartsWith(token, "STATE_")) {
             int state = StateId(token);
-            if (state < 0) Fail("unrecognized state name: " + token);
+            if (state < 0) FailAt("unrecognized state name: " + token);
             return {ValueNumber, NewFloat(static_cast<float>(state))};
         }
         char first = token.empty() ? '\0' : token[0];
-        if ((first < '0' || first > '9') && first != '-') Fail("unrecognized name in the object script: " + token);
+        if ((first < '0' || first > '9') && first != '-') FailAt("unrecognized name in the object script: " + token);
         return {ValueNumber, NewFloat(static_cast<float>(std::atof(token.c_str())))};
     }
 
@@ -226,7 +254,7 @@ private:
     // Append to the selected list of the state currently being parsed.
     void AddToState(ScriptCommand* node, int list)
     {
-        if (m_script.m_NumStates >= kMaxProgramStates) Fail("too many states");
+        if (m_script.m_NumStates >= kMaxProgramStates) FailAt("too many states");
         ProgramState& state = m_script.m_states[m_script.m_NumStates];
         switch (list) {
         case OnEntry: AppendToList(state.m_onEntry, node); return;
@@ -234,12 +262,12 @@ private:
         case OnUpdate: AppendToList(state.m_onUpdate, node); return;
         case OnReceipt:
         case OnSend:
-            if (state.m_NumHandlers >= kScriptProgramHandlers) Fail("too many message handlers in one state");
+            if (state.m_NumHandlers >= kScriptProgramHandlers) FailAt("too many message handlers in one state");
             AppendToList(
                     list == OnReceipt ? state.m_handlers[state.m_NumHandlers].m_onReceipt : state.m_handlers[state.m_NumHandlers].m_onSend,
                     node);
             return;
-        default: Fail("command added to a list that does not exist");
+        default: FailAt("command added to a list that does not exist");
         }
     }
 
@@ -256,7 +284,7 @@ private:
             return;
         }
         SwitchCase* last = m_openSwitch->m_firstCase;
-        if (!last) Fail("Switch without a Case");
+        if (!last) FailAt("Switch without a Case");
         while (last->m_next) last = last->m_next;
         AppendToList(last->m_commands, node);
     }
@@ -266,11 +294,11 @@ private:
     // Parsing a state block, after the `State` token: the name, then OnEntry/OnExit/OnUpdate/Message blocks up to `End`.
     void ParseState()
     {
-        if (m_script.m_NumStates >= kMaxProgramStates) Fail("too many states");
+        if (m_script.m_NumStates >= kMaxProgramStates) FailAt("too many states");
         ProgramState& state = m_script.m_states[m_script.m_NumStates];
         std::string name = Read();
         int id = StateId(name);
-        if (id < 0) Fail("unrecognized state name: " + name);
+        if (id < 0) FailAt("unrecognized state name: " + name);
         state.m_stateId = id;
         for (std::string token = Read(); token != "End"; token = Read()) {
             if (token == "OnEntry")
@@ -282,7 +310,7 @@ private:
             else if (token == "Message")
                 ParseMessageHandler();
             else
-                Fail("unrecognized command in a state: " + token);
+                FailAt("unrecognized command in a state: " + token);
         }
         ++m_script.m_NumStates;
     }
@@ -291,10 +319,10 @@ private:
     void ParseMessageHandler()
     {
         ProgramState& state = m_script.m_states[m_script.m_NumStates];
-        if (state.m_NumHandlers >= kScriptProgramHandlers) Fail("too many message handlers in one state");
+        if (state.m_NumHandlers >= kScriptProgramHandlers) FailAt("too many message handlers in one state");
         std::string name = Read();
         int id = MessageId(name);
-        if (id < 0) Fail("unrecognized message name: " + name);
+        if (id < 0) FailAt("unrecognized message name: " + name);
         state.m_handlers[state.m_NumHandlers].m_messageId = id;
         for (std::string token = Read(); token != "End"; token = Read()) {
             if (token == "OnReceipt")
@@ -302,7 +330,7 @@ private:
             else if (token == "OnSend")
                 ParseCommands(OnSend);
             else
-                Fail("unrecognized command in a message handler: " + token);
+                FailAt("unrecognized command in a message handler: " + token);
         }
         ++state.m_NumHandlers;
     }
@@ -322,7 +350,7 @@ private:
             else if (token == "If")
                 ParseIf(list);
             else if (token == "Else") {
-                if (!m_openIf) Fail("Else without If");
+                if (!m_openIf) FailAt("Else without If");
                 m_openIf->m_inElse = 1;
             } else if (token == "Switch")
                 ParseSwitch(list);
@@ -341,7 +369,7 @@ private:
             else if (token == "PlaySound")
                 ParsePlaySound(list);
             else
-                Fail("unrecognized command: " + token);
+                FailAt("unrecognized command: " + token);
         }
     }
 
@@ -352,7 +380,7 @@ private:
     {
         std::string name = Read();
         int id = FindNoCase(m_vocabulary.functions, name);
-        if (id < 0) Fail("unrecognized function in the object script: " + name);
+        if (id < 0) FailAt("unrecognized function in the object script: " + name);
         auto* payload = New<FunctionCommand>();
         payload->m_functionId = id;
         Read(); // `;`
@@ -369,7 +397,7 @@ private:
         payload->m_sendFrom.m_kind = ValueNone;
         std::string name = Read();
         int id = MessageId(name);
-        if (id < 0) Fail("unrecognized message for SendMessage: " + name);
+        if (id < 0) FailAt("unrecognized message for SendMessage: " + name);
         payload->m_messageId = id;
         payload->m_receiver = Resolve(Read());
         payload->m_data = Resolve(Read());
@@ -386,21 +414,22 @@ private:
             else if (token == "SendFrom")
                 payload->m_sendFrom = Resolve(Read());
             else
-                Fail("unrecognized command after a message: " + token);
+                FailAt("unrecognized command after a message: " + token);
         }
         Append(NewNode(OpMessage, payload), list);
     }
 
-    // Parsing a state change: `ChangeState <STATE_...> [Time t];`. An unknown state name leaves the id 0.
+    // Parsing a state change: `ChangeState <STATE_...> [Time t];`. An unknown state name leaves the id 0 unless strict.
     void ParseChangeState(int list)
     {
         auto* payload = New<ChangeStateCommand>();
         std::string name = Read();
         int id = StateId(name);
+        if (id < 0 && m_options.strict) FailAt("unrecognized state name: " + name);
         payload->m_stateId = id < 0 ? 0 : id;
         std::string token = Read();
         if (token != ";") {
-            if (token != "Time") Fail("unrecognized ChangeState option: " + token);
+            if (token != "Time") FailAt("unrecognized ChangeState option: " + token);
             payload->m_time = static_cast<float>(std::atof(Read().c_str()));
             Read(); // `;`
         }
@@ -421,17 +450,21 @@ private:
             else if (token == "NotLooped")
                 payload->m_notLooped = 1;
             else if (token == "ExitState") {
-                int id = StateId(Read());
+                std::string stateName = Read();
+                int id = StateId(stateName);
+                if (id < 0 && m_options.strict) FailAt("unrecognized state name: " + stateName);
                 if (id >= 0) payload->m_exitState = id;
             } else if (token == "MaxTime")
                 payload->m_maxTime = static_cast<float>(std::atof(Read().c_str()));
             else if (token == "EndMessage") {
-                int id = MessageId(Read());
+                std::string msgName = Read();
+                int id = MessageId(msgName);
+                if (id < 0 && m_options.strict) FailAt("unrecognized message name: " + msgName);
                 if (id >= 0) payload->m_endMessage = id;
             } else if (token == "Reverse")
                 payload->m_reverse = 1;
             else
-                Fail("unrecognized animation command: " + token);
+                FailAt("unrecognized animation command: " + token);
         }
         Append(NewNode(OpAnimation, payload), list);
     }
@@ -473,7 +506,7 @@ private:
         } else {
             std::string op;
             while (Peek(text, at) != ' ') {
-                if (at >= text.size()) Fail("unrecognized If operator: " + op);
+                if (at >= text.size()) FailAt("unrecognized If operator: " + op);
                 op.push_back(text[at++]);
             }
             condition->m_op = Operator(op);
@@ -503,7 +536,7 @@ private:
         }
     }
 
-    static int32_t Operator(const std::string& op)
+    int32_t Operator(const std::string& op) const
     {
         if (op == "&&") return 0;
         if (op == "||") return 1;
@@ -513,7 +546,7 @@ private:
         if (op == "<=" || op == "=<") return 5;
         if (op == ">=" || op == "=>") return 6;
         if (op == "!=") return 7;
-        Fail("unrecognized If operator: " + op);
+        FailAt("unrecognized If operator: " + op);
     }
 
     // Parsing a switch block: `Switch (value)` then `Case` blocks up to `End`. Commands go to the last case, not to an
@@ -541,8 +574,8 @@ private:
     {
         std::string token = Read();
         size_t colon = token.find(':');
-        if (colon == std::string::npos) Fail("Case without ':' in " + token);
-        if (!m_openSwitch) Fail("Case outside a Switch");
+        if (colon == std::string::npos) FailAt("Case without ':' in " + token);
+        if (!m_openSwitch) FailAt("Case outside a Switch");
         auto* entry = New<SwitchCase>();
         entry->m_value = Resolve(token.substr(0, colon));
         if (!m_openSwitch->m_firstCase) {
@@ -848,10 +881,10 @@ void CountList(const ScriptCommand* node, ListStats& stats)
 
 } // namespace
 
-void Parse(ScriptProgram& script, const char* text, size_t size, const Vocabulary& vocabulary, const Memory& memory)
+void Parse(ScriptProgram& script, const char* text, size_t size, const Vocabulary& vocabulary, const Memory& memory, ParseOptions options)
 {
     script.m_text = nullptr;
-    Parser(script, text, size, vocabulary, memory).Load();
+    Parser(script, text, size, vocabulary, memory, options).Load();
 }
 
 void Destroy(ScriptProgram& script, const Memory& memory)

@@ -191,7 +191,9 @@ bool Prepare(const fs::path& pack, std::span<const std::string> mods, std::vecto
                 if (!entry.is_regular_file()) continue;
                 auto relative = entry.path().lexically_relative(directory);
                 auto name = relative.generic_string();
-                if (!name.ends_with(".patch.json") || relative.parent_path() == "text" || name == "catalog/index.patch.json") continue;
+                if (!name.ends_with(".patch.json") || relative.parent_path() == "text" || name == "catalog/index.patch.json" ||
+                        name == "scripts/object_vocabulary.patch.json")
+                    continue;
                 // A GUI layout patch belongs to game/ui/gui_patch, which applies it when the layout loads.
                 if (relative.parent_path() == "gui" && PatchFormat(entry.path()) == kGuiPatchFormat) continue;
                 patches.emplace(name.substr(0, name.size() - 11) + ".json", entry.path());

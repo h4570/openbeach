@@ -222,6 +222,28 @@ OBL_TEST_CASE("guest_set.load_refuses_transactionally")
     OBL_CHECK(SameGuests(*before, *out));
 }
 
+OBL_TEST_CASE("guest_set.optional_script_field")
+{
+    const obl::test::TempPath tmp("obl-guest-set-script");
+    ordered_json doc = DocumentOfTypes(2);
+    doc["types"][1]["script"] = "busker";
+    WriteSet(tmp.path, "l0", doc);
+
+    auto loaded = Zeroed();
+    std::string error;
+    OBL_REQUIRE(guest_set::LoadPack(tmp.path, "l0", *loaded, error));
+    OBL_REQUIRE(loaded->m_guests.size() == 2u);
+    OBL_CHECK(loaded->m_guests[0].m_Script.empty());
+    OBL_CHECK(loaded->m_guests[1].m_Script == "busker");
+
+    // Path separators in script names are refused.
+    ordered_json bad = DocumentOfTypes(1);
+    bad["types"][0]["script"] = "../evil";
+    WriteSet(tmp.path, "bad", bad);
+    OBL_CHECK(!guest_set::LoadPack(tmp.path, "bad", *loaded, error));
+    OBL_CHECK(error.find("script") != std::string::npos);
+}
+
 OBL_TEST_CASE("data.guest_set_load_matches_engine")
 {
     // Every installed guest file, converted and loaded by the loader, must hold the same guest records and name pools as the

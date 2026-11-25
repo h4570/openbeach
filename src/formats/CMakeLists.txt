@@ -12,6 +12,8 @@ add_library(obl_formats STATIC
     mod_pack.h
     map_pack.cpp
     map_pack.h
+    object_vocabulary.cpp
+    object_vocabulary.h
     palette_modifiers_pack.cpp
     palette_modifiers_pack.h
     save_document.cpp

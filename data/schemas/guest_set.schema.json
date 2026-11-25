@@ -29,6 +29,11 @@
           "sprite": {
             "$ref": "obl.common#/$defs/key"
           },
+          "script": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Optional object script stem (scripts/object/<script>.obs); omitted uses the scenario's GuestLogic."
+          },
           "default_sprite": {
             "type": "integer",
             "minimum": 0

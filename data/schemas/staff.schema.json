@@ -28,7 +28,12 @@
     "script": {
       "type": "string",
       "minLength": 1,
-      "description": "Object script that drives the staff member (scripts/object/<script>.obs)."
+      "description": "Staff profession class key (BUILDER, CLEANER, MECHANIC, LIFEGUARD, REP, SECURITYGUARD, SERVE)."
+    },
+    "object_script": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Optional object script stem (scripts/object/<object_script>.obs) overriding the profession's default script."
     },
     "menu": {
       "type": "string",

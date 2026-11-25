@@ -1,0 +1,40 @@
+# Worked example mod object script (l0_busker): a mod guest type with its own .obs script and mod states/messages
+# arrives, walks to a point, plays an animation while waiting on a mod message, and leaves. Verifies mid-script
+# save/reload, refusal without the mod, and identical world hash across two runs.
+# @env OBL_PACK=l0
+# @env OBL_MODS=l0_busker
+# @timeout 180
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario 1
+await gameplay
+step 50
+set-hour 13.99
+step 300
+expect guests-arrived-total 6
+object-find guest busker
+expect-last-range count 1 6
+log busker busker=$id
+# Advance into the middle of the busker script and save; two reloads advancing the same steps give the same world hash.
+step 400
+save-obl testlogs/l0_mod_object_script.obl.save
+seed 1
+load-obl-save testlogs/l0_mod_object_script.obl.save
+await world-loaded
+object-find guest busker
+expect-last-range count 1 6
+step 300
+world-hash
+seed 1
+load-obl-save testlogs/l0_mod_object_script.obl.save
+await world-loaded
+step 300
+world-hash expect-same
+# Continue from the reloaded mid-script state until all guests (including buskers) finish and leave.
+step 6000
+expect guests 0
+expect guests-departed-total 6
+claim-mods none
+expect-obl-save-refused testlogs/l0_mod_object_script.obl.save l0_busker
+claim-mods l0_busker
+quit

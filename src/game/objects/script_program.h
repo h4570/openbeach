@@ -45,11 +45,20 @@ public:
     using std::runtime_error::runtime_error;
 };
 
+// Options for Parse: `strict` rejects unknown state/message names in ChangeState, ExitState and EndMessage (used for
+// mod scripts; pack scripts keep the original fallback to 0/kNoMessage). `firstLine` is the 1-based line number of
+// `text[0]` (2 when a `#obl-script 1 object` header line was stripped before parsing).
+struct ParseOptions {
+    bool strict = false;
+    size_t firstLine = 1;
+};
+
 // The script load after the file is read: `text` = the decoded file (`size` bytes) followed by the terminator
 // byte the file reader appends (`size + 1` readable bytes). Appends the states to `script` (a constructed ScriptProgram,
 // normally with no state yet) and leaves its `m_text` null. Throws ParseError; the states parsed before the error stay in
 // `script` for Destroy.
-void Parse(script::ScriptProgram& script, const char* text, size_t size, const Vocabulary& vocabulary, const Memory& memory);
+void Parse(script::ScriptProgram& script, const char* text, size_t size, const Vocabulary& vocabulary, const Memory& memory,
+        ParseOptions options = {});
 
 // Destroys the states and their command lists: frees every command list, payload
 // and value of the states and clears them (and the state count), so a second call does nothing. Accepts what any parser of the

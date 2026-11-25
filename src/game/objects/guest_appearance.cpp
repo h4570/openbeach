@@ -7,6 +7,7 @@
 #include "game/objects/guest_appearance.h"
 #include "game/objects/object_moving.h"
 #include "game/objects/object_guest.h"
+#include "game/objects/script_program_exec.h"
 #include "game/tables/world_params_leaves.h"
 #include "game/ui/sprite.h"
 #include "game/tables/world_params_tables.h"
@@ -157,6 +158,7 @@ namespace obl::object {
 bool Guest::HasState(uint32_t state)
 {
     g_hasState.Count();
-    return guest_appearance::HasState(state);
+    if (guest_appearance::HasState(state)) return true;
+    return m_script && script_program::exec::FindState(*m_script, static_cast<int32_t>(state)) != nullptr;
 }
 } // namespace obl::object

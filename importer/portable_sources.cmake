@@ -8,4 +8,4 @@ list(APPEND OBL_IMPORTER_SOURCES
     ${REPO}/src/core/pack_path.cpp ${REPO}/src/core/os.cpp ${REPO}/src/core/sha256.cpp
     ${REPO}/src/formats/data_patch.cpp ${REPO}/src/formats/gui_content.cpp ${REPO}/src/formats/script_pack.cpp ${REPO}/src/formats/palette_modifiers_pack.cpp
     ${REPO}/src/formats/sprite_pack.cpp ${REPO}/src/formats/cell_state.cpp ${REPO}/src/formats/save_document.cpp ${REPO}/src/formats/save_records.cpp ${REPO}/src/formats/save_states.cpp ${REPO}/src/formats/schemas.cpp
-    ${REPO}/src/formats/map_pack.cpp)
+    ${REPO}/src/formats/map_pack.cpp ${REPO}/src/formats/object_vocabulary.cpp)

@@ -11,9 +11,15 @@ script or a change of the scope rule adds its line here.
 - `pack_path` resolves every logical path through the layers: the active mods from last to first, the legacy `mod/`, the pack. A
   file in a mod shadows the whole file below it.
 - Some files merge instead of shadowing: text tables (`text/<lang>.patch.json`, `text_load.cpp`), the catalog's record list
-  (`catalog/index.patch.json`, `catalog_load.cpp`), JSON data patches (`*.patch.json`, `data_patch.cpp`), and GUI layout
+  (`catalog/index.patch.json`, `catalog_load.cpp`), the object script vocabulary (`scripts/object_vocabulary.patch.json`,
+  `object_vocabulary.cpp`), JSON data patches (`*.patch.json`, `data_patch.cpp`), and GUI layout
   patches (`gui/<name>.patch.json` with `obl.gui_patch`, `gui_patch.cpp`). Each loader walks `pack_path::Layers` from the
-  bottom up, so a later mod wins.
+  bottom up, so a later mod wins (or for vocabulary names, ids are assigned after the pack's in load order and collisions are refused).
+- Object scripts (`scripts/object/*.obs`) can be attached per guest type (`"script"` in `obl.guest_set`) or per staff record
+  (`"object_script"` in `obl.staff`, keeping `"script"` for the profession class). `LoadScriptProgramVocabulary` merges active
+  mods' vocabulary patches and validates every mod `.obs` in strict mode at start-up (naming mod, file, and line on error);
+  `WorldScriptHost::FindOrLoad` loads custom object scripts on demand, and `LoadSaveOrigin` uses the same merged vocabulary so
+  saves write and read mod state names ([object-scripts.md](../../modding/reference/object-scripts.md)).
 - Building records (`obl.building` v2) accept optional `icon_sprite`, `icon_locked_sprite`, and `preview_sprite` keys so a
   mod building supplies its own build-panel icon and preview without replacing the pack's shared `UI3_bp_thumb` /
   `UI3_bp_preview` atlases (`gui_image_list.h`, `gui_variable_image.cpp`). `tools/make_sprite.py` converts PNG frames into

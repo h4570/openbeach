@@ -5,6 +5,7 @@
 #include "game/objects/guest_construction.h"
 #include "object_storage.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstring>
 #include <limits>
@@ -285,5 +286,15 @@ OBL_TEST_CASE("guest_construct.nights_remainder_is_unsigned")
     env.draws.assign(26, 7);
     Guest* guest = Build(def, env);
     OBL_CHECK_EQ(guest->m_NightsToStay, 7 + 5);
+    env.Delete(guest->m_name);
+}
+
+OBL_TEST_CASE("guest_construct.custom_script_uses_definition_script_name")
+{
+    FakeEnv env;
+    GuestDef def = MakeDef();
+    def.m_Script = "busker";
+    Guest* guest = Build(def, env);
+    OBL_CHECK(std::find(env.log.begin(), env.log.end(), "script busker") != env.log.end());
     env.Delete(guest->m_name);
 }
