@@ -6,14 +6,18 @@
 #include "game/objects/script_program_types.h"
 #include "game/objects/script_program.h"
 #include "game/objects/script_teardown.h"
+#include "temp_dir.h"
 
+#include <algorithm>
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <iterator>
 #include <memory>
+#include <regex>
 #include <set>
+#include <sstream>
 #include <string>
 
 using namespace obl::script_program;
@@ -657,4 +661,179 @@ OBL_TEST_CASE("script_program.lifecycle_operand_free_covers_all_owned_kinds")
     obl::script_program::ScriptOperand value{0x36, nullptr};
     obl::script_teardown::Free(value, env);
     OBL_CHECK(env.last == nullptr);
+}
+
+namespace {
+
+void WriteFileText(const std::filesystem::path& file, const std::string& text)
+{
+    std::filesystem::create_directories(file.parent_path());
+    std::ofstream(file, std::ios::binary) << text;
+}
+
+std::string MakeBaseVocabularyJson()
+{
+    std::string json = "{\"format\":\"obl.object_script_vocabulary\",\"version\":1,\"states\":[{\"id\":0,\"name\":\"STATE_NULL\"},"
+                       "{\"id\":10,\"name\":\"STATE_STARTUP\"}],\"messages\":[";
+    for (int i = 0; i < 100; ++i)
+        json += (i ? ",{\"id\":" : "{\"id\":") + std::to_string(i) + ",\"name\":\"MT_" + std::to_string(i) + "\"}";
+    json += "]}";
+    return json;
+}
+
+int LookupId(const std::vector<NamedId>& table, const std::string& name)
+{
+    for (const NamedId& row : table)
+        if (row.name == name) return row.id;
+    return -1;
+}
+
+std::set<std::string> BacktickIdentifiersInSection(const std::string& page, const std::string& heading)
+{
+    const size_t start = page.find(heading);
+    if (start == std::string::npos) return {};
+    const size_t bodyStart = page.find('\n', start);
+    if (bodyStart == std::string::npos) return {};
+    const size_t end = page.find("\n## ", bodyStart);
+    const std::string section = page.substr(bodyStart, end == std::string::npos ? std::string::npos : end - bodyStart);
+    std::set<std::string> names;
+    const std::regex pattern(R"(`([A-Za-z_][A-Za-z0-9_]*)`)");
+    for (std::sregex_iterator it(section.begin(), section.end(), pattern), finish; it != finish; ++it) names.insert((*it)[1].str());
+    return names;
+}
+
+} // namespace
+
+OBL_TEST_CASE("script_program.mod_vocabulary_assigns_ids_in_load_order_and_refuses_collisions")
+{
+    obl::test::TempPath game("mod-obj-vocab");
+    const std::filesystem::path pack = game.path / "packs" / "l0";
+    WriteFileText(pack / "scripts" / "object_vocabulary.json", MakeBaseVocabularyJson());
+    WriteFileText(game.path / "mods" / "mod_a" / "scripts" / "object_vocabulary.patch.json",
+            R"({"format":"obl.object_script_vocabulary_patch","version":1,"states":["STATE_A_SECOND","STATE_A_FIRST"],"messages":["MT_A_TWO","MT_A_ONE"]})");
+    WriteFileText(game.path / "mods" / "mod_b" / "scripts" / "object_vocabulary.patch.json",
+            R"({"format":"obl.object_script_vocabulary_patch","version":1,"states":["STATE_B_ONLY"],"messages":["MT_B_ONLY"]})");
+
+    Vocabulary ab;
+    std::string error;
+    const std::vector<std::string> orderAB = {"mod_a", "mod_b"};
+    OBL_REQUIRE(obl::object::LoadMergedVocabulary(pack, orderAB, ab, error));
+    // Pack max state id is 10, max message id is 99 (108 is reserved for kNoMessage/kDroppedMessageType, so mod messages start at 109).
+    OBL_CHECK_EQ(LookupId(ab.states, "STATE_A_FIRST"), 11);
+    OBL_CHECK_EQ(LookupId(ab.states, "STATE_A_SECOND"), 12);
+    OBL_CHECK_EQ(LookupId(ab.states, "STATE_B_ONLY"), 13);
+    OBL_CHECK_EQ(LookupId(ab.messages, "MT_A_ONE"), 109);
+    OBL_CHECK_EQ(LookupId(ab.messages, "MT_A_TWO"), 110);
+    OBL_CHECK_EQ(LookupId(ab.messages, "MT_B_ONLY"), 111);
+
+    // Reversing load order reverses which mod receives the earlier ids.
+    Vocabulary ba;
+    const std::vector<std::string> orderBA = {"mod_b", "mod_a"};
+    OBL_REQUIRE(obl::object::LoadMergedVocabulary(pack, orderBA, ba, error));
+    OBL_CHECK_EQ(LookupId(ba.states, "STATE_B_ONLY"), 11);
+    OBL_CHECK_EQ(LookupId(ba.states, "STATE_A_FIRST"), 12);
+    OBL_CHECK_EQ(LookupId(ba.states, "STATE_A_SECOND"), 13);
+    OBL_CHECK_EQ(LookupId(ba.messages, "MT_B_ONLY"), 109);
+    OBL_CHECK_EQ(LookupId(ba.messages, "MT_A_ONE"), 110);
+    OBL_CHECK_EQ(LookupId(ba.messages, "MT_A_TWO"), 111);
+
+    // Collision with the pack is refused naming both.
+    WriteFileText(game.path / "mods" / "mod_pack_clash" / "scripts" / "object_vocabulary.patch.json",
+            R"({"format":"obl.object_script_vocabulary_patch","version":1,"states":["STATE_STARTUP"]})");
+    const std::vector<std::string> packClash = {"mod_pack_clash"};
+    OBL_CHECK(!obl::object::LoadMergedVocabulary(pack, packClash, ab, error));
+    OBL_CHECK(error.find("mod_pack_clash") != std::string::npos);
+    OBL_CHECK(error.find("the pack") != std::string::npos);
+    OBL_CHECK(error.find("STATE_STARTUP") != std::string::npos);
+
+    // Collision between two mods is refused naming both mods.
+    WriteFileText(game.path / "mods" / "mod_c" / "scripts" / "object_vocabulary.patch.json",
+            R"({"format":"obl.object_script_vocabulary_patch","version":1,"messages":["MT_A_ONE"]})");
+    const std::vector<std::string> modClash = {"mod_a", "mod_c"};
+    OBL_CHECK(!obl::object::LoadMergedVocabulary(pack, modClash, ab, error));
+    OBL_CHECK(error.find("mod_a") != std::string::npos);
+    OBL_CHECK(error.find("mod_c") != std::string::npos);
+    OBL_CHECK(error.find("MT_A_ONE") != std::string::npos);
+}
+
+OBL_TEST_CASE("script_program.validate_mod_object_scripts_reports_mod_file_and_line")
+{
+    obl::test::TempPath game("mod-obj-validate");
+    const std::filesystem::path pack = game.path / "packs" / "l0";
+    WriteFileText(pack / "scripts" / "object_vocabulary.json", MakeBaseVocabularyJson());
+    WriteFileText(game.path / "mods" / "busker_mod" / "scripts" / "object_vocabulary.patch.json",
+            R"({"format":"obl.object_script_vocabulary_patch","version":1,"states":["STATE_BUSKER_WALK"],"messages":["MT_BUSKER_DONE"]})");
+
+    Vocabulary vocabulary;
+    std::string error;
+    const std::vector<std::string> mods = {"busker_mod"};
+    OBL_REQUIRE(obl::object::LoadMergedVocabulary(pack, mods, vocabulary, error));
+
+    const std::filesystem::path scriptFile = game.path / "mods" / "busker_mod" / "scripts" / "object" / "busker.obs";
+    WriteFileText(scriptFile,
+            "#obl-script 1 object\n"
+            "State STATE_BUSKER_WALK\n"
+            "\tOnEntry\n"
+            "\t\tMessage MT_BUSKER_DONE Me 0 0 Time 1;\n"
+            "\t\tChangeState STATE_STARTUP;\n"
+            "\tEnd\n"
+            "End\n");
+    OBL_CHECK(obl::object::ValidateModObjectScripts(pack, mods, vocabulary, error));
+
+    // Unknown command on line 4.
+    WriteFileText(scriptFile,
+            "#obl-script 1 object\n"
+            "State STATE_BUSKER_WALK\n"
+            "\tOnEntry\n"
+            "\t\tBogusCommand 1;\n"
+            "\tEnd\n"
+            "End\n");
+    OBL_CHECK(!obl::object::ValidateModObjectScripts(pack, mods, vocabulary, error));
+    OBL_CHECK(error.find("busker_mod") != std::string::npos);
+    OBL_CHECK(error.find("scripts/object/busker.obs") != std::string::npos);
+    OBL_CHECK(error.find("line 4") != std::string::npos);
+
+    // Unknown state in ChangeState on line 5 (strict mode for mod scripts).
+    WriteFileText(scriptFile,
+            "#obl-script 1 object\n"
+            "State STATE_BUSKER_WALK\n"
+            "\tOnEntry\n"
+            "\t\tPlayAnimation WalkAnimation;\n"
+            "\t\tChangeState STATE_MISSING;\n"
+            "\tEnd\n"
+            "End\n");
+    OBL_CHECK(!obl::object::ValidateModObjectScripts(pack, mods, vocabulary, error));
+    OBL_CHECK(error.find("busker_mod") != std::string::npos);
+    OBL_CHECK(error.find("scripts/object/busker.obs") != std::string::npos);
+    OBL_CHECK(error.find("line 5") != std::string::npos);
+    OBL_CHECK(error.find("STATE_MISSING") != std::string::npos);
+
+    // Unknown message in EndMessage on line 4.
+    WriteFileText(scriptFile,
+            "#obl-script 1 object\n"
+            "State STATE_BUSKER_WALK\n"
+            "\tOnEntry\n"
+            "\t\tPlayAnimation WalkAnimation EndMessage MT_MISSING;\n"
+            "\tEnd\n"
+            "End\n");
+    OBL_CHECK(!obl::object::ValidateModObjectScripts(pack, mods, vocabulary, error));
+    OBL_CHECK(error.find("busker_mod") != std::string::npos);
+    OBL_CHECK(error.find("line 4") != std::string::npos);
+    OBL_CHECK(error.find("MT_MISSING") != std::string::npos);
+}
+
+OBL_TEST_CASE("script_program.the_reference_page_lists_every_function_and_value")
+{
+    const std::filesystem::path docPath = std::filesystem::path(OBL_REPO_DIR) / "docs/modding/reference/object-scripts.md";
+    std::ifstream in(docPath, std::ios::binary);
+    OBL_REQUIRE(in.is_open());
+    const std::string page{std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>()};
+
+    std::set<std::string> expectedFunctions;
+    for (const NamedId& row : EngineFunctions()) expectedFunctions.insert(row.name);
+    OBL_CHECK(BacktickIdentifiersInSection(page, "## Functions") == expectedFunctions);
+
+    std::set<std::string> expectedValues;
+    for (const NamedId& row : EngineValues()) expectedValues.insert(row.name);
+    OBL_CHECK(BacktickIdentifiersInSection(page, "## Values") == expectedValues);
 }

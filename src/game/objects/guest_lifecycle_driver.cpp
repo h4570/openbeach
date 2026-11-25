@@ -77,7 +77,7 @@ public:
     float DayTime() { return GetWorld()->m_gameDayTime; }
     int32_t* Counts() { return GuestAttractionCounts().data(); }
     int32_t& Population() { return GuestPopulation(); }
-    void* ScriptLookup(const char* name) { return GetWorldScriptHost()->Find(name); }
+    void* ScriptLookup(const char* name) { return GetWorldScriptHost()->FindOrLoad(name); }
     uint32_t NameCount(int list) { return static_cast<uint32_t>(GetWorldParams()->m_nameCounts[list]); }
     const char* NameKey(int list, uint32_t index) { return GetWorldParams()->m_names[(list == 2 ? 0x118 : list == 1 ? 0x8c : 0) + index]; }
     void* New(size_t size) { return ::operator new(size); }

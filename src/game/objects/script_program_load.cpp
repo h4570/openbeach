@@ -62,28 +62,39 @@ ScriptProgram* Construct(ScriptProgram* objectScript)
     return objectScript;
 }
 
-bool LoadVocabulary(const std::filesystem::path& path)
+bool LoadVocabulary(const std::filesystem::path& packDirectory)
 {
-    data_patch::Input file(path);
-    if (!file) {
-        g_loadError = "file not found";
-        return false;
-    }
-    std::string json{std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()};
-    return ParseScriptIds(json, g_vocabulary, g_loadError);
+    return LoadMergedVocabulary(packDirectory, pack_path::ActiveMods(), g_vocabulary, g_loadError);
+}
+
+// Whether `resolved` sits inside an active mod directory rather than the pack (mod scripts are parsed strictly).
+bool IsFromMod(const std::filesystem::path& resolved)
+{
+    if (pack_path::ActiveMods().empty()) return false;
+    const std::filesystem::path modsRoot = (pack_path::GameDirectory(g_packDirectory) / "mods").lexically_normal();
+    const std::filesystem::path normal = resolved.lexically_normal();
+    const std::string rootText = modsRoot.generic_string();
+    const std::string fileText = normal.generic_string();
+    return fileText.size() > rootText.size() && fileText.compare(0, rootText.size(), rootText) == 0 && fileText[rootText.size()] == '/';
 }
 
 // Parses the converted script of `path` (`data/script/object/<name>.lgc`, read from the pack, script_pack.h) into `script`; false
 // and `error` when the script is unusable (a fatal error). The parser reads size + 1 bytes: the text and the `.` terminator.
 bool TryParse(ScriptProgram& script, const char* path, const os::Memory& memory, std::string& error)
 {
+    const std::string relative = script_pack::PackPath(path, script_pack::Kind::Object);
+    if (relative.empty()) {
+        error = std::string(path) + ": not a script path of this kind";
+        return false;
+    }
+    const std::filesystem::path resolved = pack_path::Resolve(g_packDirectory, relative);
     std::string text;
-    if (!script_pack::ReadPackScript(g_packDirectory, path, script_pack::Kind::Object, text, error)) return false;
+    if (!script_pack::ReadScript(resolved, script_pack::Kind::Object, text, error)) return false;
     text.push_back(static_cast<char>(file_io::kTerminator));
     try {
-        os::Parse(script, text.data(), text.size() - 1, g_vocabulary, memory);
+        os::Parse(script, text.data(), text.size() - 1, g_vocabulary, memory, {IsFromMod(resolved), 2});
     } catch (const os::ParseError& failure) {
-        error = failure.what();
+        error = resolved.generic_string() + ": " + failure.what();
         return false;
     }
     return true;
@@ -117,13 +128,23 @@ void ScriptProgramLoad(ScriptProgram& script, const char* path)
 bool LoadScriptProgramVocabulary(const Text16& gameDirectory)
 {
     g_packDirectory = WidePath(gameDirectory) / pack_path::Selected();
-    g_vocabularyOk = LoadVocabulary(pack_path::Resolve(g_packDirectory, "scripts/object_vocabulary.json"));
-    if (g_vocabularyOk)
+    g_vocabularyOk = LoadVocabulary(g_packDirectory);
+    if (g_vocabularyOk) {
         OBL_LOG("object script: %u states, %u messages, %u functions, %u values loaded", static_cast<unsigned>(g_vocabulary.states.size()),
                 static_cast<unsigned>(g_vocabulary.messages.size()), static_cast<unsigned>(g_vocabulary.functions.size()),
                 static_cast<unsigned>(g_vocabulary.values.size()));
-    else
+        std::string modError;
+        if (!ValidateModObjectScripts(g_packDirectory, pack_path::ActiveMods(), g_vocabulary, modError)) {
+            OBL_LOG("FatalError: object script: %s", modError.c_str());
+            return false;
+        }
+    } else {
+        if (!pack_path::ActiveMods().empty()) {
+            OBL_LOG("FatalError: object script vocabulary: %s", g_loadError.c_str());
+            return false;
+        }
         OBL_LOG("object script: scripts/object_vocabulary.json not usable (%s) - the script parser cannot run", g_loadError.c_str());
+    }
     return true;
 }
 

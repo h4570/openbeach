@@ -1,0 +1,61 @@
+#obl-script 1 object
+// Worked example mod guest script: walks to a point on the beach, plays an animation while waiting on a mod message, then leaves.
+
+State STATE_NULL
+	OnUpdate
+	End
+	OnEntry
+		Set WalkAnimation "D_WALK_NORMAL";
+		Set StandAnimation "D_STAND_NORMAL";
+		Set WalkSpeed 60;
+		ChangeState STATE_STARTUP;
+	End
+End
+
+State STATE_STARTUP
+	OnUpdate
+	End
+	OnEntry
+		ChangeState STATE_BUSKER_WALK;
+	End
+	OnExit
+		PlayAnimation WalkAnimation;
+	End
+End
+
+State STATE_BUSKER_WALK
+	OnEntry
+		PlayAnimation WalkAnimation;
+		Message MT_MOVE2POINT Me 62 62;
+	End
+	Message MT_MOVEIMHERE
+		OnReceipt
+			ChangeState STATE_BUSKER_PERFORM;
+		End
+	End
+	Message MT_PATHBLOCKED
+		OnReceipt
+			Message MT_MOVE2POINT Me 62 62;
+		End
+	End
+End
+
+State STATE_BUSKER_PERFORM
+	OnEntry
+		PlayAnimation StandAnimation;
+		Message MT_BUSKER_DONE Me 0 0 Time 4;
+	End
+	Message MT_BUSKER_DONE
+		OnReceipt
+			ChangeState STATE_GUEST_LEAVING_WORLD;
+		End
+	End
+End
+
+State STATE_GUEST_LEAVING_WORLD
+	// Leaving in STATE_GUEST_LEAVING_WORLD counts the guest's departure in the ferry totals.
+	OnEntry
+		Function ClearMyDelayedMsgs;
+		Message MT_KILLOBJECT -2 Me 0;
+	End
+End

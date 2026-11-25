@@ -136,7 +136,8 @@ template<class Env> Guest* Construct(Guest& guest, const void* params, Env& env)
     // Population statistics (Destruct undoes them with other limits, see ConstructionSlot).
     ++env.Population();
     ++env.Counts()[ConstructionSlot(def->m_Attractive, def->m_Gender)];
-    guest.m_script = static_cast<script::ScriptProgram*>(env.ScriptLookup("GuestLogic"));
+    const char* scriptName = def->m_Script.empty() ? "GuestLogic" : def->m_Script.c_str();
+    guest.m_script = static_cast<script::ScriptProgram*>(env.ScriptLookup(scriptName));
 
     // Desires start at zero but the sentinel of SunTanLotion (docs/architecture/objects.md).
     for (float& desire : guest.m_desires) desire = 0.0f;

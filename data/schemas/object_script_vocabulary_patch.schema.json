@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "obl.object_script_vocabulary_patch",
+  "title": "Object script vocabulary patch (scripts/object_vocabulary.patch.json)",
+  "description": "State and message names a world mod adds to the object script vocabulary; ids are assigned after the pack's in mod load order.",
+  "type": "object",
+  "properties": {
+    "format": {
+      "const": "obl.object_script_vocabulary_patch"
+    },
+    "version": {
+      "const": 1
+    },
+    "states": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^STATE_[A-Za-z0-9_]+$"
+      }
+    },
+    "messages": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^MT_[A-Za-z0-9_]+$"
+      }
+    }
+  },
+  "required": [
+    "format",
+    "version"
+  ],
+  "additionalProperties": false
+}

@@ -280,6 +280,22 @@ OBL_TEST_CASE("mod_pack.only_a_presentation_mod_declares_settings")
     OBL_CHECK(Accepted(game.path, "l0", "world_plain", error));
 }
 
+OBL_TEST_CASE("mod_pack.presentation_mod_cannot_ship_object_scripts")
+{
+    test::TempPath game("mod-object-script-scope");
+    std::string error;
+    WriteManifest(game.path, "pres_obs", "\"pack\":\"l0\",\"scope\":\"presentation\"");
+    Write(game.path / "mods" / "pres_obs" / "scripts" / "object" / "busker.obs", "#obl-script 1 object\n");
+    OBL_CHECK(!Accepted(game.path, "l0", "pres_obs", error));
+    OBL_CHECK(error.find("scripts/object/busker.obs") != std::string::npos);
+
+    WriteManifest(game.path, "pres_vocab", "\"pack\":\"l0\",\"scope\":\"presentation\"");
+    Write(game.path / "mods" / "pres_vocab" / "scripts" / "object_vocabulary.patch.json",
+            R"({"format":"obl.object_script_vocabulary_patch","version":1,"states":["STATE_X"]})");
+    OBL_CHECK(!Accepted(game.path, "l0", "pres_vocab", error));
+    OBL_CHECK(error.find("scripts/object_vocabulary.patch.json") != std::string::npos);
+}
+
 OBL_TEST_CASE("mod_pack.settings_that_cannot_be_kept_in_an_ini_file_are_refused")
 {
     const auto refused = [](const std::string& list, const std::string& part) {

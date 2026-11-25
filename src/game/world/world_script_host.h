@@ -67,6 +67,8 @@ public:
     uint32_t Load(const char* path);
     void AddScript(const char* name, const char* path);
     script::ScriptProgram* Find(const char* name) const;
+    // Returns the loaded script named `name`, or loads `data/script/object/<name>.lgc` on demand and caches it.
+    script::ScriptProgram* FindOrLoad(const char* name);
 
     // What World::m_worldScript points at (null before the first LoadScript).
     world_script::WorldScript* WorldScript() const { return m_worldScript.get(); }

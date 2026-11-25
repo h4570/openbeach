@@ -72,4 +72,12 @@ script::ScriptProgram* WorldScriptHost::Find(const char* name) const
     g_findCalls.Count();
     return FindScriptProgram(name);
 }
+
+script::ScriptProgram* WorldScriptHost::FindOrLoad(const char* name)
+{
+    if (script::ScriptProgram* found = Find(name)) return found;
+    const std::string path = std::string("data/script/object/") + name + ".lgc";
+    AddScript(name, path.c_str());
+    return FindScriptProgram(name);
+}
 } // namespace obl::world_script_host

@@ -273,6 +273,13 @@ void Reader::Populate()
         String(r.m_Name, d, "/name");
         String(r.m_Sprite, d, "/sprite");
         String(r.m_ObjectType, d, "/script");
+        if (d.contains("object_script")) {
+            String(r.m_ObjectScript, d, "/object_script");
+            for (char c : r.m_ObjectScript)
+                if (!((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_' || c == '-'))
+                    throw std::runtime_error(
+                            "staff object_script \"" + r.m_ObjectScript + "\": must be a script name without path separators");
+        }
         String(r.m_Menu, d, "/menu");
         r.m_female = d.at("gender") == "f";
         Number(r.m_Wage, d.at("wage"));

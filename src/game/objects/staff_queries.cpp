@@ -8,6 +8,7 @@
 #include "game/objects/object_guest.h"
 #include "game/objects/object_moving.h"
 #include "game/objects/object_staff.h"
+#include "game/objects/script_program_exec.h"
 #include "game/tables/world_params_leaves.h"
 #include "game/objects/staff_lookup.h"
 #include "core/call_counter.h"
@@ -92,11 +93,13 @@ void ReduceSelectionToHover(Staff* employee)
 }
 
 // A pure function of the state number (the object is not read).
-template<int I> bool HasState(Staff*, uint32_t state)
+template<int I> bool HasState(Staff* staff, uint32_t state)
 {
     StateSlot& slot = g_state[I];
     slot.counter.Count();
-    return staff::HasState(slot.kind, state);
+    if (staff::HasState(slot.kind, state)) return true;
+    const script::ScriptProgram* program = staff ? StaffScript(*staff) : nullptr;
+    return program && script_program::exec::FindState(*program, static_cast<int32_t>(state)) != nullptr;
 }
 
 } // namespace staff_facade

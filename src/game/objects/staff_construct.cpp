@@ -83,7 +83,7 @@ public:
     uint32_t GameDay() { return static_cast<uint32_t>(GetWorld()->m_gameDay); }
     uint32_t DayTimeBits() { return BitsOf(GetWorld()->m_gameDayTime); }
     int Rand() { return game::Rand(); }
-    void* ScriptLookup(const char* name) { return GetWorldScriptHost()->Find(name); }
+    void* ScriptLookup(const char* name) { return GetWorldScriptHost()->FindOrLoad(name); }
     void* CreateSprite(const char* name) { return (static_cast<ui::SpriteBank*>(ui::GetSpriteBank()))->CreateObservedInstance(name); }
     void CopyKeyline(void* sprite) { static_cast<SpriteInstance*>(sprite)->m_keyline = GetObjectManager()->m_globalKeyline; }
     void ReleaseSprite(void* sprite) { (static_cast<ui::SpriteBank*>(ui::GetSpriteBank()))->ReleaseInstance(sprite); }

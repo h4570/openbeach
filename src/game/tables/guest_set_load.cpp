@@ -90,6 +90,13 @@ void Guest(GuestDef& d, int index, const json& type)
     Text(d.m_key, type["key"].get<std::string>(), kGuestKeyCapacity, "guest key");
     Text(d.m_Name, type["name"].get<std::string>(), kGuestNameCapacity, "guest name");
     Text(d.m_Sprite, type["sprite"].get<std::string>(), kGuestSpriteCapacity, "guest sprite");
+    if (type.contains("script")) {
+        const std::string script = type["script"].get<std::string>();
+        for (char c : script)
+            if (!((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_' || c == '-'))
+                throw std::runtime_error("guest script \"" + script + "\": must be a script name without path separators");
+        Text(d.m_Script, script, kGuestKeyCapacity, "guest script");
+    }
     d.m_Gender = type["gender"] == "f" ? 1 : 0;
     d.m_DefSprite = type.value("default_sprite", 0);
     d.m_Colour = static_cast<uint8_t>(type.value("colour", 0));

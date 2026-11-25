@@ -92,7 +92,8 @@ struct StaffDef {
     int m_female{}; // `F` = 1, `M` = 0
     int m_Wage{}; // initial staff wage
     std::string m_Sprite;
-    std::string m_ObjectType; // the type string of the staff object (script name)
+    std::string m_ObjectType; // the type string of the staff object (profession class key)
+    std::string m_ObjectScript; // optional scripts/object/<name>.obs stem overriding the profession's default script
     std::string m_Menu;
     int m_RecommendedWage{}; // base salary expectation; the severance of Staff::Sack is ten times this
     float m_scale{};
@@ -113,6 +114,7 @@ struct GuestDef {
     std::string m_key;
     std::string m_Name;
     std::string m_Sprite;
+    std::string m_Script; // optional scripts/object/<name>.obs stem; empty uses GuestLogic
     int m_Gender{}; // 0 = M, 1 = F
     float m_Money{};
     float m_SwimEnergy{};
