@@ -23,7 +23,7 @@ Mods add optional features on top: install them from a zip file or a catalog on 
   <img src="https://img.shields.io/badge/Browser-supported-0078D4?logo=googlechrome&logoColor=white" alt="Browser">
   <img src="https://img.shields.io/badge/macOS-experimental-FF7A59?logo=apple&logoColor=white" alt="macOS: experimental">
   <img src="https://img.shields.io/badge/Android-experimental-FF7A59?logo=android&logoColor=white" alt="Android: experimental">
-  <a href="docs/modding/index.md"><img src="https://img.shields.io/badge/Mods-experimental-FF7A59?logo=codeigniter&logoColor=white" alt="Mods: experimental"></a>
+  <a href="docs/modding/index.md"><img src="https://img.shields.io/badge/Mods-experimental-FF7A59?logo=lua&logoColor=white" alt="Mods: experimental"></a>
 </p>
 
 <p align="center">
