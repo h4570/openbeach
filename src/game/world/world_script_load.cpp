@@ -10,10 +10,12 @@
 #include "core/file_io.h"
 #include "core/log.h"
 #include "formats/data_patch.h"
+#include "formats/mod_pack.h"
 #include "formats/script_pack.h"
 #include "core/call_counter.h"
 #include "core/wide_path.h"
 
+#include <algorithm>
 #include <array>
 #include <atomic>
 #include <filesystem>
@@ -129,5 +131,85 @@ bool LoadWorldScriptVocabulary(const Text16& gameDirectory)
     g_vocabularyOk = ParseWorldScriptIds(json, g_vocabulary, g_error);
     OBL_LOG("world script parser: vocabulary %s (%s)", g_vocabularyOk ? "loaded" : "unavailable", g_error.c_str());
     return true;
+}
+
+std::vector<ModWorldScriptFile> DiscoverModWorldScripts()
+{
+    std::vector<ModWorldScriptFile> result;
+    for (const mod_pack::ActiveMod& mod : mod_pack::Active()) {
+        if (mod.manifest.scope != mod_pack::Scope::World) continue;
+        const std::filesystem::path dir = mod.directory / "scripts" / "world";
+        std::error_code ec;
+        if (!std::filesystem::is_directory(dir, ec)) continue;
+        std::vector<std::pair<std::string, std::filesystem::path>> files;
+        for (std::filesystem::directory_iterator it(dir, ec), end; !ec && it != end; it.increment(ec)) {
+            if (!it->is_regular_file(ec)) continue;
+            if (it->path().extension() != ".wsc") continue;
+            files.emplace_back(it->path().filename().string(), it->path());
+        }
+        std::sort(files.begin(), files.end(), [](const auto& a, const auto& b) { return a.first < b.first; });
+        for (auto& [name, path] : files) result.push_back({mod.manifest.id, std::move(name), std::move(path)});
+    }
+    return result;
+}
+
+namespace {
+bool ParseAndValidateModScript(WorldScript& script, const ModWorldScriptFile& file, const ws::Vocabulary& vocabulary, ws::BeerId beerId,
+        bool validateModifiers, std::string& error)
+{
+    std::string text;
+    if (!script_pack::ReadScript(file.path, script_pack::Kind::World, text, error)) {
+        error = "mod \"" + file.modId + "\" (scripts/world/" + file.scriptName + "): " + error;
+        return false;
+    }
+    const uint32_t size = static_cast<uint32_t>(text.size());
+    text.push_back(static_cast<char>(file_io::kTerminator));
+    try {
+        ws::Parse(script, text.data(), size, vocabulary, kMemory, beerId, nullptr, validateModifiers);
+    } catch (const std::exception& failure) {
+        error = "mod \"" + file.modId + "\" (scripts/world/" + file.scriptName + "): " + failure.what();
+        return false;
+    }
+    std::string reason;
+    if (!ws::ValidateModWorldScript(script, reason)) {
+        error = "mod \"" + file.modId + "\" (scripts/world/" + file.scriptName + "): " + reason;
+        return false;
+    }
+    return true;
+}
+
+int StartupBeerId(const char*)
+{
+    return 0;
+}
+} // namespace
+
+bool CheckModWorldScripts()
+{
+    const std::vector<ModWorldScriptFile> files = DiscoverModWorldScripts();
+    if (files.empty()) return true;
+    std::string error;
+    if (!g_vocabularyOk) error = "Cannot load scripts/world_vocabulary.json (" + g_error + ")";
+    for (size_t i = 0; error.empty() && i < files.size(); ++i) {
+        WorldScript script{};
+        ws::Construct(script);
+        ParseAndValidateModScript(script, files[i], g_vocabulary, &StartupBeerId, false, error);
+        ws::Destroy(script, kMemory);
+    }
+    if (error.empty()) return true;
+    OBL_LOG("FatalError: %s", error.c_str());
+    return false;
+}
+
+bool LoadModWorldScript(world_script::WorldScript& script, const ModWorldScriptFile& file, std::string& error)
+{
+    if (!g_vocabularyOk) {
+        error = "Cannot load scripts/world_vocabulary.json (" + g_error + ")";
+        return false;
+    }
+    auto vocabulary = g_vocabulary;
+    for (const auto& beer : game::GetWorldParams()->m_beers) vocabulary.beers.push_back({beer.m_id, beer.m_key});
+    AddCatalogModifiers(*game::GetWorldParams(), vocabulary);
+    return ParseAndValidateModScript(script, file, vocabulary, &BeerId, true, error);
 }
 } // namespace obl::world

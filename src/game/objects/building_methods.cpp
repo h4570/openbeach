@@ -45,6 +45,7 @@
 #include "game/repair/repair_manager.h"
 #include "game/ui/text_table.h"
 #include "game/world/world_params.h"
+#include "game/world/world_script.h"
 #include "game/objects/object_manager_queries.h"
 #include "game/game/diagnostics.h"
 
@@ -1046,7 +1047,9 @@ char RunReceiveMessage(Building* building, Message* message)
     case messages::MT_BUILDERS_LEFT_BASEPLATE: {
         g_receive.Count();
         LifecycleEnv env(*building);
-        (BuildersLeftBaseplate(env, *building, *message) ? g_receiveBuilt : g_receiveRemoved).Count();
+        const bool built = BuildersLeftBaseplate(env, *building, *message);
+        (built ? g_receiveBuilt : g_receiveRemoved).Count();
+        if (built) world::DispatchModWorldEvent(*game::GetWorld(), world_script::WorldEvent::BuildingFinished);
         return 0; // ditto
     }
     default:

@@ -2,6 +2,8 @@
 
 #include "core/ascii_case.h"
 #include "game/map/path_tile_script.h"
+#include "game/world/world_script_api.h"
+#include "game/world/world_script_machine.h"
 
 #include <algorithm>
 #include <cstdlib>
@@ -35,14 +37,15 @@ bool TextData(int kind)
 class Parser {
 public:
     Parser(WorldScript& script, const char* text, size_t size, const Vocabulary& vocabulary, const Memory& memory, BeerId beer,
-            ParseDetails* details)
+            ParseDetails* details, bool validateModifiers)
         : m_script(script),
           m_before(script),
           m_text(text, size),
           m_vocabulary(vocabulary),
           m_memory(memory),
           m_beer(beer),
-          m_outDetails(details)
+          m_outDetails(details),
+          m_validateModifiers(validateModifiers)
     {}
     ~Parser()
     {
@@ -74,9 +77,11 @@ private:
     BeerId m_beer;
     ParseDetails* m_outDetails;
     ParseDetails m_details;
+    bool m_validateModifiers = true;
     size_t m_pos = 0;
     bool m_complete = false;
     ScriptIfData* m_openIf = nullptr;
+    size_t m_parsedEvent = 0;
     std::vector<void*> m_blocks;
     std::vector<std::pair<ScriptCommand**, ScriptCommand*>> m_links;
 
@@ -192,6 +197,10 @@ private:
                                                   : state.m_handlers[state.m_NumHandlers].m_onSend,
                     node);
             break;
+        case 5:
+            if (m_parsedEvent >= kWorldEventCount) Fail("world event out of range");
+            AppendList(m_script.m_onEvent[m_script.m_currentState][m_parsedEvent], node);
+            break;
         default: Fail("command added to a list that does not exist");
         }
     }
@@ -220,6 +229,8 @@ private:
                 Commands(2);
             else if (token == "Message")
                 MessageBlock();
+            else if (token == "OnEvent")
+                EventBlock();
             else
                 Fail("unrecognized command in a world script state: " + token);
         }
@@ -243,6 +254,14 @@ private:
         }
         // This increment indexes with NumStates, not CurrentState.
         ++m_script.m_states[m_script.m_numStates].m_NumHandlers;
+    }
+    void EventBlock()
+    {
+        std::string name = Read();
+        const auto event = FindWorldEvent(name);
+        if (!event) Fail("unrecognized world event in OnEvent: " + name);
+        m_parsedEvent = static_cast<size_t>(*event);
+        Commands(5);
     }
     void If()
     {
@@ -558,8 +577,12 @@ private:
                 mask |= 2;
             } else {
                 const int slot = Find(m_vocabulary.modifiers, token, false);
-                if (slot < 0) Fail("unrecognized weather option: " + token);
-                data->m_modifiers[slot] = Float();
+                if (slot < 0) {
+                    if (m_validateModifiers) Fail("unrecognized weather option: " + token);
+                    (void)Float();
+                } else {
+                    data->m_modifiers[slot] = Float();
+                }
             }
         }
         if (m_outDetails) m_details.optionalFields[data] = mask;
@@ -974,16 +997,20 @@ std::string Compare(const WorldScript& a, const WorldScript& b, ListStats* stats
             if (auto diff = DiffList(h.m_onSend, k.m_onSend, path + "/send " + std::to_string(j), stats, details); !diff.empty())
                 return diff;
         }
+        for (size_t e = 0; e < kWorldEventCount; ++e)
+            if (auto diff = DiffList(a.m_onEvent[i][e], b.m_onEvent[i][e], path + "/event " + std::to_string(e), stats, details);
+                    !diff.empty())
+                return diff;
     }
     return {};
 }
 } // namespace
 
 void Parse(world_script::WorldScript& script, const char* text, size_t size, const Vocabulary& vocabulary, const Memory& memory,
-        BeerId beerId, ParseDetails* details)
+        BeerId beerId, ParseDetails* details, bool validateModifiers)
 {
     if (details) *details = {};
-    Parser parser(script, text, size, vocabulary, memory, beerId, details);
+    Parser parser(script, text, size, vocabulary, memory, beerId, details, validateModifiers);
     parser.Load();
 }
 void Destroy(world_script::WorldScript& script, const Memory& memory)
@@ -997,6 +1024,7 @@ void Destroy(world_script::WorldScript& script, const Memory& memory)
             FreeList(handler.m_onReceipt, memory);
             FreeList(handler.m_onSend, memory);
         }
+        for (auto& eventList : script.m_onEvent[i]) FreeList(eventList, memory);
         state.m_NumHandlers = 0;
         script.m_stateNames[i].clear();
     }
@@ -1006,7 +1034,8 @@ void Destroy(world_script::WorldScript& script, const Memory& memory)
 }
 void Construct(world_script::WorldScript& script)
 {
-    for (auto& state : script.m_states) {
+    for (int i = 0; i < world_script::kMaxWorldScriptStates; ++i) {
+        auto& state = script.m_states[i];
         state.m_stateId = 0x0fffffff;
         for (auto& handler : state.m_handlers) {
             handler.m_messageId = 0x0fffffff;
@@ -1014,6 +1043,7 @@ void Construct(world_script::WorldScript& script)
         }
         state.m_NumHandlers = 0;
         state.m_onEntry = state.m_onExit = state.m_onUpdate = nullptr;
+        for (auto& eventList : script.m_onEvent[i]) eventList = nullptr;
     }
     script.m_openCommand = nullptr;
     script.m_numStates = 0;
@@ -1031,7 +1061,56 @@ void Destruct(world_script::WorldScript& script, const Memory& memory)
             ReleaseNodes(state.m_handlers[j].m_onReceipt, memory);
             ReleaseNodes(state.m_handlers[j].m_onSend, memory);
         }
+        for (size_t e = 0; e < kWorldEventCount; ++e)
+            if (script.m_onEvent[i][e]) ReleaseNodes(script.m_onEvent[i][e], memory);
     }
+}
+bool ValidateModWorldScript(const world_script::WorldScript& script, std::string& error)
+{
+    if (script.m_numStates == 0 || script::FindStateIndex(script.m_stateNames, script.m_numStates, script::kStartupState) < 0) {
+        error = std::string("missing required ") + script::kStartupState + " state";
+        return false;
+    }
+    auto checkList = [&](auto&& recurse, const ScriptCommand* list) -> bool {
+        for (const ScriptCommand* node = list; node; node = node->m_next) {
+            if (!node->m_data) continue;
+            if (node->m_opcode == kScriptOpFunction) {
+                const auto& data = *static_cast<const ScriptFunctionData*>(node->m_data);
+                if (IsRefusedModFunction(data.m_function)) {
+                    std::string name = std::to_string(data.m_function);
+                    for (const NamedId& row : EngineFunctions())
+                        if (row.id == data.m_function) {
+                            name = row.name;
+                            break;
+                        }
+                    error = "mod world scripts may not call Function " + name + " (the scenario owns winning and losing)";
+                    return false;
+                }
+            } else if (node->m_opcode == kScriptOpShowMenu) {
+                const auto& data = *static_cast<const WorldScriptTwoTextsData*>(node->m_data);
+                if (data.m_first && IsRefusedModMenu(data.m_first)) {
+                    error = std::string("mod world scripts may not call ShowMenu ") + data.m_first +
+                            " (the scenario owns winning and losing)";
+                    return false;
+                }
+            } else if (node->m_opcode == kScriptOpIf) {
+                const auto& data = *static_cast<const ScriptIfData*>(node->m_data);
+                if (!recurse(recurse, data.m_true) || !recurse(recurse, data.m_false)) return false;
+            }
+        }
+        return true;
+    };
+    for (uint32_t i = 0; i < script.m_numStates; ++i) {
+        const auto& state = script.m_states[i];
+        if (!checkList(checkList, state.m_onEntry) || !checkList(checkList, state.m_onExit) || !checkList(checkList, state.m_onUpdate))
+            return false;
+        for (uint32_t j = 0; j < state.m_NumHandlers; ++j)
+            if (!checkList(checkList, state.m_handlers[j].m_onReceipt) || !checkList(checkList, state.m_handlers[j].m_onSend)) return false;
+        for (size_t e = 0; e < kWorldEventCount; ++e)
+            if (!checkList(checkList, script.m_onEvent[i][e])) return false;
+    }
+    error.clear();
+    return true;
 }
 std::string Diff(const world_script::WorldScript& a, const world_script::WorldScript& b, const ParseDetails* bDetails)
 {
@@ -1060,6 +1139,7 @@ ListStats Count(const world_script::WorldScript& script)
             visit(visit, state.m_handlers[j].m_onReceipt);
             visit(visit, state.m_handlers[j].m_onSend);
         }
+        for (size_t e = 0; e < kWorldEventCount; ++e) visit(visit, script.m_onEvent[i][e]);
     }
     return stats;
 }

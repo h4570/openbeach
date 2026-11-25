@@ -14,6 +14,7 @@
 #include "game/ui/gui_radar.h"
 #include "game/game/game_api.h"
 #include "game/world/world_queries_api.h"
+#include "game/world/world_script.h"
 #include "game/game/settings_store.h"
 #include "game/objects/object_registry_api.h"
 #include "game/objects/object_manager_state.h"
@@ -453,6 +454,7 @@ void ArrivalOfGuests(WorldTestState* state, Arrival& arrival)
         messages::message_facade::PostDelayed(messages::message_facade::Current(), &leave, static_cast<float>(delay + delay));
         vehicle->m_Guests[vehicle->m_currCap] = static_cast<int32_t>(guest->m_id);
         ++vehicle->m_currCap;
+        world::DispatchModWorldEvent(*world, world_script::WorldEvent::GuestArrived);
     }
     Message depart = MakeMessage(static_cast<int>(vehicle->m_id), 3, 0x47);
     Post(depart);

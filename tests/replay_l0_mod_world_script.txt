@@ -1,0 +1,8 @@
+# The replay of l0_world_script.replay (docs/modding/reference/world-scripts.md), recorded with the world mod
+# l0_world_script across the first midnight: played back with the mod, every checkpoint matches.
+# @env OBL_PACK=l0
+# @env OBL_MODS=l0_world_script
+# @timeout 240
+replay replays/l0_world_script.replay
+expect-last mismatches 0
+quit

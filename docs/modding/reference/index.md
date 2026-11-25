@@ -13,3 +13,4 @@ the DSL commands and the actions.
 | [actions.md](actions.md) | Named game actions with their default keys, how a mod declares, moves or takes over an action, the player's `[Keys]` section, and key conflicts. |
 | [object-scripts.md](object-scripts.md) | Object scripts (`scripts/object/*.obs`), `scripts/object_vocabulary.patch.json`, per-type guest/staff script selection, and the built-in DSL functions and values. |
 | [scripting.md](scripting.md) | Presentation scripts: `scripts/presentation/*.lua`, the `presentation` scope, the lifecycle, the sandbox and its limits, the `obl` API, the commands open to scripts, the per-mod store, the API version and the interpreter. |
+| [world-scripts.md](world-scripts.md) | World mod scripts: `scripts/world/*.wsc`, load order beside the scenario script, per-script state and variable budgets, `OnEvent` hooks, refused winning/losing calls, and save/replay behavior. |

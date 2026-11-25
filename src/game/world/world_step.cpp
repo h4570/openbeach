@@ -63,7 +63,7 @@ public:
     bool KeyHeld(int code) { return ui::InputKeyHeld(*game::GetContext().view.m_input, code); }
     bool KeyPressed(int code) { return ui::InputKeyPressed(*game::GetContext().view.m_input, code); }
     void UpdateMapCamera() { m_world->m_mapView->UpdateCamera(); }
-    void RunScriptUpdateList() { WorldScriptRunOnUpdate(*m_world->m_worldScript); }
+    void RunScriptUpdateList() { RunWorldScriptsOnUpdate(*m_world); }
     void SetFullViewport()
     {
         const ui::Renderer* renderer = game::GetRenderer();

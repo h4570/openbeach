@@ -211,7 +211,7 @@ int obl::InitGame(const Text16& gameDir)
             object::RegisterPerformerTestDrivers() && ui::RegisterFurniture() && world::RegisterWorldUpdateDriver() &&
             world::RegisterWorldMessageDrivers() && weather::RegisterTestDrivers() && object::RegisterBuildingThoughtDriver() &&
             object::RegisterGuestScriptDelegates() && object::LoadScriptProgramVocabulary(gameDir) &&
-            world::LoadWorldScriptVocabulary(gameDir) && feedback::LoadFeedbackVocabulary(gameDir) &&
+            world::LoadWorldScriptVocabulary(gameDir) && world::CheckModWorldScripts() && feedback::LoadFeedbackVocabulary(gameDir) &&
             object::RegisterCommodityProviderDrivers() && disaster::RegisterEventTestDrivers() && ferry::RegisterFerryTestDriver() &&
             repair::RegisterRepairTestDrivers() && cleaning::RegisterCleaningTestDriver() && feedback::RegisterFeedbackTestDriver() &&
             world::RegisterWorldControlDrivers() && game::game_api::RegisterTestDrivers() && gui::RegisterToolModeDrivers() &&

@@ -23,6 +23,8 @@ constexpr int kStateChange = 3; // MT_STATECHANGE
 //   void RunOnExitList(WorldScript&)                     runs the exit handlers of the current state
 //   void EnterState(WorldScript&, uint32_t state)        enters a state of the script
 //   void DispatchMessage(WorldScript&, const Message&)   hands the message to the script's handlers (the record goes by value; its result is not looked at)
+//   bool ChangeModScriptState(uint32_t mod, uint32_t)    optional: leaves and enters a state of mod world script `mod`; false when there is none
+//   void DispatchModMessage(const Message&)              optional: hands the message to each mod world script after the scenario's
 // A non-null `name` is a creation request. Otherwise by `type`: 0 marks the object `data` for removal (world::ProcessDeletedObjects does the rest;
 // the write through GetObject's result is unchecked, so an unknown id would crash; here nothing happens), 1 is acknowledged, 3 leaves the
 // current script state, remembers the new one in the world's script state field (also without a script) and enters it, anything else goes to the script's handlers
@@ -36,12 +38,18 @@ template<class Env> bool ReceiveMessage(world::World& world, const messages::Mes
         break;
     case kObjectCreated: break;
     case kStateChange:
+        // A mod world script's ChangeState carries its load-order index + 1 in `flags`; without that mod the message stays the scenario's.
+        if constexpr (requires { env.ChangeModScriptState(0u, 0u); })
+            if (message.flags > 0 &&
+                    env.ChangeModScriptState(static_cast<uint32_t>(message.flags - 1), static_cast<uint32_t>(message.data)))
+                break;
         if (world.m_worldScript) env.RunOnExitList(*world.m_worldScript);
         world.m_scriptState = message.data;
         if (world.m_worldScript) env.EnterState(*world.m_worldScript, static_cast<uint32_t>(message.data));
         break;
     default:
         if (world.m_worldScript) env.DispatchMessage(*world.m_worldScript, message);
+        if constexpr (requires { env.DispatchModMessage(message); }) env.DispatchModMessage(message);
         break;
     }
     return true;

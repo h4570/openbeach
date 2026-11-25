@@ -36,9 +36,14 @@ public:
 // Appends to a constructed WorldScript. Text is decoded XOR-FF data, with `size`
 // readable bytes. No globals or game heap; all owned blocks use Memory.
 // On failure every allocation from this invocation is rolled back.
+// When `validateModifiers` is false (start-up check before WorldParams loads), unknown Weather desire modifiers are skipped.
 void Parse(world_script::WorldScript& script, const char* text, size_t size, const Vocabulary& vocabulary, const Memory& memory,
-        BeerId beerId, ParseDetails* details = nullptr);
+        BeerId beerId, ParseDetails* details = nullptr, bool validateModifiers = true);
 void Destroy(world_script::WorldScript& script, const Memory& memory);
+
+// Checks that a parsed mod world script has STATE_WORLD_STARTUP and makes no refused scenario-outcome calls
+// (Function UnlockNextScenario, ShowMenu ScenarioWon/GameWon/ScenarioLost). False with `error` naming the refused call.
+bool ValidateModWorldScript(const world_script::WorldScript& script, std::string& error);
 
 // Lifecycle contracts of construct and destruct.
 // Construct writes every field but the parse cursor and the parsed list; the parser's If stack (a game global)

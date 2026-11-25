@@ -72,7 +72,9 @@ and list a name once. The legacy `mod/` directory keeps working unchanged.
 `mod_pack::Activate` (`src/formats/mod_pack.cpp`), called from `InitGame` after the pack check, stops the game with the mod id
 and the reason when an active mod has no directory or no valid manifest, names another id than its directory, does not list the
 selected pack, is listed twice, needs a mod that is not active or comes later, is a presentation mod that ships a file its scope
-does not allow, needs a newer script API than the game has, or ships scripts without naming `api`. It also computes each mod's content hash once
+does not allow, needs a newer script API than the game has, or ships scripts without naming `api`. After the world script
+vocabulary loads, `world::CheckModWorldScripts` parses every `scripts/world/*.wsc` and stops the game on an error or a
+refused call ([world-scripts.md](world-scripts.md#refused-calls)). It also computes each mod's content hash once
 (`pack_path::ModContentHash`: SHA-256 over the sorted relative file names and the hash of every file).
 
 ## Text patches
@@ -120,4 +122,5 @@ building that the mod `tests/mods/l0_catalog` adds, and `tests/l0_mod_building.t
 `tests/mods/l0_ice_stand` (build panel icon, placement, construction, day/night goldens, guest purchases, sound, save/reload). `convert_save_checks_test` and `command_recorder_test` cover the mod lists of
 saves and replays; `tests/l0_mod_save.txt` saves with the test mod, reloads with it, and is refused with another mod list (`claim-mods`,
 `expect-obl-save-refused`). The presentation scripts' tests are in [scripting.md](scripting.md#tests); `tests/l0_mods_mixed.txt`
-runs a world mod and a presentation mod at once and checks that the save records only the world mod.
+runs a world mod and a presentation mod at once and checks that the save records only the world mod. The world scripts' tests
+are in [world-scripts.md](world-scripts.md#tests).

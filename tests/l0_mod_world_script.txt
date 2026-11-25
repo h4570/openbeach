@@ -1,0 +1,38 @@
+# A world mod's script (tests/mods/l0_world_script) pays 5000 at the start of each day, beside the scenario's own script;
+# a save written before midnight restores the mod script's state, so the reloaded world still pays.
+# @env OBL_PACK=l0
+# @env OBL_MODS=l0_world_script
+# @timeout 240
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario 1
+await gameplay
+# The scenario loses on day 1 at 17:00; its after-game state lets the days run on.
+world-script-change STATE_WORLD_AFTERGAME
+command set-game-speed level=2
+step 1
+expect day 0
+set-hour 23.5
+set-cash 0
+step 200
+expect day 1
+expect cash 5000
+set-hour 23.5
+set-cash 0
+step 200
+expect day 2
+expect cash 5000
+set-hour 23.5
+set-cash 0
+step 1
+save-obl testlogs/l0_mod_world_script.obl.save
+load-obl-save testlogs/l0_mod_world_script.obl.save
+await world-loaded
+command set-game-speed level=2
+step 1
+expect day 2
+expect cash 0
+step 200
+expect day 3
+expect cash 5000
+quit

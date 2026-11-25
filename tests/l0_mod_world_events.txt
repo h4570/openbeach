@@ -1,0 +1,37 @@
+# The world events a mod world script can handle (tests/mods/l0_world_events counts each one in a variable):
+# var0 DayStarted, var1 BuildingFinished, var2 GuestArrived, var3 WeatherChanged.
+# @env OBL_PACK=l0
+# @env OBL_MODS=l0_world_events
+# @timeout 240
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario 1
+await gameplay
+# The scenario loses on day 1 at 17:00; its after-game state lets the days run on.
+world-script-change STATE_WORLD_AFTERGAME
+command set-game-speed level=2
+step 1
+mod-world-script-report l0_world_events/events.wsc
+expect-last var0 0
+expect-last var1 0
+expect-last var2 0
+expect-last var3 0
+weather-insert 2 1.0
+step 50
+weather-state
+mod-world-script-report l0_world_events/events.wsc
+expect-last var3 1
+command place-building key=LOO x=59 y=63 dir=0
+step 25
+command place-building key=HUT x=63 y=61 dir=0
+step 1000
+mod-world-script-report l0_world_events/events.wsc
+expect-last var1 2
+expect guests-arrived-total 6
+expect-last var2 6
+expect-last var0 0
+step 2000
+expect day 1
+mod-world-script-report l0_world_events/events.wsc
+expect-last var0 1
+quit

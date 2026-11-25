@@ -35,6 +35,11 @@ inline const script::ScriptCommand* OnUpdateList(const world_script::WorldScript
 {
     return script.m_states[state].m_onUpdate;
 }
+inline const script::ScriptCommand* OnEventList(const world_script::WorldScript& script, uint32_t state, world_script::WorldEvent event)
+{
+    const size_t index = static_cast<size_t>(event);
+    return index < world_script::kWorldEventCount ? script.m_onEvent[state][index] : nullptr;
+}
 
 // `Message MT_x ... OnReceipt` of the current state: the first handler (in script order) of the message type. The lookup reports "handled"
 // whenever it finds a handler, even one whose list is empty, and walks nothing otherwise.

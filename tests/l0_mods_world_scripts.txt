@@ -1,0 +1,35 @@
+# Two world mods with scripts at once (docs/modding/reference/world-scripts.md): both get the same day's DayStarted in load
+# order, each counts in its own Var0, and a save records both mods and both scripts' state.
+# @env OBL_PACK=l0
+# @env OBL_MODS=l0_world_script,l0_world_events
+# @timeout 180
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario 1
+await gameplay
+world-script-change STATE_WORLD_AFTERGAME
+command set-game-speed level=2
+step 1
+set-hour 23.5
+set-cash 0
+step 200
+expect day 1
+expect cash 5000
+mod-world-script-report l0_world_script/daily_bonus.wsc
+expect-last state 1
+expect-last var0 1
+mod-world-script-report l0_world_events/events.wsc
+expect-last state 0
+expect-last var0 1
+save-obl testlogs/l0_mods_world_scripts.obl.save
+claim-mods l0_world_events
+expect-obl-save-refused testlogs/l0_mods_world_scripts.obl.save l0_world_script
+claim-mods l0_world_script,l0_world_events
+load-obl-save testlogs/l0_mods_world_scripts.obl.save
+await world-loaded
+mod-world-script-report l0_world_script/daily_bonus.wsc
+expect-last state 1
+expect-last var0 1
+mod-world-script-report l0_world_events/events.wsc
+expect-last var0 1
+quit

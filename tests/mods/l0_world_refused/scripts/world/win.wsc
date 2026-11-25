@@ -1,0 +1,13 @@
+#obl-script 1 world
+// Tries to win the scenario, which only the scenario's own script may do: the start-up check refuses the mod.
+State STATE_WORLD_STARTUP
+	OnEntry
+	End
+	OnUpdate
+		If ( GameDay >= 1 )
+			ShowMenu ScenarioWon L0_WON;
+		End
+	End
+	OnExit
+	End
+End

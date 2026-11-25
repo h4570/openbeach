@@ -28,11 +28,21 @@ script or a change of the scope rule adds its line here.
 ## Two kinds of scripts
 | | World and object scripts | Presentation scripts |
 |---|---|---|
-| Files | `.wsc`, `.lgc` and the object DSL | `scripts/presentation/*.lua` |
-| Runs | inside the simulation's tick | outside the tick: input after the input update (`mods::PresentationInput`), the frame after the state's update (`mods::PresentationFrame`), the overlay before the present (`src/game/game/game.cpp`) |
+| Files | `.wsc`, `.lgc`, `scripts/world/*.wsc` and the object DSL | `scripts/presentation/*.lua` |
+| Runs | inside the simulation's tick; mod world scripts after the scenario's script in load order | outside the tick: input after the input update (`mods::PresentationInput`), the frame after the state's update (`mods::PresentationFrame`), the overlay before the present (`src/game/game/game.cpp`) |
 | Reaches the world | directly; part of the behavior contract | only through game commands ([commands.md](../commands.md)) |
 | Saves and replays | the mod is recorded | the mod is not recorded |
 | Code | `src/game/world/`, `src/game/objects/` | `src/game/mods/script_runtime.cpp` (one sandboxed Lua 5.4 state per mod), `presentation_scripts.cpp` (the game's host) |
+
+**Mod world scripts** (`scripts/world/*.wsc` of a world mod, [world-scripts.md](../../modding/reference/world-scripts.md)): the
+script host (`world_script_host.h`) owns them beside the scenario's script as `ModWorldScript` records (a parsed `WorldScript`, its
+own flags and 32 variables); `ForEachWorldScript` gives the order of one tick (scenario first, then load order). While a mod
+script runs, `world_script.cpp` sends `Flag<n>`, `Var<n>` and `ChangeState` to that record (`ChangeState` carries the load-order
+index + 1 in the message's `flags`, `world_receive_logic.h`). The parser adds `OnEvent <Event>` lists; four events
+(`world_script_api.cpp`) are dispatched from the day cycle, construction, guest arrival and the weather schedule, and only to mod
+scripts. `world::CheckModWorldScripts` refuses scripts with winning or losing calls at start-up. The save writes
+`world.mod_scripts` and the world hash a `ModWorldScripts` class only while a mod script is active, so worlds without one keep
+their saves and hashes.
 
 The presentation runtime is pure logic over a `ScriptHost` (log, submit a command, "in a world?", settings, and the input, camera,
 GUI, overlay and game-state calls, each with a do-nothing default), so its unit tests run it with a fake host. The game's host
@@ -88,6 +98,8 @@ back (the table is rebuilt from the running mods). Nothing here reads the simula
 - Only world mods are listed ([saves.md](../data-formats/saves.md#mods), [commands.md](../commands.md#replay-file)).
 - A presentation mod's commands are recorded like the GUI's. Replaying a file while a mod that sends commands is active fails:
   during a replay the recording owns the input, and the script's commands are counted as ignored.
+- Mod world scripts' state (state name, flags, variables) is stored in `world.mod_scripts`; `tests/replays/l0_world_script.replay`
+  is recorded with the world mod `l0_world_script` and refused without it.
 - `tests/replays/l0_mod_script.replay` is recorded with the presentation test mod `l0_script` and replayed without it
   (`tests/replay_l0_mod_script.txt`).
 

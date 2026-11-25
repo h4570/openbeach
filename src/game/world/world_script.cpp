@@ -68,6 +68,25 @@ using object::Guest;
 using script::ScriptValue;
 using world_data::World;
 
+// Active mod world script context while running a mod's scripts/world/*.wsc command list.
+// Null when the scenario's own world.wsc is executing (all Flag<n>/Var<n>/ChangeState route to World).
+struct ActiveModScript {
+    world_script::ModWorldScript* mod = nullptr;
+    uint32_t index = 0;
+};
+ActiveModScript g_activeMod;
+
+class ScopedModScript {
+public:
+    ScopedModScript(world_script::ModWorldScript* mod, uint32_t index) : m_previous(g_activeMod) { g_activeMod = {mod, index}; }
+    ~ScopedModScript() { g_activeMod = m_previous; }
+    ScopedModScript(const ScopedModScript&) = delete;
+    ScopedModScript& operator=(const ScopedModScript&) = delete;
+
+private:
+    ActiveModScript m_previous;
+};
+
 // Types of a script value (Entity::getValue uses the same numbers).
 constexpr int32_t kByte = 0, kString = 1, kInt = 2, kFloat = 3;
 
@@ -239,13 +258,20 @@ ScriptValue GetScriptValue(World& world, int key, const int32_t* data)
     case 0xb9: return {kInt, world.m_numGuests}; // GuestCount
     case 0xba: return {kInt, world.m_repairManager->breakdownCount};
     case 0xbb: return {kInt, world.m_repairManager->vandalismCount};
-    case 0xbc: return {kInt, world.m_scriptFlags & static_cast<int32_t>(1u << (index() & 31))}; // Flag<n>
+    case 0xbc: { // Flag<n>
+        const int32_t flags = g_activeMod.mod ? g_activeMod.mod->scriptFlags : world.m_scriptFlags;
+        return {kInt, flags & static_cast<int32_t>(1u << (index() & 31))};
+    }
     case 0xbd: return {kInt, object::object_manager::CountByClass(objects, kClassCleaner)};
     case 0xbe: return {kInt, object::object_manager::CountByClass(objects, kClassMechanic)};
     case 0xbf: return {kInt, object::object_manager::CountByClass(objects, kClassSecurity)};
     case 0xc0: return {kInt, object::object_manager::CountByClass(objects, kClassLifeguard)};
     case 0xc1: return {kInt, object::object_manager::CountByClass(objects, kClassRep)};
-    case 0xc2: return {kInt, (world.m_scriptVars + 0)[index()]}; // Var<n>
+    case 0xc2: { // Var<n>
+        const int32_t n = index();
+        if (g_activeMod.mod) return {kInt, (n >= 0 && n < world_script::kWorldScriptVarCount) ? g_activeMod.mod->scriptVars[n] : 0};
+        return {kInt, (world.m_scriptVars + 0)[n]};
+    }
     case 0xc5: return {kFloat, FloatBits(world.m_demoTime)}; // DemoTime
     case 0xc6: return {kInt, static_cast<int32_t>((world.m_objectiveStatus + 0)[index()])}; // ScenarioObj<n>
     case 0xc7: return {kByte, game::GetGame()->m_sandbox}; // SandBox
@@ -308,7 +334,7 @@ constexpr float kNightStartHour = 19.0f;
 // seconds; the night test uses the unrounded double product, the stored fields are rounded to float.
 void SetGameTime(World& world, int32_t bits)
 {
-    auto* script = static_cast<world_script::WorldScript*>(world.m_worldScript);
+    auto* script = g_activeMod.mod ? g_activeMod.mod->script.get() : static_cast<world_script::WorldScript*>(world.m_worldScript);
     const uint32_t current = script->m_currentState;
     if (current != static_cast<uint32_t>(WorldScriptFindState(*script, "STATE_WORLD_STARTUP"))) return;
     int32_t dayLength = 0;
@@ -335,15 +361,20 @@ void SetScriptValue(World& world, int key, const void* index, int type, int32_t 
     case 0xbc: { // Flag<n>: the raw bits are compared as a float, so integer 0 and 0.0 both clear it, NaN clears too
         int32_t bit = static_cast<int32_t>(1u << (number() & 31));
         float value = BitsToFloat(bits);
+        int32_t& flags = g_activeMod.mod ? g_activeMod.mod->scriptFlags : world.m_scriptFlags;
         if (value < 0.0f || value > 0.0f)
-            world.m_scriptFlags |= bit;
+            flags |= bit;
         else
-            world.m_scriptFlags &= ~bit;
+            flags &= ~bit;
         break;
     }
     case 0xc2: { // Var<n>
         int32_t n = number();
-        (world.m_scriptVars + 0)[n] = ToInt(type, bits);
+        if (g_activeMod.mod) {
+            if (n >= 0 && n < world_script::kWorldScriptVarCount) g_activeMod.mod->scriptVars[n] = ToInt(type, bits);
+        } else {
+            (world.m_scriptVars + 0)[n] = ToInt(type, bits);
+        }
         break;
     }
     case 0xc5: // DemoTime
@@ -663,9 +694,11 @@ void ExecuteMessage(World& world, const world_script::WorldScriptMessageData& da
 void ExecuteChangeState(World& world, const world_script::ScriptChangeStateData& data)
 {
     if (world.m_loadingSave) return;
-    const auto* script = static_cast<const world_script::WorldScript*>(world.m_worldScript);
+    const auto* script =
+            g_activeMod.mod ? g_activeMod.mod->script.get() : static_cast<const world_script::WorldScript*>(world.m_worldScript);
+    const int32_t flags = g_activeMod.mod ? static_cast<int32_t>(g_activeMod.index + 1) : 0;
     const script::BuiltMessage message{
-            -2, -2, script::kMessageTypeStateChange, 0, script::FindStateIndex(script->m_stateNames, script->m_numStates, data.m_name)};
+            -2, -2, script::kMessageTypeStateChange, flags, script::FindStateIndex(script->m_stateNames, script->m_numStates, data.m_name)};
     PostScriptMessage(message, script::PlanChangeStateSend(data.m_time));
 }
 } // namespace
@@ -923,6 +956,66 @@ void Execute(World& world, script::ScriptCommand& command)
 void WorldScriptExecute(script::ScriptCommand& command)
 {
     Execute(*game::GetWorld(), command);
+}
+
+ScenarioScriptScope::ScenarioScriptScope() : m_previousMod(g_activeMod.mod), m_previousIndex(g_activeMod.index)
+{
+    g_activeMod = {};
+}
+
+ScenarioScriptScope::~ScenarioScriptScope()
+{
+    g_activeMod = {m_previousMod, m_previousIndex};
+}
+
+namespace {
+// Runs `run(script)` for each mod world script in load order, with that script's Flag<n>/Var<n>/ChangeState in scope.
+template<class Fn> void ForEachMod(World& world, Fn&& run)
+{
+    if (!world.m_worldScriptHost) return;
+    world.m_worldScriptHost->ForEachModWorldScript([&](world_script::WorldScript& script, world_script::ModWorldScript* mod, size_t index) {
+        ScopedModScript scope(mod, static_cast<uint32_t>(index));
+        run(script);
+    });
+}
+} // namespace
+
+void StartModWorldScripts(World& world)
+{
+    ForEachMod(world, [](world_script::WorldScript& script) { WorldScriptStartLoadedGame(script); });
+}
+
+void RunWorldScriptsOnUpdate(World& world)
+{
+    if (!world.m_worldScriptHost) {
+        WorldScriptRunOnUpdate(*world.m_worldScript);
+        return;
+    }
+    world.m_worldScriptHost->ForEachWorldScript([](world_script::WorldScript& script, world_script::ModWorldScript* mod, size_t index) {
+        ScopedModScript scope(mod, static_cast<uint32_t>(index));
+        WorldScriptRunOnUpdate(script);
+    });
+}
+
+void DispatchModWorldEvent(World& world, world_script::WorldEvent event)
+{
+    ForEachMod(world, [event](world_script::WorldScript& script) { WorldScriptDispatchEvent(script, event); });
+}
+
+void DispatchModWorldMessage(World& world, const messages::Message& message)
+{
+    ForEachMod(world, [&message](world_script::WorldScript& script) { WorldScriptDispatch(script, message); });
+}
+
+bool ChangeModWorldScriptState(World& world, uint32_t modIndex, uint32_t state)
+{
+    if (!world.m_worldScriptHost || modIndex >= world.m_worldScriptHost->ModWorldScriptCount()) return false;
+    world_script::ModWorldScript& mod = world.m_worldScriptHost->ModWorldScriptAt(modIndex);
+    if (!mod.script) return false;
+    ScopedModScript scope(&mod, modIndex);
+    WorldScriptRunOnExit(*mod.script);
+    WorldScriptEnterState(*mod.script, state);
+    return true;
 }
 
 namespace {

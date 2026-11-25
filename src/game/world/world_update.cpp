@@ -25,6 +25,7 @@
 #include "game/ferry/ferry.h"
 #include "game/messages/message_handler.h"
 #include "game/world/world_messages.h"
+#include "game/world/world_script.h"
 #include "game/objects/building_methods.h"
 
 #include <cstddef>
@@ -208,8 +209,11 @@ private:
 void UpdateDayCycleEntry(World* world)
 {
     g_dayCalls.Count();
+    const float previous = world->m_lastGameDayTime;
+    const float current = world->m_gameDayTime;
     DayEnv env(*world);
     day_cycle::UpdateDayCycle(*world, env);
+    if (day_cycle::Truncate(previous) > day_cycle::Truncate(current)) DispatchModWorldEvent(*world, world_script::WorldEvent::DayStarted);
 }
 
 } // namespace
