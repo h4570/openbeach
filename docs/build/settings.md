@@ -13,6 +13,7 @@ with defaults and comments when it is missing; the [settings window](settings-wi
 | `[Intro] PlayMovie` | 1 | `OBL_PLAYMOVIE` | Eidos intro movie (scripted runs: 0) |
 | `[Mod.<id>] <setting>` | the mod's default | | a setting a mod declares in its `mod.json` ([../modding/reference/mods.md#settings](../modding/reference/mods.md#settings)); the mods screen writes it, scripts read it |
 | `[Mods] Active` | empty | `OBL_MODS` | comma separated mod ids in load order, the last one wins ([../modding/players/switching-mods.md](../modding/players/switching-mods.md)); `OBL_MODS` replaces the setting, also when empty |
+| `[Mods] Dev` | 0 | | reload active mod files in the interactive game ([developer mode](../modding/guides/developer-mode.md)) |
 | `[Launcher] ShowSettings` | 1 | | the settings window before the game starts ([settings-window.md](settings-window.md)); `--settings` shows it anyway, `--no-settings` never |
 
 ## Rule

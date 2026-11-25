@@ -31,6 +31,10 @@
 #include "game/game/game_api.h"
 #include "game/game/command_loop.h"
 #include "game/mods/presentation_scripts.h"
+#include "game/mods/dev_mode.h"
+#include "game/ui/gui_content_runtime.h"
+#include "game/ui/gui_layouts_runtime.h"
+#include "game/ui/own_layer.h"
 #include "core/config.h"
 #include "game/game/game_core.h"
 #include "game/game/game_parameters_construct.h"
@@ -367,6 +371,7 @@ void Destruct(Game* game)
     End(game->m_input);
     End(game->m_renderer);
     End(game->m_spriteBank);
+    mods::dev::Stop();
     // The object itself (scenario names, save-slot records) ends with the context's unique_ptr (game_api::Destroy).
 }
 
@@ -571,6 +576,12 @@ void UpdateClock(game::GameClock* clock)
 bool g_staleGameplayGui;
 PresentObserver g_renderPresentObserver;
 
+void ReloadModTexts(Game* game)
+{
+    const std::string language = ui::text_table::Language();
+    game->m_textTable = game::Member<text::Table>(ui::text_table::Create(language.c_str()), {&ui::text_table::Destroy});
+}
+
 void Update(Game* game)
 {
     const bool switched = game->m_currentState != game->m_nextState;
@@ -584,6 +595,15 @@ void Update(Game* game)
                 game->m_nextState == game->m_states[static_cast<int>(game::GameStateId::LoadGame)].get();
         game->m_currentState->Exit();
         game->m_currentState = game->m_nextState;
+        // A recording or replay already captured the active world mod hashes before requesting this transition.
+        if (game->m_currentState == worldTest && !static_cast<const WorldTestState*>(worldTest)->m_loadingSave && !HasTickListener()) {
+            const auto changes = mods::dev::BeforeNewGame();
+            if (changes.gui) {
+                gui::gui_content::Reload();
+                gui::gui_layouts::Reload();
+            }
+            if (changes.texts) ReloadModTexts(game);
+        }
         game->m_currentState->Enter();
         UpdateClock(&game->m_clock);
         InputClearButtonState(*GetInput());
@@ -631,8 +651,7 @@ void ReloadFrontEndNow(Game* game)
 {
     const std::string dialog = std::move(g_frontEndReloadDialog);
     g_frontEndReloadDialog.clear();
-    const std::string language = ui::text_table::Language();
-    game->m_textTable = game::Member<text::Table>(ui::text_table::Create(language.c_str()), {&ui::text_table::Destroy});
+    ReloadModTexts(game);
     ui::GuiManager* gui = game->m_guiManager.get();
     gui->LoadScript(game->m_currentState->GetGuiScript());
     gui->ShowDialog(dialog.c_str(), nullptr, false);
@@ -640,6 +659,21 @@ void ReloadFrontEndNow(Game* game)
 
 void Render(Game* game)
 {
+    const auto changes = mods::dev::Poll();
+    if (changes.gui || changes.texts) {
+        ui::GuiManager* gui = game->m_guiManager.get();
+        const bool mainMenu = gui->IsDialogOpen("MainMenu");
+        const bool modsScreen = gui->IsDialogOpen(own_layer::kModsDialog);
+        if (changes.gui) {
+            gui::gui_content::Reload();
+            gui::gui_layouts::Reload();
+        }
+        if (changes.texts) ReloadModTexts(game);
+        gui->LoadScript(game->m_currentState->GetGuiScript());
+        if (GetWorld()) gui::UpdateRadarViewRectDirect(gui);
+        if (mainMenu) gui->ShowDialog("MainMenu", nullptr, false);
+        if (modsScreen) gui->ShowDialog(own_layer::kModsDialog, nullptr, false);
+    }
     if (!g_frontEndReloadDialog.empty()) ReloadFrontEndNow(game);
     if (game->m_guiReloadPending) {
         const char* script = game->m_currentState->GetGuiScript();

@@ -83,6 +83,14 @@ or has no `STATE_WORLD_STARTUP`, more than 10 states, or a syntax error. Every o
   `Function`, `ShowMenu`, `PlaySound`, `MoveCamera`, `Message`, `Create`, `Path`, `Grass`, `Area`, `BoatPoint`, `BoatEntry`,
   `BoatExit`, `BoatEvent`, `CircuitPoint`, `Disaster`, `Weather`).
 
+### Built-in condition values
+
+`GuestCount`, `BreakdownCount`, `VandalismCount`, `CleanerCount`, `MechanicCount`, `SecurityCount`, `LifeGuardCount`,
+`RepCount`, `DemoTime`, `SandBox`, `LitterCount`, `UnHappyLeavers`, `ProfitToday`, `ConstructCount`,
+`AllBuildingsOperating`, `GuestPartyCount`, `GuestTottyLevel`, `GuestBeautyLevel`, `DiffConstructCount`, `BuildTreeExist`,
+`GuestsEaten`, `GuestsDrowned`, `FinesCollected`, `GuestShagCount`, `GuestPissedCount`, `WeatherDayOffset`, `IncomeToday`,
+`GuestSafetyLevel`, `BarsBuilt`, `DisasterDayOffset`, `Me`, `GameTime`, `ResortRating`, `GameDay`, `PlayerCash`.
+
 ## Saves and replays
 Mod scripts are simulation, so their mod is recorded in saves and replays ([mods.md](mods.md#saves-and-replays)). A save stores
 each mod script's state name, flags and variables in `world.mod_scripts`

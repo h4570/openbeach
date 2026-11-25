@@ -27,6 +27,7 @@ public:
 };
 // One listener at a time; nullptr removes it.
 void SetTickListener(TickListener* listener);
+bool HasTickListener();
 
 // The game loop's command queue (docs/architecture/commands.md, "Data flow"). Submit at any time on the game thread; the commands run at
 // the start of the next gameplay the game update, before the state's update, in submission order.

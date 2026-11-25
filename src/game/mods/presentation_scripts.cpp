@@ -13,6 +13,7 @@
 #include "game/game/game_host.h"
 #include "game/game/start_settings.h"
 #include "game/mods/game_snapshot.h"
+#include "game/mods/dev_mode.h"
 #include "game/mods/input_events.h"
 #include "game/mods/input_routing.h"
 #include "game/mods/mod_settings_file.h"
@@ -277,9 +278,12 @@ bool RouteTouchToScripts(const TouchEvent& touch)
     if (touch.phase == TouchPhase::Up && g_fingersDown > 0) --g_fingersDown;
     if (touch.phase == TouchPhase::Cancel) g_fingersDown = 0;
     g_lastPointer = "touch";
-    const bool consumed = !g_runtime->Input(ToInputEvent(touch)).empty();
+    const InputEvent event = ToInputEvent(touch);
+    const std::string consumer = g_runtime->Input(event);
+    if (dev::Enabled() && !consumer.empty())
+        OBL_LOG("mod dev: %s consumed %s %s", consumer.c_str(), event.kind.c_str(), event.phase.c_str());
     SyncAreas();
-    return consumed;
+    return !consumer.empty();
 }
 
 void Start()
@@ -288,7 +292,7 @@ void Start()
     std::vector<ScriptMod> mods;
     for (const mod_pack::ActiveMod& mod : mod_pack::Active()) {
         // The store sits beside mods/, outside saves and outside the mod's directory, so updating the mod keeps it.
-        const std::filesystem::path gameDirectory = mod.directory.parent_path().parent_path();
+        const std::filesystem::path gameDirectory = g_keysFile.parent_path();
         g_settingsFile = gameDirectory / game::start_settings::kFileName;
         mods.push_back({mod.manifest.id, mod.directory, gameDirectory / "mod-data" / (mod.manifest.id + ".json"), mod.manifest.settings,
                 mod.manifest.takesOver});
@@ -320,7 +324,10 @@ void PresentationInput(ui::Input* input)
                 for (const key_actions::Entry* action : key_actions::ModActionsFor(input::FindKey(event.key)))
                     g_runtime->Action(action->mod, action->id);
             if ((event.kind == "mouse" || event.kind == "pointer") && g_fingersDown == 0) g_lastPointer = "mouse";
-            if (!g_runtime->Input(event).empty()) g_events.Consume(*input, event);
+            if (const std::string consumer = g_runtime->Input(event); !consumer.empty()) {
+                if (dev::Enabled()) OBL_LOG("mod dev: %s consumed %s %s", consumer.c_str(), event.kind.c_str(), event.phase.c_str());
+                g_events.Consume(*input, event);
+            }
         }
         for (const SyntheticInput& synthetic : std::exchange(g_synthetic, {})) g_events.Apply(*input, synthetic);
         g_events.HoldPointer(*input);
@@ -341,8 +348,26 @@ void PresentationFrame(float dt)
 void DrawPresentationOverlay()
 {
     ui::Renderer* renderer = game::GetRenderer();
-    if (!g_overlayShown || g_overlay.empty() || !renderer) return;
-    DrawOverlayOps(*renderer, g_overlay);
+    if (!renderer) return;
+    if (g_overlayShown && !g_overlay.empty()) DrawOverlayOps(*renderer, g_overlay);
+    if (!dev::Enabled()) return;
+    const auto failures = PresentationFailures();
+    const std::string_view error = dev::Error().empty() && !failures.empty() ? std::string_view(failures.back()) : dev::Error();
+    if (error.empty()) return;
+    const auto screen = CurrentScreen();
+    const int x = screen.safeLeft + 8;
+    const int y = screen.height - screen.safeBottom - 30;
+    const int width = screen.width - x - screen.safeRight - 8;
+    if (width <= 0) return;
+    std::string message = "Mod error: " + std::string(error);
+    message.resize(std::min(message.size(), static_cast<size_t>(width / 7)));
+    message = message.substr(0, message.find_first_of("\r\n"));
+    constexpr const char* kFont = "guifont8b";
+    const std::array<OverlayOp, 2> diagnostic{{
+            {.kind = OverlayOp::Kind::Rect, .x = x, .y = y, .w = width, .h = 20, .color = 0xff632020},
+            {.kind = OverlayOp::Kind::Text, .x = x + 4, .y = y + 4, .color = 0xffffffff, .text = message, .font = kFont},
+    }};
+    DrawOverlayOps(*renderer, diagnostic);
 }
 
 void SetOverlayShown(bool shown)
@@ -372,7 +397,7 @@ bool SetModSetting(const std::string& mod, const std::string& id, const std::str
     if (os::HasEnv("OBL_SCRIPT")) {
         g_testSettings[mod + "." + id] = *canonical;
     } else {
-        const std::filesystem::path file = found->directory.parent_path().parent_path() / game::start_settings::kFileName;
+        const std::filesystem::path& file = g_keysFile;
         g_settingsFile = file;
         game::start_settings::CreateDefaultFile(file);
         if (!WriteModSettingFile(file, mod, id, *canonical)) {
@@ -435,7 +460,7 @@ std::string ModSettingValue(const mod_pack::ActiveMod& mod, const settings_schem
     if (const auto it = g_testSettings.find(id + "." + field.id); it != g_testSettings.end())
         text = it->second;
     else
-        text = ReadModSettingFile(mod.directory.parent_path().parent_path() / game::start_settings::kFileName, id, field.id);
+        text = ReadModSettingFile(g_keysFile, id, field.id);
     return settings_schema::ValueOrDefault(field, text);
 }
 

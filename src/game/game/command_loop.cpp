@@ -49,6 +49,11 @@ void SetTickListener(TickListener* listener)
     g_listener = listener;
 }
 
+bool HasTickListener()
+{
+    return g_listener != nullptr;
+}
+
 void RunCommandTick(game::Game* game, bool stateSwitched)
 {
     const world_data::World* world = GetWorld();

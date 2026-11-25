@@ -10,6 +10,7 @@
 # @env OBL_SCALE=2.5
 # @env OBL_MAXFPS=240
 # @env OBL_PLAYMOVIE=0
+# @env OBL_TEST_MOD_DEV=1
 # @timeout 90
 # The game's own options of BeachLife.ini, off their defaults too: another resolution, volumes, effects, keyline, scroll speed.
 # @gameini Language.Language=5

@@ -12,6 +12,7 @@ struct Settings {
     int maxFps = 60; // [Display] MaxFps (0 = unlimited)
     double scale = 1.0; // [Display] Scale (1..4, window size only)
     std::string mods; // [Mods] Active: comma separated mod ids in load order (docs/modding/reference/mods.md); OBL_MODS replaces it
+    bool modDev = false; // [Mods] Dev: reload edited mods in a windowed game
     // OBL_HEADLESS (launcher --headless <replay|script>): no window, renderer output, audio or input devices
     // (docs/architecture/headless/index.md). Not an ini key. With OBL_SCRIPT as well the headless loop runs that test script
     // (headlessScript) instead of a replay.

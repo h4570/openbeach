@@ -6,6 +6,7 @@ mods, as those features arrive.
 
 | Topic | What it covers |
 |---|---|
+| [Installing](installing.md) | Installing ZIPs and catalog mods, and where the files live on each platform. |
 | [mods-screen.md](mods-screen.md) | The **Mods** screen in the main menu: ZIP installation, removal, switching mods on and off, load order, settings, conflicts and error messages. |
 | [switching-mods.md](switching-mods.md) | Turning mods on and off through `[Mods] Active` in `openbeach.ini`, the order that decides which mod wins, and how to switch off a mod that stops the game at start-up. |
 | [mod-errors.md](mod-errors.md) | Startup errors, conflicts, and how to get the game running again. |

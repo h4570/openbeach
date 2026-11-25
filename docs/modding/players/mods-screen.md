@@ -4,6 +4,7 @@ Open **Mods** from the main menu to turn installed mods on and off, change their
 and check for conflicts without editing `openbeach.ini`.
 
 A mod is a folder `mods/<id>/` in the game directory with a `mod.json` manifest beside its files.
+See [installing and finding your mods](installing.md) for the game directory on your platform.
 
 ## Installing and removing mods
 Choose **Install from file** and select a ZIP containing one mod folder, with its `mod.json` directly inside that folder.

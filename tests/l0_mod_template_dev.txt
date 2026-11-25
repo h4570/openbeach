@@ -1,0 +1,64 @@
+# A presentation script reloads in place. A changed world mod stays frozen until the next new game.
+# @env OBL_PACK=l0
+# @env OBL_MODS=mod_template,l0_actions,l0_touch
+# @env OBL_TEST_MOD_DEV=1
+# @gameini Language.Language=0
+# @gameini Video.ResWidth=800
+# @gameini Video.ResHeight=600
+# @expect-log mod dev: reloaded l0_actions
+# @expect-log mod dev: reloaded mod_template
+# @expect-log mod l0_actions: action ping
+# @timeout 120
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario 1
+await gameplay
+expect-mod-text L0_TITLE My beach
+expect-mod-text L0_ACTIONS_TEST Action test text
+sdl-key 66 1
+step 2
+sdl-key 66 0
+step 2
+mod-overlay on
+mod-edit mod_template text/en.patch.json {"format":"obl.text_patch","version":1,"entries":{"L0_TITLE":"A new beach"}}
+mod-edit l0_actions scripts/presentation/main.lua function on_frame() obl.overlay.rect(10, 10, 32, 32, 0xFFFF0000) end
+mod-edit l0_actions text/en.patch.json {"format":"obl.text_patch","version":1,"entries":{"L0_ACTIONS_TEST":"New action text"}}
+wait 750
+step 2
+screen-pixel 20 20
+expect-last r 255
+expect-last g 0
+expect-last b 0
+expect-mod-text L0_TITLE My beach
+expect-mod-text L0_ACTIONS_TEST New action text
+mod-edit l0_actions scripts/presentation/main.lua function (
+wait 750
+step 2
+screen-pixel 10 572
+expect-last-range r 95 103
+expect-last-range g 28 36
+next-state 1
+await state == 1
+await gui-animating == 0
+gui-click MainMenu id touch_ping_btn
+await frames 10
+expect gui-mod-action-count 1
+mod-edit l0_touch gui/main_menu.patch.json {"format":"obl.gui_patch","version":1,"ops":[{"op":"add_control","dialog":"MainMenu","id":"dev_ping_btn","control":"Button(20, 534, 200, 574, l0_menu_start, None, Mod:l0_touch.ping, None, L0_MENU_TIP_START)"}]}
+wait 750
+await gui-animating == 0
+gui-click MainMenu id dev_ping_btn
+await frames 10
+expect gui-mod-action-count 2
+seed 1
+boot-gameplay scenario 1
+record testlogs/mod-template-dev.obl.replay every 1
+await gameplay
+expect-mod-text L0_TITLE My beach
+step 3
+record end
+next-state 1
+await state == 1
+boot-gameplay scenario 1
+await gameplay
+expect-mod-text L0_TITLE A new beach
+quit

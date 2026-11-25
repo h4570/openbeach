@@ -42,10 +42,12 @@ void Load(const Text16& gameDirectory, bool createDefaults)
     g_settings.maxFps = ini::ReadInt(path, "Display", "MaxFps", g_settings.maxFps);
     g_settings.playIntroMovie = ReadBool(path, "Intro", "PlayMovie", g_settings.playIntroMovie);
     g_settings.mods = ini::ReadString(path, "Mods", "Active", "", 1024);
+    g_settings.modDev = ReadBool(path, "Mods", "Dev", false);
 
     // Scripted test runs (OBL_SCRIPT) must be fast and start at the first frame: no intro movie, no frame cap. The
     // user's openbeach.ini stays untouched; OBL_MAXFPS / OBL_PLAYMOVIE (launcher --max-fps / --movie) override.
     if (os::HasEnv("OBL_SCRIPT")) {
+        if (const auto dev = os::GetEnv("OBL_TEST_MOD_DEV")) g_settings.modDev = *dev == "1";
         g_settings.maxFps = 0;
         g_settings.playIntroMovie = false;
         OBL_LOG("config: script mode, MaxFps=0 PlayMovie=0 unless overridden");

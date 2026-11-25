@@ -110,6 +110,12 @@ game and the hidden/headless modes: [running the game](docs/build/running-the-ga
 
 The browser version imports your own copy in the page and keeps it on your machine: [browser build](docs/architecture/browser-build.md).
 
+## Mods
+Mods can change text, menus and controls, or add buildings, guests and scenario rules. Open **Mods** from the main
+menu to install a ZIP with **Install from file** or add a catalog under **Catalogs**.
+[Player guide](docs/modding/players/index.md) · [Author guides](docs/modding/guides/index.md) ·
+[Mod template](docs/modding/examples/mod_template/index.md) · [`--check-mods`](docs/modding/reference/check-mods.md).
+
 ## Documentation
 Start at [docs/index.md](docs/index.md). Tests are described in [unit tests](docs/testing/unit-tests.md).
 

@@ -12,6 +12,8 @@
 //   touch <down|move|up|cancel> <finger> <x> <y>   a finger event in game coordinates, on the path of the browser's and Android's
 //                        fingers: the mods' scripts, then the touch gestures (a tap is a click); it clears a synthetic cursor
 //   mod-overlay on|off   draw the overlay of the mods' presentation scripts (off in test runs, so golden images do not depend on mods)
+//   mod-edit <id> <file> <one line>   overwrite an installed mod fixture until quit (developer-mode tests)
+//   expect-mod-text <key> <value>     compare a live text-table entry
 //   screen-pixel <x> <y> report `r= g= b=` of the back buffer's pixel, the last presented frame (the overlay included)
 //   shot <name>          save the next presented frame to <game dir>/captures/<name>.png
 //   expect-shot <name> [tol] [max-percent]   wait for the next presented frame, save it like `shot` and compare it with
@@ -239,12 +241,15 @@
 #include "platform/windows_only.h"
 #include "core/log.h"
 #include "core/os.h"
+#include "core/pack_path.h"
+#include "game/ui/text_table.h"
 #include "testing/png.h"
 #include "platform/test_tools/profile.h"
 #include "core/wide_path.h"
 
 #include <filesystem>
 #include <fstream>
+#include <map>
 #include <algorithm>
 #include <chrono>
 #include <iterator>
@@ -416,6 +421,42 @@ void ReportScreenPixel(int x, int y)
     OBL_LOG("autotest: screen-pixel x=%d y=%d r=%d g=%d b=%d", x, y, r, g, b);
 }
 
+std::map<std::filesystem::path, std::string> g_modFixtureFiles;
+
+std::string JoinArgs(const std::vector<std::string>& args, size_t first)
+{
+    std::string joined;
+    for (size_t i = first; i < args.size(); ++i) {
+        if (i != first) joined += ' ';
+        joined += args[i];
+    }
+    return joined;
+}
+
+bool WriteFixtureFile(const std::filesystem::path& path, std::string_view text)
+{
+    std::ofstream out(path, std::ios::binary | std::ios::trunc);
+    out << text;
+    out.close();
+    return static_cast<bool>(out);
+}
+
+bool EditModFixture(const std::vector<std::string>& args)
+{
+    if (args.size() < 3 || !pack_path::PackDirectory(args[0])) return false;
+    const std::filesystem::path relative(args[1]);
+    if (relative.has_root_path()) return false;
+    for (const auto& component : relative)
+        if (component == "..") return false;
+    const auto path = std::filesystem::path("mods") / args[0] / relative;
+    if (!g_modFixtureFiles.contains(path)) {
+        std::ifstream in(path, std::ios::binary);
+        if (!in) return false;
+        g_modFixtureFiles.emplace(path, std::string(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>()));
+    }
+    return WriteFixtureFile(path, JoinArgs(args, 2) + "\n");
+}
+
 bool Execute(const Command& raw, uint32_t now)
 {
     // `$key` takes a probe or report value at the moment the directive runs (testing/commands.h).
@@ -452,6 +493,13 @@ bool Execute(const Command& raw, uint32_t now)
         OBL_LOG("autotest: mod-overlay on=%d", on ? 1 : 0);
     } else if (c.name == "screen-pixel") {
         ReportScreenPixel(Arg(c, 0), Arg(c, 1));
+    } else if (c.name == "mod-edit") {
+        if (!EditModFixture(c.args)) OBL_LOG("autotest: FAILED mod-edit could not edit the mod fixture");
+    } else if (c.name == "expect-mod-text" && c.args.size() >= 2) {
+        const auto expected = JoinArgs(c.args, 1);
+        const auto* value = ui::text_table::Lookup(c.args[0].c_str());
+        const bool pass = WideUtf8(value) == expected;
+        OBL_LOG("autotest: %s mod text %s", pass ? "PASS" : "FAILED", c.args[0].c_str());
     } else if (c.name == "shot") {
         g_pendingShot = c.args.empty() ? "shot" : c.args[0];
     } else if (c.name == "res") {
@@ -469,6 +517,9 @@ bool Execute(const Command& raw, uint32_t now)
         g_resumeAt = 0;
         return false;
     } else if (c.name == "quit") {
+        for (const auto& [path, contents] : g_modFixtureFiles)
+            if (!WriteFixtureFile(path, contents)) OBL_LOG("autotest: FAILED could not restore %s", PathUtf8(path).c_str());
+        g_modFixtureFiles.clear();
         OBL_LOG("autotest: summary passed=%d failed=%d", PassCount(), FailureCount());
         OBL_LOG("autotest: completed");
         g_completed = true;
