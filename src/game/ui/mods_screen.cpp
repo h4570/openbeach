@@ -228,6 +228,7 @@ std::u16string ProblemText(mods::Problem problem, std::string_view detail)
     switch (problem) {
     case mods::Problem::Invalid: return Format(Lookup("OBL_MODS_PROBLEM_INVALID"), {arg});
     case mods::Problem::WrongPack: return Format(Lookup("OBL_MODS_PROBLEM_PACK"), {arg});
+    case mods::Problem::NeedsEngine: return Format(Lookup("OBL_MODS_PROBLEM_ENGINE"), {arg});
     case mods::Problem::NeedsApi: return Format(Lookup("OBL_MODS_PROBLEM_API"), {arg});
     case mods::Problem::MissingRequirement: return Format(Lookup("OBL_MODS_PROBLEM_MISSING"), {arg});
     case mods::Problem::RequirementLater: return Format(Lookup("OBL_MODS_PROBLEM_LATER"), {arg});
@@ -383,7 +384,10 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
 
         // Header bar.
         own::Fill(m_x0, m_y0, m_x1, m_y0 + 48, m_pal.sea);
-        own::Text(2, m_x0 + 16, m_y0 + 14, 130, Lookup("OBL_MODS_TITLE").c_str(), m_pal.white, 0);
+        own::Text(2, m_x0 + 16, m_y0 + 5, 130, Lookup("OBL_MODS_TITLE").c_str(), m_pal.white, 0);
+        // The game version a mod's `engine_min` is checked against.
+        own::Text(0, m_x0 + 16, m_y0 + 30, 130,
+                Format(Lookup("OBL_MODS_GAME_VERSION"), {Utf8ToEngine(std::string(kEngineVersion))}).c_str(), m_pal.white, 0);
         DrawButton(m_x0 + 150, m_y0 + 8, m_x0 + 264, m_y0 + 40,
                 Lookup(m_catalogView ? "OBL_MODS_INSTALLED_TAB" : "OBL_MODS_CATALOGS").c_str(), m_catalogView ? m_pal.foam : m_pal.seaDark,
                 m_catalogView ? m_pal.ink : m_pal.white);
@@ -859,8 +863,7 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
     void RebuildCatalogRows()
     {
         m_catalogRows.clear();
-        mods::SemVer engineVer;
-        if (!mods::ParseVersion(mods::kEngineVersion, engineVer)) engineVer = {1, 13, 0};
+        const mods::SemVer engineVer = EngineVersion();
         const std::string packId = pack_path::SelectedId();
         for (const mods::StoredCatalog& cat : m_catalogStore.Catalogs()) {
             const auto compatible = mods::FilterCompatibleMods(cat.mods, engineVer, packId, mod_pack::kPresentationApi);

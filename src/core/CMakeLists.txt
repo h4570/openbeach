@@ -58,6 +58,8 @@ add_library(obl_core STATIC
     wide_format.cpp
     wide_format.h)
 target_include_directories(obl_core PUBLIC ${CMAKE_SOURCE_DIR}/src)
+# The running version, for core/engine_version.h and everything that checks `engine_min` (formats/mod_pack, game/mods).
+target_compile_definitions(obl_core PUBLIC "OBL_ENGINE_VERSION=\"${OBL_VERSION}\"")
 # The float contract of every project target (src/game/CMakeLists.txt): det_math depends on it.
 if(MSVC)
     target_compile_options(obl_core PUBLIC /arch:AVX2 /fp:precise)

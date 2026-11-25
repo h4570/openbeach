@@ -212,7 +212,6 @@ add_library(obl_common STATIC
     game/game_states.h
     game/game_states_logic.h)
 target_include_directories(obl_common PUBLIC ${CMAKE_SOURCE_DIR}/src)
-target_compile_definitions(obl_common PUBLIC "OBL_ENGINE_VERSION=\"${OBL_VERSION}\"")
 target_link_libraries(obl_common PUBLIC SDL3::SDL3-static nlohmann_json::nlohmann_json obl_core obl_formats obl_json_schema obl_lua PRIVATE obl_zlib)
 # All project targets share one float contract: AVX2 scalar math, no FMA contraction
 # (/fp:precise without /fp:contract); keep external libraries on their own flags.

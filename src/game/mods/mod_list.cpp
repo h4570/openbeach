@@ -4,8 +4,9 @@
 
 namespace obl::mods {
 
-ModList::ModList(std::vector<mod_pack::InstalledMod> installed, std::string packId, std::span<const std::string> active, int api)
-    : m_packId(std::move(packId)), m_api(api)
+ModList::ModList(
+        std::vector<mod_pack::InstalledMod> installed, std::string packId, std::span<const std::string> active, int api, SemVer engine)
+    : m_packId(std::move(packId)), m_api(api), m_engine(engine)
 {
     for (const std::string& id : active) {
         const auto it = std::find_if(installed.begin(), installed.end(), [&](const auto& mod) { return mod.id == id; });
@@ -47,6 +48,11 @@ Problem ModList::FixedProblem(const mod_pack::InstalledMod& mod, std::string& de
         detail.clear();
         for (const std::string& pack : packs) detail += (detail.empty() ? "" : ", ") + pack;
         return Problem::WrongPack;
+    }
+    if (!mod_pack::EngineRefusal(mod.manifest, m_engine).empty()) {
+        const SemVer& v = *mod.manifest.engineMin;
+        detail = std::to_string(v.major) + "." + std::to_string(v.minor) + "." + std::to_string(v.patch);
+        return Problem::NeedsEngine;
     }
     if (mod.manifest.api > m_api) {
         detail = std::to_string(mod.manifest.api);

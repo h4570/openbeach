@@ -53,6 +53,35 @@ class BuildCatalogTests(unittest.TestCase):
                     self.assertTrue(info.filename.startswith("frame_counter/"))
                     self.assertEqual(info.date_time, build_catalog.FIXED_ZIP_TIME)
 
+    def make_mod(self, root: Path, extra: dict) -> Path:
+        mod_dir = root / "sample"
+        mod_dir.mkdir()
+        manifest = {"format": "obl.mod", "version": 1, "id": "sample", "title": "Sample", "mod_version": "1.0.0", "pack": "l0"}
+        manifest.update(extra)
+        (mod_dir / "mod.json").write_text(json.dumps(manifest), encoding="utf-8")
+        return mod_dir
+
+    def test_engine_min_is_copied_and_engine_max_is_not(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            mod_dir = self.make_mod(root, {"engine_min": "1.14.0", "engine_max": "1.20.0"})
+            entry = build_catalog.build_entry(mod_dir, root / "out", "MIT")
+            self.assertEqual(entry["engine_min"], "1.14.0")
+            self.assertNotIn("engine_max", entry)
+
+    def test_entry_without_engine_min_has_none(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            entry = build_catalog.build_entry(self.make_mod(root, {}), root / "out", "MIT")
+            self.assertNotIn("engine_min", entry)
+
+    def test_malformed_engine_min_is_refused(self):
+        for bad in ("1.14", "01.14.0", "1.14.0-rc1", 114):
+            with self.subTest(engine_min=bad), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                with self.assertRaises(ValueError):
+                    build_catalog.build_entry(self.make_mod(root, {"engine_min": bad}), root / "out", "MIT")
+
     def test_sign_verify_and_determinism_with_engine_signer(self):
         signer = locate_signer()
         if signer is None:

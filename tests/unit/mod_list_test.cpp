@@ -71,6 +71,15 @@ OBL_TEST_CASE("mod_list.a_mod_that_cannot_start_says_why")
     OBL_CHECK(!list.SetOn("future", true, why, detail) && why == mods::Problem::NeedsApi && detail == "2");
     OBL_CHECK(list.ActiveCount() == 0);
 
+    // `engine_min` newer than the game keeps a mod off, naming the version it needs; the game's own version is enough.
+    auto newer = Mod("newer");
+    newer.manifest.engineMin = SemVer{1, 14, 0};
+    auto same = Mod("same");
+    same.manifest.engineMin = SemVer{1, 13, 0};
+    mods::ModList engineList({newer, same}, "l0", {}, 1, SemVer{1, 13, 0});
+    OBL_CHECK(!engineList.SetOn("newer", true, why, detail) && why == mods::Problem::NeedsEngine && detail == "1.14.0");
+    OBL_CHECK(engineList.SetOn("same", true, why, detail));
+
     // A missing requirement does not keep a mod off, but the list cannot start until it is fixed.
     OBL_CHECK(list.SetOn("needs", true, why, detail));
     OBL_CHECK(list.Find("needs")->problem == mods::Problem::MissingRequirement && list.Find("needs")->detail == "lib");

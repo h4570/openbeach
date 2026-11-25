@@ -1,9 +1,11 @@
 #pragma once
 
 #include "formats/key_actions.h"
+#include "core/engine_version.h"
 #include "core/settings_schema.h"
 
 #include <filesystem>
+#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
@@ -46,6 +48,7 @@ struct Manifest {
     std::vector<std::string> conflictingMods; // `conflicts`: mod ids this mod does not work with; never active together
     Scope scope = Scope::World;
     std::vector<settings_schema::Field> settings; // `settings`: kept in openbeach.ini under [Mod.<id>], never read by the simulation
+    std::optional<SemVer> engineMin; // `engine_min`: the oldest game version the mod works on; there is no engine_max (see mods.md)
     int api = 0; // the presentation API version the scripts were written for; 0 when the manifest names none
     std::vector<std::string> takesOver; // names from kTakeOverAreas, or "action.<engine action>"
     std::vector<key_actions::ModAction> actions; // `actions`: named, bindable; a press calls on_action(id)
@@ -78,6 +81,8 @@ inline bool IsRecipePath(std::string_view relative)
     return relative.starts_with("recipes/") && relative.ends_with(".json") && relative.find('/', 8) == std::string_view::npos;
 }
 bool PresentationMayShip(std::string_view relative, std::string_view patchFormat, std::string_view recipeText);
+// The refusal text for a mod whose `engine_min` is newer than `engine` ("needs OpenBeach X or newer; update the game"), or empty.
+std::string EngineRefusal(const Manifest& manifest, const SemVer& engine = EngineVersion());
 bool CheckManifestContent(
         const Manifest& manifest, std::string_view packId, bool hasScripts, std::string_view refusedFile, std::string& error);
 

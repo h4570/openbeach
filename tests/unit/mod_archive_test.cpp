@@ -115,6 +115,10 @@ OBL_TEST_CASE("mod_archive.refuses_invalid_manifest_and_scope")
     auto manifest = std::string(kPresentation.substr(0, kPresentation.size() - 1));
     ExpectRefused({{"sample/mod.json", manifest + R"(,"api":999})"}}, "script API");
     ExpectRefused({{"sample/mod.json", kPresentation}, {"sample/scripts/presentation/main.lua", "x"}}, "no \"api\"");
+    // A mod for a newer game is refused before anything is written, with the version it needs.
+    auto world = std::string(kManifest.substr(0, kManifest.size() - 1));
+    ExpectRefused({{"sample/mod.json", world + R"(,"engine_min":"999.0.0"})"}}, "needs OpenBeach 999.0.0 or newer; update the game");
+    ExpectRefused({{"sample/mod.json", world + R"(,"engine_min":"1.x"})"}}, "engine_min");
     ExpectRefused({{"sample/mod.json", kPresentation}, {"sample/rules/game_parameters.json", "{}"}}, "may not ship");
     ExpectRefused({{"sample/mod.json", kPresentation},
                           {"sample/recipes/bad.json", R"({"format":"obl.asset_recipe","output":"sprites/bad.json"})"}},

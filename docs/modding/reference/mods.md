@@ -30,6 +30,13 @@ Players install it from the [Mods screen](../players/mods-screen.md#installing-a
 - `requires` (optional): mod ids that must be active and earlier in the load order.
 - `conflicts` (optional): mod ids this mod does not work with; the start-up check and the mods screen refuse to run both together
   (whichever of the two names the other). A mod cannot name itself or a mod it also lists in `requires`.
+- `engine_min` (optional): `MAJOR.MINOR.PATCH`, the oldest game version the mod works on. A mod that needs a newer game is
+  refused with "needs OpenBeach X or newer; update the game" at start-up, by the ZIP installer before anything is written, on
+  the mods screen and by `--check-mods`. Name it when the mod uses something a release added (a function, an event, a format
+  field), so an older game says "update" instead of failing on a parser error. There is deliberately no `engine_max`: an author
+  cannot know which future version breaks a mod, and a guess turns working mods off; an incompatible change is caught by the
+  engine itself through file format versions and `api`. A catalog maintainer may add `engine_max` to a catalog entry after the
+  fact ([catalogs.md](../catalogs.md)).
 - `scope` (optional): `"world"` (the default) or `"presentation"`. A presentation mod reaches the simulation only through game
   commands, so it ships no data the simulation reads, and saves and replays leave it out ([scripting.md](scripting.md#scope)).
 - `api` (optional): the presentation script API version the mod's scripts were written for; a mod with

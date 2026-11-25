@@ -22,7 +22,7 @@ data are kept. In the browser, changes are saved to that site's browser storage.
 
 The archive must be a standard ZIP with stored or deflated entries and portable ASCII filenames. Links, encrypted files
 and split archives are refused. Limits are 64 MiB for the ZIP, 32 MiB for one file, 128 MiB expanded and 4,096 entries.
-The game checks the manifest, target pack, script API and scope before writing. If the mod includes
+The game checks the manifest, target pack, game version (`engine_min`), script API and scope before writing. If the mod includes
 [asset recipes](../reference/recipes.md), the game builds their outputs from the current pack during installation.
 An unavailable source disables that recipe and leaves a message in the log.
 
@@ -75,7 +75,8 @@ There are two kinds of conflict:
 A mod that cannot start on the current pack or list is marked in red with the reason:
 - **Broken:** `mod.json` is missing or invalid.
 - **Made for another pack:** the mod targets a different pack than the one currently loaded.
-- **Needs a newer game:** the mod requires a newer presentation script API.
+- **Needs a newer game:** the mod requires a newer presentation script API, or names an `engine_min` newer than the game
+  (the screen's header shows the running version).
 - **Needs `<mod>`, which is off / earlier in the order:** switch on the required mod and place it above the mod that needs it.
 - **Does not work with `<mod>`:** one of the two mods names the other in `conflicts`.
 

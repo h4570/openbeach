@@ -1,0 +1,9 @@
+{
+  "format": "obl.mod",
+  "version": 1,
+  "id": "bad_engine",
+  "title": "bad_engine",
+  "mod_version": "1.0.0",
+  "pack": "l0",
+  "engine_min": "999.0.0"
+}

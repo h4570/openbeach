@@ -58,7 +58,7 @@ A catalog is a UTF-8 JSON object (at most 4 MiB, at most 2,048 entries):
 | `pack` or `packs` | yes | Target pack id or non-empty list of pack ids (`base`, `l0`, ...). Cannot set both. |
 | `scope` | no | `"world"` (default) or `"presentation"`. |
 | `api` | no | Non-negative presentation script API version (`0` if omitted). Entries requiring a newer API than the engine offers are hidden. |
-| `engine_min`, `engine_max` | no | Inclusive `MAJOR.MINOR.PATCH` engine version bounds. Entries outside the running engine's version are filtered out. |
+| `engine_min`, `engine_max` | no | Inclusive `MAJOR.MINOR.PATCH` engine version bounds. Entries outside the running engine's version are filtered out. `tools/build_catalog.py` copies `engine_min` from the mod's `mod.json` ([mods.md](reference/mods.md)); `engine_max` exists in catalogs only, as a known-incompatibility marker a catalog maintainer adds after the fact, because `mod.json` has no `engine_max` (an author cannot know which future version breaks a mod). |
 | `requires` | no | Array of required mod ids. Installing a mod installs missing dependencies in topological order first. |
 | `url` | yes | `https://` URL of the mod ZIP, or a relative path resolved against `catalog.json` (staying on `https://`). |
 | `sha256` | yes | 64 lowercase hex characters: SHA-256 of the ZIP file bytes. Verified before unpacking. |
