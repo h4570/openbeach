@@ -50,10 +50,11 @@ Resolved ResolveFamily(Guest& guest, const char*& key, Building** building = nul
     if (building) *building = destination;
     if (!destination->m_definition || static_cast<uint32_t>(guest.m_desired_commod) >= std::size(destination->m_definition->m_Commodity))
         return Resolved::OutOfRange;
+    // The bounds are the loaded tables, which mods may grow past the pack's capacities (WorldParams::kModCommodities).
     const int32_t commodity = destination->m_definition->m_Commodity[guest.m_desired_commod];
-    if (static_cast<uint32_t>(commodity) >= static_cast<uint32_t>(tables::WorldParams::kMaxCommodities)) return Resolved::OutOfRange;
+    if (static_cast<size_t>(static_cast<uint32_t>(commodity)) >= GetWorldParams()->m_commodities.size()) return Resolved::OutOfRange;
     const int32_t family = world::world_params::GetCommodityFamilyOf(GetWorldParams(), commodity);
-    if (static_cast<uint32_t>(family) >= static_cast<uint32_t>(tables::WorldParams::kMaxCommodityFamilies)) return Resolved::OutOfRange;
+    if (static_cast<size_t>(static_cast<uint32_t>(family)) >= GetWorldParams()->m_commodityFamilies.size()) return Resolved::OutOfRange;
     key = GetWorldParams()->m_commodityFamilies[family].m_key.c_str();
     return Resolved::Family;
 }

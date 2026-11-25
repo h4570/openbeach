@@ -153,7 +153,7 @@ void ReportObject(const std::vector<std::string>& args)
         OBL_LOG("autotest: object-report exists=0");
         return;
     }
-    char line[512];
+    char line[2048];
     int used = std::snprintf(line, sizeof(line), "exists=1 id=%u type=%d state=%d waiting=%d pos-x=%.9g pos-y=%.9g", object->m_id,
             static_cast<int>(object->m_type), object->m_state, object->m_waitingForDeath, object->m_WorldXYZ[0], object->m_WorldXYZ[1]);
     const auto type = static_cast<object::ObjectType>(object->m_type);
@@ -175,6 +175,15 @@ void ReportObject(const std::vector<std::string>& args)
                     events->m_slots[0].m_price, events->m_slots[1].m_price, events->m_slots[2].m_price, events->m_slots[0].m_EventID,
                     events->m_slots[1].m_EventID, events->m_slots[2].m_EventID);
         }
+    } else if (type == object::ObjectType::Guest) {
+        // The guest's type, where it is heading and the needs mods add (need-<key>=<desire> rate-<key>=<growth rate>).
+        const auto* guest = reinterpret_cast<const object::Guest*>(object);
+        const tables::GuestDef* def = guest->m_definition;
+        used += std::snprintf(line + used, sizeof(line) - used, " guest-type=%s current=%d happiness=%.9g", def ? def->m_key.c_str() : "",
+                guest->m_CurID, guest->m_happiness);
+        for (size_t i = 0; def && i < def->m_Needs.size() && i < static_cast<size_t>(tables::kMaxGuestNeeds) && used < 1900; ++i)
+            used += std::snprintf(line + used, sizeof(line) - used, " need-%s=%.9g rate-%s=%.9g", def->m_Needs[i].m_key.c_str(),
+                    guest->m_needs[i], def->m_Needs[i].m_key.c_str(), guest->m_needRates[i]);
     } else if (type == object::ObjectType::Scenery) {
         const auto* scenery = reinterpret_cast<const object::Scenery*>(object);
         std::snprintf(line + used, sizeof(line) - used, " called-repair=%d called-clean=%d vandalised=%d", scenery->m_urgentRepairCalled,

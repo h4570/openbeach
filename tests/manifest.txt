@@ -33,6 +33,8 @@ l0_mod_catalog_patch.txt @l0
 l0_mod_building.txt @l0
 l0_mod_building_traits.txt @l0
 replay_l0_mod_building_traits.txt @l0
+l0_mod_guest_needs.txt @l0
+replay_l0_mod_guest_needs.txt @l0
 l0_mod_rule.txt @l0
 l0_mod_guests.txt @l0
 l0_mod_rule_replay.txt @l0

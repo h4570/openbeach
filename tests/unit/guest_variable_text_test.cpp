@@ -147,3 +147,24 @@ OBL_TEST_CASE("guest_text.clamps_formats_days_and_unrecognized_key")
     f.Text("guest_name");
     OBL_CHECK_EQ(f.env.fatal, "guest_name");
 }
+
+OBL_TEST_CASE("guest_text.mod_need_strongest_and_value")
+{
+    Fixture f;
+    tables::GuestDef def{};
+    def.m_Needs.push_back({"yoga", "yoga", "GUEST_DESIRE_YOGA", true, {0.1f, 0.2f}, 2});
+    f.guest->m_definition = &def;
+    f.guest->m_desires[5] = 0.6f;
+    f.guest->m_needs[0] = 0.6f; // tie keeps the pack desire
+    f.Text("GUEST_DESIRE");
+    OBL_CHECK_EQ(f.env.lookedUp, "GUEST_DESIRE_MEALS");
+
+    f.guest->m_needs[0] = 0.85f; // strictly stronger shows the need's display text
+    f.Text("GUEST_DESIRE");
+    OBL_CHECK_EQ(f.env.lookedUp, "GUEST_DESIRE_YOGA");
+    f.Text("GUEST_DESIRE_0");
+    OBL_CHECK_EQ(f.env.lookedUp, "GUEST_DESIRE_YOGA");
+
+    f.Text("GUEST_DESIRE_YOGA");
+    OBL_CHECK_EQ(f.env.real, static_cast<double>(0.85f));
+}

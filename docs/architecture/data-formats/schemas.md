@@ -30,7 +30,7 @@ Formats with a schema (the page that explains each):
 | `obl.game_parameters` | `rules/game_parameters.json` | [game-data.md](game-data.md#game-parameters-and-rule-constants) |
 | `obl.weather_parameters` | `rules/weather_parameters.json` (v2 only) | [game-data.md](game-data.md#weather-lighting-parameters) |
 | `obl.catalog_index` | `catalog/index.json` | [game-data.md](game-data.md#catalog) |
-| `obl.building`, `obl.scenery`, `obl.staff`, `obl.vehicle`, `obl.table`, `obl.event`, `obl.beer`, `obl.fine`, `obl.commodity_family`, `obl.commodity`, `obl.opening_hours`, `obl.desire`, `obl.desire_slot` | `catalog/<kind>/<key>.json` | [game-data.md](game-data.md#catalog) |
+| `obl.building`, `obl.scenery`, `obl.staff`, `obl.vehicle`, `obl.table`, `obl.event`, `obl.beer`, `obl.fine`, `obl.commodity_family`, `obl.commodity`, `obl.opening_hours`, `obl.desire`, `obl.desire_slot`, `obl.guest_need` | `catalog/<kind>/<key>.json` | [game-data.md](game-data.md#catalog) |
 | `obl.guest_set` | `guests/<set>.json` | [game-data.md](game-data.md#guest-sets) |
 | `obl.object_browser`, `obl.credits` | `gui/object_browser.json`, `gui/credits.json` | [converter/index.md](converter/gui-runtime.md#gui-writer-and-runtime-handoff) |
 | `obl.gui_layouts` | `gui/layouts.json` | [game-data.md](game-data.md#gui-layouts) |

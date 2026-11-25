@@ -333,7 +333,11 @@ OBL_TEST_CASE("schema.game_data_rules")
     OBL_CHECK(!ErrorsAfter(r, "building.json", [](json& d) { d["failure"]["percent"] = 101; }).empty());
     OBL_CHECK(!ErrorsAfter(r, "table.json", [](json& d) { d["chairs"][0]["dir"] = "north"; }).empty());
     OBL_CHECK(!ErrorsAfter(r, "beer.json", [](json& d) { d["effect"] = "vandal"; }).empty());
-    OBL_CHECK(!ErrorsAfter(r, "guest_set.json", [](json& d) { d["types"][0]["preferences"]["swimfun"] = {0, 1}; }).empty());
+    // Extra key-named preferences are allowed for mod guest needs (the loader checks against declared needs), but non-key names or bad ranges are refused.
+    OBL_CHECK(ErrorsAfter(r, "guest_set.json", [](json& d) { d["types"][0]["preferences"]["yoga"] = {0, 1}; }).empty());
+    OBL_CHECK(!ErrorsAfter(r, "guest_set.json", [](json& d) { d["types"][0]["preferences"]["BAD KEY"] = {0, 1}; }).empty());
+    OBL_CHECK(!ErrorsAfter(r, "guest_set.json", [](json& d) { d["types"][0]["preferences"]["yoga"] = {0}; }).empty());
+    OBL_CHECK(!ErrorsAfter(r, "guest_need.json", [](json& d) { d.erase("family"); }).empty());
     OBL_CHECK(!ErrorsAfter(r, "guest_set.json", [](json& d) { d["types"][0]["nights"] = {1, 300}; }).empty());
     OBL_CHECK(!ErrorsAfter(r, "gui_layouts.json", [](json& d) { d["layouts"]["in_game"] = {{"pl", "in_game_pl.gui"}}; }).empty());
 }

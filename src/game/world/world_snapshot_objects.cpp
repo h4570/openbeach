@@ -9,6 +9,7 @@
 #include "game/objects/object_vehicle.h"
 #include "game/objects/object_manager_state.h"
 #include "game/objects/object_moving.h"
+#include "game/tables/world_params_leaves.h"
 #include "game/map/path_data.h"
 #include "core/char16.h"
 #include "game/world/world_snapshot_model.h"
@@ -170,6 +171,16 @@ void EmitGuest(WorldSnapshot& s, const object::Guest& o)
 {
     ClassEmitter emitter{s};
     object::VisitFields(o, emitter);
+    // The needs mods add, as (growth rate, desire) pairs: only when the guest's type has needs, so worlds without them hash as before.
+    if (o.m_definition && !o.m_definition->m_Needs.empty()) {
+        float pairs[2 * tables::kMaxGuestNeeds];
+        size_t count = 0;
+        for (size_t i = 0; i < o.m_definition->m_Needs.size() && i < static_cast<size_t>(tables::kMaxGuestNeeds); ++i) {
+            pairs[count++] = o.m_needRates[i];
+            pairs[count++] = o.m_needs[i];
+        }
+        s.Floats("guest.needs", pairs, count);
+    }
     EmitMoving(s, o);
 }
 

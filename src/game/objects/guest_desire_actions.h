@@ -35,6 +35,14 @@ inline int FindDesire(const char* family, const char* const* names, int from = 0
     return kDesireCount;
 }
 
+// The need a mod added that the family serves (GuestDef::m_Needs), -1 when none. Mods cannot give a need a family of the pack's desires.
+inline int FindNeed(const GuestDef& def, const char* family)
+{
+    for (size_t i = 0; i < def.m_Needs.size() && i < static_cast<size_t>(tables::kMaxGuestNeeds); ++i)
+        if (ascii::EqualsNoCase(family, def.m_Needs[i].m_family)) return static_cast<int>(i);
+    return -1;
+}
+
 // The three outdoor desires also reset the activity byte.
 inline bool IsOutdoor(int desire)
 {
@@ -47,7 +55,18 @@ inline bool IsOutdoor(int desire)
 inline void MissedDesire(Guest& g, const GuestDef& def, const char* family, const char* const* names)
 {
     const int desire = FindDesire(family, names);
-    if (desire == kDesireCount) return;
+    if (desire == kDesireCount) {
+        // A need a mod added misses like a desire bought at a building: the first miss sets the flag, a repeated one costs the variety.
+        const int need = FindNeed(def, family);
+        if (need < 0) return;
+        if (!g.m_missedDesireLast) {
+            g.m_missedDesire = 1;
+            return;
+        }
+        g.m_needs[need] = 0.0f;
+        guest_opinions::Lower(g.m_opinion[tables::Variety], def.m_OpinionEffect[tables::Variety][1]);
+        return;
+    }
     if (!g.m_missedDesireLast) {
         g.m_missedDesire = 1;
         return;
@@ -75,6 +94,9 @@ inline void AlterDesires(Guest& g, const char* family, const char* const* names)
         }
         if (IsOutdoor(i)) g.m_activity = 0;
     }
+    // A need a mod added is satisfied by its family as well.
+    if (g.m_definition)
+        if (const int need = FindNeed(*g.m_definition, family); need >= 0) g.m_needs[need] = 0.0f;
     g.m_NumTimesBlocked = 0;
 }
 

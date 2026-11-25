@@ -26,7 +26,7 @@ script or a change of the scope rule adds its line here.
   mods' vocabulary patches and validates every mod `.obs` in strict mode at start-up (naming mod, file, and line on error);
   `WorldScriptHost::FindOrLoad` loads custom object scripts on demand, and `LoadSaveOrigin` uses the same merged vocabulary so
   saves write and read mod state names ([object-scripts.md](../../modding/reference/object-scripts.md)).
-- Generic object functions (`src/game/objects/mod_script_functions.h/.cpp`): ten functions (ids from 1000) and five registers (`Arg1` to `Arg4`
+- Generic object functions (`src/game/objects/mod_script_functions.h/.cpp`): eleven functions (ids from 1000) and five registers (`Arg1` to `Arg4`
   and `Result`, ids from 280; 0x110 is the interpreter's "no value") in the engine's script API table. The parser accepts them only in strict
   mode (mod scripts) and keeps the script line of each call. `GameHost` (`script_program_run.cpp`) keeps the registers for one run of a handler,
   so nothing is saved, and dispatches the functions before the object's own `CallFunction`. They read and write the simulation only (object
@@ -45,6 +45,13 @@ script or a change of the scope rule adds its line here.
   runs the object script while standing with its own `m_scriptState` (separate from `Building::m_state`), saved as optional
   `building.script_state` by name and hashed in world snapshots only when `m_script != nullptr`, so buildings without a script keep their
   existing saves and hashes.
+- Guest needs (`src/game/tables/guest_needs.h`, [guest-needs.md](../../modding/reference/guest-needs.md), experimental): optional
+  `guest_needs` catalog kind (`obl.guest_need` v1, capacity 16; mod catalog patches get +16 commodity families and +32 commodities of
+  headroom). Pack desires (`m_person[13]`, `m_desires[26]`, weather modifiers, `complaints[26]`) stay native; mod needs live in fixed
+  `Guest::m_needRates[16]` / `m_needs[16]` arrays and participate after the 26 desires in search, repeat, alter/missed, and panel text.
+  `obl.save` writes `guest.needs` and world snapshots hash `guest.needs` only when the guest's type has needs; an old save loaded into a
+  world with needs initializes missing named needs to the midpoint of `preferences.<need>` without drawing RNG. Tests: `l0_mod_guest_needs`
+  and `replay_l0_mod_guest_needs` (mod `l0_yoga`).
 
 ## Installing an archive
 

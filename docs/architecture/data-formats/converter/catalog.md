@@ -63,7 +63,7 @@ The loader embeds the checked-in schemas, validates every document, preserves in
 content key. It checks the current fixed table, slot, string and numeric capacities before writing them. The records own
 all their data (strings, vectors, the shared footprint grid); an error leaves the destination unchanged; the game stops with the failing file and the setup command.
 
-The world script parser takes its `Weather` modifier words from the `desire_slots` rows, matched exactly; an unknown word stays a script error. The loader refuses a list without all 26 slots.
+The world script parser takes its `Weather` modifier words from the `desire_slots` rows, matched exactly; an unknown word stays a script error. The loader refuses a list without all 26 slots. `guest_needs` is optional in `index.json` (mods add needs via `catalog/index.patch.json`, with up to 16 needs and mod headroom of +16 commodity families and +32 commodities).
 
 Catalog version 2 holds canonical lowercase names only: keys, `requires`, sprite and animation names. The converter does
 the mapping from source spellings, and the runtime keeps these names and compares content names without case (a save may

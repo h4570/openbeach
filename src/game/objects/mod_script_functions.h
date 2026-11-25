@@ -22,7 +22,7 @@ constexpr int32_t kArg1 = 280, kArg2 = 281, kArg3 = 282, kArg4 = 283, kResult = 
 constexpr int32_t kFirstFunction = 1000;
 constexpr int32_t kFindNearestBuilding = 1000, kFindNearestCommodity = 1001, kWalkToObject = 1002, kChangeGuestsHappiness = 1003,
                   kChangeGuestsDesire = 1004, kPayMoney = 1005, kChargeMoney = 1006, kCreateObject = 1007, kRemoveObject = 1008,
-                  kSendToNearby = 1009, kLastFunction = 1009;
+                  kSendToNearby = 1009, kGetGuestDesire = 1010, kLastFunction = 1010;
 
 // The limits a script cannot pass.
 constexpr int kMaxRadius = 16; // tiles

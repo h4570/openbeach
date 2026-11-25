@@ -23,6 +23,7 @@ inline void Reset(WorldParams& p, Beers beers)
     p.m_commodities.clear();
     p.m_desires.clear();
     p.m_desireSlots.clear();
+    p.m_guestNeeds.clear();
     p.m_vehicles.clear();
     p.m_scenery.clear();
     p.m_buildings.clear();

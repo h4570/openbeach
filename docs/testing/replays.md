@@ -74,6 +74,7 @@ entry) and `tests/replay_<name>.txt` the manifest test that replays it.
 | `l0_construction` | L0, 3120 ticks: a hut, toilet block and kiosk built, shifts, wage, price, open/close, demolition |
 | `l0_gui` | L0, 124 ticks: the building panel's close/open buttons; windowed recording (runs on Linux windowed too), the replay is plain |
 | `l0_rejected` | L0, 371 ticks: 24 refused commands of every family between accepted ones |
+| `l0_mod_guest_needs` | L0 with `l0_yoga`, 3550 ticks at speed 2: places `yoga_studio`, bus brings `yogi` guests who satisfy the `yoga` need |
 | `l0_mismatch` | hand-edited from the first 100 ticks of `l0_commands`: @50 a wrong total with two wrong section digests (buildings, staff), @70 a wrong total without digests (`replay_mismatch.txt`); refresh @0/@100 when `l0_commands` is re-recorded (the file's comment says how to refresh @50) |
 
 The `l0_*` scripts carry `# @env OBL_PACK=l0`; `replay.ps1 -Record` reads it (or `-Pack l0`) for the checks, and `# @env OBL_MODS=` (or `-Mods`) for a replay recorded with mods, and the manifest

@@ -220,3 +220,76 @@ OBL_TEST_CASE("catalog_patch.building_optional_icon_and_own_icon_sprites_load")
     OBL_REQUIRE(index.at("buildings").size() == 10u);
     OBL_CHECK_EQ(index.at("buildings").at(9).get<std::string>(), "ice_stand");
 }
+
+OBL_TEST_CASE("catalog_patch.guest_needs_load_headroom_and_refusals")
+{
+    ModsGuard guard;
+    Game game;
+    // A pack index without `guest_needs` loads with no needs.
+    {
+        auto params = std::make_unique<tables::WorldParams>();
+        std::string error;
+        OBL_REQUIRE(game.Load(*params, error));
+        OBL_CHECK(params->m_guestNeeds.empty());
+    }
+
+    auto writeFamily = [&](const std::string& mod, const std::string& key) {
+        WriteJson(game.dir.path / "mods" / mod / "catalog/commodity_families" / (key + ".json"),
+                {{"format", "obl.commodity_family"}, {"version", 2}, {"key", key}, {"name", key}});
+    };
+    auto writeCommodity = [&](const std::string& mod, const std::string& key, const std::string& family) {
+        WriteJson(game.dir.path / "mods" / mod / "catalog/commodities" / (key + ".json"),
+                {{"format", "obl.commodity"}, {"version", 2}, {"key", key}, {"name", key}, {"family", family}});
+    };
+    auto writeNeed = [&](const std::string& mod, const std::string& key, const std::string& name, const std::string& family) {
+        WriteJson(game.dir.path / "mods" / mod / "catalog/guest_needs" / (key + ".json"),
+                {{"format", "obl.guest_need"}, {"version", 1}, {"key", key}, {"name", name}, {"family", family}});
+    };
+
+    // Valid need plus a new family and commodity (L0 is already at the pack caps of 24 families and 41 commodities).
+    writeFamily("mod_a", "yoga");
+    writeCommodity("mod_a", "yoga_class", "yoga");
+    writeNeed("mod_a", "yoga", "GUEST_DESIRE_YOGA", "yoga");
+    game.Patch("mod_a", {{"commodity_families", {"yoga"}}, {"commodities", {"yoga_class"}}, {"guest_needs", {"yoga"}}});
+    pack_path::SetActiveMods({"mod_a"});
+
+    auto params = std::make_unique<tables::WorldParams>();
+    std::string error;
+    OBL_REQUIRE(game.Load(*params, error));
+    OBL_REQUIRE(params->m_guestNeeds.size() == 1u);
+    OBL_CHECK_EQ(params->m_guestNeeds[0].m_id, 0);
+    OBL_CHECK_EQ(params->m_guestNeeds[0].m_key, std::string("yoga"));
+    OBL_CHECK_EQ(params->m_guestNeeds[0].m_name, std::string("GUEST_DESIRE_YOGA"));
+    OBL_CHECK_EQ(params->m_guestNeeds[0].m_familyKey, std::string("yoga"));
+    OBL_CHECK_EQ(params->m_guestNeeds[0].m_family, params->m_numCommodityFamilies - 1);
+
+    const auto refuse = [&](const char* needle) {
+        auto out = std::make_unique<tables::WorldParams>();
+        std::string err;
+        OBL_CHECK(!game.Load(*out, err));
+        OBL_CHECK(err.find(needle) != std::string::npos);
+    };
+
+    // Family is "none".
+    writeNeed("mod_a", "yoga", "GUEST_DESIRE_YOGA", "none");
+    refuse("family none serves nothing");
+
+    // Family already serves a pack desire.
+    writeNeed("mod_a", "yoga", "GUEST_DESIRE_YOGA", "snacks");
+    refuse("already serves a desire of the pack");
+
+    // Key collides with a desire slot.
+    writeNeed("mod_a", "snacks", "GUEST_DESIRE_SNACKS", "yoga");
+    game.Patch("mod_a", {{"commodity_families", {"yoga"}}, {"guest_needs", {"snacks"}}});
+    refuse("desire slot");
+
+    // Two needs share one family.
+    writeNeed("mod_a", "yoga", "GUEST_DESIRE_YOGA", "yoga");
+    writeNeed("mod_a", "pilates", "GUEST_DESIRE_PILATES", "yoga");
+    game.Patch("mod_a", {{"commodity_families", {"yoga"}}, {"guest_needs", {"yoga", "pilates"}}});
+    refuse("already serves the need yoga");
+
+    // Same key added twice.
+    game.Patch("mod_a", {{"commodity_families", {"yoga"}}, {"guest_needs", {"yoga", "yoga"}}});
+    refuse("already exists");
+}

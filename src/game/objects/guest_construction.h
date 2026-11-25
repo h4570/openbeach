@@ -203,6 +203,12 @@ template<class Env> Guest* Construct(Guest& guest, const void* params, Env& env)
     guest.m_moodIconTime = 0.0f;
     guest.m_leavingEarly = 0;
     guest.m_lastUpdateHappened = env.GameTime();
+    // Needs added by mods: one draw for each need the type names, after every draw above, so a type without one draws as it always did.
+    for (size_t i = 0; i < def->m_Needs.size() && i < static_cast<size_t>(tables::kMaxGuestNeeds); ++i) {
+        const tables::GuestNeedPref& need = def->m_Needs[i];
+        guest.m_needs[i] = 0.0f;
+        guest.m_needRates[i] = need.m_named ? Lerp(need.m_pref[0], need.m_pref[1], env.Rand()) : 0.0f;
+    }
     return &guest;
 }
 

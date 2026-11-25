@@ -18,6 +18,7 @@
 #include "game/world/world_state.h"
 
 #include <algorithm>
+#include <bit>
 #include <cmath>
 #include <cstring>
 
@@ -26,7 +27,7 @@ namespace {
 
 using object::Base;
 
-constexpr int32_t kTypeText = 1;
+constexpr int32_t kTypeText = 1, kTypeFloat = 3;
 
 double Number(const script::ScriptValue& value)
 {
@@ -153,14 +154,42 @@ const tables::DesireSlotDef* DesireSlot(const char* key)
     return nullptr;
 }
 
+// A need a mod added, by key (WorldParams::m_guestNeeds); -1 when none.
+int GuestNeed(const char* key)
+{
+    const auto& needs = game::GetWorldParams()->m_guestNeeds;
+    for (size_t i = 0; i < needs.size(); ++i)
+        if (ascii::EqualsNoCase(needs[i].m_key, key)) return static_cast<int>(i);
+    return -1;
+}
+
+// What a desire key names: a desire slot (0..25), a need a mod added (kFirstGuestNeed + its index) or nothing (-1).
+int DesireNumber(const char* key)
+{
+    if (!key) return -1;
+    if (const tables::DesireSlotDef* slot = DesireSlot(key); slot && slot->m_id >= 0 && slot->m_id < 26) return slot->m_id;
+    const int need = GuestNeed(key);
+    return need < 0 || need >= tables::kMaxGuestNeeds ? -1 : tables::kFirstGuestNeed + need;
+}
+
+// The guest's desire or need; null for a need its type does not name (such a guest never wants it).
+float* DesireField(object::Guest& guest, int number)
+{
+    if (number < tables::kFirstGuestNeed) return &guest.m_desires[number];
+    const auto need = static_cast<size_t>(number - tables::kFirstGuestNeed);
+    if (!guest.m_definition || need >= guest.m_definition->m_Needs.size() || !guest.m_definition->m_Needs[need].m_named) return nullptr;
+    return &guest.m_needs[need];
+}
+
+constexpr const char* kDesireKeyError = "must be the key of a desire (for example \"SNACKS\") or of a guest need";
+
 std::string ChangeGuests(Base& self, Registers& r, bool desire)
 {
     if (std::string error = CheckRadius(Number(r.arg[0])); !error.empty()) return "Arg1: " + error;
-    const tables::DesireSlotDef* slot = nullptr;
+    int number = -1;
     if (desire) {
-        const char* key = Text(r.arg[1]);
-        slot = key ? DesireSlot(key) : nullptr;
-        if (!slot || slot->m_id < 0 || slot->m_id >= 26) return "Arg2 must be the key of a desire (for example \"SNACKS\")";
+        number = DesireNumber(Text(r.arg[1]));
+        if (number < 0) return std::string("Arg2 ") + kDesireKeyError;
     }
     const double delta = Number(r.arg[desire ? 2 : 1]);
     if (std::string error = CheckUnitDelta(delta); !error.empty()) return std::string(desire ? "Arg3: " : "Arg2: ") + error;
@@ -168,11 +197,25 @@ std::string ChangeGuests(Base& self, Registers& r, bool desire)
     for (Base* object : Around(self, static_cast<int>(Number(r.arg[0])))) {
         if (object->m_type != object::ObjectType::Guest) continue;
         auto& guest = *static_cast<object::Guest*>(object);
-        float& field = desire ? guest.m_desires[slot->m_id] : guest.m_happiness;
-        field = AddClamped(field, static_cast<float>(delta));
+        float* field = desire ? DesireField(guest, number) : &guest.m_happiness;
+        if (!field) continue;
+        *field = AddClamped(*field, static_cast<float>(delta));
         ++changed;
     }
     r.result = Int(changed);
+    return {};
+}
+
+// One guest's desire or need (0 for a need its type does not name), as a number from 0 to 1.
+std::string GetGuestDesire(Registers& r)
+{
+    Base* target = Find(Number(r.arg[0]));
+    if (!target || target->m_type != object::ObjectType::Guest) return "Arg1 is not a guest";
+    const int number = DesireNumber(Text(r.arg[1]));
+    if (number < 0) return std::string("Arg2 ") + kDesireKeyError;
+    const float* field = DesireField(*static_cast<object::Guest*>(target), number);
+    const float value = field ? *field : 0.0f;
+    r.result = {kTypeFloat, std::bit_cast<int32_t>(value)};
     return {};
 }
 
@@ -274,6 +317,7 @@ std::string Call(Base& self, int32_t id, Registers& registers)
     case kCreateObject: return Create(self, registers);
     case kRemoveObject: return Remove(registers);
     case kSendToNearby: return SendNearby(self, registers);
+    case kGetGuestDesire: return GetGuestDesire(registers);
     default: return "unknown function";
     }
 }

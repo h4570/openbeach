@@ -298,3 +298,22 @@ OBL_TEST_CASE("guest_construct.custom_script_uses_definition_script_name")
     OBL_CHECK(std::find(env.log.begin(), env.log.end(), "script busker") != env.log.end());
     env.Delete(guest->m_name);
 }
+
+OBL_TEST_CASE("guest_construct.mod_needs_draw_last_and_skip_unnamed")
+{
+    FakeEnv env;
+    GuestDef def = MakeDef();
+    def.m_Needs.push_back({"unused", "unused_fam", "GUEST_DESIRE_UNUSED", false, {0.1f, 0.2f}, 2});
+    def.m_Needs.push_back({"yoga", "yoga", "GUEST_DESIRE_YOGA", true, {0.2f, 0.6f}, 3});
+    env.draws.assign(27, 0);
+    env.draws[26] = 16384; // half-way draw for the named need, after all 26 base draws
+    Guest* guest = Build(def, env);
+    int rands = 0;
+    for (const std::string& entry : env.log) rands += entry == "rand";
+    OBL_CHECK_EQ(rands, 27);
+    OBL_CHECK_EQ(guest->m_needs[0], 0.0f);
+    OBL_CHECK_EQ(guest->m_needRates[0], 0.0f);
+    OBL_CHECK_EQ(guest->m_needs[1], 0.0f);
+    OBL_CHECK_EQ(guest->m_needRates[1], Lerp(0.2f, 0.6f, 16384));
+    env.Delete(guest->m_name);
+}

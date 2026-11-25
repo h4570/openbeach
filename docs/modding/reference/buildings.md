@@ -42,7 +42,7 @@ Validated against `data/schemas/building.schema.json`. Required fields are marke
 | `baseplates` | array of int | Base plate types laid beneath the building. |
 | `points` | `{ serve?, staff?, entrance?, walk? }` | Local offsets for guest service, staff, entrance, and interior walk points. |
 | `operation` | object | `guest_capacity`, `opening_hours` (catalog key), `max_instances`, `max_queue`, `attractor` (commodity family key), `power` (negative = consumes, positive = generates), `staff: { types, max }`. |
-| `commodities` | array (max 5) | Each entry: `{ commodity, intensity: [men, women], daily_intensity_factor, price, daily_price_factor, cost }`. |
+| `commodities` | array (max 5) | Each entry: `{ commodity, intensity: [men, women], daily_intensity_factor, price, daily_price_factor, cost }`. Offering a commodity in a mod guest need's family serves that need ([guest-needs.md](guest-needs.md)). |
 | `failure` | `{ average_time?, percent?, age? }` | Breakdown interval, failure chance (0..100), and age threshold. |
 | `vehicles` / `vehicle_places` | arrays (max 5) | Vehicle catalog keys and `{ dir, offset }` spawn positions. |
 | `tables` | array (max 10) | `{ table, pos }` seating tables. |

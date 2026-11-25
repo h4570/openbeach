@@ -1,0 +1,14 @@
+# Replays l0_mod_guest_needs.replay with l0_yoga active: guests with a need added by a mod, and the studio serving it, give the same
+# world hash at every checkpoint.
+# @env OBL_PACK=l0
+# @env OBL_MODS=l0_yoga
+# @timeout 240
+seed 1
+fixed-dt 0.02
+replay replays/l0_mod_guest_needs.replay
+expect-last mismatches 0
+# Yogis the bus brought took classes at the studio.
+object-find building YOGA_STUDIO
+object-report $id
+expect-last-range visits 1 1000
+quit

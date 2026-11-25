@@ -1,0 +1,18 @@
+{
+  "format": "obl.catalog_index_patch",
+  "version": 1,
+  "add": {
+    "commodity_families": [
+      "yoga"
+    ],
+    "commodities": [
+      "yoga_class"
+    ],
+    "guest_needs": [
+      "yoga"
+    ],
+    "buildings": [
+      "yoga_studio"
+    ]
+  }
+}

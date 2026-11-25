@@ -243,3 +243,31 @@ OBL_TEST_CASE("guest_thoughts.blocked_message_key_follows_the_activity")
     f.guest->m_desired_commod = 0;
     OBL_CHECK_EQ(guest_thoughts::BlockedKey(*f.guest, nullptr, 3), std::string("TICKER_MSG_NO_PATH_BEACH1"));
 }
+
+OBL_TEST_CASE("guest_desire_actions.mod_need_alter_and_missed")
+{
+    Fixture f;
+    f.def->m_Needs.push_back({"yoga", "yoga", "GUEST_DESIRE_YOGA", true, {0.1f, 0.2f}, 2});
+    f.guest->m_needs[0] = 0.8f;
+    f.guest->m_needs[1] = 0.4f;
+    AlterDesires(*f.guest, "YOGA", kNames);
+    OBL_CHECK_EQ(f.guest->m_needs[0], 0.0f);
+    OBL_CHECK_EQ(f.guest->m_needs[1], 0.4f);
+
+    // First miss sets the flag without clearing the need or lowering variety.
+    f.guest->m_needs[0] = 0.8f;
+    f.guest->m_missedDesireLast = 0;
+    f.guest->m_missedDesire = 0;
+    MissedDesire(*f.guest, *f.def, "yoga", kNames);
+    OBL_CHECK_EQ(f.guest->m_missedDesire, 1);
+    OBL_CHECK_EQ(f.guest->m_needs[0], 0.8f);
+    OBL_CHECK_EQ(f.guest->m_opinion[Variety], 0.7f);
+
+    // Repeated miss clears the need and lowers variety.
+    f.guest->m_missedDesireLast = 1;
+    f.guest->m_missedDesire = 0;
+    MissedDesire(*f.guest, *f.def, "yoga", kNames);
+    OBL_CHECK_EQ(f.guest->m_needs[0], 0.0f);
+    OBL_CHECK_EQ(f.guest->m_opinion[Variety], 0.45f);
+    OBL_CHECK_EQ(f.guest->m_activity, 3);
+}
