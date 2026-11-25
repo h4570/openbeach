@@ -26,12 +26,13 @@ public:
     WorldScriptHost(const WorldScriptHost&) = delete;
     WorldScriptHost& operator=(const WorldScriptHost&) = delete;
 
-    // Destroys the object logics in load order, then the scenario script, then the global.
+    // Destroys the object logics in load order, then the scenario script and mod world scripts, then the global.
     template<class Env> void Destroy(Env& env)
     {
         for (Entry& entry : m_objectScripts) env.DestroyObject(*entry.script);
         m_objectScripts.clear();
         DropWorldScript(env);
+        DropModWorldScripts(env);
         env.SetHost(nullptr);
     }
 
@@ -60,11 +61,37 @@ public:
         return nullptr;
     }
 
+    // Adds one mod world script (`scripts/world/<name>.wsc`) in load order, owned beside the scenario script.
+    template<class Env> world_script::ModWorldScript& AddModWorldScript(std::string modId, std::string scriptName, Env& env)
+    {
+        world_script::ModWorldScript& entry = m_modWorldScripts.emplace_back();
+        entry.modId = std::move(modId);
+        entry.scriptName = std::move(scriptName);
+        entry.script = std::make_unique<world_script::WorldScript>();
+        env.ConstructWorld(*entry.script);
+        return entry;
+    }
+
+    // The scenario script first, then the mod world scripts in load order, each as `run(script, mod, index)` (`mod` null for the
+    // scenario's): the order of one tick's OnUpdate lists.
+    template<class Fn> void ForEachWorldScript(Fn&& run)
+    {
+        if (m_worldScript) run(*m_worldScript, static_cast<world_script::ModWorldScript*>(nullptr), size_t{0});
+        ForEachModWorldScript(run);
+    }
+    // Only the mod world scripts, in load order: world events, world messages after the scenario's handlers.
+    template<class Fn> void ForEachModWorldScript(Fn&& run)
+    {
+        for (size_t i = 0; i < m_modWorldScripts.size(); ++i)
+            if (m_modWorldScripts[i].script) run(*m_modWorldScripts[i].script, &m_modWorldScripts[i], i);
+    }
+
     // The game's own entry points (world_script_host_game.cpp: the game's script parsers behind them, each counts its own
     // `world-script-host.*` counter). `Create` binds the game context's host, `Release` frees it and clears the binding.
     static WorldScriptHost* Create();
     static void Release(WorldScriptHost* host);
     uint32_t Load(const char* path);
+    void LoadModScripts();
     void AddScript(const char* name, const char* path);
     script::ScriptProgram* Find(const char* name) const;
     // Returns the loaded script named `name`, or loads `data/script/object/<name>.lgc` on demand and caches it.
@@ -72,6 +99,9 @@ public:
 
     // What World::m_worldScript points at (null before the first LoadScript).
     world_script::WorldScript* WorldScript() const { return m_worldScript.get(); }
+    size_t ModWorldScriptCount() const { return m_modWorldScripts.size(); }
+    world_script::ModWorldScript& ModWorldScriptAt(size_t i) { return m_modWorldScripts[i]; }
+    const world_script::ModWorldScript& ModWorldScriptAt(size_t i) const { return m_modWorldScripts[i]; }
     size_t ScriptProgramCount() const { return m_objectScripts.size(); }
     const std::string& ScriptProgramName(size_t i) const { return m_objectScripts[i].name; }
     script::ScriptProgram& ScriptProgramAt(size_t i) const { return *m_objectScripts[i].script; }
@@ -88,8 +118,16 @@ private:
         m_worldScript.reset();
     }
 
+    template<class Env> void DropModWorldScripts(Env& env)
+    {
+        for (world_script::ModWorldScript& entry : m_modWorldScripts)
+            if (entry.script) env.DestroyWorld(*entry.script);
+        m_modWorldScripts.clear();
+    }
+
     std::vector<Entry> m_objectScripts;
     std::unique_ptr<world_script::WorldScript> m_worldScript;
+    std::vector<world_script::ModWorldScript> m_modWorldScripts;
 };
 
 } // namespace obl::world_script_host

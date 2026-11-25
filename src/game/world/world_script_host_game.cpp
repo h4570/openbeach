@@ -1,4 +1,5 @@
 #include "game/world/world_script_host_game.h"
+#include "game/game/diagnostics.h"
 #include "game/game/game_accessors.h"
 #include "game/objects/script_program_load.h"
 #include "game/world/world_script_load.h"
@@ -58,6 +59,17 @@ uint32_t WorldScriptHost::Load(const char* path)
     const uint32_t result = LoadScript(path, env);
     g_loadCalls.Count();
     return result;
+}
+
+void WorldScriptHost::LoadModScripts()
+{
+    GameEnv env;
+    DropModWorldScripts(env);
+    for (const world::ModWorldScriptFile& file : world::DiscoverModWorldScripts()) {
+        world_script::ModWorldScript& entry = AddModWorldScript(file.modId, file.scriptName, env);
+        std::string error;
+        if (!world::LoadModWorldScript(*entry.script, file, error)) game::FatalError("%s", error.c_str());
+    }
 }
 
 void WorldScriptHost::AddScript(const char* name, const char* path)

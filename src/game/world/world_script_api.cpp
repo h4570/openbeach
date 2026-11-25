@@ -1,5 +1,6 @@
 #include "game/world/world_script_api.h"
 
+#include "core/ascii_case.h"
 #include "game/world/world_control_logic.h"
 
 #include <span>
@@ -63,6 +64,16 @@ const NamedRow kValues[] = {
         {238, "PlayerCash"},
 };
 
+const WorldEventInfo kWorldEvents[] = {
+        {world_script::WorldEvent::DayStarted, "DayStarted"},
+        {world_script::WorldEvent::BuildingFinished, "BuildingFinished"},
+        {world_script::WorldEvent::GuestArrived, "GuestArrived"},
+        {world_script::WorldEvent::WeatherChanged, "WeatherChanged"},
+};
+
+// Dialogs that announce a scenario win or loss (bot::OutcomeOfDialog). A mod world script may not open them.
+constexpr std::string_view kRefusedModMenus[] = {"ScenarioWon", "GameWon", "ScenarioLost"};
+
 std::vector<NamedId> Table(std::span<const NamedRow> rows)
 {
     std::vector<NamedId> out;
@@ -83,6 +94,37 @@ const std::vector<NamedId>& EngineValues()
 {
     static const std::vector<NamedId> kTable = Table(kValues);
     return kTable;
+}
+
+std::span<const WorldEventInfo> WorldEvents()
+{
+    return kWorldEvents;
+}
+
+std::optional<world_script::WorldEvent> FindWorldEvent(std::string_view name)
+{
+    for (const WorldEventInfo& info : kWorldEvents)
+        if (name == info.name) return info.event;
+    return std::nullopt;
+}
+
+const char* WorldEventName(world_script::WorldEvent event)
+{
+    for (const WorldEventInfo& info : kWorldEvents)
+        if (info.event == event) return info.name;
+    return "";
+}
+
+bool IsRefusedModFunction(int functionId)
+{
+    return functionId == world_control::kFunctionCompleteScenario;
+}
+
+bool IsRefusedModMenu(std::string_view dialog)
+{
+    for (std::string_view refused : kRefusedModMenus)
+        if (ascii::EqualsNoCase(dialog, refused)) return true;
+    return false;
 }
 
 } // namespace obl::world_script_parse

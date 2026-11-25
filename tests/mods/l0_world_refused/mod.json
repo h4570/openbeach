@@ -1,0 +1,8 @@
+{
+  "format": "obl.mod",
+  "version": 1,
+  "id": "l0_world_refused",
+  "title": "L0 world script that tries to win",
+  "mod_version": "1.0.0",
+  "pack": "l0"
+}

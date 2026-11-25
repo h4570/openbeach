@@ -2,7 +2,9 @@
 
 #include "game/objects/script_types.h"
 
+#include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <string>
 
 // The scenario script's records: the WorldScript state machine the script host owns, the payloads
@@ -76,6 +78,18 @@ constexpr int kScriptFunctionDebug = 7;
 constexpr int kWorldScriptHandlers = 5;
 using WorldScriptState = script::ScriptState<kWorldScriptHandlers>;
 constexpr int kMaxWorldScriptStates = 10;
+constexpr int kWorldScriptVarCount = 0x20;
+
+// World events that mod world scripts can handle with `OnEvent <Name> ... End` inside a state.
+// Each fires at a fixed point of the simulation tick in mod load order.
+enum class WorldEvent : uint8_t {
+    DayStarted = 0,
+    BuildingFinished = 1,
+    GuestArrived = 2,
+    WeatherChanged = 3,
+    Count = 4,
+};
+constexpr size_t kWorldEventCount = static_cast<size_t>(WorldEvent::Count);
 
 // The scenario script of the world (`<n>.ble`), a state machine started by StartNewGame/StartLoadedGame at
 // `STATE_WORLD_STARTUP`. The state tables come from construct, the
@@ -86,10 +100,21 @@ struct WorldScript {
     WorldScriptState m_states[kMaxWorldScriptStates];
     uint32_t m_numStates;
     std::string m_stateNames[kMaxWorldScriptStates]; // state i is m_states[i]; empty = never registered (duplicate name)
-    int m_parsedList; // list being parsed (0 OnEntry, 1 OnExit, 2 OnUpdate, 3 OnReceipt, 4 OnSend)
+    int m_parsedList; // list being parsed (0 OnEntry, 1 OnExit, 2 OnUpdate, 3 OnReceipt, 4 OnSend, 5 OnEvent)
     uint32_t m_currentState; // while parsing: the state being filled; at run time: the active state
+    ScriptCommand* m_onEvent[kMaxWorldScriptStates][kWorldEventCount]{}; // OnEvent <Name> command lists per state
 };
 // The script host owns the parsed program; saves retain only its active state index.
+
+// One world script shipped by a world mod (`scripts/world/<name>.wsc`). Runs beside the scenario script in load order,
+// with its own state table, Flag<n> bits and Var<n> slots so it cannot clobber the scenario's state machine.
+struct ModWorldScript {
+    std::string modId;
+    std::string scriptName; // filename inside scripts/world/, e.g. "daily_bonus.wsc"
+    std::unique_ptr<WorldScript> script;
+    int32_t scriptFlags = 0;
+    int32_t scriptVars[kWorldScriptVarCount] = {};
+};
 
 // Parser payloads used by the executor and the destructor.
 

@@ -1,0 +1,25 @@
+#obl-script 1 world
+// Pays 5000 at the start of every day. The bonus lives in a state of its own, so a save that comes back in
+// STATE_WORLD_STARTUP (the mod's state was not restored) pays nothing.
+State STATE_WORLD_STARTUP
+	OnEntry
+		ChangeState STATE_PAYING;
+	End
+	OnUpdate
+	End
+	OnExit
+	End
+End
+
+State STATE_PAYING
+	OnEntry
+	End
+	OnUpdate
+	End
+	OnEvent DayStarted
+		Add PlayerCash 5000;
+		Add Var0 1;
+	End
+	OnExit
+	End
+End

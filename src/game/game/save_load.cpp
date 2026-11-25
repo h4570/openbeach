@@ -41,8 +41,10 @@
 #include "game/objects/object_staff.h"
 #include "game/objects/staff_serial.h"
 #include "game/objects/object_moving.h"
+#include "game/objects/script_message.h"
 #include "game/ui/sprite.h"
 #include "game/world/save_sections_load.h"
+#include "game/world/world_script_host.h"
 #include "game/ui/map_view.h"
 #include "game/player/player_state.h"
 #include "game/weather/weather.h"
@@ -317,6 +319,25 @@ bool WriteDocument(
     if (!WriteHeaderJson(origin, context, timestamp, document["header"], error) ||
             !world_save::WriteWorldJson(live, live.m_worldScript->m_currentState, context, document["world"], error))
         return false;
+    if (live.m_worldScriptHost && live.m_worldScriptHost->ModWorldScriptCount() > 0) {
+        nlohmann::ordered_json modScripts = nlohmann::ordered_json::array();
+        for (size_t i = 0; i < live.m_worldScriptHost->ModWorldScriptCount(); ++i) {
+            const world_script::ModWorldScript& mod = live.m_worldScriptHost->ModWorldScriptAt(i);
+            const world_script::WorldScript* script = mod.script.get();
+            std::string stateName;
+            if (script && script->m_currentState < script->m_numStates) stateName = script->m_stateNames[script->m_currentState];
+            nlohmann::ordered_json vars = nlohmann::ordered_json::array();
+            for (int32_t v : mod.scriptVars) vars.push_back(v);
+            nlohmann::ordered_json entry = nlohmann::ordered_json::object();
+            entry["mod"] = mod.modId;
+            entry["script"] = mod.scriptName;
+            entry["state"] = std::move(stateName);
+            entry["flags"] = mod.scriptFlags;
+            entry["variables"] = std::move(vars);
+            modScripts.push_back(std::move(entry));
+        }
+        document["world"]["mod_scripts"] = std::move(modScripts);
+    }
     world_save::WritePlayerJson(*live.m_player, document["player"]);
     if (!world_save::WriteMapJson(*live.m_grid, document["map"], error)) return false;
     // The objects in the object manager's save's order (buildings, guests, others).
@@ -565,7 +586,30 @@ uint32_t ReadWorld(obl::world::World& world)
 {
     uint32_t scriptState = 0;
     std::string error;
-    if (!world_save::ReadWorldJson(g_activeLoad->document.at("world"), g_activeLoad->context, world, scriptState, error)) ReadFailed(error);
+    const nlohmann::json& worldJson = g_activeLoad->document.at("world");
+    if (!world_save::ReadWorldJson(worldJson, g_activeLoad->context, world, scriptState, error)) ReadFailed(error);
+    if (world.m_worldScriptHost && world.m_worldScriptHost->ModWorldScriptCount() > 0) {
+        if (const auto it = worldJson.find("mod_scripts"); it != worldJson.end() && it->is_array()) {
+            for (const nlohmann::json& entry : *it) {
+                if (!entry.is_object()) continue;
+                const std::string modId = entry.value("mod", std::string());
+                const std::string scriptName = entry.value("script", std::string());
+                const std::string stateName = entry.value("state", std::string());
+                for (size_t i = 0; i < world.m_worldScriptHost->ModWorldScriptCount(); ++i) {
+                    world_script::ModWorldScript& mod = world.m_worldScriptHost->ModWorldScriptAt(i);
+                    if (mod.modId != modId || mod.scriptName != scriptName || !mod.script) continue;
+                    const int32_t index = script::FindStateIndex(mod.script->m_stateNames, mod.script->m_numStates, stateName.c_str());
+                    if (index >= 0) mod.script->m_currentState = static_cast<uint32_t>(index);
+                    mod.scriptFlags = entry.value("flags", int32_t{0});
+                    if (const auto varsIt = entry.find("variables"); varsIt != entry.end() && varsIt->is_array()) {
+                        const size_t n = std::min(varsIt->size(), static_cast<size_t>(world_script::kWorldScriptVarCount));
+                        for (size_t v = 0; v < n; ++v) mod.scriptVars[v] = (*varsIt)[v].get<int32_t>();
+                    }
+                    break;
+                }
+            }
+        }
+    }
     return scriptState;
 }
 

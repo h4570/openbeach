@@ -161,6 +161,7 @@ World* ConstructWorld(World& world, ui::Cursor* cursor, ui::Input* input, const 
 
     // WorldScriptHost::LoadScript leaves the size of the script's .ble file as its result; it sets where the loading bar starts.
     const int scriptSize = static_cast<int>(world.m_worldScriptHost->Load(setup.script.c_str()));
+    world.m_worldScriptHost->LoadModScripts();
     const float fraction = pis::LoadFraction(scriptSize, world.m_loadingSave != 0);
     (world.m_mapView)->BuildTempMap(0x20, 0x20, 0x80, fraction);
     (world.m_mapView)->SetDepthPlaneOffset(setup.depthPlane);
@@ -195,6 +196,7 @@ World* ConstructWorld(World& world, ui::Cursor* cursor, ui::Input* input, const 
         else
             WorldScriptStartLoadedGame(*world.m_worldScript);
     }
+    StartModWorldScripts(world);
 
     fields::CountUnbuilt(world, env);
     subsystems::BuildCommodityProviders(world, env);

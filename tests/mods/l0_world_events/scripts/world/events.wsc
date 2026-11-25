@@ -1,0 +1,22 @@
+#obl-script 1 world
+// Counts each world event in a variable of its own: Var0 days, Var1 finished buildings, Var2 arrived guests, Var3 weather changes.
+State STATE_WORLD_STARTUP
+	OnEntry
+	End
+	OnUpdate
+	End
+	OnEvent DayStarted
+		Add Var0 1;
+	End
+	OnEvent BuildingFinished
+		Add Var1 1;
+	End
+	OnEvent GuestArrived
+		Add Var2 1;
+	End
+	OnEvent WeatherChanged
+		Add Var3 1;
+	End
+	OnExit
+	End
+End

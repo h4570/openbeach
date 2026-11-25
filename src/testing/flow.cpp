@@ -10,6 +10,7 @@
 #include "test_util.h"
 #include "world_state.h"
 #include "game/world/world_script.h"
+#include "game/world/world_script_host.h"
 
 #include <cmath>
 #include <cstdlib>
@@ -195,6 +196,7 @@ int LastScenarioBoot()
 // world-script-change <state>        the scenario script's `ChangeState <state>;` (MT_STATECHANGE, delivered by the next update); logs
 //                                    `state=` (the index, negative when nothing was posted). STATE_WORLD_AFTERGAME without a pause is
 //                                    where a won scenario continues after ScenarioWon's "Continue", with no day limit left.
+// mod-world-script-report <mod>/<file>  a mod world script's state index, flags and Var0..Var7 (`state= flags= var0=` ...)
 bool ExecuteFlowCommand(const std::string& name, const std::vector<std::string>& args)
 {
     if (name == "boot-gameplay") {
@@ -230,6 +232,21 @@ bool ExecuteFlowCommand(const std::string& name, const std::vector<std::string>&
         }
         const int32_t state = world::ChangeWorldScriptState(*world, args[0].c_str());
         OBL_LOG("autotest: %s world-script-change %s state=%d", state >= 0 ? "PASS" : "FAILED", args[0].c_str(), state);
+    } else if (name == "mod-world-script-report") {
+        world_data::World* world = World();
+        const world_script::ModWorldScript* found = nullptr;
+        for (size_t i = 0; world && world->m_worldScriptHost && args.size() == 1 && i < world->m_worldScriptHost->ModWorldScriptCount();
+                ++i) {
+            const world_script::ModWorldScript& mod = world->m_worldScriptHost->ModWorldScriptAt(i);
+            if (mod.modId + "/" + mod.scriptName == args[0]) found = &mod;
+        }
+        if (!found || !found->script) {
+            OBL_LOG("autotest: FAILED mod-world-script-report (needs a world and one active <mod>/<file>.wsc)");
+            return true;
+        }
+        const int32_t* v = found->scriptVars;
+        OBL_LOG("autotest: mod-world-script-report %s state=%u flags=%d var0=%d var1=%d var2=%d var3=%d var4=%d var5=%d var6=%d var7=%d",
+                args[0].c_str(), found->script->m_currentState, found->scriptFlags, v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7]);
     } else if (name == "speed" || name == "speed-level" || name == "speed-table") {
         world_data::World* world = World();
         if (name == "speed-table") {

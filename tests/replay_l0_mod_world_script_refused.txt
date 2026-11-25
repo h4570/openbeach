@@ -1,0 +1,7 @@
+# The replay recorded with the world mod l0_world_script is refused without it: its script changes the simulation.
+# @env OBL_PACK=l0
+# @env OBL_MODS=
+# @timeout 180
+# @expect-log replay refused: .*l0_world_script
+replay replays/l0_world_script.replay expect-mod-mismatch
+quit

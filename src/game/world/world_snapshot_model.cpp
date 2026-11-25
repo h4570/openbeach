@@ -3,6 +3,7 @@
 #include "game/weather/weather_state.h"
 #include "game/world/world_snapshot_model.h"
 #include "game/world/world_save.h"
+#include "game/world/world_script_host.h"
 
 #include "game/map/grid_save.h"
 #include "game/map/grid_state.h"
@@ -47,6 +48,17 @@ void EmitWorldFields(WorldSnapshot& s, const world::World& w, uint32_t scriptSta
     s.Class("World");
     WorldEmitter emitter{s};
     world_save::VisitFields(w, static_cast<const uint32_t&>(scriptState), emitter);
+    if (w.m_worldScriptHost && w.m_worldScriptHost->ModWorldScriptCount() > 0) {
+        s.Class("ModWorldScripts");
+        for (size_t i = 0; i < w.m_worldScriptHost->ModWorldScriptCount(); ++i) {
+            const world_script::ModWorldScript& mod = w.m_worldScriptHost->ModWorldScriptAt(i);
+            const std::string key = mod.modId + "/" + mod.scriptName;
+            s.String("id", key.c_str());
+            s.Int("state", mod.script ? static_cast<int32_t>(mod.script->m_currentState) : -1);
+            s.Int("flags", mod.scriptFlags);
+            s.Ints("vars", mod.scriptVars, world_script::kWorldScriptVarCount);
+        }
+    }
 }
 
 namespace {

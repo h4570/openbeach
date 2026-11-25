@@ -105,6 +105,7 @@
 //                        A missed timeout logs `FAILED await ...` and aborts the script (event-await stays as it was)
 //   speed <x> / speed-level <0..2> / speed-table   game speed: write the world's speed / the game's own switch / log the table
 //   world-script-change <state>   the scenario script's `ChangeState <state>;` (e.g. STATE_WORLD_AFTERGAME: no day limit; testing/flow.cpp)
+//   mod-world-script-report <mod>/<file>   a mod world script's `state= flags= var0=`..`var7=` (testing/flow.cpp)
 //   expect <name> <value> [tol]   PASS/FAILED line; <name> is a live probe (hour day game-seconds speed speed-level paused
 //                        cash buildings guests state frames render-width render-height power-demand-all power-capacity power-output power-demand
 //                        world-script-state = index of the scenario script's current state, -1 without one;

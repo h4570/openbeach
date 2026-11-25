@@ -207,6 +207,7 @@ add_executable(obl_unit_tests
     script_program_test.cpp
     script_program_exec_test.cpp
     world_script_parse_test.cpp
+    world_script_mod_test.cpp
     refpack_test.cpp
     event_manager_test.cpp
     ferry_test.cpp

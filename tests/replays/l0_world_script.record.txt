@@ -1,0 +1,15 @@
+# Records l0_world_script.replay: scenario 1 with the world mod l0_world_script, across the first midnight, so the
+# mod script's daily payment is part of the checkpoints after it.
+# @env OBL_PACK=l0
+# @env OBL_MODS=l0_world_script
+# @timeout 300
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario 1
+record replays/l0_world_script.replay every 250
+await gameplay
+command set-game-speed level=2
+step 2600
+expect day 1
+record end
+quit

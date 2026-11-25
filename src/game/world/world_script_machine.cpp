@@ -114,6 +114,15 @@ bool WorldScriptDispatch(WorldScript& script, Message message)
     return receipt.handled;
 }
 
+bool WorldScriptDispatchEvent(WorldScript& script, world_script::WorldEvent event)
+{
+    if (!script::CurrentStateInRange(script)) return false;
+    const ScriptCommand* list = script::OnEventList(script, script.m_currentState, event);
+    if (!list) return false;
+    RunList(list);
+    return true;
+}
+
 int32_t WorldScriptFindState(const WorldScript& script, const char* name)
 {
     g_findState.Count();

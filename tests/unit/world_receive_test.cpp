@@ -62,6 +62,18 @@ Message Make(int type, int data)
     return message;
 }
 
+// The game's Env with mod world scripts (`mods` of them, by load-order index).
+struct ModReceiveEnv : ReceiveEnv {
+    uint32_t mods = 0;
+    bool ChangeModScriptState(uint32_t mod, uint32_t state)
+    {
+        if (mod >= mods) return false;
+        calls.push_back("mod " + std::to_string(mod) + " enter " + std::to_string(state));
+        return true;
+    }
+    void DispatchModMessage(const Message& message) { calls.push_back("mods dispatch " + std::to_string(message.type)); }
+};
+
 struct PlaceEnv {
     std::vector<std::string> calls;
     float timeSeenByDispatch = -1;
@@ -155,4 +167,38 @@ OBL_TEST_CASE("world_receive.place_command_is_stamped_with_the_time_before_the_d
     OBL_CHECK_EQ(command.time, 12.25f);
     OBL_CHECK_EQ(env.timeSeenByDispatch, 12.25f);
     OBL_CHECK(env.name == name);
+}
+
+OBL_TEST_CASE("world_receive.a_mod_scripts_state_change_stays_in_that_mod")
+{
+    Slab slab;
+    slab.world->m_scriptState = 3;
+    ModReceiveEnv env;
+    env.mods = 2;
+    Message message = Make(kStateChange, 1);
+    message.flags = 2; // load-order index 1, plus one
+    OBL_CHECK(ReceiveMessage(*slab.world, message, nullptr, env));
+    OBL_CHECK(env.calls == std::vector<std::string>{"mod 1 enter 1"});
+    OBL_CHECK_EQ(slab.world->m_scriptState, 3);
+}
+
+OBL_TEST_CASE("world_receive.a_flagged_state_change_without_that_mod_is_the_scenarios")
+{
+    // A scenario's own `Message MT_STATECHANGE` may carry flags; with no mod script of that index it changes the scenario's state.
+    Slab slab;
+    ModReceiveEnv env;
+    Message message = Make(kStateChange, 6);
+    message.flags = 1;
+    OBL_CHECK(ReceiveMessage(*slab.world, message, nullptr, env));
+    OBL_CHECK(env.calls == (std::vector<std::string>{"exit", "enter 6"}));
+    OBL_CHECK_EQ(slab.world->m_scriptState, 6);
+}
+
+OBL_TEST_CASE("world_receive.other_messages_reach_the_scenario_then_the_mod_scripts")
+{
+    Slab slab;
+    ModReceiveEnv env;
+    env.mods = 1;
+    OBL_CHECK(ReceiveMessage(*slab.world, Make(0x53, 0), nullptr, env));
+    OBL_CHECK(env.calls == (std::vector<std::string>{"dispatch 83", "mods dispatch 83"}));
 }

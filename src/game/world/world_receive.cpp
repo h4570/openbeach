@@ -28,9 +28,23 @@ public:
 
     bool CreateObject(const Message& request, const void* name) { return world::CreateObjectFromMessage(m_world, request, name); }
     object::Base* GetObject(uint32_t id) { return object::object_manager::ObjectById(m_world.m_objectManager, static_cast<int>(id)); }
-    void RunOnExitList(world_script::WorldScript& script) { WorldScriptRunOnExit(script); }
-    void EnterState(world_script::WorldScript& script, uint32_t state) { WorldScriptEnterState(script, state); }
-    void DispatchMessage(world_script::WorldScript& script, const Message& message) { WorldScriptDispatch(script, message); }
+    void RunOnExitList(world_script::WorldScript& script)
+    {
+        ScenarioScriptScope scope;
+        WorldScriptRunOnExit(script);
+    }
+    void EnterState(world_script::WorldScript& script, uint32_t state)
+    {
+        ScenarioScriptScope scope;
+        WorldScriptEnterState(script, state);
+    }
+    void DispatchMessage(world_script::WorldScript& script, const Message& message)
+    {
+        ScenarioScriptScope scope;
+        WorldScriptDispatch(script, message);
+    }
+    bool ChangeModScriptState(uint32_t modIndex, uint32_t state) { return ChangeModWorldScriptState(m_world, modIndex, state); }
+    void DispatchModMessage(const Message& message) { DispatchModWorldMessage(m_world, message); }
 
 private:
     World& m_world;

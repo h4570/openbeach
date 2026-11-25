@@ -324,6 +324,42 @@
           "items": {
             "$ref": "#/$defs/f32"
           }
+        },
+        "mod_scripts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "mod": {
+                "type": "string"
+              },
+              "script": {
+                "type": "string"
+              },
+              "state": {
+                "type": "string"
+              },
+              "flags": {
+                "$ref": "#/$defs/i32"
+              },
+              "variables": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/i32"
+                },
+                "minItems": 32,
+                "maxItems": 32
+              }
+            },
+            "required": [
+              "mod",
+              "script",
+              "state",
+              "flags",
+              "variables"
+            ],
+            "additionalProperties": false
+          }
         }
       },
       "required": [

@@ -28,6 +28,7 @@
 #include "game/weather/weather_lighting.h"
 #include "game/weather/weather_strike.h"
 #include "game/weather/weather_update.h"
+#include "game/world/world_script.h"
 #include "game/messages/message_handler.h"
 #include "game/objects/building_methods.h"
 #include "game/objects/object_scenery.h"
@@ -257,9 +258,11 @@ ScheduleProbe g_scheduleProbe = nullptr;
 void RunSchedule(Weather* weatherState)
 {
     g_answeredSchedule.Count();
-    const World* world = game::GetWorld();
+    World* world = game::GetWorld();
+    const uint32_t previous = weatherState->m_currentState;
     ScheduleEnv env(*weatherState);
     weather::UpdateSchedule(*weatherState, static_cast<uint32_t>(world->m_gameDay), world->m_gameDayTime, env);
+    if (weatherState->m_currentState != previous) world::DispatchModWorldEvent(*world, world_script::WorldEvent::WeatherChanged);
 }
 
 void UpdateSchedule(Weather* weatherState)
