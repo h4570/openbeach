@@ -6,14 +6,8 @@ script or a change of the scope rule adds its line here.
 
 ## Layers and patches
 - `mod_pack::Activate` (`src/formats/mod_pack.cpp`) runs once in `InitGame`, after the pack check: it reads `[Mods] Active` (or
-<<<<<<< HEAD
   `OBL_MODS`), checks every manifest (including `conflicts` incompatibilities) and stops the game on a refusal. Its result, `mod_pack::Active()`, is the one list the rest
   reads, in load order ([mods.md](../../modding/reference/mods.md#start-up-check)). `mod_pack::ActivateList` applies a new list at runtime when the mods screen changes presentation mods.
-- `pack_path` resolves every logical path through the layers: the active mods from last to first, the legacy `mod/`, the pack. A
-  file in a mod shadows the whole file below it.
-=======
-  `OBL_MODS`), checks every manifest and stops the game on a refusal. Its result, `mod_pack::Active()`, is the one list the rest
-  reads, in load order ([mods.md](../../modding/reference/mods.md#start-up-check)).
 - `pack_path` resolves every logical path through the layers: the active mods from last to first (each mod's `mods/<id>/`
   followed by its recipe-derived cache `mod-cache/<id>/`), the legacy `mod/`, the pack. A file in a mod shadows the whole file
   below it.
@@ -22,7 +16,6 @@ script or a change of the scope rule adds its line here.
   (`crop`, `mirror`, `scale`, `blur`, `pad`) over pack PNGs and cache PNG or indexed `obl.sprite` outputs in `mod-cache/<id>/`
   keyed by recipe and source SHA-256 (`importer/src/writers/asset_recipe.cpp`). Keeping outputs outside `mods/<id>/` leaves
   `ModContentHash` unchanged across packs. Missing sources disable only the outputs that need them.
->>>>>>> 2897537 (docs: document mod asset recipes and converter integration)
 - Some files merge instead of shadowing: text tables (`text/<lang>.patch.json`, `text_load.cpp`), the catalog's record list
   (`catalog/index.patch.json`, `catalog_load.cpp`), the object script vocabulary (`scripts/object_vocabulary.patch.json`,
   `object_vocabulary.cpp`), JSON data patches (`*.patch.json`, `data_patch.cpp`), and GUI layout
