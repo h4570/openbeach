@@ -1,0 +1,10 @@
+# build_tree.bot with the whole combined mod set (docs/modding/testing.md#bots-and-chaos): the same list as tests/l0_mods_combined.txt.
+# The mods change the economy, so the run has no bands, only the outcome: the scenario is still won.
+# @env OBL_MODS=l0_patch,l0_catalog,l0_ice_stand,l0_busker,l0_world_script,l0_world_events,l0_overlay,l0_settings,l0_actions,l0_state,l0_gui_patch
+OBL-bot 1
+bot build-tree-s1
+start scenario s1
+seed 1
+fixed-dt 0.02
+max-ticks 20000
+expect won

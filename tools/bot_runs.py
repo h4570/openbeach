@@ -258,7 +258,8 @@ def run_one(host: Path, game_dir: Path, run: Run, seed: int, scratch: Path, time
     start = time.monotonic()
     try:
         # The L0 runs select their own pack; the base pack stays installed for the others.
-        env = dict(os.environ, OBL_PACK="l0") if run.is_l0 else None
+        # A run file's `# @env` lines (OBL_MODS: the same bot with mods) come last.
+        env = dict(os.environ, **({"OBL_PACK": "l0"} if run.is_l0 else {}), **sim_workers.header_env(run.path))
         proc = subprocess.run([str(host), "--game-dir", str(game_dir), "--headless", str(path)], stdout=subprocess.PIPE,
                               stderr=subprocess.STDOUT, timeout=timeout, env=env)
         code, out = proc.returncode, proc.stdout.decode("utf-8", "replace")

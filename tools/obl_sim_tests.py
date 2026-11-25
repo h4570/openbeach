@@ -405,7 +405,8 @@ def bot_entries() -> list[Entry]:
     """Every scenario bot run file (tests/bots/*.bot, docs/architecture/bots/index.md)."""
     entries = [Entry(f"bot_{p.stem}", p, bot_passes, 900) for p in sorted((TESTS / "bots").glob("*.bot"))]
     # The own L0 pack's runs (tests/bots/l0/) play on data/packs/l0 alone: tools/ci/l0_sim_tests.sh, no bands.
-    return entries + [Entry(f"l0_bot_{p.stem}", p, bot_passes, 300, env={"OBL_PACK": "l0"})
+    # A run file's own `# @env NAME=VALUE` lines (OBL_MODS: the run with mods) join the pack.
+    return entries + [Entry(f"l0_bot_{p.stem}", p, bot_passes, 300, env={"OBL_PACK": "l0", **script_header(p)[2]})
                       for p in sorted((TESTS / "bots" / "l0").glob("*.bot"))]
 
 
@@ -419,7 +420,7 @@ def chaos_passes(code: int, out: str, lines: list[str]) -> str:
 
 def chaos_entries() -> list[Entry]:
     """Every chaos run file (tests/chaos/*.chaos, docs/testing/chaos-bot.md)."""
-    return [Entry(f"chaos_{p.stem}", p, chaos_passes, 600) for p in sorted((TESTS / "chaos").glob("*.chaos"))]
+    return [Entry(f"chaos_{p.stem}", p, chaos_passes, 600, env=script_header(p)[2]) for p in sorted((TESTS / "chaos").glob("*.chaos"))]
 
 
 def windows_only(name: str) -> bool:

@@ -1,0 +1,21 @@
+{
+ "schema_version": 1,
+ "run": "build_tree_mods.bot",
+ "bot": "build-tree-s1",
+ "start": "s1",
+ "outcome": "won",
+ "seeds": [1, 2, 3],
+ "ticks": [1289, 1290],
+ "end": {"cash": [17547.0, 17549.0], "guests": [0, 1], "rating": [0, 0]},
+ "hours": [
+  {"day": 0, "hour": 9, "cash": [20000.0, 20000.0], "guests": [0, 0], "rating": [0, 0]},
+  {"day": 0, "hour": 10, "cash": [17680.0, 17680.0], "guests": [0, 0], "rating": [0, 0]},
+  {"day": 0, "hour": 11, "cash": [17660.0, 17660.0], "guests": [0, 0], "rating": [0, 0]},
+  {"day": 0, "hour": 12, "cash": [17640.0, 17640.0], "guests": [0, 0], "rating": [0, 0]},
+  {"day": 0, "hour": 13, "cash": [17620.0, 17620.0], "guests": [0, 0], "rating": [0, 0]},
+  {"day": 0, "hour": 14, "cash": [17600.0, 17600.0], "guests": [6, 6], "rating": [55, 71]},
+  {"day": 0, "hour": 15, "cash": [17587.0, 17589.0], "guests": [1, 2], "rating": [0, 0]},
+  {"day": 0, "hour": 16, "cash": [17567.0, 17569.0], "guests": [1, 2], "rating": [0, 0]},
+  {"day": 0, "hour": 17, "cash": [17547.0, 17549.0], "guests": [1, 2], "rating": [0, 0]}
+ ]
+}

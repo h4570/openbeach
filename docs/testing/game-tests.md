@@ -34,7 +34,7 @@ refused): the way for simulation tests, tagged `@headless` in the manifest ([../
 | `# @gameini Section.Key=Value` | value written into `BeachLife.ini` before the start, on top of the baseline (800x600, no `[Dialog]`) |
 | `# @audio device` | real audio device instead of `SDL_AUDIO_DRIVER=dummy` |
 | `# @check python tools/x.py {run}` | oracle run after a passing game run; non-zero exit fails the test |
-| `# @expect-exit code` | the game must end by itself with this exit code before `quit` (fatal-error paths) |
+| `# @expect-exit code` | the game must end by itself with this exit code before `quit` (fatal-error paths: 4 for a start-up refusal, 1 for a `FatalError` while playing, e.g. a mod script passing a limit) |
 | `# @expect-log REGEX` | some log line must match (repeatable) |
 | `# @config rel` / `debug` | configuration for this entry under the runner's `-Config Auto` |
 | `# @own-process: why` | an `@headless` entry runs in its own process, not in a batch: the script counts what only the process start does (`Game_Construct`, the startup scans) |

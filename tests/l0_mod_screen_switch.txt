@@ -1,0 +1,44 @@
+# Switching presentation mods on and off on the mods screen (docs/modding/players/mods-screen.md): l0_settings starts when it is
+# switched on, stops when it is switched off (the active list is empty again) and starts again from its own defaults when it is
+# switched on a second time, as the front end reloads each time.
+# @env OBL_PACK=l0
+# @env OBL_MODS=
+# @env OBL_WINDOWED=1
+# @gameini Language.Language=0
+# @gameini Sound.PlayListCount=0
+# @timeout 120
+# @expect-log mods screen: active=l0_settings
+# @expect-log mods screen: active=$
+# @expect-log mod l0_settings: start wide=false theme=sand zoom=2
+seed 1
+fixed-dt 0.02
+await state == 1
+await frames 20
+await gui-animating == 0
+gui-state MainMenu
+gui-click MainMenu id mods_button
+await frames 15
+await gui-animating == 0
+gui-state ModsScreen
+expect-last visible 1
+gui-click ModsScreen target toggle.l0_settings
+await frames 20
+await gui-animating == 0
+gui-state ModsScreen
+expect-last visible 1
+gui-click ModsScreen target toggle.l0_settings
+await frames 20
+await gui-animating == 0
+gui-state ModsScreen
+expect-last visible 1
+gui-click ModsScreen target toggle.l0_settings
+await frames 20
+await gui-animating == 0
+gui-state ModsScreen
+expect-last visible 1
+gui-click ModsScreen target back
+await frames 15
+await gui-animating == 0
+gui-state MainMenu
+expect-last visible 1
+quit

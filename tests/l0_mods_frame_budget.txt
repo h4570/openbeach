@@ -1,0 +1,18 @@
+# The frame budget with the whole mod set (docs/modding/testing.md#frame-budget): the combined set's overlay, settings, actions, state
+# and GUI patch run every frame while 500 fixed frames are stepped. The wall-clock limits (5 ms a frame, about 15 times what a Debug build
+# needs) stay clear of a noisy runner, so only a mod that stops being cut by its instruction budget, or work that grows with every frame, can break them.
+# @env OBL_PACK=l0
+# @env OBL_MODS=l0_patch,l0_catalog,l0_ice_stand,l0_busker,l0_world_script,l0_world_events,l0_overlay,l0_settings,l0_actions,l0_state,l0_gui_patch
+# @timeout 240
+# @gameini Language.Language=5
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario 1
+await gameplay
+step 100
+step 500
+expect-last-range on-frame 0 500
+step 500
+expect-last-range update 0 2500
+expect-last-range render 0 2500
+quit

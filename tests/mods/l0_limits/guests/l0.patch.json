@@ -1,0 +1,39 @@
+{
+  "format": "obl.json_patch",
+  "version": 1,
+  "ops": [
+    {
+      "op": "merge",
+      "path": "/types[key=visitor]",
+      "value": {
+        "script": "limit_maker"
+      }
+    },
+    {
+      "op": "append",
+      "path": "/types",
+      "items": [
+        {
+          "key": "limit_helper",
+          "name": "LIMIT_HELPER",
+          "gender": "m",
+          "sprite": "dummy",
+          "script": "limit_helper",
+          "money": 0,
+          "nights": [
+            1,
+            1
+          ],
+          "sleep_time": [
+            22,
+            24
+          ],
+          "wake_time": [
+            7,
+            9
+          ]
+        }
+      ]
+    }
+  ]
+}

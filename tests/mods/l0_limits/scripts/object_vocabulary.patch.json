@@ -1,0 +1,11 @@
+{
+  "format": "obl.object_script_vocabulary_patch",
+  "version": 1,
+  "states": [
+    "STATE_LIMIT_MAKE",
+    "STATE_LIMIT_HOLD"
+  ],
+  "messages": [
+    "MT_LIMIT_TICK"
+  ]
+}

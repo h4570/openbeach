@@ -1,0 +1,9 @@
+{
+  "format": "obl.mod",
+  "version": 1,
+  "id": "l0_limits",
+  "title": "L0 Object Limits",
+  "mod_version": "1.0.0",
+  "pack": "l0",
+  "scope": "world"
+}
