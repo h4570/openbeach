@@ -85,14 +85,16 @@ template<class Env> void PopulateBuildings(List& list, int32_t category, const c
         env.BuildTip(def->m_key.c_str(), tip);
         if (env.Locked(id)) {
             Entry* entry = NewEntry(env);
-            entry->m_sprite = lockedSprite;
+            entry->m_sprite = !def->m_IconLockedSprite.empty() ? def->m_IconLockedSprite.c_str()
+                    : !def->m_IconSprite.empty()               ? def->m_IconSprite.c_str()
+                                                               : lockedSprite;
             entry->m_frame = def->m_Icon;
             entry->m_id = static_cast<int32_t>(id);
             SetTooltip(*entry, tip, env);
             gui_lists::AppendWord(list.m_entriesBegin, list.m_entriesEnd, list.m_entriesCap, entry, env);
         } else if (env.Allowed(id)) {
             Entry* entry = NewEntry(env);
-            entry->m_sprite = sprite;
+            entry->m_sprite = !def->m_IconSprite.empty() ? def->m_IconSprite.c_str() : sprite;
             entry->m_frame = def->m_Icon;
             entry->m_id = static_cast<int32_t>(id);
             SetTooltip(*entry, tip, env);

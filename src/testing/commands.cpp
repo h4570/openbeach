@@ -163,12 +163,12 @@ void ReportObject(const std::vector<std::string>& args)
         const bool demolishJob = object::building_api::HasDemolishJob(building);
         used += std::snprintf(line + used, sizeof(line) - used,
                 " open=%u user-close=%d build-job=%d demolish-job=%d repair-interval=%d called-repair=%d called-clean=%d staff=%d "
-                "price0=%g "
+                "income-today=%g visits=%d price0=%g "
                 "price1=%g price2=%g price3=%g price4=%g beer=%d",
                 building->m_OpenStatus, building->m_userClose, buildJob, demolishJob, building->m_UserRepairInterval,
                 building->m_urgentRepairCalled, building->m_urgentCleaningCalled, building->m_numFemalestaff + building->m_numMalestaff,
-                building->m_Commod_Price[0], building->m_Commod_Price[1], building->m_Commod_Price[2], building->m_Commod_Price[3],
-                building->m_Commod_Price[4], building->m_BeerType);
+                building->m_incomeToday, building->m_VisitsSinceCleaned, building->m_Commod_Price[0], building->m_Commod_Price[1],
+                building->m_Commod_Price[2], building->m_Commod_Price[3], building->m_Commod_Price[4], building->m_BeerType);
         if (const object::BuildingEvents* events = building->m_events) {
             std::snprintf(line + used, sizeof(line) - used,
                     " events=1 event-price0=%g event-price1=%g event-price2=%g event-id0=%d event-id1=%d event-id2=%d",

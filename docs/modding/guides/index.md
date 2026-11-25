@@ -1,5 +1,7 @@
 # Modding: guides
 
-Step-by-step guides for mod authors, from nothing to a working mod: the first mod folder, the manifest, a first text or
-catalog change, and how to test it with the L0 pack. No guide is written yet; the first ones arrive with the modding
-sub-issues of #123.
+Step-by-step guides for mod authors, from nothing to a working mod.
+
+| Guide | What it walks through |
+|---|---|
+| [first-building.md](first-building.md) | Adding a playable building: manifest, sprites and icon via `tools/make_sprite.py`, catalog and scenario patches, text, sound, and testing on L0. |

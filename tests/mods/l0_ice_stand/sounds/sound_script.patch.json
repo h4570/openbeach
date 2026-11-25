@@ -1,0 +1,15 @@
+{
+  "format": "obl.json_patch",
+  "version": 1,
+  "ops": [
+    {
+      "op": "set",
+      "path": "/building_sounds/ice_stand",
+      "value": {
+        "sample": "chime",
+        "volume": 0.8,
+        "loop": true
+      }
+    }
+  ]
+}

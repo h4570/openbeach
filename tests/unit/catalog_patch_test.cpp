@@ -189,3 +189,34 @@ OBL_TEST_CASE("catalog_patch.no_active_mod_leaves_the_catalog_alone")
     OBL_REQUIRE(game.Load(*params, error));
     OBL_CHECK_EQ(params->m_numBuildings, 9);
 }
+
+OBL_TEST_CASE("catalog_patch.building_optional_icon_and_own_icon_sprites_load")
+{
+    ModsGuard guard;
+    Game game;
+    game.Record("mod_a", "buildings", "kiosk", "ice_stand");
+    const auto file = game.dir.path / "mods/mod_a/catalog/buildings/ice_stand.json";
+    auto doc = json::parse(std::ifstream(file, std::ios::binary));
+    doc.erase("icon");
+    doc["icon_sprite"] = "ice_stand_icon";
+    doc["icon_locked_sprite"] = "ice_stand_icon_locked";
+    doc["preview_sprite"] = "ice_stand_preview";
+    WriteJson(file, doc);
+    game.Patch("mod_a", {{"buildings", {"ice_stand"}}});
+    pack_path::SetActiveMods({"mod_a"});
+
+    auto params = std::make_unique<tables::WorldParams>();
+    std::string error;
+    OBL_REQUIRE(game.Load(*params, error));
+    OBL_REQUIRE(params->m_numBuildings == 10);
+    const auto& added = params->m_buildings[9];
+    OBL_CHECK_EQ(added.m_Icon, 0);
+    OBL_CHECK_EQ(added.m_IconSprite, "ice_stand_icon");
+    OBL_CHECK_EQ(added.m_IconLockedSprite, "ice_stand_icon_locked");
+    OBL_CHECK_EQ(added.m_PreviewSprite, "ice_stand_preview");
+
+    json index;
+    OBL_REQUIRE(catalog::LoadIndex(game.pack, index, error));
+    OBL_REQUIRE(index.at("buildings").size() == 10u);
+    OBL_CHECK_EQ(index.at("buildings").at(9).get<std::string>(), "ice_stand");
+}

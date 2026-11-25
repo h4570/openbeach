@@ -46,13 +46,15 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("game_dir", type=Path)
     parser.add_argument("--pack", choices=["private", "l0"])
+    parser.add_argument("--script", help="Test script filename under tests/ whose shots to compare")
     parser.add_argument("--golden", type=Path)
     args = parser.parse_args()
     # The outer -Record invocation owns the two-run comparison.
     if os.environ.get("OBL_GUI_ORACLE_RECORDING") == "1":
         return 0
     pack = args.pack or ("l0" if os.environ.get("OBL_PACK") == "l0" else "private")
-    script, directory = ("m6_gui_golden_l0.txt", "m6-gui-l0") if pack == "l0" else ("m6_gui_golden.txt", "m6-gui")
+    default_script, directory = ("m6_gui_golden_l0.txt", "m6-gui-l0") if pack == "l0" else ("m6_gui_golden.txt", "m6-gui")
+    script = args.script or default_script
     names = SHOT.findall((REPO / "tests" / script).read_text(encoding="utf-8"))
     if not names:
         print("GUI fixture has no images", file=sys.stderr)
