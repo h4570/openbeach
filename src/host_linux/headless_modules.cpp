@@ -57,6 +57,16 @@ bool PresentBackBuffer(const uint16_t*, int, int, int, bool)
 
 void InjectMouseButton(int, bool) {}
 void SetSyntheticCursor(int, int) {}
+void InjectFinger(int64_t, int, int, int) {}
+void GameWindowClientSize(void*, int& width, int& height)
+{
+    width = height = 0;
+}
+// No window, so nothing covers it.
+void GameWindowSafeArea(void*, int& left, int& top, int& right, int& bottom)
+{
+    left = top = right = bottom = 0;
+}
 
 } // namespace obl::platform
 

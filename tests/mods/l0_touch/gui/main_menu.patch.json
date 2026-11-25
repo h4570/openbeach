@@ -1,0 +1,21 @@
+{
+  "format": "obl.gui_patch",
+  "version": 1,
+  "ops": [
+    {
+      "op": "add_slot",
+      "dialog": "MainMenu",
+      "slot": "touch_bar",
+      "bounds": [20, 534, 780, 574],
+      "direction": "row",
+      "spacing": 8
+    },
+    {
+      "op": "add_control",
+      "dialog": "MainMenu",
+      "slot": "touch_bar",
+      "id": "touch_ping_btn",
+      "control": "Button(0, 0, 180, 40, l0_menu_start, None, Mod:l0_touch.ping, None, L0_MENU_TIP_START)"
+    }
+  ]
+}

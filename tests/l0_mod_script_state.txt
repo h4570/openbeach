@@ -1,0 +1,8 @@
+# A presentation mod that reads the game state every frame (docs/modding/reference/scripting.md) changes nothing: the replay of
+# l0_construction.replay, recorded without mods, plays back with the test mod tests/mods/l0_state and keeps its world hashes.
+# @env OBL_PACK=l0
+# @env OBL_MODS=l0_state
+# @timeout 180
+# @expect-log mod l0_state: frame 1: money
+replay replays/l0_construction.replay
+quit

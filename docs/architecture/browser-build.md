@@ -177,7 +177,8 @@ and keeps the log in OPFS for a bug report: [browser-failures.md](browser-failur
   drag (the right button and the motion, scaled from client to game pixels so the map follows the finger), a press and
   hold keeps the left button down until the finger lifts, a tap with two fingers is a right click and a drag with two
   fingers the wheel. The cursor is where the finger is and leaves once it is up and the game has read it, so a tap near the
-  edge does not scroll the map. The canvas has `touch-action: none`.
+  edge does not scroll the map. The canvas has `touch-action: none`. Mod scripts see each finger event before the gestures and
+  may consume it or take touch over (`input.touch`, [mods/index.md](mods/index.md#the-input-path)).
   While the GUI places things (`GuiManager::m_mode` 1 and 5, building and scenery; `CurrentTouchAim`) one finger is the
   cursor instead, because the game places on the press and a tap would place blindly: the finger moves the preview and
   lifting it is the press (`TouchAim::Confirm`); a second finger then turns the preview with the wheel and lifts without

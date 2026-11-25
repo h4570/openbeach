@@ -36,11 +36,72 @@ struct FakeHost : mods::ScriptHost {
         const auto it = settings.find(mod + "." + key);
         return it == settings.end() ? std::nullopt : std::optional<std::string>(it->second);
     }
+    std::vector<mods::SyntheticInput> inputs;
+    std::optional<mods::CameraView> camera;
+    std::vector<mods::GuiRequest> gui;
+    std::vector<mods::OverlayOp> overlay;
+    std::optional<mods::GameSnapshot> snapshot;
     void Log(const std::string& line) override { lines.push_back(line); }
     void SubmitCommand(command::Command command) override { commands.push_back(command::Format(command)); }
     bool InWorld() const override { return inWorld; }
+    void SynthesizeInput(const mods::SyntheticInput& input) override { inputs.push_back(input); }
+    std::optional<mods::CameraView> Camera() const override { return camera; }
+    bool SetCameraPosition(int x, int y) override
+    {
+        if (!camera) return false;
+        camera->x = std::max(0, x); // the game clamps to the map
+        camera->y = std::max(0, y);
+        return true;
+    }
+    bool SetZoomLevel(int level) override
+    {
+        if (!camera) return false;
+        camera->zoomLevel = level;
+        return true;
+    }
+    bool Gui(const mods::GuiRequest& request) override
+    {
+        gui.push_back(request);
+        return request.name != "missing";
+    }
+    void Draw(const mods::OverlayOp& op) override { overlay.push_back(op); }
+    std::optional<std::pair<int, int>> MeasureText(const std::string& text, const std::string& font) override
+    {
+        if (font != "guifont8") return std::nullopt;
+        return std::pair<int, int>{static_cast<int>(text.size()) * 6, 9};
+    }
+    mods::ScreenInfo Screen() const override { return {800, 600, 0, 10, 0, 20}; }
+    std::string LastPointer() const override { return "touch"; }
+    const mods::GameSnapshot* Snapshot() override { return snapshot ? &*snapshot : nullptr; }
     bool Logged(const std::string& line) const { return std::find(lines.begin(), lines.end(), line) != lines.end(); }
+    std::vector<std::string> ModLines() const
+    {
+        std::vector<std::string> out;
+        for (const std::string& line : lines)
+            if (line.rfind("mod ", 0) == 0) out.push_back(line);
+        return out;
+    }
 };
+
+mods::InputEvent Key(const std::string& phase, const std::string& key)
+{
+    mods::InputEvent event;
+    event.kind = "key";
+    event.phase = phase;
+    event.key = key;
+    return event;
+}
+
+mods::InputEvent Touch(const std::string& phase, int64_t finger, int x, int y)
+{
+    mods::InputEvent event;
+    event.kind = "touch";
+    event.phase = phase;
+    event.finger = finger;
+    event.x = x;
+    event.y = y;
+    return event;
+}
 
 void Write(const std::filesystem::path& file, const std::string& text)
 {
@@ -437,4 +498,225 @@ OBL_TEST_CASE("script_runtime.every_key_code_has_its_name")
     }
     OBL_CHECK(count > 100);
     OBL_CHECK(mods::KeyName(0).empty());
+}
+
+OBL_TEST_CASE("script_runtime.a_consumed_event_stops_at_its_mod_and_every_mod_observes_it")
+{
+    test::TempPath game("scripts-consume");
+    const std::string observer = R"(
+        function on_input(e) print("input " .. e.kind .. " " .. e.phase) end
+        function on_input_observe(e) print("observe " .. e.key .. " by " .. tostring(e.consumed_by)) end)";
+    const std::string consumer = R"(
+        function on_input(e)
+          print("input " .. e.key)
+          if e.key == "F5" then e:consume() end
+        end
+        function on_input_observe(e) print("observe " .. e.key .. " by " .. tostring(e.consumed_by)) end)";
+    const std::vector<mods::ScriptMod> list = {Mod(game.path, "early", observer), Mod(game.path, "late", consumer)};
+    FakeHost host;
+    mods::ScriptRuntime runtime(host);
+    runtime.Start(list);
+    OBL_CHECK_EQ(runtime.Input(Key("down", "F5")), std::string("late"));
+    OBL_CHECK_EQ(runtime.Input(Key("down", "F6")), std::string());
+    const std::vector<std::string> expected = {"mod late: input F5", "mod late: observe F5 by late", "mod early: observe F5 by late",
+            // Not consumed: both get it, then both observe it.
+            "mod late: input F6", "mod early: input key down", "mod late: observe F6 by nil", "mod early: observe F6 by nil"};
+    OBL_CHECK(host.ModLines() == expected);
+
+    // An observer cannot consume: trying is its error and switches it off.
+    const std::vector<mods::ScriptMod> greedy = {Mod(game.path, "greedy", "function on_input_observe(e) e:consume() end")};
+    runtime.Start(greedy);
+    OBL_CHECK_EQ(runtime.Input(Key("down", "F5")), std::string());
+    OBL_CHECK(runtime.RunningMods().empty());
+    OBL_REQUIRE(runtime.Failures().size() == 1);
+    OBL_CHECK(Contains(runtime.Failures()[0], "on_input_observe cannot consume"));
+}
+
+OBL_TEST_CASE("script_runtime.the_owner_of_an_area_gets_its_events_first_and_gives_it_back_when_it_fails")
+{
+    test::TempPath game("scripts-take-over");
+    const std::string script = R"(
+        function on_input(e)
+          print("touch " .. e.finger .. " " .. e.phase .. " " .. e.x .. "," .. e.y)
+          if e.finger == 9 then error("on purpose") end
+        end)";
+    const std::string calm = R"(function on_input(e) print("touch " .. e.finger .. " " .. e.phase .. " " .. e.x .. "," .. e.y) end)";
+    std::vector<mods::ScriptMod> list = {Mod(game.path, "owner", script), Mod(game.path, "other", calm)};
+    list[0].takesOver = {"input.touch"};
+    FakeHost host;
+    mods::ScriptRuntime runtime(host);
+    runtime.Start(list);
+    OBL_CHECK_EQ(runtime.AreaOwner("input.touch"), std::string("owner"));
+    OBL_CHECK_EQ(runtime.AreaOwner("camera.edge_scroll"), std::string());
+    runtime.Input(Touch("down", 3, 10, 20));
+    // The owner first although it is earlier in load order.
+    OBL_CHECK(host.ModLines() == (std::vector<std::string>{"mod owner: touch 3 down 10,20", "mod other: touch 3 down 10,20"}));
+    // The safety net: the owner fails, the area is free at once.
+    runtime.Input(Touch("down", 9, 0, 0));
+    OBL_CHECK_EQ(runtime.AreaOwner("input.touch"), std::string());
+    OBL_CHECK(runtime.RunningMods() == std::vector<std::string>{"other"});
+
+    // Two takers: the later wins; when it fails the earlier has it; Stop frees it.
+    list[1].takesOver = {"input.touch"};
+    runtime.Start(list);
+    OBL_CHECK_EQ(runtime.AreaOwner("input.touch"), std::string("other"));
+    runtime.Action("other", "x"); // no on_action: nothing happens
+    const std::vector<mods::ScriptMod> failing = {list[0], Mod(game.path, "other", "function on_action() error('on purpose') end")};
+    std::vector<mods::ScriptMod> takers = failing;
+    takers[1].takesOver = {"input.touch"};
+    runtime.Start(takers);
+    OBL_CHECK_EQ(runtime.AreaOwner("input.touch"), std::string("other"));
+    runtime.Action("other", "fail");
+    OBL_CHECK_EQ(runtime.AreaOwner("input.touch"), std::string("owner"));
+    runtime.Stop();
+    OBL_CHECK_EQ(runtime.AreaOwner("input.touch"), std::string());
+}
+
+OBL_TEST_CASE("script_runtime.a_gui_action_reaches_only_its_mod")
+{
+    test::TempPath game("scripts-action");
+    const std::string script = "function on_action(event) print('action ' .. event) end";
+    const std::vector<mods::ScriptMod> list = {Mod(game.path, "a", script), Mod(game.path, "b", script)};
+    FakeHost host;
+    mods::ScriptRuntime runtime(host);
+    runtime.Start(list);
+    runtime.Action("b", "ping");
+    runtime.Action("c", "ping");
+    OBL_CHECK(host.ModLines() == std::vector<std::string>{"mod b: action ping"});
+}
+
+OBL_TEST_CASE("script_runtime.input_camera_gui_and_overlay_calls_reach_the_host")
+{
+    test::TempPath game("scripts-calls");
+    const std::string script = R"(
+        function on_start()
+          obl.input.click(10.7, 20, "right")
+          obl.input.press(1, 2)
+          obl.input.release(1, 2)
+          obl.input.move(5, 6)
+          obl.input.move()
+          print("pointer " .. obl.input.last_pointer())
+          print("camera " .. tostring(obl.camera.position()))
+          obl.gui.open("BuildPanel")
+          obl.gui.move("btn", 3, 4)
+          print("missing " .. tostring(obl.gui.hide("missing")))
+          obl.gui.select(42)
+          obl.gui.place("building", "kiosk")
+          obl.gui.cancel()
+        end
+        function on_frame(dt)
+          local x, y = obl.camera.position()
+          obl.camera.pan(-50, 5)
+          local nx, ny = obl.camera.position()
+          print("pan " .. x .. "," .. y .. " -> " .. nx .. "," .. ny)
+          obl.camera.set_zoom(1.6)
+          print("zoom " .. obl.camera.zoom())
+          obl.camera.set_zoom(0.3)
+          print("zoom " .. obl.camera.zoom())
+          local w, h = obl.overlay.measure("FPS", "guifont8")
+          obl.overlay.rect(0, 0, w + 4, h + 2, 0x80000000)
+          obl.overlay.text(2, 1, "FPS", "guifont8", 0xFFFFFFFF)
+          obl.overlay.frame(0, 0, 10, 10, 0xFF00FF00)
+          obl.overlay.image(5, 5, "icon.png", 32, 32)
+          obl.overlay.view(0, 0, 10, 10, 100, 100, 40, 40)
+          local sw, sh = obl.screen.size()
+          local safe = obl.screen.safe_area()
+          print(string.format("screen %dx%d %.3f safe %d %d", sw, sh, obl.screen.aspect(), safe.top, safe.bottom))
+          print("platform " .. type(obl.platform))
+        end)";
+    const std::vector<mods::ScriptMod> list = {Mod(game.path, "calls", script)};
+    FakeHost host;
+    mods::ScriptRuntime runtime(host);
+    runtime.Start(list);
+    OBL_REQUIRE(host.inputs.size() == 5);
+    using Kind = mods::SyntheticInput::Kind;
+    OBL_CHECK(host.inputs[0].kind == Kind::Click && host.inputs[0].button == 1 && host.inputs[0].x == 10 && host.inputs[0].y == 20);
+    OBL_CHECK(host.inputs[1].kind == Kind::Press && host.inputs[1].button == 0);
+    OBL_CHECK(host.inputs[2].kind == Kind::Release);
+    OBL_CHECK(host.inputs[3].kind == Kind::Move && host.inputs[3].x == 5);
+    OBL_CHECK(host.inputs[4].kind == Kind::Free);
+    OBL_CHECK(host.Logged("mod calls: pointer touch"));
+    OBL_CHECK(host.Logged("mod calls: camera nil")); // outside a world
+    OBL_CHECK(host.Logged("mod calls: missing false"));
+    OBL_REQUIRE(host.gui.size() == 6);
+    using Op = mods::GuiRequest::Op;
+    OBL_CHECK(host.gui[0].op == Op::OpenDialog && host.gui[0].name == "BuildPanel");
+    OBL_CHECK(host.gui[1].op == Op::MoveControl && host.gui[1].x == 3 && host.gui[1].y == 4);
+    OBL_CHECK(host.gui[3].op == Op::Select && host.gui[3].id == 42);
+    OBL_CHECK(host.gui[4].op == Op::Place && host.gui[4].kind == "building" && host.gui[4].name == "kiosk");
+    OBL_CHECK(host.gui[5].op == Op::CancelTool);
+
+    host.camera = mods::CameraView{30, 40, 1};
+    runtime.Frame(0.02f);
+    OBL_CHECK(runtime.RunningMods() == std::vector<std::string>{"calls"});
+    OBL_CHECK(host.Logged("mod calls: pan 30,40 -> 0,45")); // the host clamps
+    OBL_CHECK(host.Logged("mod calls: zoom 2")); // 1.6 is nearest to 2
+    OBL_CHECK(host.Logged("mod calls: zoom 0.5"));
+    OBL_CHECK(host.Logged("mod calls: screen 800x600 1.333 safe 10 20"));
+    OBL_CHECK(host.Logged("mod calls: platform string"));
+    OBL_REQUIRE(host.overlay.size() == 5);
+    OBL_CHECK(host.overlay[0].kind == mods::OverlayOp::Kind::Rect && host.overlay[0].w == 22 && host.overlay[0].color == 0x80000000u);
+    OBL_CHECK(host.overlay[1].kind == mods::OverlayOp::Kind::Text && host.overlay[1].text == "FPS" && host.overlay[1].font == "guifont8");
+    OBL_CHECK(host.overlay[3].image == game.path / "mods" / "calls" / "overlay" / "icon.png" && host.overlay[3].w == 32);
+    OBL_CHECK(host.overlay[4].kind == mods::OverlayOp::Kind::View && host.overlay[4].sw == 10 && host.overlay[4].w == 40);
+}
+
+OBL_TEST_CASE("script_runtime.bad_overlay_input_and_gui_arguments_are_errors")
+{
+    test::TempPath game("scripts-bad-calls");
+    FakeHost host;
+    mods::ScriptRuntime runtime(host);
+    const auto fails = [&](const std::string& call, const std::string& message) {
+        const std::vector<mods::ScriptMod> list = {Mod(game.path, "bad", "function on_frame() " + call + " end")};
+        runtime.Start(list);
+        runtime.Frame(0.02f);
+        OBL_CHECK(runtime.RunningMods().empty());
+        OBL_CHECK(runtime.Failures().size() == 1 && Contains(runtime.Failures()[0], message));
+    };
+    fails("obl.overlay.text(0, 0, 'x', 'nofont')", "no font \"nofont\"");
+    fails("obl.overlay.image(0, 0, '../mod.json')", "an image is a file name");
+    fails("obl.input.click(0, 0, 'middle')", "\"left\" or \"right\"");
+    fails("obl.input.click(1e9, 0)", "out of range");
+    fails("obl.gui.place('vehicle', 'boat')", "\"building\" or \"scenery\"");
+    fails("obl.overlay.rect(0, 0, 1, 1, -1)", "0xAARRGGBB");
+    fails("for i = 1, 5000 do obl.overlay.rect(0, 0, 1, 1, 0) end", "more than 4096 drawing calls");
+    fails("obl.camera.set_zoom(0)", "above 0");
+}
+
+OBL_TEST_CASE("script_runtime.scripts_read_the_game_state_and_frame_statistics")
+{
+    test::TempPath game("scripts-state");
+    const std::string script = R"(
+        function on_frame(dt)
+          local s = obl.game.state()
+          if not s then print("no world") return end
+          print(string.format("money %.0f day %d hour %.1f speed %d paused %s weather %s guests %d mood %.1f",
+            s.money, s.day, s.hour, s.speed, tostring(s.paused), s.weather, s.guests, s.mood))
+          for _, b in ipairs(obl.game.buildings()) do print("building " .. b.id .. " " .. b.key .. " " .. b.x .. "," .. b.y) end
+          local sel = obl.game.selected()
+          print("selected " .. (sel and (sel.kind .. " " .. sel.id) or "none") .. " hovered " .. tostring(obl.game.hovered()))
+          print(string.format("frame %.0f ms fps %.0f", obl.stats.frame_ms(), obl.stats.fps()))
+        end)";
+    const std::vector<mods::ScriptMod> list = {Mod(game.path, "reader", script)};
+    FakeHost host;
+    mods::ScriptRuntime runtime(host);
+    runtime.Start(list);
+    runtime.Frame(0.02f);
+    OBL_CHECK(host.Logged("mod reader: no world"));
+    mods::GameSnapshot snapshot;
+    snapshot.money = 25000;
+    snapshot.day = 3;
+    snapshot.hour = 9.5;
+    snapshot.speedLevel = 1;
+    snapshot.weather = "normal";
+    snapshot.guests = 2;
+    snapshot.mood = 61.5;
+    snapshot.buildings = {{7, "building", "kiosk", 10, 12, 1}};
+    snapshot.selected = mods::ObjectInfo{9, "guest", "", 1, 2, 0};
+    host.snapshot = snapshot;
+    runtime.Frame(0.05f);
+    OBL_CHECK(host.Logged("mod reader: money 25000 day 3 hour 9.5 speed 1 paused false weather normal guests 2 mood 61.5"));
+    OBL_CHECK(host.Logged("mod reader: building 7 kiosk 10,12"));
+    OBL_CHECK(host.Logged("mod reader: selected guest 9 hovered nil"));
+    OBL_CHECK(host.Logged("mod reader: frame 50 ms fps 29")); // two frames in 0.07 s
 }

@@ -18,6 +18,8 @@ inline constexpr int kVersion = 1;
 inline constexpr int kPresentationApi = 1;
 // Where a mod's presentation scripts live, relative to its directory.
 inline constexpr const char* kPresentationScripts = "scripts/presentation";
+// Where the images of a mod's overlay drawing live (PNG), relative to its directory.
+inline constexpr const char* kOverlayImages = "overlay";
 
 // Settings a mod may declare in mod.json (docs/modding/reference/mods.md#settings).
 inline constexpr size_t kMaxSettings = 32;
@@ -25,6 +27,10 @@ inline constexpr size_t kMaxSettings = 32;
 // What a mod may change. A world mod is recorded in saves and replays; a presentation mod reaches the simulation only through
 // game commands, so it ships no data the simulation reads and saves and replays leave it out (docs/architecture/mods/index.md).
 enum class Scope { World, Presentation };
+
+// The default behaviors a mod's scripts may take over (`takes_over` in mod.json, docs/modding/reference/scripting.md): while the
+// mod runs, the engine skips that default and the mod handles it. The order is game/mods/input_routing.h's `Area`.
+inline constexpr std::string_view kTakeOverAreas[] = {"input.touch", "input.mouse_drag", "camera.edge_scroll"};
 
 struct Manifest {
     std::string id;
@@ -35,6 +41,7 @@ struct Manifest {
     Scope scope = Scope::World;
     std::vector<settings_schema::Field> settings; // `settings`: kept in openbeach.ini under [Mod.<id>], never read by the simulation
     int api = 0; // the presentation API version the scripts were written for; 0 when the manifest names none
+    std::vector<std::string> takesOver; // names from kTakeOverAreas
 };
 
 // What the start-up check learned about an active mod.
@@ -59,6 +66,9 @@ bool ParseManifest(std::string_view text, Manifest& manifest, std::string& error
 // `error` names the mod and the reason.
 bool CheckActive(const std::filesystem::path& gameDirectory, std::string_view packId, std::span<const std::string> active,
         std::vector<ActiveMod>& mods, std::string& error);
+
+// One line per default behavior that more than one of `mods` (in load order) takes over: the later mod wins it.
+std::vector<std::string> TakeOverConflicts(std::span<const ActiveMod> mods);
 
 // The result of the last successful start-up check (SetActive), in load order.
 const std::vector<ActiveMod>& Active();

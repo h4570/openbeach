@@ -73,6 +73,10 @@ New tests use the fast flow, not clicks and wall-clock waits:
   checkpoints; `replay <file>` boots the file's start state, feeds its commands and blocks until its last tick.
 - Older commands still work: `wait ms [frames]`, `move x y`, `click x y [right]`, `down`/`up`, `shot name`, `res w h`, `log`, `quit`.
   Coordinates are game (renderer) pixels.
+- **Mod scripts** ([scripting.md](../modding/reference/scripting.md)): `touch <down|move|up|cancel> <finger> <x> <y>` sends a
+  finger event down the browser's and Android's path (the scripts, then the touch gestures); `screen-pixel <x> <y>` reports
+  `r=`/`g=`/`b=` of the last presented frame; a test run hides the scripts' overlay so frames do not depend on mods, and
+  `mod-overlay on|off` shows it. The three need the hidden game.
 - A new test is a script plus one line in `tests/manifest.txt` ([test-runner.md](test-runner.md)); tests must not depend
   on files or ini state left by other tests.
 

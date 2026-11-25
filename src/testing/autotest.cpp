@@ -9,6 +9,10 @@
 //                        machine speed)
 //   move <x> <y>         synthetic cursor position in game coordinates
 //   click <x> <y> [right]   move, press, release; each step waits 50/100 ms and at least 3/6 frames (kClickFrames below)
+//   touch <down|move|up|cancel> <finger> <x> <y>   a finger event in game coordinates, on the path of the browser's and Android's
+//                        fingers: the mods' scripts, then the touch gestures (a tap is a click); it clears a synthetic cursor
+//   mod-overlay on|off   draw the overlay of the mods' presentation scripts (off in test runs, so golden images do not depend on mods)
+//   screen-pixel <x> <y> report `r= g= b=` of the back buffer's pixel, the last presented frame (the overlay included)
 //   shot <name>          save the next presented frame to <game dir>/captures/<name>.png
 //   expect-shot <name> [tol] [max-percent]   wait for the next presented frame, save it like `shot` and compare it with
 //                        <game dir>/golden/<name>.png: PASS when at most max-percent (default 0) of the pixels have a channel
@@ -225,6 +229,8 @@
 #include "game/weather/weather.h"
 #include "game/ui/map_view_restore.h"
 #include "game/ui/input.h"
+#include "game/ui/renderer_types.h"
+#include "game/mods/presentation_scripts.h"
 #include "game/game/command_loop.h"
 #include "platform/intro_movie.h"
 #include "platform/runtime.h"
@@ -290,8 +296,9 @@ void CloseGame()
 bool RefusedHeadless(const std::string& name)
 {
     static const char* const kExact[] = {"move", "down", "up", "click", "move-client", "click-client", "relative-motion", "input-focus",
-            "close-window", "fatal-error", "show-error-exit", "shot", "expect-shot", "res", "object-select", "cursor-contract",
-            "keyboard-contract", "input-object-contract", "graphics-modules", "mp3-scan", "id3-read", "sound-bank-contract"};
+            "close-window", "fatal-error", "show-error-exit", "shot", "expect-shot", "touch", "screen-pixel", "res", "object-select",
+            "cursor-contract", "keyboard-contract", "input-object-contract", "graphics-modules", "mp3-scan", "id3-read",
+            "sound-bank-contract"};
     static const char* const kPrefixes[] = {"gui-", "sdl-", "music-", "sample-", "samples-", "spatial-", "window-", "display-", "posted-"};
     for (const char* exact : kExact)
         if (name == exact) return true;
@@ -380,6 +387,34 @@ void RunSteps(const Command& c)
 }
 
 // Returns false when the script must pause (wait).
+// The back buffer keeps the last presented frame until the next render, so a directive at the start of an update reads what was shown.
+void ReportScreenPixel(int x, int y)
+{
+    ui::Renderer* renderer = game::GetRenderer();
+    if (!renderer || x < 0 || y < 0 || x >= renderer->m_width || y >= renderer->m_height) {
+        OBL_LOG("autotest: FAILED screen-pixel %d %d: no renderer or outside the frame", x, y);
+        return;
+    }
+    const int surface = renderer->m_activeSurface;
+    ui::renderer::SetActiveSurface(renderer, 0);
+    const uint16_t* bits = ui::renderer::GetBackBufferBits(renderer);
+    if (!bits) {
+        ui::renderer::SetActiveSurface(renderer, surface);
+        OBL_LOG("autotest: FAILED screen-pixel %d %d: no back buffer", x, y);
+        return;
+    }
+    const uint16_t pixel = bits[static_cast<size_t>(y) * (ui::SurfaceAt(*renderer, 0)->m_pitch / 2) + x];
+    ui::renderer::UnlockSurface(renderer);
+    ui::renderer::SetActiveSurface(renderer, surface);
+    const bool rgb555 = renderer->m_rgb555 != 0;
+    // Widened to 8 bits like the PNG writer of `shot` (core/image_compare.h).
+    const auto widen = [](uint32_t value, int bits) { return static_cast<int>(value << (8 - bits) | value >> (2 * bits - 8)); };
+    const int r = widen(rgb555 ? pixel >> 10 & 31 : pixel >> 11 & 31, 5);
+    const int g = rgb555 ? widen(pixel >> 5 & 31, 5) : widen(pixel >> 5 & 63, 6);
+    const int b = widen(pixel & 31, 5);
+    OBL_LOG("autotest: screen-pixel x=%d y=%d r=%d g=%d b=%d", x, y, r, g, b);
+}
+
 bool Execute(const Command& raw, uint32_t now)
 {
     // `$key` takes a probe or report value at the moment the directive runs (testing/commands.h).
@@ -403,6 +438,19 @@ bool Execute(const Command& raw, uint32_t now)
         platform::SetSyntheticCursor(Arg(c, 0), Arg(c, 1));
     } else if (c.name == "down" || c.name == "up") {
         platform::InjectMouseButton(Arg(c, 0), c.name == "down");
+    } else if (c.name == "touch") {
+        static const std::vector<std::string> kPhases = {"down", "move", "up", "cancel"};
+        const auto phase = std::find(kPhases.begin(), kPhases.end(), c.args.empty() ? std::string() : c.args[0]);
+        if (phase == kPhases.end() || c.args.size() != 4)
+            OBL_LOG("autotest: FAILED touch needs <down|move|up|cancel> <finger> <x> <y>");
+        else
+            platform::InjectFinger(std::atoll(c.args[1].c_str()), static_cast<int>(phase - kPhases.begin()), Arg(c, 2), Arg(c, 3));
+    } else if (c.name == "mod-overlay") {
+        const bool on = !c.args.empty() && c.args[0] == "on";
+        mods::SetOverlayShown(on);
+        OBL_LOG("autotest: mod-overlay on=%d", on ? 1 : 0);
+    } else if (c.name == "screen-pixel") {
+        ReportScreenPixel(Arg(c, 0), Arg(c, 1));
     } else if (c.name == "shot") {
         g_pendingShot = c.args.empty() ? "shot" : c.args[0];
     } else if (c.name == "res") {
@@ -702,6 +750,8 @@ bool InitAutotest(const Text16& gameDirectory)
     }
     g_script = 0;
     if (!LoadScript(g_scripts[0])) return false;
+    // Golden images and pixel checks must not depend on the mods a run has; a test that checks the overlay asks for it.
+    mods::SetOverlayShown(false);
     g_captureDir = gameDirectory + u"captures\\";
     std::error_code error;
     std::filesystem::create_directory(WidePath(g_captureDir), error);

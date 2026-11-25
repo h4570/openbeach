@@ -6,6 +6,7 @@
 #include "game/ui/input_backend.h"
 
 #include "game/game/game_accessors.h"
+#include "game/mods/input_routing.h"
 #include "game/ui/gui_manager_dialogs.h"
 #include "game/ui/gui_manager_types.h"
 #include "game/world/world_state.h"
@@ -37,6 +38,7 @@
 #include <cerrno>
 #include <cmath>
 #include <deque>
+#include <vector>
 #include <cstdlib>
 #include <cstring>
 
@@ -60,6 +62,10 @@ TouchGestures g_touch;
 bool g_touchCursor;
 UnitAccumulator g_touchDragX, g_touchDragY;
 double g_touchPendingX, g_touchPendingY; // finger motion the game's camera drag has not started to take yet (client pixels)
+// A test injected fingers (InjectFinger): the gestures run on a host that otherwise leaves touch to SDL.
+bool g_injectedTouch;
+// Fingers whose down a mod consumed: the gestures never saw them, so they see none of their events.
+std::vector<int64_t> g_scriptFingers;
 
 // The page locks the pointer for a right drag (web/site.js); SDL then reports motion as deltas.
 bool PagePointerLocked()
@@ -517,6 +523,37 @@ void ApplyTouchActions()
     }
 }
 
+// One finger event in client pixels: first to the mods' scripts (game/mods/input_routing.h), then to the gestures, unless a mod has
+// taken over input.touch or consumed the finger's down.
+void HandleFinger(int64_t id, mods::TouchPhase phase, float x, float y, uint32_t ms)
+{
+    const POINT game = ClientToGame(GameWindow(), {static_cast<LONG>(std::floor(x)), static_cast<LONG>(std::floor(y))});
+    const bool consumed = mods::RouteTouch({id, phase, static_cast<int>(game.x), static_cast<int>(game.y)});
+    const auto hidden = std::find(g_scriptFingers.begin(), g_scriptFingers.end(), id);
+    if (phase == mods::TouchPhase::Up && hidden != g_scriptFingers.end()) {
+        g_scriptFingers.erase(hidden);
+        return;
+    }
+    if (hidden != g_scriptFingers.end() || mods::IsTakenOver(mods::Area::InputTouch)) return;
+    if (phase == mods::TouchPhase::Down && consumed) {
+        g_scriptFingers.push_back(id);
+        return;
+    }
+    if (phase == mods::TouchPhase::Down)
+        g_touch.FingerDown(id, x, y, ms);
+    else if (phase == mods::TouchPhase::Move)
+        g_touch.FingerMove(id, x, y, ms);
+    else if (phase == mods::TouchPhase::Up)
+        g_touch.FingerUp(id, x, y, ms);
+}
+
+void CancelFingers()
+{
+    mods::RouteTouch({0, mods::TouchPhase::Cancel, -300, -300});
+    g_scriptFingers.clear();
+    g_touch.Cancel();
+}
+
 // SDL queues finger events with positions normalized to the window; the gestures work in client pixels, like the mouse.
 void ReadSdlTouchEvents()
 {
@@ -532,7 +569,7 @@ void ReadSdlTouchEvents()
     while (SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_EVENT_FINGER_DOWN, SDL_EVENT_FINGER_CANCELED) > 0) {
         if (!kTouchGestures || !g_queueFocused || width <= 0 || height <= 0) continue;
         if (event.type == SDL_EVENT_FINGER_CANCELED) {
-            g_touch.Cancel();
+            CancelFingers();
             continue;
         }
         if (event.tfinger.windowID != SdlGameWindowId()) continue;
@@ -540,13 +577,13 @@ void ReadSdlTouchEvents()
         const float x = event.tfinger.x * static_cast<float>(width), y = event.tfinger.y * static_cast<float>(height);
         const auto ms = static_cast<uint32_t>(event.common.timestamp / 1000000);
         if (event.type == SDL_EVENT_FINGER_DOWN)
-            g_touch.FingerDown(id, x, y, ms);
+            HandleFinger(id, mods::TouchPhase::Down, x, y, ms);
         else if (event.type == SDL_EVENT_FINGER_MOTION)
-            g_touch.FingerMove(id, x, y, ms);
+            HandleFinger(id, mods::TouchPhase::Move, x, y, ms);
         else if (event.type == SDL_EVENT_FINGER_UP)
-            g_touch.FingerUp(id, x, y, ms);
+            HandleFinger(id, mods::TouchPhase::Up, x, y, ms);
     }
-    if (!kTouchGestures) return;
+    if (!kTouchGestures && !g_injectedTouch) return;
     g_touch.Tick(static_cast<uint32_t>(SDL_GetTicks()));
     ApplyTouchActions();
 }
@@ -709,7 +746,7 @@ public:
         g_sdlMouseClient = {-300, -300}; // After the drag ends: a reset never returns the cursor position.
         g_sdlWheel.Reset();
         g_events.clear();
-        g_touch.Cancel();
+        CancelFingers();
         g_touch.Take();
         g_touchCursor = false;
         g_touchPendingX = g_touchPendingY = 0;
@@ -786,6 +823,21 @@ void InjectMouseButton(int button, bool down)
 void ClearSyntheticCursor()
 {
     g_syntheticCursor = false;
+}
+
+void InjectFinger(int64_t finger, int phase, int x, int y)
+{
+    // The finger is the pointer now, as on a phone: a synthetic cursor of an earlier `move` would hide where it is.
+    g_injectedTouch = true;
+    g_syntheticCursor = false;
+    const SIZE size = GameSize();
+    void* window = GameWindow();
+    const POINT client = window ? MapGameToClient({x, y}, size, ClientImageRect(window, size)) : POINT{x, y};
+    const auto ms = static_cast<uint32_t>(SDL_GetTicks());
+    if (phase == 3)
+        CancelFingers();
+    else
+        HandleFinger(finger, static_cast<mods::TouchPhase>(phase), static_cast<float>(client.x), static_cast<float>(client.y), ms);
 }
 
 bool MouseConfineWanted()

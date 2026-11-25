@@ -8,13 +8,24 @@ struct Input;
 }
 
 // The game's side of the presentation scripts (script_runtime.h): the running mods' scripts get every frame and the player's input,
-// and their commands go into the game loop's queue like the GUI's. Nothing here runs inside the simulation's tick.
+// their commands go into the game loop's queue like the GUI's, and their overlay is drawn over the finished frame. Nothing here runs
+// inside the simulation's tick.
 namespace obl::mods {
 
-// Called at the end of every game update, after the state's update. The first call starts the scripts of the active mods
-// (mod_pack::Active(), so after the start-up check); then each call hands on the input that changed since the last one, then the
-// frame. `input` may be null.
-void PresentationFrame(float dt, const ui::Input* input);
+// Called right after the input update, before the commands and the state's update read the input (docs/architecture/input.md). The
+// first call starts the scripts of the active mods (mod_pack::Active(), so after the start-up check); then the input of this update
+// goes to on_input as events, a consumed event is taken back out of `input`, and the inputs scripts made up go in. `input` may be
+// null.
+void PresentationInput(ui::Input* input);
+
+// Called at the end of every game update, after the state's update: the scripts' frame.
+void PresentationFrame(float dt);
+
+// Draws the scripts' overlay onto the frame, after the GUI and before the present.
+void DrawPresentationOverlay();
+// Whether the overlay is drawn. On by default; test runs switch it off (golden images must not depend on mods) unless the test
+// asks for it (`mod-overlay on`).
+void SetOverlayShown(bool shown);
 
 // on_stop and the stores: at the end of the game.
 void StopPresentationScripts();

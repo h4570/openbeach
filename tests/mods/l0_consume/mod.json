@@ -1,0 +1,10 @@
+{
+  "format": "obl.mod",
+  "version": 1,
+  "id": "l0_consume",
+  "title": "L0 consume test mod",
+  "mod_version": "1.0.0",
+  "pack": "l0",
+  "scope": "presentation",
+  "api": 1
+}

@@ -24,6 +24,9 @@ void DestroySdlGameWindow();
 SDL_Window* SdlGameWindow(void* window);
 // The client size in pixels of the game window `window` (0 x 0 without one).
 void GameWindowClientSize(void* window, int& width, int& height);
+// How far a phone's notch, rounded corners or system bars reach into the client area of `window` from each edge, in client
+// pixels (all 0 without a window or where the system reports nothing).
+void GameWindowSafeArea(void* window, int& left, int& top, int& right, int& bottom);
 #ifdef _WIN32
 // The Win32 handle of the game window, for the Windows-only callers (message boxes, shell links, hidden mode, test probes).
 HWND__* GetWin32Window(void* window);

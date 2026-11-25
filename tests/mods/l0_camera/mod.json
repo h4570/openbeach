@@ -1,0 +1,11 @@
+{
+  "format": "obl.mod",
+  "version": 1,
+  "id": "l0_camera",
+  "title": "L0 camera test mod",
+  "mod_version": "1.0.0",
+  "pack": "l0",
+  "scope": "presentation",
+  "api": 1,
+  "takes_over": ["camera.edge_scroll"]
+}

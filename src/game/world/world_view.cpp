@@ -6,6 +6,7 @@
 #include "game/ui/input.h"
 #include "game/world/world_view.h"
 #include "game/game/settings_store.h"
+#include "game/mods/input_routing.h"
 #include "game/weather/weather.h"
 
 #include "game/game/game_accessors.h"
@@ -59,14 +60,15 @@ public:
     bool KeyHeld(int code) { return InputKeyHeld(*m_view.m_input, code); }
     void AddVelocity(float x, float y) { (m_world.m_mapView)->AddCameraVelocity(x, y); }
     void ClearKeyHover() { game::GetGuiManager()->m_selection = -1; }
-    bool NudgeScroll() { return game::settings_store::Current().m_nudgeScroll != 0; }
+    // A mod that took over the edge scroll or the right-button drag (game/mods/input_routing.h) moves the camera itself.
+    bool NudgeScroll() { return game::settings_store::Current().m_nudgeScroll != 0 && !mods::IsTakenOver(mods::Area::CameraEdgeScroll); }
     // The setting exists where a stick is the pointer (own_controls.h); elsewhere the map scrolls at the original speed.
     float ScrollSpeed()
     {
         if (!own_controls::PadPointer()) return 1.0f;
         return static_cast<float>(std::max(game::settings_store::Current().m_scrollSpeed, obl::settings::kMinScrollSpeed)) / 100.0f;
     }
-    int RightButton() { return m_view.m_input->m_rightButton; }
+    int RightButton() { return mods::IsTakenOver(mods::Area::InputMouseDrag) ? 0 : m_view.m_input->m_rightButton; }
     int MouseDeltaX() { return m_view.m_input->m_deltaX; }
     int MouseDeltaY() { return m_view.m_input->m_deltaY; }
     bool MainItemHovered() { return game::GetGuiManager()->IsMainItemHovered(); }
