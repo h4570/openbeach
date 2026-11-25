@@ -221,6 +221,7 @@ function checkLanguagePages(siteDir) {
     const english = fs.readFileSync(path.join(siteDir, "index.html"), "utf8");
     check(/<h1><span data-t="heroTitle">Beach Life,<\/span>/.test(english), "pages: the headline names the game");
     check(english.includes("Virtual Resort: Spring Break"), "pages: the page names the UK/US title");
+    check(/<title>[^<]*Beach Life game[^<]*<\/title>/.test(english), "pages: the title says \"Beach Life game\", the search most players type");
 }
 
 async function main() {
@@ -248,7 +249,7 @@ async function main() {
     const fixedPage = await loadPage({languages: ["en-US"], stored: {"openbeach-page-language": "fr"}, fixed: "pl"});
     check(fixedPage.translated.textContent === "Graj" && fixedPage.context.document.documentElement.lang === "pl",
         "page language: a language page keeps its language");
-    check(fixedPage.context.document.title === "OpenBeach: zagraj w Beach Life w przeglądarce", "page language: the title is in the language");
+    check(fixedPage.context.document.title === "OpenBeach: zagraj w grę Beach Life w przeglądarce", "page language: the title is in the language");
     const none = await loadPage({languages: ["ja-JP"]});
     check(none.translated.textContent === "Play", "page language: English is the fallback");
     page.elements["site-language"].value = "pl";
@@ -606,6 +607,8 @@ async function main() {
         check(html.includes('<link rel="canonical" href="https://openbeach.app/">'), "site: the page names its canonical address");
         const siteName = html.match(/<script type="application\/ld\+json">(.+)<\/script>/);
         check(siteName !== null && JSON.parse(siteName[1]).name === "OpenBeach", "site: the structured data carries the site name");
+        const blocks = [...html.matchAll(/<script type="application\/ld\+json">(.+)<\/script>/g)].map((m) => JSON.parse(m[1]));
+        check(blocks.some((data) => data["@type"] === "VideoGame" && data.name === "Beach Life"), "site: the structured data names the game");
         for (const name of wanted) check(fs.existsSync(path.join(siteDir, name)), `site: ${name} is in ${siteDir}`);
         checkLanguagePages(siteDir);
     }
