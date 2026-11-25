@@ -5,7 +5,9 @@
 
 #include "core/key_code.h"
 #include "game/game/command.h"
+#include "game/game/start_settings.h"
 #include "game/mods/key_names.h"
+#include "game/mods/mod_settings_file.h"
 #include "game/mods/script_runtime.h"
 #include "temp_dir.h"
 
@@ -13,6 +15,8 @@
 #include <filesystem>
 #include <fstream>
 #include <iterator>
+#include <map>
+#include <optional>
 #include <regex>
 #include <sstream>
 #include <string>
@@ -26,6 +30,12 @@ struct FakeHost : mods::ScriptHost {
     std::vector<std::string> lines;
     std::vector<std::string> commands; // text form
     bool inWorld = true;
+    std::map<std::string, std::string> settings; // "<mod>.<key>" -> the text the player's openbeach.ini would hold
+    std::optional<std::string> ReadSetting(const std::string& mod, const std::string& key) const override
+    {
+        const auto it = settings.find(mod + "." + key);
+        return it == settings.end() ? std::nullopt : std::optional<std::string>(it->second);
+    }
     void Log(const std::string& line) override { lines.push_back(line); }
     void SubmitCommand(command::Command command) override { commands.push_back(command::Format(command)); }
     bool InWorld() const override { return inWorld; }
@@ -277,6 +287,127 @@ OBL_TEST_CASE("script_runtime.the_store_outlives_a_run_and_has_a_cap")
     OBL_REQUIRE(small.Failures().size() == 2u);
     OBL_CHECK(Contains(small.Failures()[0], "exceed 100 bytes"));
     OBL_CHECK(Contains(small.Failures()[1], "a value is nil, a boolean, a number or a string"));
+}
+
+namespace {
+
+settings_schema::Field Setting(const std::string& id, settings_schema::Kind kind, const std::string& defaultValue)
+{
+    settings_schema::Field field;
+    field.id = id;
+    field.kind = kind;
+    field.label = id;
+    field.defaultValue = defaultValue;
+    return field;
+}
+
+std::vector<settings_schema::Field> SampleSettings()
+{
+    auto theme = Setting("theme", settings_schema::Kind::Choice, "sand");
+    theme.options = {{"sand", "Sand"}, {"sea", "Sea"}};
+    auto zoom = Setting("zoom", settings_schema::Kind::Number, "2");
+    zoom.min = 1;
+    zoom.max = 4;
+    zoom.step = 1;
+    auto opacity = Setting("opacity", settings_schema::Kind::Number, "0.5");
+    opacity.min = 0;
+    opacity.max = 1;
+    opacity.step = 0.25;
+    return {Setting("wide", settings_schema::Kind::Toggle, "0"), theme, zoom, opacity};
+}
+
+} // namespace
+
+OBL_TEST_CASE("script_runtime.settings_are_read_typed_with_the_default_for_a_bad_value")
+{
+    test::TempPath game("scripts-settings");
+    auto mod = Mod(game.path, "m", R"(
+        function on_start()
+          print(type(obl.settings.get("wide")), tostring(obl.settings.get("wide")))
+          print(obl.settings.get("theme"))
+          print(math.type(obl.settings.get("zoom")), obl.settings.get("zoom"))
+          print(math.type(obl.settings.get("opacity")), obl.settings.get("opacity"))
+          print(pcall(obl.settings.get, "nope"))
+        end)");
+    mod.settings = SampleSettings();
+    FakeHost host;
+    host.settings = {{"m.wide", "true"}, {"m.theme", "purple"}, {"m.zoom", "3"}};
+    mods::ScriptRuntime runtime(host);
+    runtime.Start(std::vector<mods::ScriptMod>{mod});
+    OBL_CHECK(host.Logged("mod m: boolean\ttrue"));
+    OBL_CHECK(host.Logged("mod m: sand")); // "purple" is not an option: the default
+    OBL_CHECK(host.Logged("mod m: integer\t3"));
+    OBL_CHECK(host.Logged("mod m: float\t0.5"));
+    OBL_CHECK(host.Logged("mod m: the setting theme holds \"purple\", which is not a value of it; using the default"));
+    bool refused = false;
+    for (const std::string& line : host.lines) refused |= Contains(line, "\"nope\" is not a setting this mod declares");
+    OBL_CHECK(refused);
+}
+
+OBL_TEST_CASE("script_runtime.on_setting_runs_once_for_each_changed_value")
+{
+    test::TempPath game("scripts-setting-change");
+    auto mod = Mod(game.path, "m", R"(
+        function on_setting(id, value) print("changed " .. id .. " " .. tostring(value)) end)");
+    mod.settings = SampleSettings();
+    auto other = Mod(game.path, "other", "function on_setting(id, value) print('never') end");
+    FakeHost host;
+    mods::ScriptRuntime runtime(host);
+    runtime.Start(std::vector<mods::ScriptMod>{mod, other});
+    runtime.SettingsChanged(); // nothing changed since Start
+    OBL_CHECK(!Contains(host.lines.empty() ? "" : host.lines.back(), "changed"));
+    host.settings = {{"m.wide", "1"}, {"m.zoom", "4"}, {"m.theme", "sea"}};
+    runtime.SettingsChanged();
+    runtime.SettingsChanged(); // read again: no new change
+    std::vector<std::string> changes;
+    for (const std::string& line : host.lines)
+        if (Contains(line, "changed ")) changes.push_back(line);
+    const std::vector<std::string> expected = {"mod m: changed wide true", "mod m: changed theme sea", "mod m: changed zoom 4"};
+    OBL_CHECK(changes == expected);
+    OBL_CHECK(!host.Logged("mod other: never"));
+    // A value that becomes invalid falls back to the default, which is a change from what the script saw.
+    host.settings = {{"m.wide", "1"}, {"m.zoom", "9"}, {"m.theme", "sea"}};
+    runtime.SettingsChanged();
+    OBL_CHECK(host.Logged("mod m: changed zoom 2"));
+}
+
+OBL_TEST_CASE("script_runtime.mod_settings_live_in_their_own_section_of_openbeach_ini")
+{
+    test::TempPath game("scripts-setting-ini");
+    const auto file = game.path / "openbeach.ini";
+    Write(file, "[Display]\r\nWindowed=0\r\nScale=2\r\n\r\n[Mod.m]\r\nzoom = 3 \r\nempty=\r\n");
+    OBL_CHECK_EQ(mods::ReadModSettingFile(file, "m", "zoom").value_or("?"), std::string("3"));
+    OBL_CHECK_EQ(mods::ReadModSettingFile(file, "m", "empty").value_or("?"), std::string()); // present but empty
+    OBL_CHECK(!mods::ReadModSettingFile(file, "m", "missing"));
+    OBL_CHECK(!mods::ReadModSettingFile(file, "other", "zoom")); // another mod's section
+    OBL_CHECK(!mods::ReadModSettingFile(game.path / "none.ini", "m", "zoom"));
+
+    const game::start_settings::Values before = game::start_settings::Load(game.path, game.path);
+    OBL_CHECK(mods::WriteModSettingFile(file, "m", "theme", "sea"));
+    OBL_CHECK(mods::WriteModSettingFile(file, "m", "zoom", "4"));
+    OBL_CHECK_EQ(mods::ReadModSettingFile(file, "m", "theme").value_or("?"), std::string("sea"));
+    OBL_CHECK_EQ(mods::ReadModSettingFile(file, "m", "zoom").value_or("?"), std::string("4"));
+    // The engine's own keys read as before: a mod's section is no setting of the game.
+    OBL_CHECK(game::start_settings::Load(game.path, game.path) == before);
+    OBL_CHECK(!before.windowed);
+    OBL_CHECK_EQ(before.scale, 2.0);
+}
+
+OBL_TEST_CASE("script_runtime.a_failing_on_setting_switches_off_only_its_mod")
+{
+    test::TempPath game("scripts-setting-error");
+    auto bad = Mod(game.path, "bad", "function on_setting(id, value) error('boom') end");
+    bad.settings = SampleSettings();
+    auto good = Mod(game.path, "good", "function on_setting(id, value) print('ok ' .. id) end");
+    good.settings = SampleSettings();
+    FakeHost host;
+    mods::ScriptRuntime runtime(host);
+    runtime.Start(std::vector<mods::ScriptMod>{bad, good});
+    host.settings = {{"bad.wide", "1"}, {"good.wide", "1"}};
+    runtime.SettingsChanged();
+    const std::vector<std::string> running = {"good"};
+    OBL_CHECK(runtime.RunningMods() == running);
+    OBL_CHECK(host.Logged("mod good: ok wide"));
 }
 
 OBL_TEST_CASE("script_runtime.the_reference_page_lists_the_registered_api_and_commands")

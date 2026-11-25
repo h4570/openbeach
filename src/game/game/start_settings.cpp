@@ -8,7 +8,6 @@
 #include "game/tables/text_load.h"
 #include "game/ui/display_geometry.h"
 
-#include <cstdio>
 #include <cstdlib>
 #include <fstream>
 #include <iterator>
@@ -73,12 +72,95 @@ double ReadScale(const fs::path& path)
 
 std::string Number(double value)
 {
-    char text[32];
-    std::snprintf(text, sizeof(text), "%g", value);
-    return text;
+    return settings_schema::NumberText(value);
+}
+
+using settings_schema::Field;
+using settings_schema::Kind;
+
+Field Toggle(const char* key, bool on)
+{
+    Field field;
+    field.id = key;
+    field.kind = Kind::Toggle;
+    field.defaultValue = on ? "1" : "0";
+    return field;
+}
+
+Field Choice(const char* key, std::vector<settings_schema::Option> options, const char* defaultValue, bool zeroLast = false)
+{
+    Field field;
+    field.id = key;
+    field.kind = Kind::Choice;
+    field.options = std::move(options);
+    field.defaultValue = defaultValue;
+    field.zeroLast = zeroLast;
+    return field;
+}
+
+struct EngineSetting {
+    Field field;
+    const char* section;
+};
+
+const std::vector<EngineSetting>& EngineSettings()
+{
+    static const std::vector<EngineSetting> settings = {
+            {Toggle("Windowed", true), "Display"},
+            // The sizes the window offers ([Display] Scale is 1..4; the game accepts decimals, so any other value stays selectable).
+            {Choice("Scale", {{"1", "1x"}, {"1.5", "1.5x"}, {"2", "2x"}, {"2.5", "2.5x"}, {"3", "3x"}, {"3.5", "3.5x"}, {"4", "4x"}}, "1"),
+                    "Display"},
+            {Toggle("ConfineMouse", true), "Display"},
+            {Choice("MaxFps",
+                     {{"30", "30 fps"}, {"60", "60 fps"}, {"75", "75 fps"}, {"120", "120 fps"}, {"144", "144 fps"}, {"240", "240 fps"},
+                             {"0", "unlimited"}},
+                     "60", true),
+                    "Display"},
+            {Toggle("PlayMovie", true), "Intro"},
+            {Toggle("ShowSettings", true), "Launcher"},
+    };
+    return settings;
 }
 
 } // namespace
+
+const settings_schema::Field& EngineField(Setting setting)
+{
+    return EngineSettings()[static_cast<size_t>(setting)].field;
+}
+
+const char* EngineSection(Setting setting)
+{
+    return EngineSettings()[static_cast<size_t>(setting)].section;
+}
+
+std::string Get(const Values& v, Setting setting)
+{
+    switch (setting) {
+    case Windowed: return v.windowed ? "1" : "0";
+    case Scale: return Number(v.scale);
+    case ConfineMouse: return v.confineMouse ? "1" : "0";
+    case MaxFps: return std::to_string(v.maxFps);
+    case PlayMovie: return v.playMovie ? "1" : "0";
+    default: return v.showAtStart ? "1" : "0";
+    }
+}
+
+void Set(Values& v, Setting setting, std::string_view canonical)
+{
+    const auto canonicalValue = settings_schema::Canonical(EngineField(setting), canonical);
+    // A value of the file that the window does not offer (Scale=1.75) is not an option but still a value.
+    const std::string text(canonicalValue ? *canonicalValue : std::string(canonical));
+    const bool on = settings_schema::IsOn(text);
+    switch (setting) {
+    case Windowed: v.windowed = on; break;
+    case Scale: v.scale = std::atof(text.c_str()); break;
+    case ConfineMouse: v.confineMouse = on; break;
+    case MaxFps: v.maxFps = std::atoi(text.c_str()); break;
+    case PlayMovie: v.playMovie = on; break;
+    default: v.showAtStart = on; break;
+    }
+}
 
 bool CreateDefaultFile(const fs::path& path)
 {

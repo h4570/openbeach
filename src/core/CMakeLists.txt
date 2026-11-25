@@ -39,6 +39,8 @@ add_library(obl_core STATIC
     os.cpp
     os.h
     pack_path.cpp
+    settings_schema.cpp
+    settings_schema.h
     sha256.cpp
     sha256.h
     pack_path.h

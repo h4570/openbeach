@@ -12,6 +12,7 @@
 #include "core/json_schema.h"
 #include "core/pack_path.h"
 #include "formats/mod_pack.h"
+#include "game/mods/presentation_scripts.h"
 #include "game/objects/building_events_trace.h"
 #include "game/game/save_load.h"
 #include "game/ui/save_slots.h"
@@ -225,6 +226,18 @@ bool ClaimMods(const std::string& list)
     return true;
 }
 
+// `mod-setting <mod> <id> <value>`: what the mods screen does when the player changes a setting of a mod; the scripts get on_setting.
+bool ModSetting(const std::string& mod, const std::string& id, const std::string& value)
+{
+    std::string error;
+    if (!mods::SetModSetting(mod, id, value, error)) {
+        OBL_LOG("autotest: FAILED mod-setting %s %s %s: %s", mod.c_str(), id.c_str(), value.c_str(), error.c_str());
+        return false;
+    }
+    OBL_LOG("autotest: mod-setting %s %s %s", mod.c_str(), id.c_str(), value.c_str());
+    return true;
+}
+
 // `expect-obl-save-refused <file> <text>`: the load of this obl.save must be refused with a message that contains <text>
 // (a mod id, for the mods check); nothing is queued.
 bool ExpectOblSaveRefused(const std::string& path, const std::string& text)
@@ -308,11 +321,11 @@ bool ExecuteBuildingEventCommand(const std::string& name, const std::vector<std:
 {
     if (name != "event-build" && name != "event-state" && name != "hour" && name != "event-guests" && name != "event-slot" &&
             name != "save-panel" && name != "save-confirm" && name != "load-slot" && name != "convert-save" && name != "load-obl-save" &&
-            name != "save-obl" && name != "claim-mods" && name != "expect-obl-save-refused" && name != "event-expect" &&
-            name != "event-load-index" && name != "event-focus" && name != "event-tick" && name != "event-select" &&
-            name != "event-rotate" && name != "event-cancel" && name != "event-advance" && name != "event-visible" &&
-            name != "event-check-actors" && name != "event-delay" && name != "event-open" && name != "event-normalize" &&
-            name != "event-synthetic")
+            name != "save-obl" && name != "claim-mods" && name != "mod-setting" && name != "expect-obl-save-refused" &&
+            name != "event-expect" && name != "event-load-index" && name != "event-focus" && name != "event-tick" &&
+            name != "event-select" && name != "event-rotate" && name != "event-cancel" && name != "event-advance" &&
+            name != "event-visible" && name != "event-check-actors" && name != "event-delay" && name != "event-open" &&
+            name != "event-normalize" && name != "event-synthetic")
         return false;
     if (name == "load-slot" && args.size() == 1) {
         LoadSaveSlot(args[0]); // works without a world (before the first frame of gameplay)
@@ -324,6 +337,10 @@ bool ExecuteBuildingEventCommand(const std::string& name, const std::vector<std:
     }
     if (name == "save-obl" && args.size() == 1) {
         SaveObl(args[0]);
+        return true;
+    }
+    if (name == "mod-setting" && args.size() == 3) {
+        ModSetting(args[0], args[1], args[2]);
         return true;
     }
     if (name == "claim-mods" && args.size() == 1) {

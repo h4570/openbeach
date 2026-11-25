@@ -47,19 +47,9 @@ std::string ScaleName(double scale)
     return text;
 }
 
-// `list` with `value` in it: a value from the file that the window does not offer stays selectable.
-template<class T> std::vector<T> WithValue(std::vector<T> list, T value)
-{
-    if (std::find(list.begin(), list.end(), value) == list.end()) list.push_back(value);
-    return list;
-}
-
-template<class T> T Step(const std::vector<T>& list, T value, int delta)
-{
-    const auto at = static_cast<int>(std::find(list.begin(), list.end(), value) - list.begin());
-    const int count = static_cast<int>(list.size());
-    return list[static_cast<size_t>(((at + delta) % count + count) % count)];
-}
+// The settings row of the engine setting it edits (docs/build/settings-window.md).
+constexpr settings::Setting kRowSetting[] = {settings::kSettingCount, settings::Windowed, settings::Scale, settings::ConfineMouse,
+        settings::MaxFps, settings::PlayMovie, settings::ShowAtStart};
 
 void SetColor(SDL_Renderer* renderer, Color color)
 {
@@ -113,15 +103,7 @@ SDL_FRect RowRect(int row)
 
 } // namespace
 
-Model::Model(settings::Values values) : m_values(std::move(values))
-{
-    m_scales = WithValue(std::vector<double>(std::begin(settings::kScales), std::end(settings::kScales)), m_values.scale);
-    std::sort(m_scales.begin(), m_scales.end());
-    m_frameCaps = WithValue(std::vector<int>(std::begin(settings::kFrameCaps), std::end(settings::kFrameCaps)), m_values.maxFps);
-    // Unlimited (0) stays last.
-    std::stable_partition(m_frameCaps.begin(), m_frameCaps.end(), [](int fps) { return fps > 0; });
-    std::sort(m_frameCaps.begin(), m_frameCaps.end() - (m_frameCaps.back() == 0 ? 1 : 0));
-}
+Model::Model(settings::Values values) : m_values(std::move(values)) {}
 
 unsigned Model::TextLanguage() const
 {
@@ -155,16 +137,17 @@ RowText Model::Text(int row) const
 void Model::Change(int row, int delta)
 {
     if (row < 0 || row >= kRowCount || !Text(row).enabled) return;
-    settings::Values& v = m_values;
-    switch (row) {
-    case Language: v.language = Step(v.languages, v.language, delta); break;
-    case Display: v.windowed = !v.windowed; break;
-    case Size: v.scale = Step(m_scales, v.scale, delta); break;
-    case Mouse: v.confineMouse = !v.confineMouse; break;
-    case FrameCap: v.maxFps = Step(m_frameCaps, v.maxFps, delta); break;
-    case Movie: v.playMovie = !v.playMovie; break;
-    default: v.showAtStart = !v.showAtStart; break;
+    if (row == Language) {
+        const auto& languages = m_values.languages;
+        if (languages.empty()) return;
+        const auto at = static_cast<int>(std::find(languages.begin(), languages.end(), m_values.language) - languages.begin());
+        const int count = static_cast<int>(languages.size());
+        m_values.language = languages[static_cast<size_t>(((at + delta) % count + count) % count)];
+        return;
     }
+    // The other rows step through their schema field: the options it offers, plus a value of the file it does not.
+    const settings::Setting setting = kRowSetting[row];
+    settings::Set(m_values, setting, settings_schema::Step(settings::EngineField(setting), settings::Get(m_values, setting), delta));
 }
 
 void Draw(SDL_Renderer* renderer, const Model& model, int focus)

@@ -14,6 +14,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <iterator>
+#include <map>
 
 namespace obl::mods {
 
@@ -47,6 +48,8 @@ struct ScriptRuntime::Mod {
     int logLines = 0;
     nlohmann::json store = nlohmann::json::object();
     bool storeDirty = false;
+    std::vector<settings_schema::Field> fields;
+    std::map<std::string, std::string> settings; // setting id -> canonical value, as of the last read
 };
 
 namespace {
@@ -251,6 +254,39 @@ int ApiStoreSet(lua_State* L)
     return 0;
 }
 
+const settings_schema::Field* FindField(const Mod& mod, const std::string& id)
+{
+    const auto it = std::find_if(mod.fields.begin(), mod.fields.end(), [&](const auto& field) { return field.id == id; });
+    return it == mod.fields.end() ? nullptr : &*it;
+}
+
+// A setting as a script sees it: a toggle is a boolean, a choice its option's value (a string), a number a Lua integer when every
+// value of the setting is whole, else a float.
+void PushSetting(lua_State* L, const settings_schema::Field& field, const std::string& value)
+{
+    switch (field.kind) {
+    case settings_schema::Kind::Toggle: lua_pushboolean(L, settings_schema::IsOn(value)); break;
+    case settings_schema::Kind::Choice: lua_pushlstring(L, value.data(), value.size()); break;
+    case settings_schema::Kind::Number:
+        if (settings_schema::IsWhole(field))
+            lua_pushinteger(L, static_cast<lua_Integer>(std::strtod(value.c_str(), nullptr)));
+        else
+            lua_pushnumber(L, std::strtod(value.c_str(), nullptr));
+        break;
+    }
+}
+
+// obl.settings.get(id): the mod's own setting, the player's value or the default; an id the mod did not declare is an error.
+int ApiSettingsGet(lua_State* L)
+{
+    const std::string id = luaL_checkstring(L, 1);
+    const Mod& mod = Of(L);
+    const settings_schema::Field* field = FindField(mod, id);
+    if (!field) return luaL_error(L, "obl.settings.get: \"%s\" is not a setting this mod declares in mod.json", id.c_str());
+    PushSetting(L, *field, mod.settings.at(id));
+    return 1;
+}
+
 void SetFunctions(lua_State* L, std::initializer_list<std::pair<const char*, lua_CFunction>> functions)
 {
     for (const auto& [name, function] : functions) {
@@ -272,6 +308,9 @@ void RegisterApi(lua_State* L)
     lua_newtable(L);
     SetFunctions(L, {{"get", ApiStoreGet}, {"set", ApiStoreSet}});
     lua_setfield(L, -2, "store");
+    lua_newtable(L);
+    SetFunctions(L, {{"get", ApiSettingsGet}});
+    lua_setfield(L, -2, "settings");
     lua_setglobal(L, "obl");
 }
 
@@ -330,6 +369,7 @@ struct DispatchRequest {
     const char* function;
     float dt = 0;
     const InputEvent* event = nullptr;
+    const char* setting = nullptr; // on_setting: the id of the changed setting
 };
 
 void SetString(lua_State* L, const char* field, const std::string& value)
@@ -348,7 +388,12 @@ int Dispatch(lua_State* L)
     lua_rawget(L, -2);
     if (!lua_isfunction(L, -1)) return 0;
     int args = 0;
-    if (request.event) {
+    if (request.setting) {
+        const Mod& mod = Of(L);
+        lua_pushstring(L, request.setting);
+        PushSetting(L, *FindField(mod, request.setting), mod.settings.at(request.setting));
+        args = 2;
+    } else if (request.event) {
         const InputEvent& e = *request.event;
         lua_newtable(L);
         SetString(L, "kind", e.kind);
@@ -405,6 +450,23 @@ void LoadStore(Mod& mod)
     for (const auto& [key, value] : doc["values"].items())
         if (!key.empty() && key.size() <= kMaxStoreKey && (value.is_boolean() || value.is_number() || value.is_string()))
             mod.store[key] = value;
+}
+
+// Reads the mod's settings from the host: the canonical text of a valid value, else the default. Returns the ids whose value changed.
+std::vector<std::string> ReadSettings(Mod& mod)
+{
+    std::vector<std::string> changed;
+    for (const auto& field : mod.fields) {
+        const std::optional<std::string> text = mod.host->ReadSetting(mod.id, field.id);
+        if (text && !settings_schema::Canonical(field, *text) && !mod.settings.count(field.id))
+            mod.host->Log("mod " + mod.id + ": the setting " + field.id + " holds \"" + *text +
+                    "\", which is not a value of it; using the default");
+        const std::string value = settings_schema::ValueOrDefault(field, text);
+        const auto old = mod.settings.find(field.id);
+        if (old != mod.settings.end() && old->second != value) changed.push_back(field.id);
+        mod.settings[field.id] = value;
+    }
+    return changed;
 }
 
 void WriteStore(Mod& mod)
@@ -500,6 +562,8 @@ void ScriptRuntime::Start(std::span<const ScriptMod> mods)
         mod->id = source.id;
         mod->directory = source.directory;
         mod->storeFile = source.storeFile;
+        mod->fields = source.settings;
+        ReadSettings(*mod);
         LoadStore(*mod);
         Mod& m = *m_mods.emplace_back(std::move(mod));
         m.L = NewState(m);
@@ -554,6 +618,20 @@ void ScriptRuntime::Input(const InputEvent& event)
     DispatchRequest request{"on_input"};
     request.event = &event;
     CallAll(true, request);
+}
+
+void ScriptRuntime::SettingsChanged()
+{
+    for (auto& mod : m_mods) {
+        if (!mod->running) continue;
+        for (const std::string& id : ReadSettings(*mod)) {
+            if (!mod->running) break;
+            DispatchRequest request{"on_setting"};
+            request.setting = id.c_str();
+            std::string error;
+            if (!Protected(*mod, Dispatch, &request, error)) SwitchOff(*mod, error);
+        }
+    }
 }
 
 void ScriptRuntime::Stop()

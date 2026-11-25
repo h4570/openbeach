@@ -228,3 +228,80 @@ OBL_TEST_CASE("mod_pack.a_mod_needing_a_newer_api_is_refused")
     Write(game.path / "mods/current/scripts/presentation/main.lua", "");
     OBL_CHECK(Accepted(game.path, "l0", "current", error));
 }
+
+namespace {
+
+// ParseManifest of a manifest whose `settings` is `list`; the reason when it is refused.
+std::string SettingsError(const std::string& list, mod_pack::Manifest* out = nullptr)
+{
+    const std::string text =
+            R"({"format":"obl.mod","version":1,"id":"m","title":"T","mod_version":"1","pack":"l0","settings":)" + list + "}";
+    mod_pack::Manifest manifest;
+    std::string error;
+    const bool ok = mod_pack::ParseManifest(text, manifest, error);
+    if (out) *out = manifest;
+    return ok ? std::string() : error;
+}
+
+} // namespace
+
+OBL_TEST_CASE("mod_pack.settings_declare_toggles_choices_and_numbers")
+{
+    mod_pack::Manifest m;
+    const std::string list = R"([
+        {"id":"wide","type":"toggle","label":"Wide","hint":"Uses the width","default":true},
+        {"id":"theme","type":"choice","label":"Theme","options":["sand",{"value":"sea","label":"Deep sea"}],"default":"sea"},
+        {"id":"zoom","type":"number","label":"Zoom","min":1,"max":4,"step":0.5,"default":2},
+        {"id":"plain","type":"toggle","label":"Plain"}])";
+    OBL_CHECK_EQ(SettingsError(list, &m), std::string());
+    OBL_REQUIRE(m.settings.size() == 4);
+    OBL_CHECK_EQ(m.settings[0].defaultValue, std::string("1"));
+    OBL_CHECK_EQ(m.settings[0].hint, std::string("Uses the width"));
+    OBL_CHECK_EQ(m.settings[1].defaultValue, std::string("sea"));
+    OBL_CHECK_EQ(m.settings[1].options[0].label, std::string("sand"));
+    OBL_CHECK_EQ(m.settings[1].options[1].label, std::string("Deep sea"));
+    OBL_CHECK_EQ(m.settings[2].defaultValue, std::string("2"));
+    OBL_CHECK_EQ(m.settings[3].defaultValue, std::string("0")); // no default: off
+}
+
+OBL_TEST_CASE("mod_pack.only_a_presentation_mod_declares_settings")
+{
+    test::TempPath game("mod-settings-scope");
+    const std::string setting = R"("settings":[{"id":"wide","type":"toggle","label":"Wide"}])";
+    std::string error;
+    WriteManifest(game.path, "world_default", "\"pack\":\"l0\"," + setting);
+    OBL_CHECK(!Accepted(game.path, "l0", "world_default", error));
+    OBL_CHECK(error.find("world_default") != std::string::npos && error.find("settings") != std::string::npos);
+    WriteManifest(game.path, "world_named", "\"pack\":\"l0\",\"scope\":\"world\"," + setting);
+    OBL_CHECK(!Accepted(game.path, "l0", "world_named", error));
+    WriteManifest(game.path, "shown", "\"pack\":\"l0\",\"scope\":\"presentation\"," + setting);
+    OBL_CHECK(Accepted(game.path, "l0", "shown", error));
+    WriteManifest(game.path, "world_plain", "\"pack\":\"l0\"");
+    OBL_CHECK(Accepted(game.path, "l0", "world_plain", error));
+}
+
+OBL_TEST_CASE("mod_pack.settings_that_cannot_be_kept_in_an_ini_file_are_refused")
+{
+    const auto refused = [](const std::string& list, const std::string& part) {
+        const std::string error = SettingsError(list);
+        OBL_CHECK(error.find(part) != std::string::npos);
+    };
+    refused(R"({"id":"x"})", "not a list");
+    refused(R"([{"id":"Wide","type":"toggle","label":"W"}])", "not an id");
+    refused(R"([{"id":"w","type":"toggle"}])", "needs \"label\"");
+    refused(R"([{"id":"w","type":"slider","label":"W"}])", "\"type\"");
+    refused(R"([{"id":"w","type":"toggle","label":"W"},{"id":"w","type":"toggle","label":"W"}])", "listed twice");
+    refused(R"([{"id":"c","type":"choice","label":"C","options":[]}])", "\"options\"");
+    refused(R"([{"id":"c","type":"choice","label":"C","options":["a","a"]}])", "listed twice");
+    refused(R"([{"id":"c","type":"choice","label":"C","options":["a;b"]}])", "ini file");
+    refused(R"([{"id":"c","type":"choice","label":"C","options":["a"],"default":"b"}])", "default");
+    refused(R"([{"id":"n","type":"number","label":"N","min":1,"max":1,"step":1}])", "min < max");
+    refused(R"([{"id":"n","type":"number","label":"N","min":0,"max":4}])", "\"step\"");
+    refused(R"([{"id":"n","type":"number","label":"N","min":0,"max":4,"step":1,"default":5}])", "default");
+    refused(R"([{"id":"t","type":"toggle","label":"T","default":"maybe"}])", "default");
+    // More than the limit.
+    std::string many = "[";
+    for (size_t i = 0; i <= mod_pack::kMaxSettings; ++i)
+        many += std::string(i ? "," : "") + R"({"id":"s)" + std::to_string(i) + R"(","type":"toggle","label":"S"})";
+    refused(many + "]", "at most");
+}

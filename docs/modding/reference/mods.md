@@ -16,7 +16,8 @@ and [gui-patches.md](gui-patches.md)); every other JSON data file takes a [JSON 
   "pack": "base",
   "requires": ["other_mod"],
   "scope": "world",
-  "api": 1
+  "api": 1,
+  "settings": [{ "id": "wide", "type": "toggle", "label": "Wide layout" }]
 }
 ```
 - `id`: the directory name; lowercase letters, digits, `_` and `-` (the rules of a pack id, `pack_path::PackDirectory`).
@@ -28,6 +29,33 @@ and [gui-patches.md](gui-patches.md)); every other JSON data file takes a [JSON 
   commands, so it ships no data the simulation reads, and saves and replays leave it out ([scripting.md](scripting.md#scope)).
 - `api` (optional): the presentation script API version the mod's scripts were written for; a mod with
   `scripts/presentation/*.lua` must name it ([scripting.md](scripting.md)).
+- `settings` (optional): what the player can set for the mod, see [Settings](#settings); presentation mods only.
+
+## Settings
+A mod lists the choices it offers the player in `settings`, at most 32. Every entry has an `id` (lowercase letters, digits, `_`
+and `-`, unique in the mod), a `type`, a `label` (1 to 80 characters) and an optional `hint`; the labels and hints are what
+the mods screen shows, in the mod's own language.
+
+| `type` | More fields | Value |
+|---|---|---|
+| `"toggle"` | `default` (`true`/`false`, default `false`) | a boolean |
+| `"choice"` | `options`: 1 to 32 texts, or `{ "value": "sea", "label": "Deep sea" }` objects; `default` an option's value (default the first) | the option's `value`, a string |
+| `"number"` | `min`, `max`, `step` (`min < max`, `0 < step <= max - min`); `default` within the range (default `min`) | a number: an integer when `min`, `max`, `step` and `default` are whole |
+
+The player's values live in `openbeach.ini`, in the section `[Mod.<id>]` under the setting's `id` (`[Mod.my_mod]`
+`wide=1`), apart from the mod and from saves; a toggle also reads `true`/`false`, `yes`/`no`, `on`/`off`. A value that is
+missing, or that the setting does not take (an unknown option, a number outside the range), is the default; the game logs
+the second case once. A mod with a malformed `settings` stops the game at start-up like any other bad manifest, naming the
+mod, the setting and the reason.
+
+Only a presentation mod (`"scope": "presentation"`) may declare settings: nothing in a world mod can read them, and world scripts
+must never see them, so the start-up check refuses a world mod with a `settings` list, naming the mod.
+
+Scripts read the values with `obl.settings.get(id)` and hear a change in `on_setting(id, value)`
+([scripting.md](scripting.md#settings)). Settings are for how a mod looks and reacts: **no setting changes the simulation**.
+A mod that changes the world is a world mod, recorded in saves and replays, and the values of its settings are not.
+Changing the engine's own settings does not move a world hash either ([settings.md](../../build/settings.md#rule)).
+Code: `src/core/settings_schema.h` (the description the settings window uses for the engine's rows too), `mod_pack.cpp`.
 
 ## Activation
 The active mods and their order come from the `Active` key of the `[Mods]` section in `openbeach.ini`, comma separated
@@ -81,6 +109,9 @@ one is active; presentation mods are left out. Loading a save with other mods as
 [saves](../../architecture/data-formats/saves.md#mods) and [replay file](../../architecture/commands.md#replay-file).
 
 ## Tests
+`settings_schema_test` (the description of a setting, and that the engine's settings agree with it) and `mod_pack_test` (the
+`settings` of a manifest and what is refused); `tests/l0_mod_settings.txt` runs the test mod `tests/mods/l0_settings`, which reads
+its settings and hears each change (`mod-setting <mod> <id> <value>` does what the mods screen will do).
 `pack_path_test` and `mod_pack_test` (unit); `tests/l0_mod.txt` runs the L0 pack with the test mod `tests/mods/l0_test`, which
 `tools/runtests.ps1` copies to `run/mods/`. `text_load_test` covers the text patches; `tests/l0_mod_text_patch.txt` runs the mod
 `tests/mods/l0_patch`. `catalog_patch_test` covers the catalog patches; `tests/l0_mod_catalog_patch.txt` builds the

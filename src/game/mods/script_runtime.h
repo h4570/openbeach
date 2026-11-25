@@ -1,11 +1,14 @@
 #pragma once
 
+#include "core/settings_schema.h"
 #include "game/game/command.h"
 
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
+#include <map>
 #include <memory>
+#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
@@ -26,6 +29,9 @@ public:
     virtual void SubmitCommand(command::Command command) = 0;
     // Whether a world is in settled gameplay, so a command submitted now runs at the next tick.
     virtual bool InWorld() const = 0;
+    // The text of the setting `key` of `mod` as the player's openbeach.ini holds it (`[Mod.<mod>] <key>`); nullopt when it has none.
+    // The runtime checks it against the mod's declared setting and falls back to the default (docs/modding/reference/mods.md#settings).
+    virtual std::optional<std::string> ReadSetting(const std::string& mod, const std::string& key) const = 0;
 };
 
 struct ScriptLimits {
@@ -42,6 +48,7 @@ struct ScriptMod {
     std::string id;
     std::filesystem::path directory;
     std::filesystem::path storeFile;
+    std::vector<settings_schema::Field> settings; // what mod.json declares; a script reads them with obl.settings.get
 };
 
 // An input event for on_input. `kind` is "key" (with `key`, a key_names.h name) or "mouse" (with `button` and the position).
@@ -69,6 +76,9 @@ public:
     void Frame(float dt);
     // on_input(event) of every running mod, the last in load order first (it wins input, docs/modding/reference/scripting.md).
     void Input(const InputEvent& event);
+    // Reads every mod's settings again from the host and calls on_setting(id, value) of each mod for each setting whose value
+    // changed since the last read (Start reads them first), in load order. The game calls it after the player changed one.
+    void SettingsChanged();
     // on_stop of every running mod from the last to the first, then the stores are written. Start may follow again.
     void Stop();
 

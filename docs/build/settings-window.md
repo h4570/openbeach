@@ -16,6 +16,8 @@ writes). Unit tests: `start_settings_test.cpp`, `settings_text_test.cpp`, `setti
 | Intro movie | `[Intro] PlayMovie` | |
 | Show this window | `[Launcher] ShowSettings` | off: the game starts at once; `--settings` shows the window once more |
 
+The rows step through the setting's description in `src/core/settings_schema.h` (`start_settings::EngineField`: its options and
+default), the same description a mod's settings use on the mods screen ([../modding/reference/mods.md#settings](../modding/reference/mods.md#settings)).
 A value from the file that the window does not offer (`Scale=1.75`) stays selectable. Only changed keys are written:
 `openbeach.ini` is created from the same commented default file the game writes (`start_settings::kDefaultFile`), and
 `BeachLife.ini` gets `[Beach Life Options] Version=1` when it has none, since the game reads nothing of the file without it

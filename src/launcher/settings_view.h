@@ -41,8 +41,6 @@ public:
 
 private:
     game::start_settings::Values m_values;
-    std::vector<double> m_scales;
-    std::vector<int> m_frameCaps;
 };
 
 // Draws the window into the renderer's 432x316 area at its current render scale.

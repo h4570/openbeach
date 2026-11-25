@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/settings_schema.h"
+
 #include <filesystem>
 #include <span>
 #include <string>
@@ -17,6 +19,9 @@ inline constexpr int kPresentationApi = 1;
 // Where a mod's presentation scripts live, relative to its directory.
 inline constexpr const char* kPresentationScripts = "scripts/presentation";
 
+// Settings a mod may declare in mod.json (docs/modding/reference/mods.md#settings).
+inline constexpr size_t kMaxSettings = 32;
+
 // What a mod may change. A world mod is recorded in saves and replays; a presentation mod reaches the simulation only through
 // game commands, so it ships no data the simulation reads and saves and replays leave it out (docs/architecture/mods/index.md).
 enum class Scope { World, Presentation };
@@ -28,6 +33,7 @@ struct Manifest {
     std::vector<std::string> packs; // the pack ids the mod starts on (`pack` or `packs`)
     std::vector<std::string> requiredMods; // mod ids that must be active and earlier in the load order
     Scope scope = Scope::World;
+    std::vector<settings_schema::Field> settings; // `settings`: kept in openbeach.ini under [Mod.<id>], never read by the simulation
     int api = 0; // the presentation API version the scripts were written for; 0 when the manifest names none
 };
 

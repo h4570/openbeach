@@ -31,6 +31,11 @@ if ($Tables -eq 'l0' -and $name -notmatch '_l0_s\d+$') {
 if (-not $Golden) { $Golden = Join-Path $repo "tests/golden-hashes/$name.tsv" }
 $Golden = [IO.Path]::GetFullPath($Golden)
 $Script = Resolve-TestScript $Script $GameDir
+# A fixture that must reach another fixture's hashes (the settings guard) names that trace in its header: `# @golden <name>`.
+if (-not $PSBoundParameters.ContainsKey('Golden')) {
+    $named = Select-String -LiteralPath $Script -Pattern '^\s*#\s*@golden\s+(\w+)\s*$' | Select-Object -First 1
+    if ($named) { $Golden = [IO.Path]::GetFullPath((Join-Path $repo "tests/golden-hashes/$($named.Matches[0].Groups[1].Value).tsv")) }
+}
 # Only failures, recordings and an explicit -OutDir keep their artifacts (each run is 10-35 MB of snapshots).
 $removeOnPass = -not $OutDir -and -not $Record -and -not $KeepArtifacts -and $env:OBL_KEEP_WORLD_HASH_ARTIFACTS -ne '1'
 if (-not $OutDir) { $OutDir = Join-Path $GameDir ('world-hash-check/golden-' + $name + '-' + [guid]::NewGuid().ToString('N')) }

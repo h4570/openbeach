@@ -345,7 +345,10 @@ def golden_entries(game_dir: Path) -> list[Entry]:
         timeout, gameini, env, _, _ = script_header(script)
         # Snapshots of each checkpoint (10-35 MB a run) go to a directory of the entry, removed after a pass.
         env["OBL_WORLD_HASH_DIR"] = str(game_dir / "testlogs" / "linux" / f"world-hash-{stem}")
-        entries.append(Entry(name, script, golden_matches(TESTS / "golden-hashes" / f"{stem}.tsv"), timeout, gameini, env))
+        # A fixture may name another fixture's trace in its header (`# @golden <name>`, the settings guard).
+        named = re.search(r"^\s*#\s*@golden\s+(\w+)\s*$", script.read_text(encoding="utf-8"), re.M)
+        trace = named.group(1) if named else stem
+        entries.append(Entry(name, script, golden_matches(TESTS / "golden-hashes" / f"{trace}.tsv"), timeout, gameini, env))
     return entries
 
 
