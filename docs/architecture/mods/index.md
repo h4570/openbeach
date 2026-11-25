@@ -25,6 +25,14 @@ script or a change of the scope rule adds its line here.
   `UI3_bp_preview` atlases (`gui_image_list.h`, `gui_variable_image.cpp`). `tools/make_sprite.py` converts PNG frames into
   indexed `obl.sprite` assets (including building `color`/`depth`/`lightmap` planes and UI icons).
 
+## Official mod sources
+
+Official mods live next to the L0 pack under `data/mods/<id>/`. The Windows test runner and the Linux CI
+overlay tests copy these sources into the test game's `mods/` directory. Each test opts in through
+`OBL_MODS`, using the regular manifest, pack and scope checks. Release staging copies the L0 pack and
+leaves the mod sources in the repository. The [official examples](../../modding/official-mods.md) link to
+each mod and its L0 test.
+
 ## Two kinds of scripts
 | | World and object scripts | Presentation scripts |
 |---|---|---|

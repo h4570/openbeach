@@ -1,0 +1,8 @@
+# Replay the reference recorded without mods while the frame counter is active and drawing.
+# @env OBL_PACK=l0
+# @env OBL_MODS=frame_counter
+# @timeout 180
+# @expect-log presentation scripts: mod "frame_counter" loaded 1 file
+mod-overlay on
+replay replays/l0_construction.replay
+quit
