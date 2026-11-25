@@ -4,7 +4,7 @@ Object scripts (`scripts/object/<name>.obs`) drive guests and staff inside the s
 
 ## File format and header
 
-Every object script starts with the header line `#obl-script 1 object` (LF) followed by `State` blocks. Comments begin with `//` (or `/`) and run to the end of the line. Statements end with `;`.
+Every object script starts with the header line `#obl-script 1 object` (LF or CRLF) followed by `State` blocks. Comments begin with `//` (or `/`) and run to the end of the line. Statements end with `;`.
 
 ```text
 #obl-script 1 object

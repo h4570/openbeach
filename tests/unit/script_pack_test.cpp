@@ -89,6 +89,24 @@ OBL_TEST_CASE("script_pack.read_script_checks_the_header_and_keeps_the_text")
 
     OBL_CHECK(!obl::script_pack::ReadScript(dir / "missing.obs", Kind::Object, text, error));
     OBL_CHECK(error.find("Import the game data") != std::string::npos);
+
+    // Windows editors save CRLF on the header line too; both kinds accept it, while a bare CR is refused.
+    WriteFile(dir / "crlf.obs", "#obl-script 1 object\r\n" + body);
+    OBL_REQUIRE(obl::script_pack::ReadScript(dir / "crlf.obs", Kind::Object, text, error));
+    OBL_CHECK(text == body);
+
+    WriteFile(dir / "crlf.wsc", "#obl-script 1 world\r\n" + body);
+    OBL_REQUIRE(obl::script_pack::ReadScript(dir / "crlf.wsc", Kind::World, text, error));
+    OBL_CHECK(text == body);
+
+    WriteFile(dir / "crlf_wrong_kind.obs", "#obl-script 1 world\r\n" + body);
+    OBL_CHECK(!obl::script_pack::ReadScript(dir / "crlf_wrong_kind.obs", Kind::Object, text, error));
+
+    WriteFile(dir / "crlf_empty.obs", "#obl-script 1 object\r\n");
+    OBL_CHECK(!obl::script_pack::ReadScript(dir / "crlf_empty.obs", Kind::Object, text, error));
+
+    WriteFile(dir / "bare_cr.obs", "#obl-script 1 object\r" + body);
+    OBL_CHECK(!obl::script_pack::ReadScript(dir / "bare_cr.obs", Kind::Object, text, error));
 }
 
 OBL_TEST_CASE("script_pack.read_pack_script_refuses_a_path_of_the_other_kind")

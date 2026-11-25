@@ -99,11 +99,20 @@ bool ReadScript(const std::filesystem::path& file, Kind kind, std::string& text,
         return false;
     }
     const std::string content{std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>()};
-    if (content.compare(0, header.size(), header) != 0) {
+    // The header line ends in LF or CRLF (an editor on Windows saves CRLF); the body is handed over as it is.
+    const std::string_view firstLine = header.substr(0, header.size() - 1);
+    size_t headerSize = 0;
+    if (content.compare(0, firstLine.size(), firstLine) == 0) {
+        if (content.compare(firstLine.size(), 1, "\n") == 0)
+            headerSize = firstLine.size() + 1;
+        else if (content.compare(firstLine.size(), 2, "\r\n") == 0)
+            headerSize = firstLine.size() + 2;
+    }
+    if (headerSize == 0) {
         error = file.string() + ": first line is not " + std::string(header.substr(0, header.size() - 1)) + " (Import the game data again)";
         return false;
     }
-    text = content.substr(header.size());
+    text = content.substr(headerSize);
     if (text.empty()) {
         error = file.string() + ": script is empty (Import the game data again)";
         return false;

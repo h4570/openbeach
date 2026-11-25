@@ -10,6 +10,8 @@ tests/mods/l0_busker/** text eol=lf
 # The script readers compare the header line byte for byte: a CRLF checkout on Windows would refuse every test mod script.
 tests/mods/**/*.wsc text eol=lf
 tests/mods/**/*.obs text eol=lf
+# The CRLF test mod keeps CRLF on every platform: its game test proves the script readers accept them.
+tests/mods/l0_crlf/** text eol=crlf
 # Ship official manifests and scripts with the same line endings on every platform.
 data/mods/**/mod.json text eol=lf
 data/mods/**/*.lua text eol=lf

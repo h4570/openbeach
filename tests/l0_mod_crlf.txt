@@ -1,0 +1,26 @@
+# A mod whose files all have CRLF line ends (tests/mods/l0_crlf: the busker guest script and a world script) starts and
+# runs like its LF twins: the script readers treat CRLF like LF (docs/modding/reference/mods.md, "Line ends").
+# @env OBL_PACK=l0
+# @env OBL_MODS=l0_crlf
+# @timeout 180
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario 1
+await gameplay
+world-script-change STATE_WORLD_AFTERGAME
+command set-game-speed level=2
+step 50
+set-hour 13.99
+step 300
+expect guests-arrived-total 6
+object-find guest busker
+expect-last-range count 1 6
+set-hour 23.5
+set-cash 0
+step 200
+expect day 1
+expect cash 5000
+mod-world-script-report l0_crlf/daily_bonus.wsc
+expect-last state 1
+expect-last var0 1
+quit

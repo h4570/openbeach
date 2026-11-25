@@ -1,0 +1,32 @@
+{
+  "format": "obl.json_patch",
+  "version": 1,
+  "ops": [
+    {
+      "op": "append",
+      "path": "/types",
+      "items": [
+        {
+          "key": "busker",
+          "name": "BUSKER",
+          "gender": "m",
+          "sprite": "dummy",
+          "script": "busker",
+          "money": 0,
+          "nights": [
+            1,
+            1
+          ],
+          "sleep_time": [
+            22,
+            24
+          ],
+          "wake_time": [
+            7,
+            9
+          ]
+        }
+      ]
+    }
+  ]
+}
