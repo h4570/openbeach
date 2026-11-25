@@ -1,0 +1,13 @@
+{
+  "format": "obl.asset_recipe",
+  "version": 1,
+  "source": "images/screens/l0_title.png",
+  "output": "images/screens/l0_title_wide.png",
+  "operations": [
+    { "op": "crop", "x": 0, "y": 0, "width": 64, "height": 48 },
+    { "op": "mirror", "axis": "horizontal" },
+    { "op": "scale", "width": 96, "height": 48, "filter": "bilinear" },
+    { "op": "blur", "radius": 2, "passes": 2 },
+    { "op": "pad", "width": 128, "height": 48, "mode": "mirror" }
+  ]
+}

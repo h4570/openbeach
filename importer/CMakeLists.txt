@@ -1,6 +1,7 @@
 # The converter (docs/architecture/data-formats/converter/index.md): pure, portable code that reads the user's copy of the game;
 # no Windows API and no game state, so it also builds in the Linux unit-test job.
 add_library(obl_convert STATIC
+    include/openbeach/importer/asset_recipe.h
     include/openbeach/importer/byte_source.h
     include/openbeach/importer/import.h
     include/openbeach/importer/pack_sink.h
@@ -42,6 +43,7 @@ add_library(obl_convert STATIC
     src/source/source.cpp
     src/source/source.h
     src/source/spool.cpp
+    src/writers/asset_recipe.cpp
     src/writers/catalog_writer.cpp
     src/writers/catalog_writer.h
     src/writers/content_key.h
