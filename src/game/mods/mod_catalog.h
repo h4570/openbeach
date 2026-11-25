@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/engine_version.h"
 #include "formats/mod_pack.h"
 #include "game/mods/ed25519.h"
 
@@ -15,11 +16,12 @@
 // Pure logic: no network calls, no OS headers, no simulation state.
 namespace obl::mods {
 
-#ifdef OBL_ENGINE_VERSION
-inline constexpr std::string_view kEngineVersion = OBL_ENGINE_VERSION;
-#else
-inline constexpr std::string_view kEngineVersion = "1.13.0";
-#endif
+// The version helpers live in core/engine_version.h, which mod.json's own check (formats/mod_pack) shares.
+using obl::CompareVersion;
+using obl::InVersionRange;
+using obl::kEngineVersion;
+using obl::ParseVersion;
+using obl::SemVer;
 
 inline constexpr const char* kCatalogFormat = "obl.mod_catalog";
 inline constexpr int kCatalogVersion = 1;
@@ -28,16 +30,6 @@ inline constexpr int kCatalogStoreVersion = 1;
 inline constexpr const char* kCatalogStoreFile = "mod-catalogs.json";
 inline constexpr size_t kMaxCatalogBytes = 4 * 1024 * 1024;
 inline constexpr size_t kMaxCatalogEntries = 2048;
-
-struct SemVer {
-    int major = 0;
-    int minor = 0;
-    int patch = 0;
-};
-
-bool ParseVersion(std::string_view text, SemVer& out);
-int CompareVersion(const SemVer& a, const SemVer& b);
-bool InVersionRange(const SemVer& engine, const std::optional<SemVer>& minVersion, const std::optional<SemVer>& maxVersion);
 
 struct CatalogEntry {
     std::string id;

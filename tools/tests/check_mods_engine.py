@@ -79,6 +79,7 @@ class ModChecker(unittest.TestCase):
             "bad_requirement", 'requires "absent_mod"',
             "bad_pack", 'made for the pack "base"',
             "bad_api", "needs the presentation script API 999",
+            "bad_engine", "needs OpenBeach 999.0.0 or newer; update the game",
             "bad_setting", '"type" is not',
             "bad_action", "missing.action",
             "bad_data_patch", "/not/a/path", "/also/not/a/path",

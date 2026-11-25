@@ -342,40 +342,6 @@ json SerializeEntry(const CatalogEntry& e)
 
 } // namespace
 
-bool ParseVersion(std::string_view text, SemVer& out)
-{
-    int parts[3] = {0, 0, 0};
-    size_t start = 0;
-    for (int i = 0; i < 3; ++i) {
-        const size_t dot = text.find('.', start);
-        if ((i < 2 && dot == std::string_view::npos) || (i == 2 && dot != std::string_view::npos)) return false;
-        const std::string_view seg = text.substr(start, dot == std::string_view::npos ? dot : dot - start);
-        if (seg.empty() || (seg.size() > 1 && seg[0] == '0')) return false;
-        int val = 0;
-        const auto res = std::from_chars(seg.data(), seg.data() + seg.size(), val);
-        if (res.ec != std::errc{} || res.ptr != seg.data() + seg.size() || val < 0) return false;
-        parts[i] = val;
-        start = dot + 1;
-    }
-    out = {parts[0], parts[1], parts[2]};
-    return true;
-}
-
-int CompareVersion(const SemVer& a, const SemVer& b)
-{
-    if (a.major != b.major) return a.major < b.major ? -1 : 1;
-    if (a.minor != b.minor) return a.minor < b.minor ? -1 : 1;
-    if (a.patch != b.patch) return a.patch < b.patch ? -1 : 1;
-    return 0;
-}
-
-bool InVersionRange(const SemVer& engine, const std::optional<SemVer>& minVersion, const std::optional<SemVer>& maxVersion)
-{
-    if (minVersion && CompareVersion(engine, *minVersion) < 0) return false;
-    if (maxVersion && CompareVersion(engine, *maxVersion) > 0) return false;
-    return true;
-}
-
 bool IsValidCatalogUrl(std::string_view url, bool allowLocal, std::string& error)
 {
     if (IsHttpsUrl(url)) return true;

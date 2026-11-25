@@ -5,6 +5,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import secrets
 import shutil
@@ -50,6 +51,10 @@ def build_mod_zip(mod_dir: Path, out_zip: Path) -> tuple[int, str]:
     return len(data), hashlib.sha256(data).hexdigest()
 
 
+# The engine's rule (core/engine_version.h): three numbers, no leading zeros.
+ENGINE_VERSION = re.compile(r"(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)")
+
+
 def build_entry(mod_dir: Path, out_dir: Path, default_license: str) -> dict:
     manifest_path = mod_dir / "mod.json"
     if not manifest_path.is_file():
@@ -80,7 +85,12 @@ def build_entry(mod_dir: Path, out_dir: Path, default_license: str) -> dict:
     else:
         raise ValueError(f"{manifest_path}: missing pack or packs")
 
-    for optional_key in ("scope", "api", "engine_min", "engine_max", "requires"):
+    # engine_min only: there is no engine_max in mod.json (a catalog maintainer adds that to the entry after the fact).
+    engine_min = manifest.get("engine_min")
+    if engine_min is not None and not (isinstance(engine_min, str) and ENGINE_VERSION.fullmatch(engine_min)):
+        raise ValueError(f"{manifest_path}: engine_min is not a MAJOR.MINOR.PATCH version")
+
+    for optional_key in ("scope", "api", "engine_min", "requires"):
         if optional_key in manifest:
             entry[optional_key] = manifest[optional_key]
 

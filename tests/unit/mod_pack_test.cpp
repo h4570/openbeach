@@ -253,6 +253,43 @@ OBL_TEST_CASE("mod_pack.a_presentation_mod_ships_no_simulation_data")
     OBL_CHECK(Accepted(game.path, "l0", "world", error));
 }
 
+OBL_TEST_CASE("mod_pack.engine_min_parses_and_is_compared_with_the_game")
+{
+    const std::string head = R"({"format":"obl.mod","version":1,"id":"m","title":"T","mod_version":"1","pack":"l0")";
+    mod_pack::Manifest manifest;
+    std::string error;
+    // Missing: no requirement.
+    OBL_CHECK(mod_pack::ParseManifest(head + "}", manifest, error) && !manifest.engineMin);
+    OBL_CHECK(mod_pack::EngineRefusal(manifest, {1, 0, 0}).empty());
+    // Valid.
+    OBL_CHECK(mod_pack::ParseManifest(head + R"(,"engine_min":"1.14.2"})", manifest, error));
+    OBL_CHECK(manifest.engineMin && manifest.engineMin->major == 1 && manifest.engineMin->minor == 14 && manifest.engineMin->patch == 2);
+    // Malformed: not a string, two parts, a leading zero, a pre-release tag.
+    for (const char* bad : {"1.14", "01.14.2", "1.14.2-rc1", "", "x"}) {
+        OBL_CHECK(!mod_pack::ParseManifest(head + R"(,"engine_min":")" + bad + R"("})", manifest, error));
+        OBL_CHECK(error.find("engine_min") != std::string::npos);
+    }
+    OBL_CHECK(!mod_pack::ParseManifest(head + R"(,"engine_min":114})", manifest, error));
+    // Comparison: the game's own version and anything older pass, anything newer is refused with the version it names.
+    OBL_CHECK(mod_pack::ParseManifest(head + R"(,"engine_min":"1.14.2"})", manifest, error));
+    OBL_CHECK(mod_pack::EngineRefusal(manifest, {1, 14, 2}).empty());
+    OBL_CHECK(mod_pack::EngineRefusal(manifest, {2, 0, 0}).empty());
+    OBL_CHECK(mod_pack::EngineRefusal(manifest, {1, 14, 1}) == "needs OpenBeach 1.14.2 or newer; update the game");
+    OBL_CHECK(!mod_pack::EngineRefusal(manifest, {1, 13, 9}).empty());
+}
+
+OBL_TEST_CASE("mod_pack.a_mod_needing_a_newer_game_is_refused_at_start_up")
+{
+    test::TempPath game("mod-engine");
+    WriteManifest(game.path, "future", "\"pack\":\"l0\",\"engine_min\":\"999.0.0\"");
+    std::string error;
+    OBL_CHECK(!Accepted(game.path, "l0", "future", error));
+    OBL_CHECK(error.find("future") != std::string::npos);
+    OBL_CHECK(error.find("needs OpenBeach 999.0.0 or newer; update the game") != std::string::npos);
+    WriteManifest(game.path, "now", "\"pack\":\"l0\",\"engine_min\":\"" + std::string(obl::kEngineVersion) + "\"");
+    OBL_CHECK(Accepted(game.path, "l0", "now", error));
+}
+
 OBL_TEST_CASE("mod_pack.a_mod_needing_a_newer_api_is_refused")
 {
     test::TempPath game("mod-api");

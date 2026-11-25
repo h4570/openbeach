@@ -34,6 +34,7 @@ enum class Problem {
     Invalid, // no or a broken mod.json; `detail` is the reason
     WrongPack, // made for other packs; `detail` names them
     NeedsApi, // needs a newer presentation script API; `detail` is the version
+    NeedsEngine, // `engine_min` is newer than the game; `detail` is that version
     MissingRequirement, // `detail` names a required mod that is off
     RequirementLater, // `detail` names a required mod that comes after it
     ConflictsWith, // `detail` names an active mod that one of the two lists in `conflicts`
@@ -49,8 +50,10 @@ struct Entry {
 class ModList {
 public:
     // `active` is the list the game runs with (or the one the player last saved), in load order; ids that are not installed are
-    // dropped. `api` is the newest presentation script API the game offers.
-    ModList(std::vector<mod_pack::InstalledMod> installed, std::string packId, std::span<const std::string> active, int api);
+    // dropped. `api` is the newest presentation script API the game offers, `engine` the game's version (`engine_min` is checked
+    // against it).
+    ModList(std::vector<mod_pack::InstalledMod> installed, std::string packId, std::span<const std::string> active, int api,
+            SemVer engine = EngineVersion());
 
     // The active mods first, in load order, then the others by id.
     const std::vector<Entry>& Entries() const { return m_entries; }
@@ -79,6 +82,7 @@ private:
     std::vector<Entry> m_entries;
     std::string m_packId;
     int m_api = 0;
+    SemVer m_engine;
     std::vector<ConflictSource> m_sources;
     std::vector<Conflict> m_conflicts;
 };

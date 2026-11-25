@@ -391,6 +391,14 @@ bool ParseManifest(std::string_view text, Manifest& manifest, std::string& error
         }
         m.api = it->get<int>();
     }
+    if (const auto it = doc.find("engine_min"); it != doc.end()) {
+        SemVer v;
+        if (!it->is_string() || !ParseVersion(it->get_ref<const std::string&>(), v)) {
+            error = "engine_min is not a MAJOR.MINOR.PATCH version";
+            return false;
+        }
+        m.engineMin = v;
+    }
     const auto readIds = [&](const char* key, std::vector<std::string>& out) {
         const auto it = doc.find(key);
         if (it == doc.end()) return true;
@@ -464,6 +472,14 @@ bool PresentationMayShip(std::string_view relative, std::string_view patchFormat
     return false;
 }
 
+std::string EngineRefusal(const Manifest& manifest, const SemVer& engine)
+{
+    if (!manifest.engineMin || CompareVersion(engine, *manifest.engineMin) >= 0) return {};
+    const SemVer& v = *manifest.engineMin;
+    return "needs OpenBeach " + std::to_string(v.major) + "." + std::to_string(v.minor) + "." + std::to_string(v.patch) +
+            " or newer; update the game";
+}
+
 bool CheckManifestContent(
         const Manifest& manifest, std::string_view packId, bool hasScripts, std::string_view refusedFile, std::string& error)
 {
@@ -471,6 +487,8 @@ bool CheckManifestContent(
         error = std::move(reason);
         return false;
     };
+    // First: a mod made for a newer game may use formats this one cannot read, so its other problems would only mislead.
+    if (std::string reason = EngineRefusal(manifest); !reason.empty()) return fail(std::move(reason));
     const auto& packs = manifest.packs;
     if (std::find(packs.begin(), packs.end(), packId) == packs.end()) {
         std::string names;
@@ -525,6 +543,7 @@ static bool CheckActive(const std::filesystem::path& gameDirectory, std::string_
                 if (errors) errors->push_back(error);
                 return !errors;
             };
+            if (std::string why = EngineRefusal(mod.manifest); !why.empty() && refuse(why)) return false;
             const auto& packs = mod.manifest.packs;
             if (std::find(packs.begin(), packs.end(), packId) == packs.end()) {
                 std::string names;
