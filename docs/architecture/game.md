@@ -52,7 +52,8 @@ member initializers. The operations are `Save`, `SetResolution`, `GetResolution`
   `std::vector<std::unique_ptr<save_slots::Slot>> m_saveSlots`; `m_selectedSaveSlot` is a `const Slot*` into it. The
   `save_slots.h` sorts copy their elements, so `save_slots.cpp` sorts the raw pointers and hands them back (`Reorder`). The
   fixtures' `GameCopy` gives the copy its own empty slot list and frees it in `Release`; the copy's other members stay the
-  live Game's and are never destroyed.
+  live Game's and are never destroyed. A fixture that writes a save as its copy's scenario mirrors the copy's selection into
+  the live Game (`LiveSelection`), because the save header names the live selection.
 - Clock and profile timer: `GameClock m_clock` and `ProfileTimer m_profileTimer` are value members; `GetGameClock()`
   returns the Game's clock. The update calls the clock update directly, through the wrapper `WrapGameClockUpdate` registers
   (the test's fixed frame time). The hosts use `game_api::StartProfileTimer`/`StopProfileTimerMs`/`StartStopProfileTimer`/

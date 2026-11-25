@@ -41,13 +41,14 @@
 #include <optional>
 #include <random>
 #include <span>
+#include <sstream>
 #include <vector>
 
 namespace obl::ui {
 namespace {
 using SaveSlot = save_slots::Slot;
 // The drivers (`call-drive`) are attached to these; the fixtures count into ui.save-slots-fixture.
-test::CallCounter g_scan("ui.save-game-scan-slots"), g_write("ui.save-game-write");
+test::CallCounter g_scan("ui.save-game-scan-slots"), g_write("ui.save-game-write"), g_listWritten("ui.save-game-list-written");
 test::CallCounter g_checks("ui.save-slots-fixture");
 
 template<class Sort> auto Reorder(game::Game* game, Sort sort)
@@ -71,7 +72,7 @@ void Scan(game::Game* game)
         if (!os::MatchesPattern(entry.name, "save", ".obl.save")) continue;
         std::ifstream in(os::ResolvePath("savegames/" + entry.name), std::ios::binary);
         auto slot = std::make_unique<SaveSlot>();
-        if (!in || !save_slots::ReadOblHeader(in, *slot)) continue;
+        if (!in || !save_slots::ReadOblHeader(in, *slot, game->m_scenarioRegistry)) continue;
         slot->m_number = save_slots::SlotNumber(entry.name.c_str());
         slot->m_oblSave = true;
         game->m_saveSlots.push_back(std::move(slot));
@@ -367,11 +368,11 @@ void Header(const char* path, int number)
 }
 // An obl.save with Header's values and no sections: the slot list reads the header alone. `format` names another document for
 // the rejected fixtures; `truncated` ends inside the header.
-void OblHeader(const std::string& path, int number, const char* format = "obl.save", bool truncated = false)
+void OblHeader(const std::string& path, int number, const std::string& scenario, const char* format = "obl.save", bool truncated = false)
 {
     std::ofstream out(os::ResolvePath(path), std::ios::binary);
     out << R"({"format": ")" << format << R"(", "version": 2, "header": {"saved_at": )" << (number % 3 == 0 ? 0xffffffffu : number % 3)
-        << R"(, "scenario": "sandbox3", "sandbox": true, "title": "TEST_TITLE", "title_text": "Test", "day": )" << number + 10;
+        << R"(, "scenario": ")" << scenario << R"(", "sandbox": true, "title": "TEST_TITLE", "title_text": "Test", "day": )" << number + 10;
     if (truncated) return;
     out << R"(, "day_time": 12.5, "cash": 4321.25, "guests": 7, "packs": [{"id": "p"}], "converted_from": null}, "world": {}})";
 }
@@ -394,24 +395,81 @@ void DriveScan(int count)
     GameCopy copy;
     obl::game::Game& game = copy.game;
     constexpr int sizes[] = {0, 1, 6, 16, 17, 33, 279};
+    // The pack's last sandbox: the list must read its menu slot from the registry, whatever its id says.
+    const auto& entries = game.m_scenarioRegistry.Entries();
+    const auto sandbox = std::find_if(entries.rbegin(), entries.rend(), [](const auto& entry) { return entry.IsSandbox(); });
+    if (sandbox == entries.rend()) {
+        OBL_LOG("autotest: FAILED SaveSlots requires a sandbox scenario");
+        return;
+    }
     for (int pass = 0; pass < count; ++pass) {
         for (const auto& file : std::filesystem::directory_iterator(os::ResolvePath("savegames"))) std::filesystem::remove(file.path());
         const int size = sizes[pass % std::size(sizes)];
-        for (int i = 0; i < size; ++i) OblHeader(save_slots::OblSlotPath(i * 2), i);
-        OblHeader("savegames/save-other.obl.save", 1, "other");
-        OblHeader("savegames/save-cut.obl.save", 1, "obl.save", true);
+        for (int i = 0; i < size; ++i) OblHeader(save_slots::OblSlotPath(i * 2), i, sandbox->id);
+        OblHeader("savegames/save-other.obl.save", 1, sandbox->id, "other");
+        OblHeader("savegames/save-cut.obl.save", 1, sandbox->id, "obl.save", true);
         Header("savegames/save1.dat", 1); // a valid old save: not listed since step 4b
-        if (size) OblHeader("savegames/save000.obl.save", 0); // duplicate slot number
+        if (size) OblHeader("savegames/save000.obl.save", 0, sandbox->id); // duplicate slot number
         game.m_loadListFilled = 1;
         Scan(&game);
-        const bool oblRead = std::all_of(game.m_saveSlots.begin(), game.m_saveSlots.end(), [](const auto& slot) {
-            return slot->m_oblSave && slot->m_scenario == 2 && slot->m_day == slot->m_number / 2 + 10 && slot->m_hour == 12.5f &&
-                    slot->m_cash == 4321.25f && slot->m_guests == 7 && !std::strcmp(slot->m_title, "TEST_TITLE");
+        const bool oblRead = std::all_of(game.m_saveSlots.begin(), game.m_saveSlots.end(), [&](const auto& slot) {
+            return slot->m_oblSave && slot->m_scenario == sandbox->menuSlot && slot->m_day == slot->m_number / 2 + 10 &&
+                    slot->m_hour == 12.5f && slot->m_cash == 4321.25f && slot->m_guests == 7 && !std::strcmp(slot->m_title, "TEST_TITLE");
         });
         g_checks.Record(game.m_saveSlots.size() == size_t(size + (size != 0)) && !game.m_loadListFilled && oblRead,
                 "fixture size=" + std::to_string(size));
     }
     Release(&game);
+}
+// The fields of a listed slot that differ from the game it was written from, each named with both values; empty when all agree.
+std::string WrittenDifferences(const obl::game::Game& game, const SaveSlot& written)
+{
+    const auto* world = obl::game::GetWorld();
+    const auto* entry = game::SelectedEntry(game);
+    std::string differs;
+    const auto expect = [&differs](const char* field, const auto& expected, const auto& actual) {
+        if (expected == actual) return;
+        std::ostringstream text;
+        text << ' ' << field << '=' << actual << " expected " << expected;
+        differs += text.str();
+    };
+    expect("scenario", entry ? entry->menuSlot : -1, written.m_scenario);
+    expect("day", world->m_gameDay, written.m_day);
+    expect("hour", world->m_gameDayTime, written.m_hour);
+    expect("cash", world->m_player->m_cash, written.m_cash);
+    expect("guests", world->m_numGuests, written.m_guests);
+    const std::string title = entry && entry->IsSandbox() ? entry->textKeys.title : world->m_scenarioTitle.c_str();
+    expect("title", title, std::string(written.m_title));
+    return differs;
+}
+const SaveSlot* FindSlot(const obl::game::Game& game, int number)
+{
+    for (const auto& slot : game.m_saveSlots)
+        if (slot->m_number == number) return slot.get();
+    return nullptr;
+}
+// WriteOblSave's header names the live Game's selected scenario, so a fixture writing as its copy's scenario mirrors the copy's
+// selection there for the write.
+struct LiveSelection {
+    obl::game::Game& live = *obl::game::GetGame();
+    uint8_t sandbox = live.m_sandbox;
+    scenario_load::ScenarioRef scenario = live.m_selectedScenario;
+    explicit LiveSelection(const obl::game::Game& copy)
+    {
+        live.m_sandbox = copy.m_sandbox;
+        live.m_selectedScenario = copy.m_selectedScenario;
+    }
+    ~LiveSelection()
+    {
+        live.m_sandbox = sandbox;
+        live.m_selectedScenario = scenario;
+    }
+};
+// Even passes write as the copy's campaign scenario, odd ones as the sandbox of the same menu slot.
+void SelectPassScenario(obl::game::Game& game, int menuSlot, int pass)
+{
+    game.m_sandbox = uint8_t(pass % 2);
+    game::SelectMenuSlot(game, menuSlot);
 }
 void DriveWrite(int count)
 {
@@ -431,8 +489,9 @@ void DriveWrite(int count)
     list->m_selBegin = &row;
     list->m_selEnd = &row + 1;
     list->m_selCap = &row + 1;
+    const int menuSlot = game::SelectedMenuSlot(game);
     for (int pass = 0; pass < count; ++pass) {
-        game.m_sandbox = uint8_t(pass % 2);
+        SelectPassScenario(game, menuSlot, pass);
         // New slot, overwrite first row, overwrite last row, empty selection (operation regression).
         Scan(&game);
         row = pass % 4 == 1 ? 1 : pass % 4 == 2 ? int(game.m_saveSlots.size()) : 0;
@@ -447,31 +506,48 @@ void DriveWrite(int count)
         }
         list->m_selBegin = empty ? nullptr : &row;
         list->m_selEnd = empty ? nullptr : &row + 1;
-        // WriteOblSave's header reads the live Game, so the copy's sandbox flag is mirrored there for the write.
-        const uint8_t liveSandbox = obl::game::GetGame()->m_sandbox;
-        obl::game::GetGame()->m_sandbox = game.m_sandbox;
-        Write(&game);
-        obl::game::GetGame()->m_sandbox = liveSandbox;
+        {
+            LiveSelection selection(game);
+            Write(&game);
+        }
         list->m_selBegin = &row;
         list->m_selEnd = &row + 1;
         Scan(&game);
-        SaveSlot* written{};
-        for (const auto& slot : game.m_saveSlots)
-            if (slot->m_number == expectedNumber) written = slot.get();
-        const auto* world = obl::game::GetWorld();
-        char title[128];
-        std::snprintf(title, sizeof(title), "MAINSS_SANDBOX%d_TITLE", game::SelectedMenuSlot(game) + 1);
-        g_checks.Record(written && written->m_scenario == game::SelectedMenuSlot(game) && written->m_day == world->m_gameDay &&
-                        written->m_hour == world->m_gameDayTime && written->m_cash == world->m_player->m_cash &&
-                        written->m_guests == world->m_numGuests &&
-                        !std::strcmp(written->m_title, game.m_sandbox ? title : world->m_scenarioTitle.c_str()),
-                "written slot=" + std::to_string(expectedNumber) + (empty ? " empty selection" : " selected") +
-                        (written ? " title=" + std::string(written->m_title) : std::string(" missing")));
+        const SaveSlot* written = FindSlot(game, expectedNumber);
+        const std::string differs = written ? WrittenDifferences(game, *written) : std::string(" missing");
+        g_checks.Record(written && differs.empty(),
+                "written slot=" + std::to_string(expectedNumber) + (empty ? " empty selection" : " selected") + differs);
     }
     list->m_selBegin = first;
     list->m_selEnd = last;
     list->m_selCap = cap;
     list->m_selCursor = cursor;
+    Release(&game);
+}
+// The running game written to the first free slot and read back by the list, as DriveWrite's passes but without the save panel (a
+// pack whose GUI has none).
+void DriveListWritten(int count)
+{
+    NewSavesRemoved saves;
+    GameCopy copy;
+    obl::game::Game& game = copy.game;
+    const int menuSlot = game::SelectedMenuSlot(game);
+    for (int pass = 0; pass < count; ++pass) {
+        SelectPassScenario(game, menuSlot, pass);
+        Scan(&game);
+        const int number = Number(&game, 0);
+        std::string error;
+        bool saved{};
+        {
+            LiveSelection selection(game);
+            saved = game::WriteOblSave(os::ResolvePath(save_slots::OblSlotPath(number)), uint32_t(std::time(nullptr)), error);
+        }
+        if (!saved) OBL_LOG("save slot %d: %s", number, error.c_str());
+        Scan(&game);
+        const SaveSlot* written = FindSlot(game, number);
+        const std::string differs = written ? WrittenDifferences(game, *written) : std::string(" missing");
+        g_checks.Record(written && differs.empty(), "listed slot=" + std::to_string(number) + differs);
+    }
     Release(&game);
 }
 test::CallCounter g_listChecks("ui.save-slots-lists-checks"), g_loadChecks("ui.save-slots-load-checks");
@@ -605,7 +681,7 @@ void DriveDeletes(int count)
         const int countSlots = pass % 3 == 0 ? 1 : pass % 3 == 1 ? 17 : 279;
         auto prepare = [&] {
             for (const auto& file : std::filesystem::directory_iterator(os::ResolvePath("savegames"))) std::filesystem::remove(file.path());
-            for (int i = 0; i < countSlots; ++i) OblHeader(save_slots::OblSlotPath(i * 2), i);
+            for (int i = 0; i < countSlots; ++i) OblHeader(save_slots::OblSlotPath(i * 2), i, "sandbox1");
             Scan(&game);
             selectedRow = countSlots - 1 + (load ? 0 : 1);
             // No date formatting here: the scanner fixtures include unsigned timestamps.
@@ -750,6 +826,7 @@ bool RegisterSaveSlotDrivers()
     g_loadChecks.SetDriver(DriveLoad);
     g_scan.SetDriver(DriveScan);
     g_write.SetDriver(DriveWrite);
+    g_listWritten.SetDriver(DriveListWritten);
     return true;
 }
 

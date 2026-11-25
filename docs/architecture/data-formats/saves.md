@@ -43,6 +43,8 @@ therefore come only from our own packs.
 - **Header first.** The writer always emits `format`, `version`, `header` first; the slot list reads with a streaming
   (SAX) parser and stops after `header`. `title_text` lets the list show a title when the text table is missing;
   `packs` names the content the save needs (a different catalog warns, a missing pack fails with the pack's name).
+  The list takes a save's scenario (its menu slot and picture) from the registry entry of `scenario` and `sandbox`, so
+  ids need not follow the menu order; a save of a scenario the pack lacks stays listed without a picture.
   `mods` is optional (see "Mods" below). `converted_from` is `{"format": "beachlife-1.6", "file": "save3.dat"}` for a converted old save.
 - **Exact numbers.** `f32` fields use the float rule of [principles.md](principles.md#conventions): the shortest
   decimal that round-trips to the same bits, parsed from the raw token with `std::from_chars` into `float` (nlohmann's

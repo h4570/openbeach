@@ -8,9 +8,10 @@
 namespace obl::save_slots {
 // The slot list's summary of a `save<N>.obl.save` (saves.md "header"): parses the document only up to the end of its `header`
 // object, so listing a folder of saves does not read whole worlds (save-switch.md). The document must start with
-// `"format": "obl.save"` and `"version": 1`; false for anything else, a missing header field or invalid JSON before the
-// header ends. `m_number` and `m_oblSave` are the caller's.
-bool ReadOblHeader(std::istream& in, Slot& slot);
+// `"format": "obl.save"` and `"version": 2`; false for anything else, a missing header field or invalid JSON before the
+// header ends. `m_scenario` is the menu slot of the header's scenario id and sandbox flag in `registry`, -1 for an id it does not
+// know. `m_number` and `m_oblSave` are the caller's.
+bool ReadOblHeader(std::istream& in, Slot& slot, const scenario_load::ScenarioRegistry& registry);
 
 // `save<N>.obl.save` beside the old `save<N>.dat` (save_slots.h SlotPath).
 std::string OblSlotPath(int number);

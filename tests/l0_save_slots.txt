@@ -1,0 +1,14 @@
+# The save list names a save's scenario by the registry entry of its id and sandbox flag, not by the digits in the id: the mod's
+# campaign puts s2 first, so scenario 2 of the menu is s1, and its saves (as the campaign scenario, then as the sandbox of the
+# same slot) must list as menu slot 1, with the day, time, cash, guests and title of the running game.
+# @env OBL_PACK=l0
+# @env OBL_MODS=l0_campaign_order
+# @timeout 120
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario 2
+await gameplay
+call-drive ui.save-game-list-written 2
+call-report ui.save-slots-fixture
+expect-last calls 2
+quit
