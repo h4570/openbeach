@@ -5,7 +5,7 @@
 
 The directory gets README.<language>.txt files and AGENTS.md (rendered from the templates beside this script: a line starting with
 "[win]", "[linux]" or "[mac]", or with several of them as "[win|linux]", is kept only on those platforms). Windows and Linux
-get game/ with the binaries, the platform's scripts, the L0 pack in game/l0/packs/l0/, an empty game/userdata/, the
+get game/ with the binaries, build_catalog.py, the platform's scripts, the L0 pack in game/l0/packs/l0/, an empty game/userdata/, the
 licences and (Linux) the icon of the menu entry; macOS gets OpenBeach.app (the binaries and the launcher in
 Contents/MacOS, the import script, the L0 pack, the icon and the licences in Contents/Resources) and the link to
 /Applications that the disk image shows. Paths in the README files use the platform's separator.
@@ -131,6 +131,8 @@ def stage(platform, version, out, binaries):
     shutil.copytree(ROOT / "data" / "packs" / "l0", game / "l0" / "packs" / "l0")
     for name in ("LICENSE", "THIRD_PARTY_NOTICES.md"):
         shutil.copyfile(ROOT / name, game / name)
+    # The catalog script sits beside obl_catalog_sign and the game, where it finds both (docs/modding/guides/own-catalog.md).
+    shutil.copyfile(ROOT / "tools" / "build_catalog.py", game / "build_catalog.py")
     if platform == "linux":
         # The menu entry's icon (import.sh); on Windows the executable carries it.
         shutil.copyfile(ROOT / "assets" / "logo" / "openbeach-256.png", game / "openbeach.png")

@@ -42,7 +42,7 @@ stage="$dist/$name"
 stripped="$dist/$name-bin"
 rm -rf "$stage" "$stripped" "$dist/$name.tar.gz"
 mkdir -p "$stripped"
-for bin in OpenBeach obl-convert; do
+for bin in OpenBeach obl-convert obl_catalog_sign; do
     # Every needed glibc symbol must exist in the oldest supported glibc.
     newest=$(objdump -T "$build/bin/$bin" | grep -oE 'GLIBC_[0-9]+(\.[0-9]+)+' | sed 's/GLIBC_//' | sort -Vu | tail -1)
     if [[ "$(printf '%s\n%s\n' "$newest" "$glibc_max" | sort -V | tail -1)" != "$glibc_max" ]]; then
@@ -58,7 +58,7 @@ for bin in OpenBeach obl-convert; do
     strip --strip-all -o "$stripped/$bin" "$build/bin/$bin"
 done
 python3 "$root/tools/ci/release/stage.py" --platform linux --version "$version" --out "$stage" \
-    --bin "$stripped/OpenBeach" "$stripped/obl-convert"
+    --bin "$stripped/OpenBeach" "$stripped/obl-convert" "$stripped/obl_catalog_sign"
 rm -rf "$stripped"
 tar_opts=(--sort=name --owner=0 --group=0 --numeric-owner --mtime="@${SOURCE_DATE_EPOCH:-$(git -C "$root" log -1 --format=%ct)}")
 tar "${tar_opts[@]}" -C "$dist" -czf "$dist/$name.tar.gz" "$name"

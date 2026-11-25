@@ -72,4 +72,10 @@ if [[ "$code" != 0 ]] || ! grep -q "platform-main: WinMain returned 0" "$log" ||
     cat "$work/stdout.log" "$log" >&2
     exit 1
 fi
+# The catalog signer works: the public key of the RFC 8032 test seed (a throwaway key, never a real catalog's).
+[[ -x "$dir/game/obl_catalog_sign" && -f "$dir/game/build_catalog.py" ]] || { echo "error: the release has no catalog signer" >&2; exit 1; }
+printf '9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60
+' > "$work/test.key"
+pub="$("$dir/game/obl_catalog_sign" pubkey --key-file "$work/test.key")"
+[[ "$pub" == d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a ]] || { echo "error: obl_catalog_sign gave $pub" >&2; exit 1; }
 echo "smoke test passed: window, frames and a clean exit on $display"

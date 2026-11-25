@@ -16,6 +16,7 @@ import build_catalog
 
 ROOT = Path(__file__).resolve().parents[2]
 MODS_DIR = ROOT / "data/mods"
+TEMPLATE_DIR = ROOT / "docs/modding/examples/catalog_template"
 # RFC 8032 Section 7.1 test vector 1 seed and public key (throwaway test key only).
 TEST_SEED_HEX = "9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60"
 TEST_PUBKEY_HEX = "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a"
@@ -134,6 +135,45 @@ class BuildCatalogTests(unittest.TestCase):
                 text=True,
             )
             self.assertNotEqual(bad.returncode, 0)
+
+
+class CatalogTemplateTests(unittest.TestCase):
+    def test_template_builds_and_verifies_with_a_throwaway_key(self):
+        signer = locate_signer()
+        if signer is None:
+            self.skipTest("obl_catalog_sign binary not built in this environment")
+        url = "https://example.org/mods/catalog.json"
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            out = root / "site"
+            # A throwaway key like the workflow's fallback; the title and address are the ones a catalog owner passes.
+            code = build_catalog.main([
+                "--mods-dir", str(TEMPLATE_DIR / "mods"), "--out-dir", str(out), "--title", "Template catalog",
+                "--url", url, "--signer", str(signer), "--ephemeral-key",
+            ])
+            self.assertEqual(code, 0)
+            doc = json.loads((out / "catalog.json").read_text(encoding="utf-8"))
+            self.assertEqual(doc["title"], "Template catalog")
+            self.assertEqual([m["id"] for m in doc["mods"]], ["my_first_mod"])
+            self.assertEqual(doc["mods"][0]["license"], "MIT")
+            self.assertTrue((out / doc["mods"][0]["url"]).is_file())
+            # The engine's parser accepts it for the address (build_catalog verified it; check once more on its own).
+            ok = subprocess.run([str(signer), "verify", "--input", str(out / "catalog.json"), "--url", url],
+                                capture_output=True, text=True)
+            self.assertEqual(ok.returncode, 0, ok.stderr)
+            # The ZIP on disk is the one the entry describes.
+            entry = doc["mods"][0]
+            self.assertEqual(hashlib.sha256((out / entry["url"]).read_bytes()).hexdigest(), entry["sha256"])
+
+    def test_other_catalogs_have_no_official_defaults(self):
+        with self.assertRaises(SystemExit):
+            build_catalog.main(["--mods-dir", str(TEMPLATE_DIR / "mods"), "--out-dir", "unused"])
+
+    def test_workflow_uses_its_own_secret_and_only_checks_without_it(self):
+        workflow = (TEMPLATE_DIR / ".github/workflows/catalog.yml").read_text(encoding="utf-8")
+        self.assertIn("secrets.CATALOG_SIGNING_KEY", workflow)
+        self.assertNotIn("OBL_CATALOG_PRIVATE_KEY", workflow)
+        self.assertIn("--ephemeral-key", workflow)
 
 
 if __name__ == "__main__":
