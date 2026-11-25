@@ -1,0 +1,8 @@
+{
+  "format": "obl.mod",
+  "version": 1,
+  "id": "l0_campaign_order",
+  "title": "L0 campaign whose scenario ids do not follow the menu order",
+  "mod_version": "1.0.0",
+  "pack": "l0"
+}

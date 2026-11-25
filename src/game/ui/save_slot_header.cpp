@@ -28,6 +28,7 @@ struct HeaderReader {
     std::optional<float> dayTime, cash;
     std::string scenario, title, titleText;
     bool hasScenario = false;
+    std::optional<bool> sandbox;
 
     bool Header() const { return inHeader && depth == 2; }
     template<class T> bool Integer(T value)
@@ -42,7 +43,11 @@ struct HeaderReader {
         return true;
     }
     bool null() { return true; }
-    bool boolean(bool) { return true; }
+    bool boolean(bool value)
+    {
+        if (Header() && name == "sandbox") sandbox = value;
+        return true;
+    }
     bool number_integer(Json::number_integer_t value) { return Integer(value); }
     bool number_unsigned(Json::number_unsigned_t value) { return Integer(int64_t(value)); }
     bool number_float(Json::number_float_t value, const Json::string_t&)
@@ -120,17 +125,19 @@ struct HeaderReader {
 // NOLINTEND(readability-identifier-naming)
 } // namespace
 
-bool ReadOblHeader(std::istream& in, Slot& slot)
+bool ReadOblHeader(std::istream& in, Slot& slot, const scenario_load::ScenarioRegistry& registry)
 {
     HeaderReader reader;
     Json::sax_parse(in, &reader, Json::input_format_t::json, false);
-    if (!reader.done || !reader.savedAt || !reader.day || !reader.guests || !reader.dayTime || !reader.cash || !reader.hasScenario)
+    if (!reader.done || !reader.savedAt || !reader.day || !reader.guests || !reader.dayTime || !reader.cash || !reader.hasScenario ||
+            !reader.sandbox)
         return false;
-    // "s3" / "sandbox3": the 1-based scenario number after the prefix.
-    const size_t digits = reader.scenario.find_first_of("0123456789");
-    if (digits == std::string::npos) return false;
+    // The id names the scenario, not its place in the menu: a campaign need not number its ids in menu order, nor number them
+    // at all. A scenario the pack no longer has keeps the save listed, without a picture (its load is refused with a message).
+    const auto kind = *reader.sandbox ? scenario_load::ScenarioKind::Sandbox : scenario_load::ScenarioKind::Campaign;
+    const auto ref = registry.FindById(reader.scenario, kind);
+    slot.m_scenario = ref ? registry.Get(*ref).menuSlot : -1;
     slot.m_time = *reader.savedAt;
-    slot.m_scenario = std::atoi(reader.scenario.c_str() + digits) - 1;
     slot.m_day = int32_t(*reader.day);
     slot.m_hour = *reader.dayTime;
     slot.m_cash = *reader.cash;
