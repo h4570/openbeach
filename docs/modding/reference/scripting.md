@@ -28,7 +28,7 @@ version. After that, a breaking change raises the version, and the old one keeps
 ## Scope
 A `"presentation"` mod changes nothing the simulation reads, so saves and replays leave it out. The start-up check refuses a
 presentation mod that ships anything but:
-- `mod.json`, the files under `scripts/presentation/`, documents at the top (`README.md`, `LICENSE`, `*.txt`);
+- `mod.json` (with `settings`, [mods.md](mods.md#settings), which a world mod may not declare), the files under `scripts/presentation/`, documents at the top (`README.md`, `LICENSE`, `*.txt`);
 - text patches `text/<lang>.patch.json` that only add keys: feedback messages keep their formatted text in the world, so a
   changed value of an existing key would make replays depend on the mod. The text loader refuses such a patch;
 - `gui/<name>.patch.json`: a GUI layout patch ([gui-patches.md](gui-patches.md)), or a JSON data patch of a presentation file
@@ -45,6 +45,7 @@ The runtime starts with the first game frame after the start-up check. Every fun
 | `on_start()` | once, after every mod's files have loaded, in load order |
 | `on_frame(dt)` | every game frame after the state's update, in load order; `dt` is the frame's seconds (game tests with `fixed-dt` get that value) |
 | `on_input(event)` | for each key or mouse button that went down or up since the last frame, the last mod in load order first |
+| `on_setting(id, value)` | after the player changed a setting the mod declares ([Settings](#settings)): once per changed setting, in load order, with the new value |
 | `on_stop()` | when the game ends, the last mod first; then the stores are written |
 
 `event` holds `kind` (`"key"` or `"mouse"`) and `phase` (`"down"` or `"up"`); a key event has `key`, the key's name (`"F5"`,
@@ -73,6 +74,7 @@ A script error, an error while loading a file, a used-up budget or the memory ca
 | `obl.log(...)` | writes its arguments, separated by spaces, to the game log with the mod's id |
 | `obl.command(name, fields)` | submits a game command (below) in its text form's name with a table of fields, e.g. `obl.command("set-game-speed", { level = 2 })`; booleans become `0`/`1`. It runs at the start of the next gameplay tick; outside gameplay the game drops it. A command off the list, an unknown or missing field is an error |
 | `obl.game.in_world()` | whether a world is in settled gameplay, so a command submitted now runs |
+| `obl.settings.get(id)` | the player's value of a setting the mod declares in `mod.json`, or its default: a boolean, a string or a number ([Settings](#settings)); another id is an error |
 | `obl.store.get(key)` | the value stored under `key`, or `nil` |
 | `obl.store.set(key, value)` | stores a boolean, number or string under `key` (1 to 256 bytes); `nil` removes it |
 
@@ -82,6 +84,14 @@ A script error, an error while loading a file, a used-up budget or the memory ca
 A small key-value store per mod, `<game dir>/mod-data/<id>.json`, kept outside saves and outside the mod's directory, so
 updating the mod keeps it. Keys and string values may take 64 KiB per mod. It is written when the game ends or the mod is
 switched off. The browser build keeps no mods yet, so neither does it keep stores.
+
+### Settings
+`settings` in `mod.json` ([mods.md](mods.md#settings)) declares toggles, choices and numbers. `obl.settings.get("wide")` gives
+a boolean for a toggle, the option's `value` (a string) for a choice, and a number for a number setting (a Lua integer when the
+setting's bounds, step and default are whole, so `math.type` is `"integer"`). The values are read when the scripts start, so
+`on_start` already sees them. A script only reads them: the player changes them on the mods screen, and `on_setting` follows,
+with the new value, for every setting whose value really changed. A script that wants to remember something of its own uses the
+store. Settings sit in `openbeach.ini`, never in a save, and the simulation never reads them.
 
 ## Commands
 The commands a script may send are the GUI's ([commands.md](../../architecture/commands.md#command-set-format-version-1)), with
@@ -114,6 +124,7 @@ script error unwinds the engine's frames as an exception, also in the WebAssembl
 
 ## Tests
 `script_runtime_test` (unit): load order, an error switches off only its mod, the budget stops endless loops, the memory cap,
-sandbox escapes (`io`, `os`, `require`, `load`, ...), the command list, the store, and this page's lists. `mod_pack_test`: the
+sandbox escapes (`io`, `os`, `require`, `load`, ...), the command list, the store, the settings (typed values, a bad value, `on_setting`,
+the `[Mod.<id>]` section) and this page's lists. `mod_pack_test`: the
 scope check, `packs`, the API version. `tests/l0_mod_script.txt` runs the test mod `tests/mods/l0_script`, whose script sets
-the game speed; `tests/replay_l0_mod_script.txt` plays back, without the mod, the replay `l0_mod_script.record.txt` recorded with it.
+the game speed; `tests/l0_mod_settings.txt` runs the test mod `tests/mods/l0_settings` (settings and `on_setting`); `tests/replay_l0_mod_script.txt` plays back, without the mod, the replay `l0_mod_script.record.txt` recorded with it.

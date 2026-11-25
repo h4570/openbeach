@@ -3,11 +3,13 @@
 #include "core/log.h"
 #include "core/os.h"
 #include "core/pack_path.h"
+#include "core/settings_schema.h"
 #include "formats/data_patch.h"
 
 #include <nlohmann/json.hpp>
 
 #include <algorithm>
+#include <cmath>
 #include <fstream>
 #include <iterator>
 #include <optional>
@@ -64,6 +66,140 @@ bool ReadPacks(const nlohmann::json& doc, std::vector<std::string>& packs, std::
             error = "pack \"" + pack + "\" is not a pack id";
             return false;
         }
+    return true;
+}
+
+// One entry of `settings`: {"id", "type": "toggle|choice|number", "label", "hint", "default", and per type "options" or
+// "min"/"max"/"step"}. The default is optional (off, the first option, the minimum) but must be a value of the field when given.
+bool ReadSetting(const nlohmann::json& item, settings_schema::Field& field, std::string& error)
+{
+    using settings_schema::Kind;
+    if (!item.is_object()) {
+        error = "settings holds something that is not an object";
+        return false;
+    }
+    const auto text = [&](const char* key, std::string& out, bool required) {
+        const auto it = item.find(key);
+        if (it == item.end()) {
+            if (required) error = std::string("a setting needs \"") + key + "\"";
+            return !required;
+        }
+        if (!it->is_string() || it->get<std::string>().size() > settings_schema::kMaxText || (required && it->get<std::string>().empty())) {
+            error = std::string("setting \"") + field.id + "\": \"" + key + "\" is not a text of 1 to " +
+                    std::to_string(settings_schema::kMaxText) + " characters";
+            return false;
+        }
+        out = it->get<std::string>();
+        return true;
+    };
+    std::string type;
+    if (!text("id", field.id, true)) return false;
+    if (!settings_schema::IsValidId(field.id)) {
+        error = "setting id \"" + field.id + "\" is not an id (lowercase letters, digits, _ and -)";
+        return false;
+    }
+    if (!text("type", type, true) || !text("label", field.label, true) || !text("hint", field.hint, false)) return false;
+    const std::string where = "setting \"" + field.id + "\": ";
+    std::optional<std::string> given;
+    if (const auto it = item.find("default"); it != item.end()) {
+        if (it->is_boolean())
+            given = it->get<bool>() ? "1" : "0";
+        else if (it->is_number())
+            given = settings_schema::NumberText(it->get<double>());
+        else if (it->is_string())
+            given = it->get<std::string>();
+        else {
+            error = where + "\"default\" is not a boolean, number or text";
+            return false;
+        }
+    }
+    if (type == "toggle") {
+        field.kind = Kind::Toggle;
+        field.defaultValue = "0";
+    } else if (type == "choice") {
+        field.kind = Kind::Choice;
+        const auto it = item.find("options");
+        if (it == item.end() || !it->is_array() || it->empty() || it->size() > settings_schema::kMaxChoices) {
+            error = where + "\"options\" is not a list of 1 to " + std::to_string(settings_schema::kMaxChoices) + " choices";
+            return false;
+        }
+        for (const auto& option : *it) {
+            settings_schema::Option entry;
+            if (option.is_string()) {
+                entry.value = entry.label = option.get<std::string>();
+            } else if (option.is_object() && option.contains("value") && option["value"].is_string() && option.contains("label") &&
+                    option["label"].is_string()) {
+                entry.value = option["value"].get<std::string>();
+                entry.label = option["label"].get<std::string>();
+            } else {
+                error = where + "an option is not a text or {\"value\", \"label\"}";
+                return false;
+            }
+            // The value lives in an ini file: no line break, no ';' (a comment) and no blanks the reader would trim.
+            const bool usable = !entry.value.empty() && entry.value.size() <= settings_schema::kMaxText && !entry.label.empty() &&
+                    entry.label.size() <= settings_schema::kMaxText && entry.value.find_first_of("\r\n;") == std::string::npos &&
+                    entry.value.front() != ' ' && entry.value.front() != '\t' && entry.value.back() != ' ' && entry.value.back() != '\t';
+            if (!usable) {
+                error = where + "an option's value is empty, too long, padded or holds a line break or ';' (an ini file holds it)";
+                return false;
+            }
+            for (const auto& other : field.options)
+                if (other.value == entry.value) {
+                    error = where + "the option \"" + entry.value + "\" is listed twice";
+                    return false;
+                }
+            field.options.push_back(std::move(entry));
+        }
+        field.defaultValue = field.options.front().value;
+    } else if (type == "number") {
+        field.kind = Kind::Number;
+        const std::pair<const char*, double*> bounds[] = {{"min", &field.min}, {"max", &field.max}, {"step", &field.step}};
+        for (const auto& [key, out] : bounds) {
+            const auto it = item.find(key);
+            if (it == item.end() || !it->is_number() || !std::isfinite(it->get<double>())) {
+                error = where + "\"" + key + "\" is missing or not a number";
+                return false;
+            }
+            *out = it->get<double>();
+        }
+        if (field.min >= field.max || field.step <= 0 || field.step > field.max - field.min) {
+            error = where + "needs min < max and 0 < step <= max - min";
+            return false;
+        }
+        field.defaultValue = settings_schema::NumberText(field.min);
+    } else {
+        error = where + "\"type\" is not \"toggle\", \"choice\" or \"number\"";
+        return false;
+    }
+    if (given) {
+        const auto canonical = settings_schema::Canonical(field, *given);
+        if (!canonical) {
+            error = where + "\"default\" is not a value of the setting";
+            return false;
+        }
+        field.defaultValue = *canonical;
+    }
+    return true;
+}
+
+bool ReadSettings(const nlohmann::json& doc, std::vector<settings_schema::Field>& settings, std::string& error)
+{
+    const auto it = doc.find("settings");
+    if (it == doc.end()) return true;
+    if (!it->is_array() || it->size() > kMaxSettings) {
+        error = "settings is not a list of at most " + std::to_string(kMaxSettings) + " settings";
+        return false;
+    }
+    for (const auto& item : *it) {
+        settings_schema::Field field;
+        if (!ReadSetting(item, field, error)) return false;
+        for (const auto& other : settings)
+            if (other.id == field.id) {
+                error = "setting \"" + field.id + "\" is listed twice";
+                return false;
+            }
+        settings.push_back(std::move(field));
+    }
     return true;
 }
 
@@ -171,6 +307,7 @@ bool ParseManifest(std::string_view text, Manifest& manifest, std::string& error
             m.requiredMods.push_back(item.get<std::string>());
         }
     }
+    if (!ReadSettings(doc, m.settings, error)) return false;
     manifest = std::move(m);
     return true;
 }
@@ -200,6 +337,9 @@ bool CheckActive(const std::filesystem::path& gameDirectory, std::string_view pa
             for (const std::string& pack : packs) names += (names.empty() ? "\"" : ", \"") + pack + "\"";
             return fail("made for the pack " + names + ", not \"" + std::string(packId) + "\"");
         }
+        // Nothing in a world mod can read a setting, and world scripts must never see one: the simulation takes no setting.
+        if (mod.manifest.scope == Scope::World && !mod.manifest.settings.empty())
+            return fail("a world mod may not declare \"settings\" (no setting reaches the simulation; make it a presentation mod)");
         if (mod.manifest.scope == Scope::Presentation)
             if (const std::string file = FirstRefusedFile(*directory); !file.empty())
                 return fail("a presentation mod may not ship \"" + file +

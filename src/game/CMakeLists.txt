@@ -1,6 +1,8 @@
 add_library(obl_common STATIC
     mods/key_names.cpp
     mods/key_names.h
+    mods/mod_settings_file.cpp
+    mods/mod_settings_file.h
     mods/presentation_scripts.cpp
     mods/presentation_scripts.h
     mods/script_runtime.cpp

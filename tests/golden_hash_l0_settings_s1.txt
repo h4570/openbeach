@@ -1,0 +1,46 @@
+# The guard of docs/build/settings.md: no setting of openbeach.ini changes the simulation. This is the fixture of
+# golden_hash_l0_sN.txt (keep the steps equal) with every engine setting at a value other than its default, checked against the
+# same trace, so a setting that reached the world would move a hash. Windowed, ConfineMouse, Scale, MaxFps and PlayMovie come in
+# through their environment overrides (the same values the file would hold); the language is the fixture's own Polish, and the
+# settings window's ShowSettings is read by the launcher alone, which a scripted run never opens.
+# @golden golden_hash_l0_s1
+# @env OBL_PACK=l0
+# @env OBL_WINDOWED=0
+# @env OBL_CONFINEMOUSE=0
+# @env OBL_SCALE=2.5
+# @env OBL_MAXFPS=240
+# @env OBL_PLAYMOVIE=0
+# @timeout 90
+# The game's own options of BeachLife.ini, off their defaults too: another resolution, volumes, effects, keyline, scroll speed.
+# @gameini Language.Language=5
+# @gameini Video.ResWidth=1024
+# @gameini Video.ResHeight=768
+# @gameini Sound.MusicVol=0.2
+# @gameini Sound.EffectsVol=0.3
+# @gameini Sound.PlayListMode=1
+# @gameini Video.NudgeScroll=0
+# @gameini Video.SeaEffects=0
+# @gameini Video.LightEffects=0
+# @gameini Video.Keyline=1
+# @gameini Video.ScrollSpeed=50
+# @gameini Video.CursorSpeed=60
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario 1
+await gameplay
+await frames 60
+speed 8
+# Initialize scenario-created fields before taking the first snapshot.
+step 200
+world-hash every 200
+step 200
+weather-insert 0 0.75
+step 200
+set-cash 12345.5
+step 200
+world-hash expect-same
+world-hash off
+expect-last checkpoint 4
+expect-last steps 600
+expect-last-range fields 1000 1000000
+quit

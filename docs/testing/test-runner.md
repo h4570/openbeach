@@ -57,6 +57,8 @@ run, without a runner snapshot masking a persistent write. INI serialization its
   `-Pack public` runs only these (the set public CI runs); `-Pack private`, the default, runs every entry.
   Untagged entries are Private checks against the imported pack. `world_hash_golden.ps1 -Tables l0` maps a fixture
   `<family>_s<N>` to its L0 variant `<family>_l0_s<N>` (`golden_hash_l0_s1`); the private tables are never re-recorded.
+- A fixture whose hashes must equal another fixture's names that trace in its header, `# @golden <name>`
+  (`golden_hash_l0_settings_s1`, the settings guard of [../build/settings.md](../build/settings.md#rule)).
 - Suffix `@full`: only with `-Full` or a filter naming the entry exactly (golden hashes of the other scenarios).
 - Suffix `@headless`: the script runs in the headless host (`autotest.ps1 -Headless`, Config column `Debug/H`;
   [../architecture/headless/scripts.md](../architecture/headless/scripts.md), "Test scripts"). `-Hidden` runs these in the hidden game.

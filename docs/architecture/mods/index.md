@@ -37,6 +37,8 @@ a fake host. The interpreter comes from `cmake/lua.cmake`, linked into `obl_comm
   layout patch, or a JSON data patch of a presentation file), and text patches that only add keys
   (feedback messages keep their formatted text in the world hash, so a changed text would reach it). Sprites, sounds and other pack
   files are not on the list, since a frame count or the size of a sound bank can steer the simulation.
+- `settings` in `mod.json` belong to presentation mods only: the start-up check refuses a world mod that declares any, since
+  nothing in a world mod reads them and world scripts must never see one.
 - Every later block that lets presentation mods ship a new kind of file (GUI patches, assets built by recipe) extends that list in
   `mod_pack.cpp` (`PresentationMayShip`) and says why the file cannot reach the simulation.
 
@@ -56,3 +58,13 @@ sees. Pointer motion, touch, `consume` (a mod keeps an event from earlier mods a
 ## Settings and the store
 No setting in `openbeach.ini` changes the simulation. The per-mod store of the presentation scripts (`<game dir>/mod-data/<id>.json`)
 lives outside saves and is never read by the simulation.
+
+**Settings schema.** `src/core/settings_schema.h` describes a setting once (toggle, choice or number, label, hint, default,
+options) and turns the text of an ini file into one canonical value. The engine's own settings are described with it
+(`start_settings::EngineField`), so the settings window steps its rows through the schema, and a mod's `settings` in `mod.json`
+parse into the same type (`mod_pack::Manifest::settings`), so the later mods screen (#118) draws both kinds of rows from one
+description. A mod's values live in `openbeach.ini` under `[Mod.<id>]`; the game's side is `presentation_scripts.cpp`
+(`ScriptHost::ReadSetting` reads them, `SetModSetting` is what the mods screen calls: it checks the value against the schema, writes
+the file and runs `ScriptRuntime::SettingsChanged`, which calls `on_setting` for each value that changed). Scripted test runs
+keep a changed value in memory and leave the player's file alone. The guard of the rule is
+`tests/golden_hash_l0_settings_s1.txt`: the L0 golden run with every engine setting off its default must give the golden hashes.

@@ -1,6 +1,10 @@
 #pragma once
 
+#include "core/settings_schema.h"
+
 #include <filesystem>
+#include <string>
+#include <string_view>
 #include <vector>
 
 // The settings a player picks in the settings window before the game starts (docs/build/settings-window.md): the language from
@@ -17,10 +21,15 @@ extern const char kDefaultFile[];
 // Writes kDefaultFile to `path` when no file is there. False when it was missing and could not be written.
 bool CreateDefaultFile(const std::filesystem::path& path);
 
-// The frame caps the window offers, 0 = unlimited.
-inline constexpr int kFrameCaps[] = {30, 60, 75, 120, 144, 240, 0};
-// The window size multipliers it offers ([Display] Scale is 1..4).
-inline constexpr double kScales[] = {1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0};
+// The engine's own settings of openbeach.ini, described the way a mod's are (core/settings_schema.h), so the settings window and
+// the mods screen draw rows from one kind of description. The language is not here: it lives in BeachLife.ini and depends on the pack.
+enum Setting { Windowed, Scale, ConfineMouse, MaxFps, PlayMovie, ShowAtStart, kSettingCount };
+
+// The field of a setting: its id is the ini key, its options the values the window offers, its default what the game uses without
+// a file. No setting of openbeach.ini changes the simulation (docs/build/settings.md).
+const settings_schema::Field& EngineField(Setting setting);
+// The section of openbeach.ini that holds it.
+const char* EngineSection(Setting setting);
 
 struct Values {
     // Settings language indices (text_load::LanguageCode) whose table the pack has, in settings order.
@@ -35,6 +44,10 @@ struct Values {
 
     bool operator==(const Values&) const = default;
 };
+
+// A setting of `values` as the canonical text of its field, and back (a text the field does not accept leaves it alone).
+std::string Get(const Values& values, Setting setting);
+void Set(Values& values, Setting setting, std::string_view canonical);
 
 // The current values for the game directory `gameDir` and its pack directory `pack` (absolute, or relative to the current
 // directory). Missing files and keys give the defaults; nothing is written.

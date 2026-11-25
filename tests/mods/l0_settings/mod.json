@@ -1,0 +1,18 @@
+{
+  "format": "obl.mod",
+  "version": 1,
+  "id": "l0_settings",
+  "title": "L0 settings test mod",
+  "mod_version": "1.0.0",
+  "packs": ["base", "l0"],
+  "scope": "presentation",
+  "api": 1,
+  "settings": [
+    { "id": "wide", "type": "toggle", "label": "Wide layout", "hint": "Draws the panel across the width" },
+    {
+      "id": "theme", "type": "choice", "label": "Theme",
+      "options": ["sand", { "value": "sea", "label": "Deep sea" }]
+    },
+    { "id": "zoom", "type": "number", "label": "Zoom", "min": 1, "max": 4, "step": 1, "default": 2 }
+  ]
+}

@@ -1,0 +1,23 @@
+# A mod's settings (docs/modding/reference/mods.md#settings): the test mod tests/mods/l0_settings declares a toggle, a choice and a
+# number, reads them with obl.settings.get and hears each change the way the mods screen will cause one. The settings are not the
+# simulation's: tests/golden_hash_l0_settings_s1.txt holds every engine setting to that rule.
+# @env OBL_PACK=l0
+# @env OBL_MODS=l0_settings
+# @timeout 120
+# @expect-log mod l0_settings: start wide=false theme=sand zoom=2
+# @expect-log mod l0_settings: changed wide true, now wide=true theme=sand zoom=2
+# @expect-log mod l0_settings: changed theme sea, now wide=true theme=sea zoom=2
+# @expect-log mod l0_settings: changed zoom 3, now wide=true theme=sea zoom=3
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario 1
+await gameplay
+step 5
+mod-setting l0_settings wide 1
+mod-setting l0_settings theme sea
+mod-setting l0_settings zoom 3
+step 5
+# Setting the value it already has is not a change.
+mod-setting l0_settings zoom 3
+step 5
+quit

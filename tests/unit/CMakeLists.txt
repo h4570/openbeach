@@ -141,6 +141,7 @@ add_executable(obl_unit_tests
     wide_format_test.cpp
     runtime_reports_test.cpp
     ini_file_test.cpp
+    settings_schema_test.cpp
     image_compare_test.cpp
     image_decode_test.cpp
     cursor_file_test.cpp

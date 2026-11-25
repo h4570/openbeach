@@ -11,8 +11,19 @@ with defaults and comments when it is missing; the [settings window](settings-wi
 | `[Display] Scale` | 1 | `OBL_SCALE` | window size multiplier 1-4 (decimals allowed), capped at the monitor size |
 | `[Display] MaxFps` | 60 | `OBL_MAXFPS` | frame cap, 0 = unlimited (scripted runs: 0) |
 | `[Intro] PlayMovie` | 1 | `OBL_PLAYMOVIE` | Eidos intro movie (scripted runs: 0) |
+| `[Mod.<id>] <setting>` | the mod's default | | a setting a mod declares in its `mod.json` ([../modding/reference/mods.md#settings](../modding/reference/mods.md#settings)); the mods screen writes it, scripts read it |
 | `[Mods] Active` | empty | `OBL_MODS` | comma separated mod ids in load order, the last one wins ([../modding/players/switching-mods.md](../modding/players/switching-mods.md)); `OBL_MODS` replaces the setting, also when empty |
 | `[Launcher] ShowSettings` | 1 | | the settings window before the game starts ([settings-window.md](settings-window.md)); `--settings` shows it anyway, `--no-settings` never |
+
+## Rule
+**No setting in `openbeach.ini` changes the simulation.** Display, frame rate, input, intro and launcher settings, and the settings
+of mods, are read by the host and the presentation, never by the world; what does change it is a scenario or a world mod, which saves
+and replays record. Two things keep it so:
+- the engine's settings are described once, in `start_settings` on the schema of `src/core/settings_schema.h`, and
+  `settings_schema_test` checks that the defaults, the settings window and the commented default file agree with it;
+- `tests/golden_hash_l0_settings_s1.txt` (a `.golden` entry on the L0 pack) is the L0 golden run with every engine setting off its
+  default (fullscreen, no mouse confinement, another scale, another frame cap, no intro, another language); it must give the
+  world hashes of the default run, `tests/golden-hashes/golden_hash_l0_s1.tsv`. A new setting goes into that script too.
 
 Other environment variables used by tools and tests: `OBL_HIDDEN` (hidden window), `OBL_SCRIPT` (scripted test run),
 `OBL_HEADLESS` (headless replay run, [../architecture/headless/index.md](../architecture/headless/index.md)),
