@@ -341,7 +341,7 @@ struct Parser {
         ctrl.kind = word;
 
         static constexpr std::string_view kOneRectLeaves[] = {"Button", "CheckBox", "Slider", "ComboBox", "Text", "Variable",
-                "VariableImage", "Image", "Icon", "TGA", "Bar", "ImageList", "NumberAdjust", "RadioButton"};
+                "VariableImage", "Image", "Icon", "TGA", "Bar", "ImageList", "NumberAdjust", "RadioButton", "OwnButton", "ModsPanel"};
         const bool isOneRectLeaf = std::find(std::begin(kOneRectLeaves), std::end(kOneRectLeaves), word) != std::end(kOneRectLeaves);
 
         if (isOneRectLeaf) {
@@ -650,6 +650,11 @@ std::string DeriveControlKey(const ControlNode& ctrl)
     if (ctrl.kind == "RadioButton") {
         // RadioButton(rect, graphic, font, value, text [, tooltip])
         return ctrl.tailArgs.size() >= 3 ? ctrl.tailArgs[2] : "unnamed";
+    }
+    if (ctrl.kind == "OwnButton") {
+        // OwnButton(rect, text, dialog): the dialog it opens, else its text
+        if (ctrl.tailArgs.size() >= 2 && !IsNoneToken(ctrl.tailArgs[1])) return ctrl.tailArgs[1];
+        return !ctrl.tailArgs.empty() ? ctrl.tailArgs[0] : "unnamed";
     }
     if (ctrl.kind == "TAB") return ctrl.childHeaderName;
     if (ctrl.kind == "COL") {
@@ -1510,17 +1515,18 @@ std::vector<std::filesystem::path> FindPatchFiles(const std::filesystem::path& p
 }
 
 bool ApplyPackPatches(const std::filesystem::path& pack, std::string_view layout, std::string_view baseScriptText,
-        std::span<const std::string> activeMods, int32_t screenWidth, int32_t screenHeight, ApplyResult& out, std::string& error)
+        std::span<const std::string> activeMods, int32_t screenWidth, int32_t screenHeight, ApplyResult& out, std::string& error,
+        std::span<const PatchSource> leading)
 {
     error.clear();
     out = {};
     const auto files = FindPatchFiles(pack, layout);
-    if (files.empty()) {
+    if (files.empty() && leading.empty()) {
         out.scriptText.assign(baseScriptText);
         return true;
     }
-    std::vector<PatchSource> sources;
-    sources.reserve(files.size());
+    std::vector<PatchSource> sources(leading.begin(), leading.end());
+    sources.reserve(leading.size() + files.size());
     for (const auto& file : files) {
         std::ifstream in(file, std::ios::binary);
         if (!in) {

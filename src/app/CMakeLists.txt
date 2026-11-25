@@ -337,6 +337,10 @@ add_library(openbeach OBJECT
     ../game/ui/gui_layouts_runtime.cpp
     ../game/ui/gui_patch_runtime.cpp
     ../game/ui/gui_patch_runtime.h
+    ../game/ui/mods_screen.cpp
+    ../game/ui/mods_screen.h
+    ../game/ui/own_widgets.cpp
+    ../game/ui/own_widgets.h
     ../game/world/world_params_process.cpp
     ../game/world/world_params_queries.cpp
     ../game/objects/building_events.cpp

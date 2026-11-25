@@ -163,6 +163,8 @@ list(REMOVE_ITEM COMMON_SOURCES
     ${REPO}/src/game/ui/gui_content_runtime.cpp
     ${REPO}/src/game/ui/gui_layouts_runtime.cpp
     ${REPO}/src/game/ui/gui_patch_runtime.cpp
+    ${REPO}/src/game/ui/mods_screen.cpp
+    ${REPO}/src/game/ui/own_widgets.cpp
     ${REPO}/src/game/ui/gui_script_leaves.cpp
     ${REPO}/src/game/ui/gui_script_parse.cpp
     ${REPO}/src/game/ui/gui_script_state.cpp

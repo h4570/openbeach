@@ -12,4 +12,7 @@ namespace obl::own_texts {
 // Our keys with their texts in renderer byte units for `language` (text_load::LanguageCode; unknown gives English).
 std::vector<text::Entry> Texts(std::string_view language);
 
+// The texts of the mods screen (ui/own_layer.h), which every pack has.
+std::vector<text::Entry> ModsScreenTexts(std::string_view language);
+
 } // namespace obl::own_texts

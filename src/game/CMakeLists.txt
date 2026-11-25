@@ -5,10 +5,14 @@ add_library(obl_common STATIC
     mods/input_events.h
     mods/input_routing.cpp
     mods/input_routing.h
+    mods/mod_list.cpp
+    mods/mod_list.h
     mods/mod_settings_file.cpp
     mods/mod_settings_file.h
     mods/overlay_draw.cpp
     mods/overlay_draw.h
+    ui/own_layer.cpp
+    ui/own_layer.h
     mods/presentation_scripts.cpp
     mods/presentation_scripts.h
     mods/script_runtime.cpp

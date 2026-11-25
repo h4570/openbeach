@@ -1,5 +1,7 @@
 #pragma once
 
+#include "formats/mod_pack.h"
+
 #include <filesystem>
 #include <string>
 #include <vector>
@@ -38,6 +40,11 @@ void ClearTestKeyBindings();
 
 // on_stop and the stores: at the end of the game.
 void StopPresentationScripts();
+// Stops the scripts; the next PresentationFrame starts those of mod_pack::Active() again (the mods screen changed the list).
+void RestartPresentationScripts();
+
+// The value of a setting of an active mod as its scripts read it: a value the mods screen set, else openbeach.ini, else the default.
+std::string ModSettingValue(const mod_pack::ActiveMod& mod, const settings_schema::Field& field);
 
 // Sets a setting a running or active mod declares (docs/modding/reference/mods.md#settings): `value` must be a value of the field.
 // It is written to openbeach.ini under [Mod.<mod>] (not in scripted test runs, which leave the player's file alone) and the scripts get

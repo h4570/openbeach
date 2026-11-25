@@ -623,8 +623,24 @@ void Update(Game* game)
 // (day/night tint with a world and bNIGHT_DAY_ENABLED), the state's post-render pass, the GUI overlay and the final present.
 void DrawOverlay(ui::GuiManager* gui);
 
+// The mods screen changed the presentation mods (gui/mods_screen.h): their text and GUI patches change the language table and
+// the menus, so both are built again here, outside the GUI's update, and the screen opens again.
+std::string g_frontEndReloadDialog;
+
+void ReloadFrontEndNow(Game* game)
+{
+    const std::string dialog = std::move(g_frontEndReloadDialog);
+    g_frontEndReloadDialog.clear();
+    const std::string language = ui::text_table::Language();
+    game->m_textTable = game::Member<text::Table>(ui::text_table::Create(language.c_str()), {&ui::text_table::Destroy});
+    ui::GuiManager* gui = game->m_guiManager.get();
+    gui->LoadScript(game->m_currentState->GetGuiScript());
+    gui->ShowDialog(dialog.c_str(), nullptr, false);
+}
+
 void Render(Game* game)
 {
+    if (!g_frontEndReloadDialog.empty()) ReloadFrontEndNow(game);
     if (game->m_guiReloadPending) {
         const char* script = game->m_currentState->GetGuiScript();
         game->m_guiManager.get()->LoadScript(script);
@@ -1084,6 +1100,10 @@ bool ReturnToMainMenu()
 void RequestReturnToMainMenu()
 {
     SetReturn(Current(), 1);
+}
+void ReloadFrontEnd(const char* dialog)
+{
+    g_frontEndReloadDialog = dialog;
 }
 void CancelReturnToMainMenu()
 {

@@ -1,7 +1,8 @@
 # Switching mods on
 
-A mod is a folder `mods/<id>/` in the game directory. The game uses only the mods listed in the `Active` key of the
-`[Mods]` section of `openbeach.ini`, in the order they are listed. The default is no mod.
+A mod is a folder `mods/<id>/` in the game directory. The easiest way to switch mods on and off, reorder them and edit their
+settings is the **Mods** screen in the main menu ([mods-screen.md](mods-screen.md)). The game keeps that list in the `Active` key
+of the `[Mods]` section of `openbeach.ini`, in load order; the default is no mod.
 
 ## Turn a mod on
 Add its id to the list, separated by commas, and start the game:
@@ -24,6 +25,7 @@ The game stops at start-up and names the mod and the reason when a listed mod:
 - was made for another pack;
 - is listed twice;
 - needs another mod that is not in the list, or that comes after it;
+- does not work with another active mod (`conflicts` in `mod.json`);
 - needs a newer version of the game (its script API).
 
 To get the game running again, remove that mod's id from `Active` (or fix the order or the missing mod it names), then start

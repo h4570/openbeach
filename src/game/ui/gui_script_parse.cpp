@@ -4,6 +4,7 @@
 #include "game/ui/gui_script.h"
 #include "game/ui/gui_script_leaves.h"
 #include "game/ui/gui_script_state.h"
+#include "game/ui/own_widgets.h"
 
 #include "game/game/game_accessors.h"
 #include "game/ui/gui_containers_types.h"
@@ -118,6 +119,7 @@ bool ParseWord(GuiScript& s)
     for (uint32_t id = 0; id < kCommandNames.size(); ++id) {
         if (std::strcmp(name, kCommandNames[id]) == 0) return gui_script_leaves::ParseCommand(&s, static_cast<int32_t>(id));
     }
+    if (own_widgets::Parse(s, name)) return false;
     if (!s.m_parent) {
         Fatal(kNoParent, s.m_cursor);
         return false;

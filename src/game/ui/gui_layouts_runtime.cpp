@@ -7,6 +7,8 @@
 
 #include "game/game/diagnostics.h"
 #include "game/ui/gui_layouts.h"
+#include "game/ui/gui_patch.h"
+#include "game/ui/own_layer.h"
 #include "core/log.h"
 #include "core/wide_path.h"
 
@@ -88,12 +90,20 @@ std::string ReadPatchedScript(const char* file, int screenWidth, int screenHeigh
         }
     }
     if (layout.empty()) return base;
+    const auto own = obl::own_layer::GuiPatches(layout);
     const auto patchFiles = obl::gui_patch::FindPatchFiles(g_pack, layout);
-    if (patchFiles.empty()) return base;
+    if (patchFiles.empty() && own.empty()) return base;
     obl::gui_patch::ApplyResult result;
     std::string error;
-    if (!obl::gui_patch::ApplyPackPatches(g_pack, layout, base, obl::pack_path::ActiveMods(), screenWidth, screenHeight, result, error))
-        Require(error);
+    const auto& mods = obl::pack_path::ActiveMods();
+    if (!obl::gui_patch::ApplyPackPatches(g_pack, layout, base, mods, screenWidth, screenHeight, result, error, own)) {
+        if (own.empty()) Require(error);
+        // A pack whose menu the own layer does not fit (no MainMenu dialog, a dialog of the same name) still starts, without the
+        // mods screen; a mod's own error stops the game as before.
+        OBL_LOG("own layer: %s; %s loads without it", error.c_str(), layout.c_str());
+        if (patchFiles.empty()) return base;
+        if (!obl::gui_patch::ApplyPackPatches(g_pack, layout, base, mods, screenWidth, screenHeight, result, error)) Require(error);
+    }
     bindings = std::move(result.bindings);
     return result.scriptText;
 }

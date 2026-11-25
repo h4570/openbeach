@@ -412,3 +412,57 @@ OBL_TEST_CASE("mod_pack.a_mod_declares_actions_and_bindings_and_may_take_over_an
     WriteManifest(game.path, "only_bind", "\"pack\":\"l0\",\"bindings\":{\"game.pause\":\"F10\"}");
     OBL_CHECK(Accepted(game.path, "l0", "only_bind", error));
 }
+
+OBL_TEST_CASE("mod_pack.mods_that_name_each_other_in_conflicts_never_start_together")
+{
+    test::TempPath game("mod-conflicts");
+    const auto manifest = [&](const std::string& id, const std::string& extra) {
+        Write(game.path / "mods" / id / "mod.json",
+                "{\"format\":\"obl.mod\",\"version\":1,\"id\":\"" + id + "\",\"title\":\"T\",\"mod_version\":\"1\",\"pack\":\"l0\"" +
+                        extra + "}");
+    };
+    manifest("camera", ",\"conflicts\":[\"zoom\"]");
+    manifest("zoom", "");
+    manifest("other", "");
+    std::vector<mod_pack::ActiveMod> mods;
+    std::string error;
+    // Either order, and whichever of the two names the other.
+    const std::vector<std::string> first = {"camera", "zoom"}, second = {"zoom", "other", "camera"};
+    OBL_CHECK(!mod_pack::CheckActive(game.path, "l0", first, mods, error));
+    OBL_CHECK(error.find("\"zoom\"") != std::string::npos && error.find("conflicts") != std::string::npos);
+    OBL_CHECK(!mod_pack::CheckActive(game.path, "l0", second, mods, error));
+    OBL_CHECK(error.find("mod \"camera\"") != std::string::npos);
+    const std::vector<std::string> fine = {"camera", "other"};
+    OBL_CHECK(mod_pack::CheckActive(game.path, "l0", fine, mods, error));
+
+    mod_pack::Manifest parsed;
+    const auto parse = [&](const std::string& extra) {
+        return mod_pack::ParseManifest(
+                "{\"format\":\"obl.mod\",\"version\":1,\"id\":\"m\",\"title\":\"T\",\"mod_version\":\"1\",\"pack\":\"l0\"" + extra + "}",
+                parsed, error);
+    };
+    OBL_CHECK(parse(",\"conflicts\":[\"a\",\"b\"]") && parsed.conflictingMods.size() == 2);
+    OBL_CHECK(!parse(",\"conflicts\":\"a\"") && error.find("conflicts") != std::string::npos);
+    OBL_CHECK(!parse(",\"conflicts\":[\"m\"]") && error.find("itself") != std::string::npos);
+    OBL_CHECK(!parse(",\"requires\":[\"a\"],\"conflicts\":[\"a\"]") && error.find("both") != std::string::npos);
+}
+
+OBL_TEST_CASE("mod_pack.list_installed_reads_every_mod_directory")
+{
+    test::TempPath game("mod-installed");
+    MakeMod(game.path, "beta");
+    MakeMod(game.path, "alpha", "base");
+    Write(game.path / "mods" / "broken" / "mod.json", "{");
+    std::filesystem::create_directories(game.path / "mods" / "empty");
+    std::filesystem::create_directories(game.path / "mods" / "Not An Id");
+    const auto installed = mod_pack::ListInstalled(game.path);
+    OBL_CHECK(installed.size() == 4);
+    if (installed.size() != 4) return;
+    OBL_CHECK(installed[0].id == "alpha" && installed[0].valid && installed[0].manifest.packs[0] == "base");
+    OBL_CHECK(installed[1].id == "beta" && installed[1].valid);
+    OBL_CHECK(installed[2].id == "broken" && !installed[2].valid && !installed[2].error.empty());
+    OBL_CHECK(installed[3].id == "empty" && !installed[3].valid && installed[3].error == "no mod.json");
+    // No mods directory at all is no mod.
+    test::TempPath none("mod-installed-none");
+    OBL_CHECK(mod_pack::ListInstalled(none.path).empty());
+}

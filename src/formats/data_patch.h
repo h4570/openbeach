@@ -30,9 +30,21 @@ bool IsSimulationDataPath(const std::filesystem::path& logical);
 std::string PatchFormat(const std::filesystem::path& file);
 inline constexpr const char* kGuiPatchFormat = "obl.gui_patch";
 
+// A value a later mod sets over an earlier one's: the later mod wins (docs/modding/reference/data-patches.md).
+struct Conflict {
+    std::string winner, loser; // mod ids
+    std::string file; // logical path of the patched file
+    std::string path; // JSON pointer of the value
+    std::string text; // "<winner, file, op, path> overrides <loser, ...>", the start-up log's line
+};
+
 // Applies the `<logical>.patch.json` files of `mods` (load order) to the files they name and checks each result against
 // its schema. All documents are built before any is published, so a failure keeps the previous state. `conflicts` lists
 // each value a later mod sets over an earlier one's, naming both; `error` names the mod, the file, the op and the path.
 bool Prepare(const std::filesystem::path& pack, std::span<const std::string> mods, std::vector<std::string>& conflicts, std::string& error);
+
+// What Prepare would find for `mods`, without publishing anything: the mods screen lists the conflicts of a list it has not applied.
+bool FindConflicts(
+        const std::filesystem::path& pack, std::span<const std::string> mods, std::vector<Conflict>& conflicts, std::string& error);
 
 } // namespace obl::data_patch

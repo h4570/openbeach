@@ -23,6 +23,12 @@ def check(run: Path) -> None:
                       if caption.getpixel((px, py)) == 255]
             background = screen.getpixel((x + 3, y + 3))
             assert bright and min(map(sum, bright)) > sum(background) + 100, f"missing caption: {name}"
+    # The engine's own Mods tab (top edge, centred at x=410, y=0..30 on L0) must draw its label text.
+    menu_screen = Image.open(run / "captures" / "l0_menu_labels.png").convert("RGB")
+    mods_bg = menu_screen.getpixel((330, 10))
+    mods_bright = [menu_screen.getpixel((x, y)) for y in range(4, 26) for x in range(360, 460)
+                   if sum(menu_screen.getpixel((x, y))) > sum(mods_bg) + 150]
+    assert len(mods_bright) >= 30, f"Mods button label not drawn (only {len(mods_bright)} bright pixels)"
     world = Image.open(run / "captures" / "l0_menu_world.png").convert("RGB")
     # These rows were excluded from world rendering and retained the scenario buttons/loading gradient.
     # Outside the HUD controls, the opaque own bar must paint every interior row identically.
