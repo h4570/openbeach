@@ -36,6 +36,14 @@ struct FakeHost : mods::ScriptHost {
         const auto it = settings.find(mod + "." + key);
         return it == settings.end() ? std::nullopt : std::optional<std::string>(it->second);
     }
+    std::vector<mods::ActionInfo> actions;
+    std::vector<std::pair<std::string, std::string>> binds;
+    std::vector<mods::ActionInfo> Actions() override { return actions; }
+    std::string BindAction(const std::string& name, const std::string& keys) override
+    {
+        binds.emplace_back(name, keys);
+        return keys == "refused" ? "no way" : std::string();
+    }
     std::vector<mods::SyntheticInput> inputs;
     std::optional<mods::CameraView> camera;
     std::vector<mods::GuiRequest> gui;
@@ -452,6 +460,33 @@ OBL_TEST_CASE("script_runtime.mod_settings_live_in_their_own_section_of_openbeac
     OBL_CHECK(game::start_settings::Load(game.path, game.path) == before);
     OBL_CHECK(!before.windowed);
     OBL_CHECK_EQ(before.scale, 2.0);
+}
+
+OBL_TEST_CASE("script_runtime.actions_are_listed_and_rebound_through_the_host")
+{
+    test::TempPath game("scripts-actions");
+    auto mod = Mod(game.path, "m", R"(
+        function on_start()
+          local list = obl.actions.list()
+          print(#list, list[1].name, list[1].label, list[1].held, table.concat(list[1].keys, "+"), table.concat(list[1].defaults, "+"))
+          print(obl.actions.bind("game.pause", "F10"))
+          print(obl.actions.bind("game.pause", {"F10", "F11"}))
+          print(obl.actions.bind("game.pause", {}))
+          print(obl.actions.bind("game.pause", "refused"))
+          print(pcall(obl.actions.bind, "game.pause", {1}))
+          print(pcall(obl.actions.bind, "game.pause"))
+        end)");
+    FakeHost host;
+    host.actions = {{"camera.left", "Scroll left", "", true, {"Left", "A"}, {"Left"}}};
+    mods::ScriptRuntime runtime(host);
+    runtime.Start(std::vector<mods::ScriptMod>{mod});
+    OBL_CHECK(host.Logged("mod m: 1	camera.left	Scroll left	true	Left+A	Left"));
+    OBL_CHECK(host.Logged("mod m: true"));
+    OBL_CHECK(host.Logged("mod m: false	no way"));
+    const std::vector<std::pair<std::string, std::string>> binds = {
+            {"game.pause", "F10"}, {"game.pause", "F10, F11"}, {"game.pause", "none"}, {"game.pause", "refused"}};
+    OBL_CHECK(host.binds == binds); // a list becomes a `[Keys]` line, an empty list unbinds
+    OBL_CHECK(runtime.RunningMods().size() == 1); // the bad calls were caught by their pcall
 }
 
 OBL_TEST_CASE("script_runtime.a_failing_on_setting_switches_off_only_its_mod")

@@ -1,0 +1,11 @@
+{
+  "format": "obl.mod",
+  "version": 1,
+  "id": "l0_keys",
+  "title": "L0 key bindings test mod",
+  "mod_version": "1.0.0",
+  "pack": "l0",
+  "scope": "presentation",
+  "api": 1,
+  "actions": [{ "id": "probe", "label": "Probe", "keys": "F9" }]
+}

@@ -24,4 +24,17 @@ bool WriteModSettingFile(const std::filesystem::path& file, const std::string& m
     return ini::WriteString(file, "Mod." + mod, key, value);
 }
 
+std::optional<std::string> ReadKeyBindingFile(const std::filesystem::path& file, const std::string& action)
+{
+    // An empty value counts as unset, like a missing line.
+    const std::string value = ini::ReadString(file, "Keys", action, "", kMaxText);
+    if (value.empty()) return std::nullopt;
+    return value;
+}
+
+bool WriteKeyBindingFile(const std::filesystem::path& file, const std::string& action, const std::string& keys)
+{
+    return ini::WriteString(file, "Keys", action, keys);
+}
+
 } // namespace obl::mods

@@ -1,0 +1,76 @@
+# Listing and rebinding actions from a script (docs/modding/reference/actions.md#rebinding-from-a-script): the test mod tests/mods/l0_keys
+# lists the table, moves game.pause to F10, sees a key another action holds refused, an unknown key and an unknown action refused,
+# resets, unbinds, and finds the binding again after the table is built anew (`reload-keys`: what a restart does). Its action `probe`
+# (F9) runs each step. SDL scancodes: P 19, F9 66, F10 67.
+# @env OBL_PACK=l0
+# @env OBL_MODS=l0_keys
+# @timeout 120
+# @expect-log mod l0_keys: listed \d+ has_probe=true pause_held=false
+# @expect-log mod l0_keys: game.pause keys=P defaults=P
+# @expect-log mod l0_keys: camera.left keys=Left defaults=Left
+# @expect-log mod l0_keys: bind pause F10: true
+# @expect-log mod l0_keys: game.pause keys=F10 defaults=P
+# @expect-log mod l0_keys: bind speed_up F10: false key "F10" is bound to "game.pause"
+# @expect-log mod l0_keys: bind speed_up unknown: false no key is named "NoSuchKey"
+# @expect-log mod l0_keys: bind no.such: false no action is named "no.such"
+# @expect-log mod l0_keys: game.speed_up keys=Equals defaults=Equals
+# @expect-log mod l0_keys: bind pause default: true
+# @expect-log mod l0_keys: bind music none: true
+# @expect-log mod l0_keys: panel.music keys= defaults=M
+# @expect-log mod l0_keys: bind music list: true
+# @expect-log mod l0_keys: panel.music keys=F6\+F7 defaults=M
+# @expect-log mod l0_keys: bind pause for restart: true
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario 1
+await gameplay
+step 5
+# probe 1 and 2: the list, then the rebinding with its refusals.
+sdl-key 66 1
+step 3
+sdl-key 66 0
+step 3
+sdl-key 66 1
+step 3
+sdl-key 66 0
+step 3
+# game.pause is F10 now: P does nothing, F10 pauses.
+sdl-key 19 1
+step 3
+sdl-key 19 0
+step 3
+expect paused 0
+sdl-key 67 1
+step 3
+sdl-key 67 0
+step 3
+expect paused 1
+sdl-key 67 1
+step 3
+sdl-key 67 0
+step 3
+expect paused 0
+# probe 3: reset, unbind, a list of keys, and F10 again for the restart.
+sdl-key 66 1
+step 3
+sdl-key 66 0
+step 3
+reload-keys
+step 3
+# probe 4 after the restart: the binding is still there, and it still works.
+sdl-key 66 1
+step 3
+sdl-key 66 0
+step 3
+sdl-key 19 1
+step 3
+sdl-key 19 0
+step 3
+expect paused 0
+sdl-key 67 1
+step 3
+sdl-key 67 0
+step 3
+expect paused 1
+bind-key game.pause default
+quit

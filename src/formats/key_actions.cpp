@@ -114,6 +114,32 @@ bool ParseKeys(std::string_view text, KeyList& keys, std::string& error)
     return true;
 }
 
+bool CheckBind(const Table& current, const Table& defaults, std::string_view action, std::string_view keys, std::string& error)
+{
+    const auto find = [&](const Table& table) -> const Entry* {
+        for (const Entry& entry : table.entries)
+            if (entry.name == action) return &entry;
+        return nullptr;
+    };
+    if (!find(current)) {
+        error = "no action is named " + Quoted(action);
+        return false;
+    }
+    KeyList wanted;
+    if (ascii::EqualsNoCase(keys, "default")) {
+        if (const Entry* entry = find(defaults)) wanted = entry->keys;
+    } else if (!ParseKeys(keys, wanted, error)) {
+        return false;
+    }
+    for (const uint8_t key : wanted)
+        for (const Entry& other : current.entries)
+            if (other.name != action && std::find(other.keys.begin(), other.keys.end(), key) != other.keys.end()) {
+                error = "key " + Quoted(input::KeyName(key)) + " is bound to " + Quoted(other.name);
+                return false;
+            }
+    return true;
+}
+
 Table Resolve(std::span<const ModKeys> mods, const PlayerLookup& player)
 {
     struct Work {

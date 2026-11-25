@@ -120,6 +120,8 @@ an error of the script, which switches off the mod like any other error.
 | `obl.log(...)` | writes its arguments, separated by spaces, to the game log with the mod's id |
 | `obl.command(name, fields)` | submits a game command (below) in its text form's name with a table of fields, e.g. `obl.command("set-game-speed", { level = 2 })`; booleans become `0`/`1`. It runs at the start of the next gameplay tick; outside gameplay the game drops it. A command off the list, an unknown or missing field is an error |
 | `obl.settings.get(id)` | the player's value of a setting the mod declares in `mod.json`, or its default: a boolean, a string or a number ([Settings](#settings)); another id is an error |
+| `obl.actions.list()` | every named action, the engine's and the mods' ([actions.md](actions.md#rebinding-from-a-script)), as a list of tables: `name` (`"game.pause"`, `"<mod>.<id>"`), `label`, `mod` (empty for an engine action), `held` (acts while its key is down), `keys` and `defaults` (lists of key names: what acts now, and what would with no `[Keys]` line) |
+| `obl.actions.bind(name, keys)` | the player's `[Keys]` binding of an action in `openbeach.ini`: `keys` is a key name, a list of names, `"none"` or `"default"`; answers `true`, or `false` and the reason (unknown action or key, a key another action holds). Presentation only |
 | `obl.store.get(key)` | the value stored under `key`, or `nil` |
 | `obl.store.set(key, value)` | stores a boolean, number or string under `key` (1 to 256 bytes); `nil` removes it |
 
