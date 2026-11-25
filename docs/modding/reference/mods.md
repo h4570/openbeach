@@ -66,7 +66,7 @@ The active mods and their order come from the `Active` key of the `[Mods]` secti
 it for tests and tools, also when it is empty. For players, see [switching-mods.md](../players/switching-mods.md).
 
 ## Layers
-`pack_path` resolves a logical path through the first existing regular file of: the active mods from last to first,
+`pack_path` resolves a logical path through the first existing regular file of: the active mods from last to first (each mod's shipped files in `mods/<id>/`, then its recipe-derived cache in `mod-cache/<id>/`, see [recipes.md](recipes.md)),
 the legacy `<game dir>/mod/` directory, then the pack. `ListStems`, sprite enumeration and the sound bank merge all layers
 and list a name once. The legacy `mod/` directory keeps working unchanged.
 
