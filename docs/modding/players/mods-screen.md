@@ -6,6 +6,9 @@ and check for conflicts without editing `openbeach.ini`.
 A mod is a folder `mods/<id>/` in the game directory with a `mod.json` manifest beside its files.
 See [installing and finding your mods](installing.md) for the game directory on your platform.
 
+The screen takes its colours from the main menu buttons of the pack you play: a pack with coloured button labels gets rounded
+boxes and pills in that colour, and any other pack gets a plain flat style. Nothing of the pack is copied or stored.
+
 ## Installing and removing mods
 Choose **Install from file** and select a ZIP containing one mod folder, with its `mod.json` directly inside that folder.
 On desktop and in the browser, you can also drop the ZIP onto the game while **Mods** is open. Android opens the system
