@@ -74,6 +74,13 @@ std::optional<std::filesystem::path> ModDirectory(const std::filesystem::path& g
     return gameDirectory / "mods" / std::string(id);
 }
 
+std::optional<std::filesystem::path> ModCacheDirectory(const std::filesystem::path& gameDirectory, std::string_view id)
+{
+    const auto directory = PackDirectory(id);
+    if (!directory) return std::nullopt;
+    return gameDirectory / "mod-cache" / std::string(id);
+}
+
 std::vector<std::string> ParseModList(std::string_view list)
 {
     std::vector<std::string> ids;
@@ -102,9 +109,11 @@ static std::vector<std::filesystem::path> Layers(const std::filesystem::path& pa
 {
     std::vector<std::filesystem::path> layers;
     const auto game = GameDirectory(pack);
-    for (auto it = mods.rbegin(); it != mods.rend(); ++it)
+    for (auto it = mods.rbegin(); it != mods.rend(); ++it) {
         // An id that is not valid is refused by the start-up check; here it simply names no layer.
         if (const auto directory = ModDirectory(game, *it)) layers.push_back(*directory);
+        if (const auto cache = ModCacheDirectory(game, *it)) layers.push_back(*cache);
+    }
     layers.push_back(game / "mod");
     layers.push_back(pack);
     return layers;

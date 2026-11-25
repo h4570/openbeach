@@ -296,6 +296,23 @@ bool IsFile(const std::filesystem::path& path)
     return std::filesystem::is_regular_file(path, ec);
 }
 
+// Whether a recipe file's declared output is a presentation-only image (overlay or menu screen PNG).
+// Screen pictures and overlay images are only drawn by the UI and never read by the simulation or its RNG.
+bool PresentationRecipeOutputAllowed(const std::filesystem::path& file)
+{
+    std::ifstream in(file, std::ios::binary);
+    if (!in) return false;
+    const auto doc = nlohmann::json::parse(in, nullptr, false);
+    if (!doc.is_object() || doc.value("format", "") != "obl.asset_recipe") return false;
+    const auto out = doc.find("output");
+    if (out == doc.end() || !out->is_string()) return false;
+    const std::string output = out->get<std::string>();
+    if (!output.ends_with(".png") || output.find("..") != std::string::npos) return false;
+    if (output.starts_with("overlay/") && output.find('/', 8) == std::string::npos) return true;
+    if (output.starts_with("images/screens/") && output.find('/', 15) == std::string::npos) return true;
+    return false;
+}
+
 // Whether `relative` (a generic path inside the mod) is a file a presentation mod may ship: the manifest, its scripts, text
 // patches (the text loader lets them only add keys) and documents at the top. Anything else may reach the simulation: a sprite's
 // frame count times an animation, a sound bank's size changes a random pick.
@@ -312,6 +329,9 @@ bool PresentationMayShip(const std::filesystem::path& file, const std::string& r
     // Images for the scripts' overlay: only obl.overlay.image reads overlay/, and no pack has that directory, so nothing is shadowed.
     if (relative.starts_with(std::string(kOverlayImages) + "/") && relative.find('/', 8) == std::string::npos && relative.ends_with(".png"))
         return true;
+    // Asset recipes whose output is a screen picture or overlay PNG cannot reach the simulation.
+    if (relative.starts_with("recipes/") && relative.find('/', 8) == std::string::npos && relative.ends_with(".json"))
+        return PresentationRecipeOutputAllowed(file);
     if (relative.find('/') == std::string::npos) {
         const std::string extension = std::filesystem::path(relative).extension().string();
         return extension.empty() || extension == ".md" || extension == ".txt";
@@ -471,8 +491,8 @@ bool CheckActive(const std::filesystem::path& gameDirectory, std::string_view pa
         if (mod.manifest.scope == Scope::Presentation)
             if (const std::string file = FirstRefusedFile(*directory); !file.empty())
                 return fail("a presentation mod may not ship \"" + file +
-                        "\" (only scripts/presentation/, overlay/<name>.png, text/<lang>.patch.json, gui/<name>.patch.json of presentation "
-                        "data and documents at the top)");
+                        "\" (only scripts/presentation/, overlay/<name>.png, recipes/<name>.json for presentation images, "
+                        "text/<lang>.patch.json, gui/<name>.patch.json of presentation data and documents at the top)");
         if (mod.manifest.api > kPresentationApi)
             return fail("needs the presentation script API " + std::to_string(mod.manifest.api) + ", this game has " +
                     std::to_string(kPresentationApi) + "; update the game");

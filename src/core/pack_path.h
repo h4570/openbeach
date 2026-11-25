@@ -42,6 +42,9 @@ std::filesystem::path GameDirectory(const std::filesystem::path& pack);
 // `<game dir>/mods/<id>`; nullopt when `id` is not a valid id (the rules of PackDirectory).
 std::optional<std::filesystem::path> ModDirectory(const std::filesystem::path& gameDirectory, std::string_view id);
 
+// `<game dir>/mod-cache/<id>`: recipe-derived assets cached next to the mod; nullopt when `id` is not a valid id.
+std::optional<std::filesystem::path> ModCacheDirectory(const std::filesystem::path& gameDirectory, std::string_view id);
+
 // The ids in a comma separated list (`a,b`), blanks around an id dropped, empty items skipped. Not validated.
 std::vector<std::string> ParseModList(std::string_view list);
 

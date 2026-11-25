@@ -105,3 +105,23 @@ OBL_TEST_CASE("pack_path.selection_names_a_directory_under_packs")
     OBL_CHECK(error.find("not a pack id") != std::string::npos);
     SetPackEnv("");
 }
+
+OBL_TEST_CASE("pack_path.mod_cache_layer_resolves_after_shipped_mod_files")
+{
+    test::TempPath game("pack-path-mod-cache");
+    const auto pack = game.path / "packs" / "l0";
+    Touch(pack / "images" / "screens" / "title.png");
+    Touch(game.path / "mod-cache" / "wide" / "images" / "screens" / "title.png");
+    Touch(game.path / "mod-cache" / "wide" / "images" / "screens" / "other.png");
+    Touch(game.path / "mods" / "wide" / "images" / "screens" / "other.png");
+
+    const std::vector<std::string> active = {"wide"};
+    // Cached recipe output shadows the pack.
+    OBL_CHECK(pack_path::Resolve(pack, "images/screens/title.png", active) ==
+            game.path / "mod-cache" / "wide" / "images" / "screens" / "title.png");
+    // Shipped mod file still beats cached recipe output.
+    OBL_CHECK(pack_path::Resolve(pack, "images/screens/other.png", active) ==
+            game.path / "mods" / "wide" / "images" / "screens" / "other.png");
+    // Without active mods, mod-cache is ignored.
+    OBL_CHECK(pack_path::Resolve(pack, "images/screens/title.png", {}) == pack / "images" / "screens" / "title.png");
+}
