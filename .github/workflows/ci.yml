@@ -98,6 +98,8 @@ jobs:
   sim:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
+    outputs:
+      catalog_signed: ${{ steps.official_catalog.outputs.signed }}
     env:
       OBL_SIM_ONLY: "1"
       OBL_SIM_BUILD: ${{ github.workspace }}/build/linux-sim-x64
@@ -129,9 +131,43 @@ jobs:
         run: python3 tools/tests/check_mods_engine.py "$OBL_SIM_BUILD/bin/obl-sim"
       - name: Official mod tests on L0
         run: |
-          cmake --build "$OBL_SIM_BUILD" --target OpenBeach
+          cmake --build "$OBL_SIM_BUILD" --target OpenBeach obl_catalog_sign
           cp -R data/mods build/l0-run/mods
           python3 tools/obl_sim_tests.py --windowed --no-build --game-dir build/l0-run --filter 'l0_official_*'
+      - name: Official mod catalog
+        id: official_catalog
+        env:
+          OBL_CATALOG_PRIVATE_KEY: ${{ secrets.OBL_CATALOG_PRIVATE_KEY }}
+        run: |
+          python3 -m unittest tools/tests/test_build_catalog.py
+          if [ -n "$OBL_CATALOG_PRIVATE_KEY" ]; then
+            python3 tools/build_catalog.py \
+              --mods-dir data/mods \
+              --out-dir build/official-catalog \
+              --signer "$OBL_SIM_BUILD/bin/obl_catalog_sign" \
+              --check-engine "$OBL_SIM_BUILD/bin/obl-sim" \
+              --game-dir build/l0-run \
+              --pack l0
+            echo "signed=true" >> "$GITHUB_OUTPUT"
+          else
+            python3 tools/build_catalog.py \
+              --mods-dir data/mods \
+              --out-dir build/official-catalog \
+              --signer "$OBL_SIM_BUILD/bin/obl_catalog_sign" \
+              --check-engine "$OBL_SIM_BUILD/bin/obl-sim" \
+              --game-dir build/l0-run \
+              --pack l0 \
+              --ephemeral-key
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Official catalog artifact
+        if: steps.official_catalog.outputs.signed == 'true'
+        uses: actions/upload-artifact@v6
+        with:
+          name: official-catalog
+          path: build/official-catalog
+          if-no-files-found: error
+          retention-days: 14
       - name: Test logs
         if: failure()
         uses: actions/upload-artifact@v6
@@ -195,11 +231,6 @@ jobs:
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 14
-      - name: Pages artifact
-        if: inputs.deploy
-        uses: actions/upload-pages-artifact@v5
-        with:
-          path: build/wasm/site
       - name: Test logs
         if: failure()
         uses: actions/upload-artifact@v6
@@ -221,5 +252,20 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - name: Download browser site
+        uses: actions/download-artifact@v6
+        with:
+          name: browser-site
+          path: build/pages-site
+      - name: Download official mod catalog
+        if: needs.sim.outputs.catalog_signed == 'true'
+        uses: actions/download-artifact@v6
+        with:
+          name: official-catalog
+          path: build/pages-site/mods
+      - name: Pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: build/pages-site
       - id: deployment
         uses: actions/deploy-pages@v5
