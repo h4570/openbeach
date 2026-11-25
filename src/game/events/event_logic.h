@@ -82,6 +82,7 @@ template<class Env> void Update(Env& env)
         }
         if (endDay < day || (endDay == day && !(endHour >= hour))) {
             Finish(env, event, index);
+            if constexpr (requires { env.OnDisasterFinished(event); }) env.OnDisasterFinished(event);
             env.RemoveActive(i);
             if (i != static_cast<uint32_t>(m.numCurEvents - 1)) --i;
             --m.numCurEvents;
@@ -91,6 +92,7 @@ template<class Env> void Update(Env& env)
         const auto& event = env.Event(m.nextEvent);
         if (day < event.day || (day == event.day && !(hour > event.time))) break;
         Start(env, event, m.nextEvent);
+        if constexpr (requires { env.OnDisasterStarted(event); }) env.OnDisasterStarted(event);
         if (event.type != 4) {
             env.AddActive(m.nextEvent);
             ++m.numCurEvents;

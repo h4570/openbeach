@@ -1,0 +1,25 @@
+#obl-script 1 world
+// Second script in the same mod: reads and updates shared_sum from a_first.wsc while keeping its own ModVar.v01 separate.
+State STATE_WORLD_STARTUP
+	OnEntry
+		Set ModVar.v01 99;
+		Add ModVar.l0_world_vars_a.shared_sum 7;
+		ChangeState STATE_ACTIVE;
+	End
+	OnUpdate
+	End
+	OnExit
+	End
+End
+
+State STATE_ACTIVE
+	OnEntry
+	End
+	OnUpdate
+	End
+	OnEvent DayStarted
+		Add ModVar.l0_world_vars_a.shared_sum 3;
+	End
+	OnExit
+	End
+End

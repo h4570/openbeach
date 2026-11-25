@@ -197,6 +197,9 @@ void SetBrokenOf(Building& building)
     StampFault(building);
     kRepairAddJob(world->m_repairManager, static_cast<int32_t>(building.m_id), 2);
     building.m_calledForRepair = 1;
+    if (world && !world->m_startup)
+        world::DispatchModWorldEvent(
+                *world, world_script::WorldEvent::BuildingBroken, {building.m_definition->m_key, static_cast<int32_t>(building.m_id), 0});
 }
 
 // "<building name> broke down": the format FEEDBACK_BUILDING_BROKEN with the name BUILDING_NAME_<key>, through the game's own (msvcrt) swprintf.
@@ -237,6 +240,8 @@ LightningStep ApplyLightningStep(Building& building)
         kRepairAddJob(world->m_repairManager, static_cast<int32_t>(building.m_id), 2);
         building.m_calledForRepair = 1;
     }
+    world::DispatchModWorldEvent(
+            *world, world_script::WorldEvent::BuildingBroken, {building.m_definition->m_key, static_cast<int32_t>(building.m_id), 0});
     return decision.step;
 }
 
@@ -504,7 +509,13 @@ void CountUpdate(const UpdateReport& report)
 char RunUpdate(Building* building)
 {
     g_update.Count();
-    CountUpdate(UpdateOfBuilding(*building));
+    const UpdateReport report = UpdateOfBuilding(*building);
+    CountUpdate(report);
+    if ((static_cast<uint32_t>(report.state) == kBuildingStateNull || static_cast<uint32_t>(report.state) == kBuildingStateOccupied) &&
+            report.wear.step == LightningStep::Break) {
+        world::DispatchModWorldEvent(*game::GetWorld(), world_script::WorldEvent::BuildingBroken,
+                {building->m_definition->m_key, static_cast<int32_t>(building->m_id), 0});
+    }
     return 1;
 }
 
@@ -896,10 +907,15 @@ char RunReceiveMessage(Building* building, Message* message)
     case messages::MT_REPAIR: {
         g_receive.Count();
         LifecycleEnv env(*building);
+        const uint32_t previousWear = building->m_RepairState;
         const RepairReport report = RepairMessage(env, *building, *message, LifecycleWorldOf(*GetWorld()));
         (report.more ? g_receiveRepairMore : g_receiveRepairDone).Count();
         if (report.notified) g_receiveRepairNotified.Count();
         if (report.noPower) g_receiveRepairNoPower.Count();
+        if (previousWear > 0 && report.finished) {
+            world::DispatchModWorldEvent(*game::GetWorld(), world_script::WorldEvent::BuildingRepaired,
+                    {building->m_definition->m_key, static_cast<int32_t>(building->m_id), report.notified ? 1 : 0});
+        }
         return 0;
     }
     case messages::MT_EVENT_FINISHED:
@@ -1049,7 +1065,9 @@ char RunReceiveMessage(Building* building, Message* message)
         LifecycleEnv env(*building);
         const bool built = BuildersLeftBaseplate(env, *building, *message);
         (built ? g_receiveBuilt : g_receiveRemoved).Count();
-        if (built) world::DispatchModWorldEvent(*game::GetWorld(), world_script::WorldEvent::BuildingFinished);
+        world::DispatchModWorldEvent(*game::GetWorld(),
+                built ? world_script::WorldEvent::BuildingFinished : world_script::WorldEvent::BuildingDemolished,
+                {building->m_definition->m_key, static_cast<int32_t>(building->m_id), 0});
         return 0; // ditto
     }
     default:
@@ -1235,7 +1253,12 @@ void BuildingSpawnTables(Building* building)
 bool BuildingHireStaff(Building* building)
 {
     g_hire.Count();
-    return HireStaffOf(*building);
+    const bool hired = HireStaffOf(*building);
+    if (hired && game::GetWorld()) {
+        world::DispatchModWorldEvent(*game::GetWorld(), world_script::WorldEvent::StaffHired,
+                {building->m_definition->m_key, static_cast<int32_t>(building->m_id), 0});
+    }
+    return hired;
 }
 void BuildingSpawnInitialStaff(Building* building)
 {
@@ -1250,6 +1273,10 @@ void BuildingDismissStaff(Building* building, uint32_t staffId)
             DismissStaff(env, building->m_staff, building->m_numMalestaff, building->m_numFemalestaff, static_cast<int32_t>(staffId));
     if (result.found) g_dismissFound.Count();
     if (result.female) g_dismissFemale.Count();
+    if (result.found && game::GetWorld()) {
+        world::DispatchModWorldEvent(
+                *game::GetWorld(), world_script::WorldEvent::StaffFired, {building->m_definition->m_key, static_cast<int32_t>(staffId), 0});
+    }
 }
 void BuildingHideStaffAndEvents(Building* building)
 {

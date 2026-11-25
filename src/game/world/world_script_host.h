@@ -4,6 +4,7 @@
 
 #include <cstdint>
 #include <cstring>
+#include <map>
 #include <memory>
 #include <string>
 #include <utility>
@@ -102,6 +103,19 @@ public:
     size_t ModWorldScriptCount() const { return m_modWorldScripts.size(); }
     world_script::ModWorldScript& ModWorldScriptAt(size_t i) { return m_modWorldScripts[i]; }
     const world_script::ModWorldScript& ModWorldScriptAt(size_t i) const { return m_modWorldScripts[i]; }
+    // Shared mod variables (`ModVar.<modId>.<name>`), keyed by mod id then variable name.
+    using SharedModVarMap = std::map<std::string, std::map<std::string, int32_t>>;
+    int32_t GetSharedModVar(const std::string& modId, const std::string& name) const
+    {
+        const auto modIt = m_sharedModVars.find(modId);
+        if (modIt == m_sharedModVars.end()) return 0;
+        const auto varIt = modIt->second.find(name);
+        return varIt == modIt->second.end() ? 0 : varIt->second;
+    }
+    void SetSharedModVar(const std::string& modId, const std::string& name, int32_t value) { m_sharedModVars[modId][name] = value; }
+    const SharedModVarMap& SharedModVars() const { return m_sharedModVars; }
+    SharedModVarMap& SharedModVars() { return m_sharedModVars; }
+
     size_t ScriptProgramCount() const { return m_objectScripts.size(); }
     const std::string& ScriptProgramName(size_t i) const { return m_objectScripts[i].name; }
     script::ScriptProgram& ScriptProgramAt(size_t i) const { return *m_objectScripts[i].script; }
@@ -123,11 +137,13 @@ private:
         for (world_script::ModWorldScript& entry : m_modWorldScripts)
             if (entry.script) env.DestroyWorld(*entry.script);
         m_modWorldScripts.clear();
+        m_sharedModVars.clear();
     }
 
     std::vector<Entry> m_objectScripts;
     std::unique_ptr<world_script::WorldScript> m_worldScript;
     std::vector<world_script::ModWorldScript> m_modWorldScripts;
+    SharedModVarMap m_sharedModVars;
 };
 
 } // namespace obl::world_script_host

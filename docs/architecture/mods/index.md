@@ -75,13 +75,14 @@ each mod and its L0 test.
 
 **Mod world scripts** (`scripts/world/*.wsc` of a world mod, [world-scripts.md](../../modding/reference/world-scripts.md)): the
 script host (`world_script_host.h`) owns them beside the scenario's script as `ModWorldScript` records (a parsed `WorldScript`, its
-own flags and 32 variables); `ForEachWorldScript` gives the order of one tick (scenario first, then load order). While a mod
-script runs, `world_script.cpp` sends `Flag<n>`, `Var<n>` and `ChangeState` to that record (`ChangeState` carries the load-order
-index + 1 in the message's `flags`, `world_receive_logic.h`). The parser adds `OnEvent <Event>` lists; four events
-(`world_script_api.cpp`) are dispatched from the day cycle, construction, guest arrival and the weather schedule, and only to mod
-scripts. `world::CheckModWorldScripts` refuses scripts with winning or losing calls at start-up. The save writes
-`world.mod_scripts` and the world hash a `ModWorldScripts` class only while a mod script is active, so worlds without one keep
-their saves and hashes.
+own flags, 32 `Var<n>` slots and a `namedVars` map) plus `m_sharedModVars` for cross-mod `ModVar.<modId>.<name>` state;
+`ForEachWorldScript` gives the order of one tick (scenario first, then load order). While a mod script runs, `world_script.cpp`
+sends `Flag<n>`, `Var<n>`, `ModVar.<name>` and `ChangeState` to that record (`ChangeState` carries the load-order index + 1 in the
+message's `flags`, `world_receive_logic.h`). The parser stores `OnEvent <Event> [Filter]` handler lists per state; 22 world events
+(`world_script_api.cpp`) are dispatched with `EventKey`, `EventObjectId` and `EventValue` arguments, only to mod scripts.
+`world::CheckModWorldScripts` refuses scripts with winning or losing calls at start-up. The save writes `world.mod_scripts` (with
+optional `named_variables`) and optional `world.mod_variables`, and the world hash writes `ModWorldScripts` (and
+`ModSharedVariables` when non-empty) only while a mod script is active, so worlds without one keep their saves and hashes.
 
 The presentation runtime is pure logic over a `ScriptHost` (log, submit a command, "in a world?", settings, and the input, camera,
 GUI, overlay and game-state calls, each with a do-nothing default), so its unit tests run it with a fake host. The game's host

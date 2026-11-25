@@ -27,11 +27,27 @@ int Find(const std::vector<NamedId>& table, const std::string& token, bool noCas
 bool OwnsData(int kind)
 {
     return kind == 0x36 || kind == 0xe3 || kind == 0xe4 || kind == 0xe8 || kind == 0xbc || kind == 0xc2 || kind == 0xc6 ||
-            (kind >= 0xd2 && kind <= 0xd5);
+            (kind >= 0xd2 && kind <= 0xd5) || kind == kScriptValueModVar || kind == kScriptValueSharedModVar;
 }
 bool TextData(int kind)
 {
-    return kind == 0x36 || (kind >= 0xd2 && kind <= 0xd5);
+    return kind == 0x36 || (kind >= 0xd2 && kind <= 0xd5) || kind == kScriptValueModVar || kind == kScriptValueSharedModVar;
+}
+bool IsModVarSegment(std::string_view segment)
+{
+    if (segment.empty()) return false;
+    for (unsigned char c : segment)
+        if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' || c == '-')) return false;
+    return true;
+}
+bool IsEventCommandKeyword(std::string_view token)
+{
+    static constexpr std::string_view kKeywords[] = {"End", "If", "Else", "Function", "Message", "ChangeState", "Create", "Path", "Grass",
+            "LoadScript", "ShowMenu", "Area", "BoatPoint", "BoatEntry", "BoatExit", "BoatEvent", "CircuitPoint", "Disaster", "Weather",
+            "PlaySound", "MoveCamera", "Add", "Minus", "Divide", "Multiply", "Set"};
+    for (std::string_view kw : kKeywords)
+        if (token == kw || (kw == "Area" && ascii::EqualsNoCase(token, kw))) return true;
+    return false;
 }
 
 class Parser {
@@ -156,6 +172,19 @@ private:
         int id = Find(m_vocabulary.values, token, true);
         if (id >= 0) return {id, nullptr}; // the data word is unset for named values
         if (!token.empty() && token[0] == '"') return {0x36, String(token.size() >= 2 ? token.substr(1, token.size() - 2) : "")};
+        if (token.compare(0, 7, "ModVar.") == 0) {
+            const std::string suffix = token.substr(7);
+            const size_t dot = suffix.find('.');
+            if (dot == std::string::npos) {
+                if (!IsModVarSegment(suffix)) Fail("invalid mod variable name in the world script: " + token);
+                return {kScriptValueModVar, String(suffix)};
+            }
+            const std::string_view modId(suffix.data(), dot);
+            const std::string_view varName(suffix.data() + dot + 1, suffix.size() - dot - 1);
+            if (!IsModVarSegment(modId) || !IsModVarSegment(varName))
+                Fail("invalid shared mod variable name in the world script: " + token);
+            return {kScriptValueSharedModVar, String(suffix)};
+        }
         constexpr const char* prefixes[] = {
                 "RandDWORD", "Random", "Flag", "Var", "ScenarioObj", "BeerActive", "DefaultBeer", "BuildingCount", "EventActive"};
         constexpr int ids[] = {0xe3, 0xe4, 0xbc, 0xc2, 0xc6, 0xd2, 0xd3, 0xd4, 0xd5};
@@ -169,11 +198,11 @@ private:
         if (token.empty() || token[0] < '0' || token[0] > '9') Fail("unrecognized name in the world script: " + token);
         return {0xe8, Number(static_cast<float>(std::atof(token.c_str())))};
     }
-    void AppendList(ScriptCommand*& list, ScriptCommand* node)
+    void AppendList(ScriptCommand*& list, ScriptCommand* node, bool trackLink = true)
     {
         ScriptCommand** slot = &list;
         while (*slot) slot = &(*slot)->m_next;
-        m_links.push_back({slot, *slot});
+        if (trackLink) m_links.push_back({slot, *slot});
         *slot = node;
     }
     void Append(int opcode, void* data)
@@ -197,10 +226,13 @@ private:
                                                   : state.m_handlers[state.m_NumHandlers].m_onSend,
                     node);
             break;
-        case 5:
-            if (m_parsedEvent >= kWorldEventCount) Fail("world event out of range");
-            AppendList(m_script.m_onEvent[m_script.m_currentState][m_parsedEvent], node);
+        case 5: {
+            auto& handlers = m_script.m_onEvent[m_script.m_currentState];
+            if (m_parsedEvent >= handlers.size()) Fail("world event out of range");
+            // Handler entries live in a vector that may reallocate; rollback restores m_onEvent from m_before.
+            AppendList(handlers[m_parsedEvent].commands, node, false);
             break;
+        }
         default: Fail("command added to a list that does not exist");
         }
     }
@@ -260,7 +292,24 @@ private:
         std::string name = Read();
         const auto event = FindWorldEvent(name);
         if (!event) Fail("unrecognized world event in OnEvent: " + name);
-        m_parsedEvent = static_cast<size_t>(*event);
+        // Optional filter token on the same line (e.g. `OnEvent BuildingFinished KIOSK`).
+        std::string filter;
+        size_t probe = m_pos;
+        while (probe < m_text.size() && (m_text[probe] == ' ' || m_text[probe] == '\t')) ++probe;
+        if (probe < m_text.size() && m_text[probe] != '\n' && m_text[probe] != '\r' && m_text[probe] != '/' && m_text[probe] != ';') {
+            size_t end = probe;
+            while (end < m_text.size() && !path_tile_script::IsSpace(m_text[end]) && m_text[end] != ';') ++end;
+            std::string candidate = m_text.substr(probe, end - probe);
+            if (!IsEventCommandKeyword(candidate)) {
+                m_pos = end;
+                if (candidate.size() >= 2 && candidate.front() == '"' && candidate.back() == '"')
+                    candidate = candidate.substr(1, candidate.size() - 2);
+                filter = std::move(candidate);
+            }
+        }
+        auto& handlers = m_script.m_onEvent[m_script.m_currentState];
+        m_parsedEvent = handlers.size();
+        handlers.push_back(WorldEventHandler{*event, std::move(filter), nullptr});
         Commands(5);
     }
     void If()
@@ -997,10 +1046,15 @@ std::string Compare(const WorldScript& a, const WorldScript& b, ListStats* stats
             if (auto diff = DiffList(h.m_onSend, k.m_onSend, path + "/send " + std::to_string(j), stats, details); !diff.empty())
                 return diff;
         }
-        for (size_t e = 0; e < kWorldEventCount; ++e)
-            if (auto diff = DiffList(a.m_onEvent[i][e], b.m_onEvent[i][e], path + "/event " + std::to_string(e), stats, details);
+        if (a.m_onEvent[i].size() != b.m_onEvent[i].size()) return path + ": event count";
+        for (size_t e = 0; e < a.m_onEvent[i].size(); ++e) {
+            if (a.m_onEvent[i][e].event != b.m_onEvent[i][e].event || a.m_onEvent[i][e].filter != b.m_onEvent[i][e].filter)
+                return path + "/event " + std::to_string(e) + ": header";
+            if (auto diff = DiffList(
+                        a.m_onEvent[i][e].commands, b.m_onEvent[i][e].commands, path + "/event " + std::to_string(e), stats, details);
                     !diff.empty())
                 return diff;
+        }
     }
     return {};
 }
@@ -1024,7 +1078,8 @@ void Destroy(world_script::WorldScript& script, const Memory& memory)
             FreeList(handler.m_onReceipt, memory);
             FreeList(handler.m_onSend, memory);
         }
-        for (auto& eventList : script.m_onEvent[i]) FreeList(eventList, memory);
+        for (auto& handler : script.m_onEvent[i]) FreeList(handler.commands, memory);
+        script.m_onEvent[i].clear();
         state.m_NumHandlers = 0;
         script.m_stateNames[i].clear();
     }
@@ -1043,7 +1098,7 @@ void Construct(world_script::WorldScript& script)
         }
         state.m_NumHandlers = 0;
         state.m_onEntry = state.m_onExit = state.m_onUpdate = nullptr;
-        for (auto& eventList : script.m_onEvent[i]) eventList = nullptr;
+        script.m_onEvent[i].clear();
     }
     script.m_openCommand = nullptr;
     script.m_numStates = 0;
@@ -1061,8 +1116,9 @@ void Destruct(world_script::WorldScript& script, const Memory& memory)
             ReleaseNodes(state.m_handlers[j].m_onReceipt, memory);
             ReleaseNodes(state.m_handlers[j].m_onSend, memory);
         }
-        for (size_t e = 0; e < kWorldEventCount; ++e)
-            if (script.m_onEvent[i][e]) ReleaseNodes(script.m_onEvent[i][e], memory);
+        for (auto& handler : script.m_onEvent[i])
+            if (handler.commands) ReleaseNodes(handler.commands, memory);
+        script.m_onEvent[i].clear();
     }
 }
 bool ValidateModWorldScript(const world_script::WorldScript& script, std::string& error)
@@ -1106,8 +1162,8 @@ bool ValidateModWorldScript(const world_script::WorldScript& script, std::string
             return false;
         for (uint32_t j = 0; j < state.m_NumHandlers; ++j)
             if (!checkList(checkList, state.m_handlers[j].m_onReceipt) || !checkList(checkList, state.m_handlers[j].m_onSend)) return false;
-        for (size_t e = 0; e < kWorldEventCount; ++e)
-            if (!checkList(checkList, script.m_onEvent[i][e])) return false;
+        for (const auto& handler : script.m_onEvent[i])
+            if (!checkList(checkList, handler.commands)) return false;
     }
     error.clear();
     return true;
@@ -1139,7 +1195,7 @@ ListStats Count(const world_script::WorldScript& script)
             visit(visit, state.m_handlers[j].m_onReceipt);
             visit(visit, state.m_handlers[j].m_onSend);
         }
-        for (size_t e = 0; e < kWorldEventCount; ++e) visit(visit, script.m_onEvent[i][e]);
+        for (const auto& handler : script.m_onEvent[i]) visit(visit, handler.commands);
     }
     return stats;
 }

@@ -349,6 +349,12 @@
                 },
                 "minItems": 32,
                 "maxItems": 32
+              },
+              "named_variables": {
+                "type": "object",
+                "additionalProperties": {
+                  "$ref": "#/$defs/i32"
+                }
               }
             },
             "required": [
@@ -359,6 +365,15 @@
               "variables"
             ],
             "additionalProperties": false
+          }
+        },
+        "mod_variables": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/$defs/i32"
+            }
           }
         }
       },

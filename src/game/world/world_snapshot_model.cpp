@@ -57,6 +57,20 @@ void EmitWorldFields(WorldSnapshot& s, const world::World& w, uint32_t scriptSta
             s.Int("state", mod.script ? static_cast<int32_t>(mod.script->m_currentState) : -1);
             s.Int("flags", mod.scriptFlags);
             s.Ints("vars", mod.scriptVars, world_script::kWorldScriptVarCount);
+            for (const auto& [name, value] : mod.namedVars) {
+                s.String("named_var_key", name.c_str());
+                s.Int("named_var_val", value);
+            }
+        }
+        if (!w.m_worldScriptHost->SharedModVars().empty()) {
+            s.Class("ModSharedVariables");
+            for (const auto& [modId, vars] : w.m_worldScriptHost->SharedModVars()) {
+                for (const auto& [name, value] : vars) {
+                    const std::string key = modId + "." + name;
+                    s.String("key", key.c_str());
+                    s.Int("val", value);
+                }
+            }
         }
     }
 }

@@ -16,6 +16,7 @@
 #include "core/ascii_case.h"
 #include "core/call_counter.h"
 #include "game/world/world_params_queries.h"
+#include "game/world/world_script.h"
 
 #include <cstdint>
 #include <cstring>
@@ -184,9 +185,15 @@ void SetBeerTypeOf(Building& b, int32_t beerId)
     if (b.m_BeerType == beerId) return;
     b.m_BeerType = beerId;
     const int32_t slot = BeerSlotOf(b);
-    if (slot == kNoBeerSlot) return;
-    StoreBeerCostOf(b, slot);
-    b.m_Commod_Price[slot] = world_params_queries::GetBeerDefinition(*GetWorldParams(), beerId)->m_Price;
+    if (slot != kNoBeerSlot) {
+        StoreBeerCostOf(b, slot);
+        b.m_Commod_Price[slot] = world_params_queries::GetBeerDefinition(*GetWorldParams(), beerId)->m_Price;
+    }
+    if (world_data::World* world = GetWorld(); world && !world->m_startup) {
+        const tables::BeerDef* def = world_params_queries::GetBeerDefinition(*GetWorldParams(), beerId);
+        world::DispatchModWorldEvent(
+                *world, world_script::WorldEvent::BeerChanged, {def ? def->m_key : std::string(), static_cast<int32_t>(b.m_id), beerId});
+    }
 }
 
 // ---- the call counters ----------------------------------------------------------------------------------------------------

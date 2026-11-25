@@ -8,6 +8,7 @@
 #include "core/call_counter.h"
 #include "game/objects/object_building.h"
 #include "game/world/world_objects_logic.h"
+#include "game/world/world_script.h"
 #include "game/objects/building_methods.h"
 
 #include <cstdint>
@@ -69,8 +70,16 @@ void UpdateObjectsEntry(World* world)
 void NotifyObjectDeletingEntry(World* world, object::Base* object)
 {
     g_deletingCalls.Count();
+    const bool guestLeaving = object->m_type == ObjectType::Guest && object->m_state == world_objects::kStateLeaving;
+    world_script::WorldEventContext leaveContext;
+    if (guestLeaving) {
+        const auto& guest = static_cast<const object::Guest&>(*object);
+        leaveContext = {guest.m_definition ? guest.m_definition->m_key : std::string(), static_cast<int32_t>(guest.m_id),
+                guest.m_leavingEarly != 0 ? 1 : 0};
+    }
     GameEnv env(*world);
     world_objects::OnObjectDeleting(*world, *object, env);
+    if (guestLeaving) DispatchModWorldEvent(*world, world_script::WorldEvent::GuestLeft, leaveContext);
 }
 
 // ---- world::ProcessDeletedObjects -------------------------------------------------------------------------------------------------
