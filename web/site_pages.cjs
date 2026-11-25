@@ -49,11 +49,31 @@ function setHead(html, code, slug, title, description) {
     return html;
 }
 
-// The inner HTML of every data-t element is replaced by its text. (No such element holds another element of its own tag.)
+// The inner HTML of every data-t element is replaced by its text, and data-alt sets an image's alt attribute.
+// (No data-t element holds another element of its own tag.)
 function fillTexts(html, texts) {
-    return html.replace(/(<(\w+)\b[^>]*\sdata-t="(\w+)"[^>]*>)([\s\S]*?)(<\/\2>)/g, (match, open, tag, key, inner, close) => {
+    html = html.replace(/(<(\w+)\b[^>]*\sdata-t="(\w+)"[^>]*>)([\s\S]*?)(<\/\2>)/g, (match, open, tag, key, inner, close) => {
         if (typeof texts[key] !== "string") throw new Error(`no text "${key}" for ${open}`);
         return open + richHtml(texts[key]) + close;
+    });
+    return html.replace(/<img\b[^>]*\sdata-alt="(\w+)"[^>]*>/g, (tag, key) => {
+        if (typeof texts[key] !== "string") throw new Error(`no alt text "${key}" for ${tag}`);
+        return tag.replace(/\salt="[^"]*"/, ` alt="${escapeHtml(texts[key])}"`);
+    });
+}
+
+// Localizes the VideoGame JSON-LD block so each language page carries its own language, address, description and image.
+function localizeVideoGameLd(html, code, texts) {
+    const url = kOrigin + pagePath(code);
+    const image = `${kOrigin}/social/openbeach-featured-${code}.jpg`;
+    return html.replace(/<script type="application\/ld\+json">([^<]*)<\/script>/g, (match, json) => {
+        const data = JSON.parse(json);
+        if (data["@type"] !== "VideoGame") return match;
+        data.inLanguage = code;
+        data.description = texts.description;
+        data.image = image;
+        data.url = url;
+        return `<script type="application/ld+json">${JSON.stringify(data)}</script>`;
     });
 }
 
@@ -71,8 +91,9 @@ function mainPage(template, code) {
     const texts = kSiteTexts[code];
     let html = setHead(template, code, "", texts.title, texts.description);
     html = fillTexts(html, texts);
-    // The JSON-LD block names the site in the page's language, like the rest of the head.
+    // The JSON-LD blocks name the site and the game in the page's language, like the rest of the head.
     html = html.replace(/("@type": "WebSite", )/, `$1"inLanguage": "${code}", `);
+    html = localizeVideoGameLd(html, code, texts);
     return absolutePaths(html, code);
 }
 

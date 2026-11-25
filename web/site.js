@@ -86,6 +86,7 @@ function applyPageLanguage(code) {
     document.title = kSiteTexts[code].title;
     for (const link of document.querySelectorAll("a[data-guide]")) link.href = languagePath(code) + "windows-11/";
     for (const node of document.querySelectorAll("[data-t]")) setRichText(node, text(node.dataset.t));
+    for (const node of document.querySelectorAll("[data-alt]")) node.alt = text(node.dataset.alt);
     for (const [id, {key, slots}] of shownLines) element(id).textContent = text(key, slots);
     if (lastProgress) showProgress(lastProgress);
 }
