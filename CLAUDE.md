@@ -28,8 +28,9 @@ The game builds for x64 Windows, Linux and WebAssembly; the browser site lives i
 
 - Types: `feat`, `fix`, `perf`, `refactor`, `test`, `docs`, `build`, `ci`, `chore`, `revert`.
 - Scopes: `game`, `importer`, `site`, `platform`, `saves`, `tools`, or none.
-- `feat` raises the minor version and `fix` the patch. `!` or `BREAKING CHANGE:` raises the major one, only when saves or an
-  imported pack stop working. A refactor is never breaking.
+- `feat` raises the minor version and `fix` the patch. `!` or `BREAKING CHANGE:` raises the major one, only when saves, an
+  imported pack or existing mods stop working (a mod format or script API a released mod could use; an API documented as
+  experimental is exempt). Adding to a format and a refactor are never breaking.
 - A pull request with one change is squash-merged, so its title is the commit on `main`. One with several changes is rebased
   onto `main` ("Rebase and merge"), so each of its commits reaches the changelog: give each change one clean commit (no
   "review fixes"). Never a merge commit: GitHub writes the title into it, and the changelog lists that change twice. `tools/check_commits.py` checks the title and every commit of a pull request in CI.

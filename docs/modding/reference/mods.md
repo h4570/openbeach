@@ -136,3 +136,9 @@ saves and replays; `tests/l0_mod_save.txt` saves with the test mod, reloads with
 `expect-obl-save-refused`). The presentation scripts' tests are in [scripting.md](scripting.md#tests); `tests/l0_mods_mixed.txt`
 runs a world mod and a presentation mod at once and checks that the save records only the world mod. The world scripts' tests
 are in [world-scripts.md](world-scripts.md#tests).
+
+## Compatibility
+The mod formats and script APIs are a public interface. A game version that stops existing mods from working raises the major
+version; adding fields, events or functions does not. An API documented as experimental (see [scripting.md](scripting.md)) may
+still change in a minor version. A mod names the oldest game version it needs in `engine_min` (#171); there is no newest
+version in `mod.json`, because an author cannot know which future version breaks the mod.
