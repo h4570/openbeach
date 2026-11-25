@@ -49,9 +49,19 @@ try {
     Remove-Item Env:OBL_PACK, Env:SDL_AUDIO_DRIVER -ErrorAction SilentlyContinue
 }
 
+# The catalog signer works: the public key of the RFC 8032 test seed (a throwaway key, never a real catalog's).
+$signer = Join-Path $game 'obl_catalog_sign.exe'
+if (-not (Test-Path -LiteralPath $signer)) { throw 'the release has no obl_catalog_sign.exe' }
+if (-not (Test-Path -LiteralPath (Join-Path $game 'build_catalog.py'))) { throw 'the release has no build_catalog.py' }
+$keyFile = Join-Path ([IO.Path]::GetTempPath()) "obl-smoke-$PID.key"
+Set-Content -LiteralPath $keyFile -Value '9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60'
+$pub = (& $signer pubkey --key-file $keyFile | Out-String).Trim()
+Remove-Item -LiteralPath $keyFile -Force
+if ($pub -ne 'd75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a') { throw "obl_catalog_sign gave an unexpected key: $pub" }
+
 # Without --game-dir the program picks game\userdata\ (empty until an import) and says the pack is missing.
 $usage = & $exe --help 2>&1 | Out-String
 if ($usage -notmatch 'userdata') { throw "the usage does not name the userdata default: $usage" }
 Remove-Item -LiteralPath $work -Recurse -Force -ErrorAction SilentlyContinue
-Write-Host 'smoke test passed: window, frames in the menu'
+Write-Host 'smoke test passed: window, frames in the menu, catalog signer'
 exit 0 # --help leaves its own exit code 1 behind

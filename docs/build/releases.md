@@ -22,6 +22,7 @@ The archive puts the guides at the top, so a player sees where to start:
 | `README.<language>.txt` | the steps for people, one file per game language (`tools/ci/release/README.<language>.txt.in`) |
 | `AGENTS.md` | the same steps for an AI agent, in English (`tools/ci/release/AGENTS.md.in`) |
 | `game/OpenBeach[.exe]`, `game/obl-convert[.exe]` | the game and the converter (Linux: stripped) |
+| `game/obl_catalog_sign[.exe]`, `game/build_catalog.py` | the catalog signer and the script that packages and signs a mod catalog ([guide](../modding/guides/own-catalog.md)) |
 | `game/Import.cmd`, `Play.cmd`, `Demo.cmd`, `ExportForAndroid.cmd`, `scripts/import.ps1`, `scripts/export_android.ps1` (Windows); `game/import.sh`, `play.sh`, `demo.sh`, `export-android.sh` (Linux) | the player's commands (`tools/ci/release/<windows\|linux>/`) |
 | `game/userdata/` | the game directory of the player's copy, empty until the import |
 | `game/l0/packs/l0/` | the demo's game directory with the L0 pack (`OBL_PACK=l0`) |
@@ -165,12 +166,14 @@ presents, without audio the game is silent. The README names the Debian/Ubuntu p
 - **Windows:** `tools/ci/windows_smoke.ps1 <unpacked zip>` starts `game\OpenBeach.exe --hidden` on a copy of `game\l0`
   with `OBL_PACK=l0` and the dummy audio driver, waits for the first presented menu frame and a few seconds in the menu,
   then stops the host. The job also installs with the installer (`/VERYSILENT`, no `/ISO`) into `build/installed` and runs
-  the same test there.
+  the same test there. It also checks that `game\obl_catalog_sign.exe` and `build_catalog.py` exist and that the signer
+  derives the public key of the RFC 8032 test seed.
 - **Linux:** `tools/ci/linux_smoke.sh <unpacked tarball>` starts `game/OpenBeach --no-settings` the same way under Xvfb (never a real
   display) with SDL's X11 driver, then sends `SIGTERM`; SDL turns it into its quit event, and the test expects `WinMain
   returned 0`, `process exit` and exit code 0. `tools/ci/linux_smoke_distros.sh` runs it in clean `debian:12` and
   `ubuntu:24.04` containers with only the README's packages (its English section, the first list) and Xvfb. The job
-  keeps a screenshot of the Xvfb screen in its artifact.
+  keeps a screenshot of the Xvfb screen in its artifact. The same test runs the catalog signer's `pubkey` on the RFC 8032
+  test seed.
 
 - **macOS:** `tools/ci/macos_smoke.sh <OpenBeach.app>` runs on the app in the mounted disk image: `openbeach-launcher
   --demo --no-settings` under a temporary `HOME`, the same log checks in a Cocoa window, `SIGTERM` and a clean exit; the job keeps a

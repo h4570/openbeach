@@ -1,4 +1,8 @@
-"""Build deterministic mod ZIP archives and a signed obl.mod_catalog index."""
+"""Build deterministic mod ZIP archives and a signed obl.mod_catalog index.
+
+Works for any catalog (docs/modding/guides/own-catalog.md): in the repository and from the release archive, where it
+sits beside obl_catalog_sign and the game. Without --mods-dir the official sources (data/mods) are used with the
+official title and address; for any other directory, --title and --url are required."""
 from __future__ import annotations
 
 import argparse
@@ -14,7 +18,9 @@ import sys
 import tempfile
 import zipfile
 
-ROOT = Path(__file__).resolve().parents[1]
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parent
+OFFICIAL_MODS_DIR = ROOT / "data/mods"
 DEFAULT_URL = "https://openbeach.app/mods/catalog.json"
 DEFAULT_TITLE = "OpenBeach Official Mods"
 DEFAULT_LICENSE = "MIT"
@@ -55,7 +61,7 @@ def build_mod_zip(mod_dir: Path, out_zip: Path) -> tuple[int, str]:
 ENGINE_VERSION = re.compile(r"(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)")
 
 
-def build_entry(mod_dir: Path, out_dir: Path, default_license: str) -> dict:
+def build_entry(mod_dir: Path, out_dir: Path, default_license: str | None) -> dict:
     manifest_path = mod_dir / "mod.json"
     if not manifest_path.is_file():
         raise ValueError(f"{mod_dir}: missing mod.json")
@@ -97,7 +103,10 @@ def build_entry(mod_dir: Path, out_dir: Path, default_license: str) -> dict:
     entry["url"] = zip_name
     entry["sha256"] = sha256
     entry["size"] = size
-    entry["license"] = manifest.get("license") or default_license
+    license_name = manifest.get("license") or default_license
+    if not license_name:
+        raise ValueError(f"{manifest_path}: no license (add one to mod.json or pass --license)")
+    entry["license"] = license_name
     return entry
 
 
@@ -111,6 +120,9 @@ def find_signer(explicit: str | None) -> Path:
             return Path(found)
         raise FileNotFoundError(f"signer executable not found: {explicit}")
     candidates = [
+        # A release archive keeps the script and the signer in one directory.
+        HERE / "obl_catalog_sign.exe",
+        HERE / "obl_catalog_sign",
         ROOT / "build/x64/bin/Debug/obl_catalog_sign.exe",
         ROOT / "build/x64/bin/RelWithDebInfo/obl_catalog_sign.exe",
         ROOT / "build/linux-sim-x64/bin/obl_catalog_sign",
@@ -124,23 +136,33 @@ def find_signer(explicit: str | None) -> Path:
     raise FileNotFoundError("obl_catalog_sign not found; build it or pass --signer")
 
 
+def find_engine(explicit: str | None) -> str:
+    """The executable that runs --check-mods: the argument, else OpenBeach beside this script (release archive), else PATH."""
+    if explicit:
+        # A relative path must stay usable when the checks run from another directory (and Windows needs the directory part).
+        return str(Path(explicit).resolve()) if Path(explicit).is_file() else explicit
+    for name in ("OpenBeach.exe", "OpenBeach"):
+        if (HERE / name).is_file():
+            return str(HERE / name)
+    return shutil.which("OpenBeach") or "OpenBeach"
+
+
 def run_mod_checks(mods: list[Path], engine: str, game_dir: Path, pack: str) -> None:
-    check_mod_py = ROOT / "tools/check_mod.py"
+    check_mod_py = HERE / "check_mod.py"
     for mod_dir in mods:
-        cmd = [
-            sys.executable,
-            str(check_mod_py),
-            str(mod_dir),
-            "--engine",
-            engine,
-            "--game-dir",
-            str(game_dir),
-            "--pack",
-            pack,
-        ]
-        result = subprocess.run(cmd)
+        if check_mod_py.is_file():
+            # In the repository the wrapper also runs the content rules (tools/check_content.py).
+            cmd = [sys.executable, str(check_mod_py), str(mod_dir), "--engine", engine, "--game-dir", str(game_dir), "--pack", pack]
+            env = None
+        else:
+            cmd = [engine, "--game-dir", str(game_dir), "--check-mods", str(mod_dir)]
+            env = {**os.environ, "OBL_PACK": pack}
+        try:
+            result = subprocess.run(cmd, env=env)
+        except OSError as error:
+            raise RuntimeError(f"cannot run {engine}: {error}") from error
         if result.returncode != 0:
-            raise RuntimeError(f"check_mod.py failed for {mod_dir.name} (exit {result.returncode})")
+            raise RuntimeError(f"checking {mod_dir.name} failed (exit {result.returncode})")
 
 
 def build_catalog(
@@ -148,7 +170,7 @@ def build_catalog(
     out_dir: Path,
     *,
     title: str = DEFAULT_TITLE,
-    default_license: str = DEFAULT_LICENSE,
+    default_license: str | None = DEFAULT_LICENSE,
     signer: Path,
     key_env: str | None = DEFAULT_KEY_ENV,
     key_file: Path | None = None,
@@ -200,40 +222,47 @@ def build_catalog(
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--mods-dir", type=Path, default=ROOT / "data/mods", help="directory of official mod sources")
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--mods-dir", type=Path, help="directory with one sub-directory per mod (default: the official data/mods)")
     parser.add_argument("--out-dir", type=Path, required=True, help="output directory for ZIPs and catalog.json")
-    parser.add_argument("--title", default=DEFAULT_TITLE, help="catalog title")
-    parser.add_argument("--license", default=DEFAULT_LICENSE, help="default SPDX license for entries")
-    parser.add_argument("--signer", help="path to obl_catalog_sign executable")
-    parser.add_argument("--key-env", default=DEFAULT_KEY_ENV, help="environment variable holding 64-hex Ed25519 seed")
-    parser.add_argument("--key-file", type=Path, help="file holding 64-hex Ed25519 seed")
-    parser.add_argument("--ephemeral-key", action="store_true", help="sign with a throwaway key (for PR/fork checks)")
-    parser.add_argument("--url", default=DEFAULT_URL, help="catalog URL used for verification")
-    parser.add_argument("--check-engine", help="run check_mod.py with this engine executable before packaging")
-    parser.add_argument("--game-dir", type=Path, help="game directory for --check-engine")
-    parser.add_argument("--pack", default="l0", help="pack id for --check-engine (default: l0)")
+    parser.add_argument("--title", help="catalog title (required unless building the official catalog)")
+    parser.add_argument("--url", help="address catalog.json will be served from, used for verification (required unless official)")
+    parser.add_argument("--license", help="SPDX license for entries whose mod.json names none (official: MIT)")
+    parser.add_argument("--signer", help="path to obl_catalog_sign (default: beside this script, a build tree or PATH)")
+    parser.add_argument("--key-env", default=DEFAULT_KEY_ENV, help="environment variable holding the 64-hex Ed25519 seed")
+    parser.add_argument("--key-file", type=Path, help="file holding the 64-hex Ed25519 seed")
+    parser.add_argument("--ephemeral-key", action="store_true", help="sign with a throwaway key (to check a catalog without the secret)")
+    parser.add_argument("--check-mods", action="store_true", help="run the engine's mod check on every mod before packaging")
+    parser.add_argument("--engine", help="OpenBeach or obl-sim for --check-mods (default: OpenBeach beside this script or on PATH)")
+    parser.add_argument("--check-engine", help="same as --check-mods --engine <path>")
+    parser.add_argument("--game-dir", type=Path, help="game directory with the target pack, for --check-mods")
+    parser.add_argument("--pack", default="l0", help="pack id for --check-mods (default: l0)")
     args = parser.parse_args(argv)
 
-    mods_dir = args.mods_dir.resolve()
+    mods_dir = (args.mods_dir or OFFICIAL_MODS_DIR).resolve()
+    official = mods_dir == OFFICIAL_MODS_DIR.resolve()
+    if not official and not (args.title and args.url):
+        parser.error("--title and --url are required for a catalog other than the official one")
     out_dir = args.out_dir.resolve()
-    if args.check_engine:
+    if args.check_mods or args.check_engine:
         if not args.game_dir:
-            parser.error("--check-engine requires --game-dir")
+            parser.error("--check-mods requires --game-dir")
+        if not mods_dir.is_dir():
+            parser.error(f"mods directory not found: {mods_dir}")
         mod_dirs = sorted(p for p in mods_dir.iterdir() if p.is_dir() and (p / "mod.json").is_file())
-        run_mod_checks(mod_dirs, args.check_engine, args.game_dir.resolve(), args.pack)
+        run_mod_checks(mod_dirs, find_engine(args.check_engine or args.engine), args.game_dir.resolve(), args.pack)
 
     signer = find_signer(args.signer)
     catalog_path = build_catalog(
         mods_dir,
         out_dir,
-        title=args.title,
-        default_license=args.license,
+        title=args.title or DEFAULT_TITLE,
+        default_license=args.license or (DEFAULT_LICENSE if official else None),
         signer=signer,
         key_env=args.key_env,
         key_file=args.key_file.resolve() if args.key_file else None,
         ephemeral_key=args.ephemeral_key,
-        catalog_url=args.url,
+        catalog_url=args.url or DEFAULT_URL,
     )
     print(f"Wrote and verified {catalog_path}")
     return 0

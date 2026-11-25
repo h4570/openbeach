@@ -12,4 +12,5 @@ Copy the [template](mod_template/index.md) for a first text mod. The other guide
 | [GUI patch](../guides/first-gui-patch.md) | [l0_gui_patch](../../../tests/mods/l0_gui_patch/mod.json) | [GUI patch](../../../tests/l0_mod_gui_patch.txt) |
 | [Settings](../guides/first-setting.md) | [l0_settings](../../../tests/mods/l0_settings/mod.json) | [Mod settings](../../../tests/l0_mod_settings.txt) |
 | [Key action](../guides/first-action.md) | [l0_actions](../../../tests/mods/l0_actions/mod.json) | [Named actions](../../../tests/l0_mod_actions.txt) |
+| [Own catalog](../guides/own-catalog.md) | [catalog_template](catalog_template/index.md) | [Catalog tool test](../../../tools/tests/test_build_catalog.py) |
 | [Publishing](../guides/publishing.md) | [mod_template](mod_template/index.md) | [Template and developer mode](../../../tests/l0_mod_template_dev.txt) |

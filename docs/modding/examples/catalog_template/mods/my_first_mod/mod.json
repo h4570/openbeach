@@ -1,0 +1,10 @@
+{
+  "format": "obl.mod",
+  "version": 1,
+  "id": "my_first_mod",
+  "title": "My first mod",
+  "mod_version": "1.0.0",
+  "pack": "l0",
+  "scope": "world",
+  "license": "MIT"
+}

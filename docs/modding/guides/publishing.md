@@ -13,4 +13,6 @@
    URL from **Mods → Catalogs** and test the download. Use `tools/build_catalog.py` to package and sign a catalog from
    a directory of mod sources in one step.
 
+To host many mods for others, follow [Host your own mod catalog](own-catalog.md).
+
 Use the [template](../examples/mod_template/index.md) for a practice release.

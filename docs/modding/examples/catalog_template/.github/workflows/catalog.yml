@@ -1,0 +1,68 @@
+# Checks every mod, packages and signs the catalog, and publishes it to GitHub Pages.
+# Without the CATALOG_SIGNING_KEY repository secret it only checks (with a throwaway key), so forks and pull requests
+# stay useful and nothing is published unsigned. Guide: docs/modding/guides/own-catalog.md in the OpenBeach repository.
+name: catalog
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  CATALOG_TITLE: My OpenBeach mods
+  # Where Pages serves catalog.json. Change it for a custom domain or a user site (<owner>.github.io).
+  CATALOG_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/catalog.json
+  # The OpenBeach release whose tools check and sign (a tag such as v1.13.0); empty takes the latest one.
+  OPENBEACH_RELEASE: ""
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    outputs:
+      signed: ${{ steps.build.outputs.signed }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Get the OpenBeach release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p openbeach
+          gh release download ${OPENBEACH_RELEASE} --repo h4570/openbeach --pattern '*-linux-x86_64.tar.gz' --dir openbeach
+          tar -xzf openbeach/*.tar.gz -C openbeach --strip-components=1
+      - name: Check, package and sign
+        id: build
+        env:
+          CATALOG_SIGNING_KEY: ${{ secrets.CATALOG_SIGNING_KEY }}
+        run: |
+          args=(--mods-dir mods --out-dir site --title "$CATALOG_TITLE" --url "$CATALOG_URL"
+                --check-mods --game-dir openbeach/game/l0 --pack l0)
+          if [ -n "$CATALOG_SIGNING_KEY" ]; then
+            python3 openbeach/game/build_catalog.py "${args[@]}" --key-env CATALOG_SIGNING_KEY
+            echo "signed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::No CATALOG_SIGNING_KEY secret: the mods are checked, nothing is published."
+            python3 openbeach/game/build_catalog.py "${args[@]}" --ephemeral-key
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/upload-pages-artifact@v5
+        if: steps.build.outputs.signed == 'true' && github.ref == 'refs/heads/main'
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    if: needs.build.outputs.signed == 'true' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

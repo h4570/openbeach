@@ -54,7 +54,7 @@ try {
     $installer = Join-Path $dist "$name-installer.exe"
     Remove-Item -LiteralPath $zip, $installer -Force -ErrorAction SilentlyContinue
     $epoch = [int](git -C $repo log -1 --format=%ct)
-    $binaries = @('OpenBeach.exe', 'obl-convert.exe') | ForEach-Object { Join-Path $bin $_ }
+    $binaries = @('OpenBeach.exe', 'obl-convert.exe', 'obl_catalog_sign.exe') | ForEach-Object { Join-Path $bin $_ }
     & python (Join-Path $repo 'tools\ci\release\stage.py') --platform windows --version $Version `
         --out (Join-Path $dist $name) --zip $zip --epoch $epoch --bin @binaries
     if ($LASTEXITCODE) { throw "staging failed ($LASTEXITCODE)" }

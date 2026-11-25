@@ -32,6 +32,24 @@ class RenderTests(unittest.TestCase):
         self.assertEqual(stage.bundle_version("v2"), "0")
 
 
+class ArchiveLayoutTests(unittest.TestCase):
+    def test_catalog_tools_sit_beside_the_game(self):
+        for platform, suffix in (("windows", ".exe"), ("linux", "")):
+            with tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                binaries = []
+                for name in ("OpenBeach", "obl-convert", "obl_catalog_sign"):
+                    (root / (name + suffix)).write_bytes(b"binary")
+                    binaries.append(root / (name + suffix))
+                out = root / f"openbeach-1.2.3-{platform}"
+                stage.stage(platform, "1.2.3", out, binaries)
+                game = out / "game"
+                for name in ("OpenBeach", "obl-convert", "obl_catalog_sign"):
+                    self.assertTrue((game / (name + suffix)).is_file(), name)
+                self.assertEqual((game / "build_catalog.py").read_bytes(), (stage.ROOT / "tools" / "build_catalog.py").read_bytes())
+                self.assertTrue((game / "l0" / "packs" / "l0" / "pack.json").is_file())
+
+
 class MacLayoutTests(unittest.TestCase):
     def test_app_bundle(self):
         with tempfile.TemporaryDirectory() as tmp:
