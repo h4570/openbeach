@@ -5,8 +5,6 @@ add_library(obl_common STATIC
     mods/input_events.h
     mods/input_routing.cpp
     mods/input_routing.h
-    mods/key_names.cpp
-    mods/key_names.h
     mods/mod_settings_file.cpp
     mods/mod_settings_file.h
     mods/overlay_draw.cpp

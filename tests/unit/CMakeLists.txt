@@ -365,6 +365,7 @@ add_executable(obl_unit_tests
     mod_pack_test.cpp
     script_runtime_test.cpp
     input_events_test.cpp
+    key_actions_test.cpp
     data_patch_test.cpp
     sprite_pack_test.cpp
     convert_sound_test.cpp

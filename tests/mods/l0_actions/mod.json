@@ -1,0 +1,12 @@
+{
+  "format": "obl.mod",
+  "version": 1,
+  "id": "l0_actions",
+  "title": "L0 actions test mod",
+  "mod_version": "1.0.0",
+  "pack": "l0",
+  "scope": "presentation",
+  "api": 1,
+  "actions": [{ "id": "ping", "label": "Ping", "keys": "F9" }],
+  "bindings": { "game.pause": "F10" }
+}

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <filesystem>
 #include <string>
 #include <vector>
 
@@ -26,6 +27,14 @@ void DrawPresentationOverlay();
 // Whether the overlay is drawn. On by default; test runs switch it off (golden images must not depend on mods) unless the test
 // asks for it (`mod-overlay on`).
 void SetOverlayShown(bool shown);
+
+// Reads the player's `[Keys]` of openbeach.ini and the active mods' actions and bindings into the table the game's hotkeys read
+// (formats/key_actions.h), once at start-up after the mods are checked; conflicts and unusable bindings go to the log. Scripted test runs
+// ignore the file. Without it (or without the call) the engine's default keys apply.
+void ConfigureKeyBindings(const std::filesystem::path& iniFile);
+// Test support (`bind-key`): the player's binding for an action as if it stood in the ini; empty text goes back to the default.
+void SetTestKeyBinding(const std::string& action, const std::string& keys);
+void ClearTestKeyBindings();
 
 // on_stop and the stores: at the end of the game.
 void StopPresentationScripts();

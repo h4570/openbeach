@@ -48,6 +48,9 @@ l0_mod_script_overlay.txt @hidden @l0
 l0_mod_script_state.txt @l0
 l0_mods_mixed.txt @l0
 l0_mod_settings.txt @l0
+l0_mod_actions.txt @l0
+l0_mod_action_takeover.txt @l0
+l0_key_binding.txt @l0
 golden_hash_l0_s1.golden @l0
 golden_hash_l0_settings_s1.golden @l0
 gui_image_bar_l0.txt @hidden @l0

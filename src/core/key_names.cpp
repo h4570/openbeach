@@ -1,11 +1,11 @@
-#include "game/mods/key_names.h"
+#include "core/key_names.h"
 
 #include "core/key_code.h"
 
 #include <array>
 #include <utility>
 
-namespace obl::mods {
+namespace obl::input {
 
 std::string_view KeyName(uint8_t code)
 {
@@ -152,4 +152,17 @@ std::string_view KeyName(uint8_t code)
     return table[code];
 }
 
-} // namespace obl::mods
+uint8_t FindKey(std::string_view name)
+{
+    const auto lower = [](char c) { return static_cast<char>(c >= 'A' && c <= 'Z' ? c - 'A' + 'a' : c); };
+    for (int code = 1; code < 256; ++code) {
+        const std::string_view known = KeyName(static_cast<uint8_t>(code));
+        if (known.size() != name.size() || known.empty()) continue;
+        bool same = true;
+        for (size_t i = 0; i < known.size() && same; ++i) same = lower(known[i]) == lower(name[i]);
+        if (same) return static_cast<uint8_t>(code);
+    }
+    return 0;
+}
+
+} // namespace obl::input

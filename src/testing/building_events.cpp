@@ -312,6 +312,7 @@ void ForgetBuildingEvents()
 
 void ResetBuildingEvents()
 {
+    mods::ClearTestKeyBindings();
     mod_pack::RestoreActive(); // `claim-mods` ends with its script
     g_savedSlot = -1;
     ForgetBuildingEvents();
@@ -321,9 +322,9 @@ bool ExecuteBuildingEventCommand(const std::string& name, const std::vector<std:
 {
     if (name != "event-build" && name != "event-state" && name != "hour" && name != "event-guests" && name != "event-slot" &&
             name != "save-panel" && name != "save-confirm" && name != "load-slot" && name != "convert-save" && name != "load-obl-save" &&
-            name != "save-obl" && name != "claim-mods" && name != "mod-setting" && name != "expect-obl-save-refused" &&
-            name != "event-expect" && name != "event-load-index" && name != "event-focus" && name != "event-tick" &&
-            name != "event-select" && name != "event-rotate" && name != "event-cancel" && name != "event-advance" &&
+            name != "save-obl" && name != "claim-mods" && name != "mod-setting" && name != "bind-key" &&
+            name != "expect-obl-save-refused" && name != "event-expect" && name != "event-load-index" && name != "event-focus" &&
+            name != "event-tick" && name != "event-select" && name != "event-rotate" && name != "event-cancel" && name != "event-advance" &&
             name != "event-visible" && name != "event-check-actors" && name != "event-delay" && name != "event-open" &&
             name != "event-normalize" && name != "event-synthetic")
         return false;
@@ -341,6 +342,12 @@ bool ExecuteBuildingEventCommand(const std::string& name, const std::vector<std:
     }
     if (name == "mod-setting" && args.size() == 3) {
         ModSetting(args[0], args[1], args[2]);
+        return true;
+    }
+    // `bind-key <action> <keys|default>`: the player's `[Keys]` entry of the action, as if it stood in openbeach.ini ("none" unbinds).
+    if (name == "bind-key" && args.size() == 2) {
+        mods::SetTestKeyBinding(args[0], args[1] == "default" ? std::string() : args[1]);
+        OBL_LOG("autotest: bind-key %s %s", args[0].c_str(), args[1].c_str());
         return true;
     }
     if (name == "claim-mods" && args.size() == 1) {

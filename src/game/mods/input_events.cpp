@@ -1,6 +1,6 @@
 #include "game/mods/input_events.h"
 
-#include "game/mods/key_names.h"
+#include "core/key_names.h"
 #include "game/ui/input_state.h"
 
 namespace obl::mods {
@@ -27,7 +27,7 @@ int ButtonOf(const InputEvent& event)
 uint8_t KeyCode(const std::string& name)
 {
     for (int code = 1; code < 256; ++code)
-        if (KeyName(static_cast<uint8_t>(code)) == name) return static_cast<uint8_t>(code);
+        if (input::KeyName(static_cast<uint8_t>(code)) == name) return static_cast<uint8_t>(code);
     return 0;
 }
 
@@ -39,7 +39,7 @@ std::vector<InputEvent> InputEvents::Take(ui::Input& input)
     for (int code = 1; code < 256; ++code) {
         const uint8_t now = input.m_keys[code], before = m_keys[code];
         m_keys[code] = now;
-        const std::string_view name = KeyName(static_cast<uint8_t>(code));
+        const std::string_view name = input::KeyName(static_cast<uint8_t>(code));
         // 1 is "pressed in this update"; a key that was down and reads 0 now was released.
         if (!name.empty() && (now == 1 || (now == 0 && before != 0))) {
             InputEvent event;

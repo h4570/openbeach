@@ -1,0 +1,23 @@
+# A mod takes over an engine action (`takes_over` "action.game.pause"): while it runs the engine's P does nothing and the mod handles
+# keys itself (tests/mods/l0_takeover pauses on F8). SDL scancodes: P 19, F8 65.
+# @env OBL_PACK=l0
+# @env OBL_MODS=l0_takeover
+# @timeout 120
+# @expect-log presentation scripts: mod "l0_takeover" takes over "action.game.pause"
+# @expect-log mod l0_takeover: paused by F8
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario 1
+await gameplay
+step 5
+sdl-key 19 1
+step 3
+sdl-key 19 0
+step 3
+expect paused 0
+sdl-key 65 1
+step 3
+sdl-key 65 0
+step 5
+expect paused 1
+quit

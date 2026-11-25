@@ -2,6 +2,8 @@
 
 #include "unit_test.h"
 
+#include "core/key_code.h"
+
 #include "core/pack_path.h"
 #include "formats/mod_pack.h"
 #include "temp_dir.h"
@@ -361,4 +363,52 @@ OBL_TEST_CASE("mod_pack.a_mod_takes_over_known_defaults_with_its_scripts")
     const std::vector<std::string> conflicts = mod_pack::TakeOverConflicts(mods);
     OBL_REQUIRE(conflicts.size() == 1);
     OBL_CHECK_EQ(conflicts[0], std::string("\"input.touch\" is taken over by \"touch\", \"later\"; \"later\" wins (later in load order)"));
+}
+
+OBL_TEST_CASE("mod_pack.a_mod_declares_actions_and_bindings_and_may_take_over_an_engine_action")
+{
+    test::TempPath game("mod-actions");
+    const std::string fields = "\"pack\":\"l0\",\"scope\":\"presentation\",\"api\":1,";
+    WriteManifest(game.path, "keys",
+            fields +
+                    "\"actions\":[{\"id\":\"zoom_fit\",\"label\":\"Fit\",\"keys\":\"F9\"},{\"id\":\"two\",\"keys\":[\"F8\",\"F7\"]}],"
+                    "\"bindings\":{\"game.pause\":\"F10\",\"panel.music\":\"none\"},\"takes_over\":[\"action.game.speed_up\"]");
+    Write(game.path / "mods/keys/scripts/presentation/main.lua", "");
+    std::vector<mod_pack::ActiveMod> mods;
+    std::string error;
+    std::vector<std::string> list = {"keys"};
+    OBL_REQUIRE(mod_pack::CheckActive(game.path, "l0", list, mods, error));
+    const auto& m = mods[0].manifest;
+    OBL_REQUIRE(m.actions.size() == 2 && m.bindings.size() == 2);
+    OBL_CHECK(m.actions[0].id == "zoom_fit" && m.actions[0].label == "Fit");
+    OBL_CHECK(m.actions[0].keys == key_actions::KeyList{input::F9});
+    OBL_CHECK(m.actions[1].keys == (key_actions::KeyList{input::F8, input::F7}));
+    OBL_CHECK(m.takesOver == std::vector<std::string>{"action.game.speed_up"});
+    OBL_CHECK(m.bindings[1].keys.empty());
+
+    // The mods screen's source: nothing clashes here, then a second mod takes F9.
+    OBL_CHECK(mod_pack::KeyConflicts(mods, nullptr).empty());
+    WriteManifest(game.path, "other", fields + "\"actions\":[{\"id\":\"x\",\"keys\":\"F9\"}]");
+    Write(game.path / "mods/other/scripts/presentation/main.lua", "");
+    list = {"keys", "other"};
+    OBL_REQUIRE(mod_pack::CheckActive(game.path, "l0", list, mods, error));
+    const auto conflicts = mod_pack::KeyConflicts(mods, nullptr);
+    OBL_REQUIRE(conflicts.size() == 1);
+    OBL_CHECK(conflicts[0].find("\"other.x\" wins (mod \"other\")") != std::string::npos);
+
+    const auto refused = [&](const std::string& id, const std::string& extra, const std::string& part) {
+        WriteManifest(game.path, id, fields + extra);
+        Write(game.path / ("mods/" + id + "/scripts/presentation/main.lua"), "");
+        OBL_CHECK(!Accepted(game.path, "l0", id, error) && error.find(part) != std::string::npos);
+    };
+    refused("bad_key", "\"actions\":[{\"id\":\"a\",\"keys\":\"Banana\"}]", "Banana");
+    refused("bad_id", "\"actions\":[{\"id\":\"A b\",\"keys\":\"F9\"}]", "lowercase");
+    refused("twice", "\"actions\":[{\"id\":\"a\"},{\"id\":\"a\"}]", "listed twice");
+    refused("bad_bind", "\"bindings\":{\"game.pause\":5}", "game.pause");
+    refused("bad_over", "\"takes_over\":[\"action.game.nothing\"]", "action.game.nothing");
+    // An action needs a script to call; a binding alone does not.
+    WriteManifest(game.path, "no_script", fields + "\"actions\":[{\"id\":\"a\",\"keys\":\"F9\"}]");
+    OBL_CHECK(!Accepted(game.path, "l0", "no_script", error) && error.find("no scripts") != std::string::npos);
+    WriteManifest(game.path, "only_bind", "\"pack\":\"l0\",\"bindings\":{\"game.pause\":\"F10\"}");
+    OBL_CHECK(Accepted(game.path, "l0", "only_bind", error));
 }

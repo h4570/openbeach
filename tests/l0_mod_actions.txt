@@ -1,0 +1,32 @@
+# Named actions (docs/modding/reference/actions.md): the test mod tests/mods/l0_actions declares the action `ping` on F9, which calls its
+# on_action, and moves game.pause from P to F10. P no longer pauses, F10 does. SDL scancodes: P 19, F9 66, F10 67.
+# @env OBL_PACK=l0
+# @env OBL_MODS=l0_actions
+# @timeout 120
+# @expect-log mod l0_actions: action ping
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario 1
+await gameplay
+step 5
+expect paused 0
+sdl-key 66 1
+step 3
+sdl-key 66 0
+step 3
+sdl-key 19 1
+step 3
+sdl-key 19 0
+step 3
+expect paused 0
+sdl-key 67 1
+step 3
+sdl-key 67 0
+step 3
+expect paused 1
+sdl-key 67 1
+step 3
+sdl-key 67 0
+step 3
+expect paused 0
+quit
