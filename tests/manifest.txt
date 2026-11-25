@@ -55,8 +55,11 @@ l0_mod_script_state.txt @l0
 l0_mods_mixed.txt @l0
 l0_mods_world_scripts.txt @l0
 l0_mods_combined.txt @l0
+l0_mods_frame_budget.txt @l0
 replay_l0_mods_combined.txt @l0
 l0_mod_conflict_refused.txt @l0
+l0_mod_limit_day.txt @l0
+l0_mod_limit_type.txt @l0
 l0_mod_settings.txt @l0
 l0_mod_actions.txt @l0
 l0_mod_action_takeover.txt @l0
@@ -68,6 +71,7 @@ l0_mod_world_vars.txt @l0
 l0_mod_world_script_refused.txt @l0
 l0_mod_crlf.txt @l0
 l0_mod_screen.txt @hidden @l0
+l0_mod_screen_switch.txt @hidden @l0
 l0_mod_install.txt @hidden @l0
 l0_mod_catalog.txt @hidden @l0
 l0_mod_screen_conflicts.txt @hidden @l0

@@ -29,6 +29,8 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
+import sim_workers
+
 REPO = Path(__file__).resolve().parent.parent
 CHAOS = REPO / "tests" / "chaos"
 EXIT_SKIP = 77
@@ -292,6 +294,9 @@ def main() -> int:
     (scratch / "seeds").mkdir(parents=True, exist_ok=True)
     results = []
     for path in files:
+        # The run file's `# @env` lines (OBL_PACK=l0, OBL_MODS) reach its runs, replays and shrink trials through the environment.
+        saved = {key: os.environ.get(key) for key in sim_workers.header_env(path)}
+        os.environ.update(sim_workers.header_env(path))
         own = int(read_keys(path.read_text(encoding="utf-8")).get("seed", "1"))
         for seed in args.seeds or [own]:
             target = variant(path, seed if seed != own else None, args.ticks, scratch / "seeds")
@@ -306,6 +311,11 @@ def main() -> int:
                 print(f"     {line[:200]}")
             if not r.passed and args.shrink:
                 shrink(host, game_dir, target, r, args.timeout, scratch / "shrunk", args.runs)
+        for key, value in saved.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
     passed = sum(r.passed for r in results)
     print(f"{passed}/{len(results)} chaos runs passed")
     return 0 if passed == len(results) else 1

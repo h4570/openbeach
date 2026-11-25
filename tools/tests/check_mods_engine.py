@@ -5,13 +5,46 @@ import argparse
 import json
 import os
 from pathlib import Path
+import random
 import shutil
 import subprocess
 import tempfile
+import time
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURES = ROOT / "tests/mods"
+# Mutants of the working fixtures the fuzz test checks. The default is a short run for every push; a long run passes
+# --fuzz-iterations (or OBL_FUZZ_ITERATIONS) and --fuzz-seed, see docs/modding/testing.md#fuzzing.
+FUZZ_ITERATIONS = int(os.environ.get("OBL_FUZZ_ITERATIONS", "16"))
+FUZZ_SEED = int(os.environ.get("OBL_FUZZ_SEED", "1"))
+SMALL_MODS = 120
+SMALL_MODS_SECONDS = 60
+TEXT_SUFFIXES = {".json", ".obs", ".wsc", ".lua"}
+
+
+def mutate(text, rng):
+    """One small seeded change that parsers meet in the wild: a flipped, dropped, repeated or truncated piece, or a changed value."""
+    if not text:
+        return "{"
+    kind = rng.randrange(8)
+    at = rng.randrange(len(text))
+    span = rng.randint(1, 12)
+    if kind == 0:
+        return text[:at] + chr(rng.randrange(32, 127)) + text[at + 1:]
+    if kind == 1:
+        return text[:at] + text[at + span:]
+    if kind == 2:
+        return text[:at] + text[at:at + span] * rng.randint(2, 40) + text[at:]
+    if kind == 3:
+        return text[:at]
+    if kind == 4:
+        return text[:at] + rng.choice(["-1", "0", "99999999999999999999", "1e999", "null", "[]", "{}", '""', "true"]) + text[at + span:]
+    if kind == 5:
+        return text[:at] + "[" * rng.randint(50, 400) + text[at:]
+    if kind == 6:
+        return text[:at] + r"\u0000\ud800" + text[at:]
+    return text[:at] + "\r\n\x00" + text[at:]
 
 
 class ModChecker(unittest.TestCase):
@@ -142,9 +175,62 @@ class ModChecker(unittest.TestCase):
         code, output = self.run_checker()
         self.assertEqual(code, 0, output)
 
+    def test_many_small_mods_start_in_time(self):
+        """Start-up with a long mod list: every mod brings its own text patch, and the checker still loads them all in time."""
+        names = []
+        for i in range(SMALL_MODS):
+            name = f"l0_small_{i}"
+            directory = self.game / "mods" / name / "text"
+            directory.mkdir(parents=True)
+            (directory.parent / "mod.json").write_text(json.dumps({
+                "format": "obl.mod", "version": 1, "id": name, "title": f"Small {i}", "mod_version": "1.0.0",
+                "pack": "l0", "scope": "world"}), encoding="utf-8")
+            (directory / "en.patch.json").write_text(json.dumps({
+                "format": "obl.text_patch", "version": 1, "entries": {f"SMALL_{i}": f"Small mod {i}"}}), encoding="utf-8")
+            names.append(name)
+        started = time.monotonic()
+        code, output = self.run_checker(names)
+        seconds = time.monotonic() - started
+        self.assertEqual(code, 0, output)
+        self.assertLess(seconds, SMALL_MODS_SECONDS, f"{SMALL_MODS} small mods took {seconds:.1f} s")
+        print(f"{SMALL_MODS} small mods checked in {seconds:.1f} s")
+
+    def test_fuzzed_fixtures_never_crash_the_checker(self):
+        """Seeded mutants of the working fixtures (manifests, patches, scripts): the checker may refuse them, never crash or hang."""
+        rng = random.Random(FUZZ_SEED)
+        sources = [p for p in sorted(FIXTURES.iterdir()) if p.is_dir() and p.name != "broken" and (p / "mod.json").exists()]
+        crashes = []
+        for i in range(FUZZ_ITERATIONS):
+            source = rng.choice(sources)
+            name = f"fz_{i}"
+            target = self.game / "src" / name
+            shutil.copytree(source, target)
+            manifest = json.loads((target / "mod.json").read_text(encoding="utf-8"))
+            manifest["id"] = name
+            (target / "mod.json").write_text(json.dumps(manifest), encoding="utf-8")
+            files = [p for p in sorted(target.rglob("*")) if p.is_file() and p.suffix in TEXT_SUFFIXES]
+            victim = rng.choice(files)
+            victim.write_text(mutate(victim.read_text(encoding="utf-8", errors="replace"), rng), encoding="utf-8", newline="")
+            label = f"{i} {source.name}/{victim.relative_to(target).as_posix()}"
+            try:
+                code, output = self.run_checker(source=target)
+            except subprocess.TimeoutExpired:
+                crashes.append(f"{label}: timed out")
+                continue
+            if code < 0 or code >= 0x80000000 or "Sanitizer" in output:
+                crashes.append(f"{label}: exit {code}")
+        self.assertEqual([], crashes, f"seed {FUZZ_SEED}, iterations {FUZZ_ITERATIONS}")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("engine", type=Path)
-    ENGINE = parser.parse_args().engine.resolve()
+    parser.add_argument("--fuzz-iterations", type=int, help="mutants the fuzz test checks (default 16, OBL_FUZZ_ITERATIONS)")
+    parser.add_argument("--fuzz-seed", type=int, help="seed of the mutants (default 1, OBL_FUZZ_SEED)")
+    arguments = parser.parse_args()
+    ENGINE = arguments.engine.resolve()
+    if arguments.fuzz_iterations is not None:
+        FUZZ_ITERATIONS = arguments.fuzz_iterations
+    if arguments.fuzz_seed is not None:
+        FUZZ_SEED = arguments.fuzz_seed
     unittest.main(argv=[__file__])

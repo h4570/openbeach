@@ -1,0 +1,8 @@
+# The chaos bot with the whole combined mod set (docs/modding/testing.md#bots-and-chaos): the same list as tests/l0_mods_combined.txt,
+# on the own L0 pack. No save-at: the L0 scenario keeps a message balloon up for the whole run, so a round trip reports "unsaved".
+# @env OBL_PACK=l0
+# @env OBL_MODS=l0_patch,l0_catalog,l0_ice_stand,l0_busker,l0_world_script,l0_world_events,l0_overlay,l0_settings,l0_actions,l0_state,l0_gui_patch
+OBL-chaos 1
+start scenario s1
+seed 1
+max-ticks 3000

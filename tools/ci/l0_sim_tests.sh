@@ -17,6 +17,12 @@ rm -rf "$game"
 # Data/ stays empty: it only marks the directory as a game directory for obl_sim_tests.py.
 mkdir -p "$game/packs/l0" "$game/Data"
 cp -R "$root/data/packs/l0/." "$game/packs/l0/"
+# The test mods, for the run files that name them in an `# @env OBL_MODS=` line (tests/bots/l0/build_tree_mods.bot); `broken/` holds
+# fixtures for the checker, not mods.
+mkdir -p "$game/mods"
+for mod in "$root"/tests/mods/*/; do
+    [ "$(basename "$mod")" = broken ] || cp -R "$mod" "$game/mods/"
+done
 # A settings file of the current version, as a played install has: without it the game ignores the @gameini values
 # (settings::LoadMain keeps the defaults) and l0_gameplay reads language 0.
 printf '[Beach Life Options]\nVersion=1\n' > "$game/BeachLife.ini"

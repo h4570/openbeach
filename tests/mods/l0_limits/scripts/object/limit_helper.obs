@@ -1,0 +1,30 @@
+#obl-script 1 object
+// Test script of an object a mod script created: it stays in the resort, so the limits count it.
+
+State STATE_NULL
+	OnUpdate
+	End
+	OnEntry
+		Set WalkAnimation "D_WALK_NORMAL";
+		Set StandAnimation "D_STAND_NORMAL";
+		Set WalkSpeed 60;
+		ChangeState STATE_STARTUP;
+	End
+End
+
+State STATE_STARTUP
+	OnUpdate
+	End
+	OnEntry
+		ChangeState STATE_LIMIT_HOLD;
+	End
+	OnExit
+		PlayAnimation WalkAnimation;
+	End
+End
+
+State STATE_LIMIT_HOLD
+	OnEntry
+		PlayAnimation StandAnimation;
+	End
+End

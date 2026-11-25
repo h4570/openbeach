@@ -76,7 +76,7 @@ entry) and `tests/replay_<name>.txt` the manifest test that replays it.
 | `l0_rejected` | L0, 371 ticks: 24 refused commands of every family between accepted ones |
 | `l0_mismatch` | hand-edited from the first 100 ticks of `l0_commands`: @50 a wrong total with two wrong section digests (buildings, staff), @70 a wrong total without digests (`replay_mismatch.txt`); refresh @0/@100 when `l0_commands` is re-recorded (the file's comment says how to refresh @50) |
 
-The `l0_*` scripts carry `# @env OBL_PACK=l0`; `replay.ps1 -Record` reads it (or `-Pack l0`) for the checks, and the manifest
+The `l0_*` scripts carry `# @env OBL_PACK=l0`; `replay.ps1 -Record` reads it (or `-Pack l0`) for the checks, and `# @env OBL_MODS=` (or `-Mods`) for a replay recorded with mods, and the manifest
 scripts replay with the same header.
 
 ```powershell

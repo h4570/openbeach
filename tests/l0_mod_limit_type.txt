@@ -1,0 +1,24 @@
+# The per-type limit of CreateObject (docs/modding/testing.md#limits): helpers stay in the resort, so a new day starts the daily count
+# again but the type's count goes on. One visitor makes about 16 helpers a day, under the daily limit, and the 41st helper of
+# the type stops the game on a later day.
+# @env OBL_PACK=l0
+# @env OBL_MODS=l0_limits
+# @timeout 240
+# @expect-exit 1
+# @expect-log FatalError: .*Function CreateObject: the limit of 40 objects of the type "limit_helper"
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario 1
+await gameplay
+world-script-change STATE_WORLD_AFTERGAME
+command set-game-speed level=2
+step 1
+spawn-guests 1
+step 2000
+expect day 0
+step 1000
+expect day 1
+step 3200
+expect day 2
+step 8000
+quit

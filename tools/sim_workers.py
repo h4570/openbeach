@@ -8,6 +8,7 @@ writable items as private copies (new top-level files land in the worker directo
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -19,6 +20,18 @@ COPIED_DIRS = {"savegames", "photos", "replays", "world-hashes", "captures"}
 # Left out: the log is written fresh; testlogs holds the workers themselves, a worker starts with an empty one (its
 # fixtures are written by an earlier entry of the same worker: tools/obl_sim_tests.py runs those in one job).
 LEFT_OUT = {"openbeach.log", "testlogs"}
+
+
+def header_env(path: Path) -> dict:
+    """The `# @env NAME=VALUE` lines of a run file (bot, chaos): the environment its host needs, e.g. OBL_PACK=l0 and OBL_MODS."""
+    env = {}
+    if not path.is_file():
+        return env
+    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        m = re.match(r"\s*#\s*@env\s+(\w+)=(.*?)\s*$", line)
+        if m:
+            env[m.group(1)] = m.group(2)
+    return env
 
 
 def default_jobs() -> int:

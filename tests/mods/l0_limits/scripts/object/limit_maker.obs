@@ -1,0 +1,39 @@
+#obl-script 1 object
+// Test script of the limits of the generic functions (docs/modding/testing.md#limits): every visitor creates one helper about every 240 ticks at speed level 2,
+// without end, so the first limit it passes stops the game with a message naming the function and the line.
+
+State STATE_NULL
+	OnUpdate
+	End
+	OnEntry
+		Set WalkAnimation "D_WALK_NORMAL";
+		Set StandAnimation "D_STAND_NORMAL";
+		Set WalkSpeed 60;
+		ChangeState STATE_STARTUP;
+	End
+End
+
+State STATE_STARTUP
+	OnUpdate
+	End
+	OnEntry
+		ChangeState STATE_LIMIT_MAKE;
+	End
+	OnExit
+		PlayAnimation WalkAnimation;
+	End
+End
+
+State STATE_LIMIT_MAKE
+	OnEntry
+		PlayAnimation StandAnimation;
+		Message MT_LIMIT_TICK Me 0 0 Time 240;
+	End
+	Message MT_LIMIT_TICK
+		OnReceipt
+			Set Arg1 "limit_helper";
+			Function CreateObject;
+			Message MT_LIMIT_TICK Me 0 0 Time 240;
+		End
+	End
+End

@@ -35,7 +35,8 @@ seed 1
 max-ticks 3000
 save-at 1500
 ```
-`start scenario <name>` and `max-ticks` are required. `seed` (1), `fixed-dt` (0.02), `save-at` (none: no round trip),
+`start scenario <name>` and `max-ticks` are required. `# @env NAME=VALUE` comment lines give the host its environment (`OBL_PACK=l0`, `OBL_MODS=a,b`): `tools/chaos_runs.py` and the ctest entries pass them on, as do the bot runs
+([../modding/testing.md](../modding/testing.md#bots-and-chaos)). `seed` (1), `fixed-dt` (0.02), `save-at` (none: no round trip),
 `checkpoint-every` (500), `check-rejected` (2) and `commands <replay>` (a fixed command list relative to the run file,
 played instead of the generator: a shrunk finding) are optional. `--headless <file>.chaos` runs it (`OpenBeach.exe`
 or the Linux `obl-sim`):

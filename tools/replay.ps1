@@ -7,6 +7,8 @@
 #       one replay run whose log and checkpoint snapshots stay in a directory: replay the same file with a good and a bad build
 #       (or two configs) and compare the directories with world_hash_compare.ps1 for the first differing field.
 #   -Pack l0 replays on the own L0 pack (OBL_PACK=l0); -Record takes it from the script's `# @env OBL_PACK=` header.
+#   -Mods a,b,c replays with those mods (OBL_MODS); -Record takes the list from the script's `# @env OBL_MODS=` header, so the
+#       last step (replaying the new file) runs with the mods the recording had.
 param(
     [string]$Record,
     [string]$Replay,
@@ -14,6 +16,7 @@ param(
     [string]$GameDir = '',
     [string]$OutDir,
     [string]$Pack = '',
+    [string]$Mods = '',
     [double]$TimeoutScale = 1
 )
 $ErrorActionPreference = 'Stop'
@@ -47,6 +50,7 @@ function New-ReplayScript([string]$File, [string]$Name) {
     New-Item -ItemType Directory -Force $dir | Out-Null
     $path = Join-Path $dir "replay-$Name.txt"
     $lines = @("# @timeout $timeout", "replay $File", 'quit')
+    if ($Mods) { $lines = @("# @env OBL_MODS=$Mods") + $lines }
     if ($Pack) { $lines = @("# @env OBL_PACK=$Pack") + $lines }
     [IO.File]::WriteAllLines($path, [string[]]$lines)
     $path
@@ -71,6 +75,10 @@ $name = $Matches[1]
 if (-not $Pack) {
     $header = Select-String -LiteralPath $script -Pattern '^\s*#\s*@env\s+OBL_PACK=(\w+)' | Select-Object -First 1
     if ($header) { $Pack = $header.Matches[0].Groups[1].Value }
+}
+if (-not $Mods) {
+    $header = Select-String -LiteralPath $script -Pattern '^\s*#\s*@env\s+OBL_MODS=(\S*)' | Select-Object -First 1
+    if ($header) { $Mods = $header.Matches[0].Groups[1].Value }
 }
 $target = Join-Path ([IO.Path]::GetDirectoryName($script)) "$name.replay"
 # The recording script writes `record replays/<name>.replay` into the game directory.

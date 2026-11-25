@@ -75,6 +75,11 @@ l0="$build/l0-run"
 rm -rf "$l0"
 mkdir -p "$l0/packs/l0" "$l0/Data"
 cp -R "$root/data/packs/l0/." "$l0/packs/l0/"
+# The test mods for run files that name them in an `# @env OBL_MODS=` line (tests/bots/l0/build_tree_mods.bot).
+mkdir -p "$l0/mods"
+for mod in "$root"/tests/mods/*/; do
+    [ "$(basename "$mod")" = broken ] || cp -R "$mod" "$l0/mods/"
+done
 printf '[Beach Life Options]\nVersion=1\n' > "$l0/BeachLife.ini"
 step "L0 tests without game data" sim_tests --game-dir "$l0" \
     --filter l0_boot l0_gameplay l0_guests l0_goal l0_builders "l0_bot_*"
