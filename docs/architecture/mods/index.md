@@ -37,6 +37,14 @@ script or a change of the scope rule adds its line here.
   mod building supplies its own build-panel icon and preview without replacing the pack's shared `UI3_bp_thumb` /
   `UI3_bp_preview` atlases (`gui_image_list.h`, `gui_variable_image.cpp`). `tools/make_sprite.py` converts PNG frames into
   indexed `obl.sprite` assets (including building `color`/`depth`/`lightmap` planes and UI icons).
+- Building traits (`BuildingTraits` in `src/game/tables/building_behavior.h`, [buildings.md](../../modding/reference/buildings.md#traits)):
+  `behavior` fills the defaults via `DefaultBuildingTraits` and optional fields in `obl.building` v2 (`power_exempt`, `boards_guests`,
+  `contamination_safe`, `counts_as_bar`, `owns_swimming_area`, `toilet`, `water_cleaner`, `power_generator`, `instant_build`,
+  `patrol_exempt`, `initial_rental_stock`, `accommodation`, `idle_sound`, `object_script`) override individual traits. Engine sites query
+  `BuildingDef::m_Traits` instead of `m_Behavior` except for single-building geometry/UI cases. When `object_script` is set, `Building`
+  runs the object script while standing with its own `m_scriptState` (separate from `Building::m_state`), saved as optional
+  `building.script_state` by name and hashed in world snapshots only when `m_script != nullptr`, so buildings without a script keep their
+  existing saves and hashes.
 
 ## Installing an archive
 

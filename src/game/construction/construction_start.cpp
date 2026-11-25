@@ -42,7 +42,7 @@ struct StartEnv {
             facts->buildTime = def->m_BuildTime;
             facts->demolishTime = def->m_DemolishTime;
             facts->hasFootprint = def->m_footprint != nullptr;
-            facts->jetty = def->m_Behavior == BuildingBehavior::Jetty;
+            facts->jetty = def->m_Traits.instantBuild;
         }
         return true;
     }

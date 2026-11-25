@@ -497,7 +497,7 @@ template<class Env> void Draw(Env& env, Building& b)
     }
 
     // The toilets smoke and breed flies when they have not been cleaned for long; a broken building smokes above its top point.
-    if (b.m_definition->m_Behavior == BuildingBehavior::Toilet && !env.Demolishing(id)) {
+    if (b.m_definition->m_Traits.toilet && !env.Demolishing(id)) {
         if (static_cast<uint32_t>(b.m_VisitsSinceCleaned) > 0x1e) {
             SpriteInstance* smoke = env.CreateSprite("test_smoke");
             env.InWorld(smoke, world, env.Time());

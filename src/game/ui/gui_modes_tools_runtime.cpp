@@ -985,7 +985,7 @@ bool RunCanDirect(ui::GuiModeSendStaff* mode, const uint32_t* tile, int* targetI
     case StaffRule::Cleaner: {
         const auto objects = ObjectsUnderCursor();
         if (!objects.empty() && IsType(objects[0], object::ObjectType::Building) && !hasJob(objects[0]) &&
-                static_cast<const object::Building*>(objects[0])->m_definition->m_Behavior == BuildingBehavior::Toilet)
+                static_cast<const object::Building*>(objects[0])->m_definition->m_Traits.toilet)
             pick(objects[0]);
         forEachOnTile([](const Object* o) {
             return IsType(o, object::ObjectType::Scenery) && DefinitionOf(o)->m_clean != 0 &&

@@ -1,0 +1,15 @@
+{
+  "format": "obl.json_patch",
+  "version": 1,
+  "ops": [
+    {
+      "op": "append",
+      "path": "/available_buildings",
+      "items": [
+        "trait_pier",
+        "trait_bar",
+        "trait_stage"
+      ]
+    }
+  ]
+}

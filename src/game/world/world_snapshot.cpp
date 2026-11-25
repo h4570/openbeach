@@ -38,11 +38,11 @@ constexpr std::string_view kObjectFields[]{"class", "active_objects", "active_bu
         "building.user_closed", "building.called_for_inspection", "building.called_for_repair", "building.built_by_user",
         "building.table_count", "building.queue", "building.queue.owner", "shark.owner", "table.owner", "vehicle.owner",
         "building.queue.max_length", "building.queue.guests", "building.queue.guests[]", "building.queue.commodities",
-        "building.queue.commodities[]", "building.lounger_count", "building.influence_area", "lifeguard.influence_area", "static.grid_w",
-        "static.grid_h", "static.cleaner_claimed", "static.mechanic_claimed", "static.called_cleaning", "static.urgent_cleaning",
-        "static.called_repairing", "static.urgent_repairing", "builder.job_type", "staff.home", "staff.wage", "staff.salary_expectation",
-        "staff.start_time", "staff.end_time", "staff.hired_on", "staff.sacked", "staff.ended_shift", "vehicle.current_capacity",
-        "vehicle.way_point_count", "vehicle.current_way_point", "vehicle.vehicle_type"};
+        "building.queue.commodities[]", "building.lounger_count", "building.influence_area", "building.script_state",
+        "lifeguard.influence_area", "static.grid_w", "static.grid_h", "static.cleaner_claimed", "static.mechanic_claimed",
+        "static.called_cleaning", "static.urgent_cleaning", "static.called_repairing", "static.urgent_repairing", "builder.job_type",
+        "staff.home", "staff.wage", "staff.salary_expectation", "staff.start_time", "staff.end_time", "staff.hired_on", "staff.sacked",
+        "staff.ended_shift", "vehicle.current_capacity", "vehicle.way_point_count", "vehicle.current_way_point", "vehicle.vehicle_type"};
 
 const std::unordered_set<std::string_view>& ObjectFields()
 {

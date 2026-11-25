@@ -1,0 +1,8 @@
+# Replays l0_mod_building_traits.replay with l0_building_traits active: verifies deterministic world hashes across every checkpoint.
+# @env OBL_PACK=l0
+# @env OBL_MODS=l0_building_traits
+# @timeout 180
+seed 1
+fixed-dt 0.02
+replay replays/l0_mod_building_traits.replay
+quit

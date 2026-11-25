@@ -325,6 +325,11 @@ public:
         BoolValue("sprite.triggered_sound", out["triggered_sound"], sprite.m_triggeredSound);
     }
 
+    void BuildingScriptState(int32_t state)
+    {
+        Place("building.script_state") = formats::SaveStateValue(formats::SaveStateSet::ObjectState, state, &m_context.objectStates);
+    }
+
     // The base object's records after the identity records (kBaseFields): the head's flags and state, the draw fields, the sprite.
     void BaseFields(const object::Base& o)
     {
@@ -497,6 +502,7 @@ bool WriteObjectJson(const object::Base& o, const JsonContext& context, ordered_
     case ObjectType::Building: {
         const auto& building = static_cast<const object::Building&>(o);
         object::VisitFields(building, writer);
+        if (building.m_script != nullptr) writer.BuildingScriptState(building.m_scriptState);
         WriteStatic(building, writer);
         // The rotation is the sprite direction (0..3, a quarter turn each), the object's `dir` after the records (the converter's).
         const uint32_t dir = out["sprite"]["dir"].get<uint32_t>();

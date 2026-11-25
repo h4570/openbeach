@@ -10,6 +10,10 @@
 
 namespace obl::object {
 
+// Flag set on MT_STATECHANGE posted by a building's own object script (ChangeState), so Building::ReceiveMessage
+// routes it to Building::m_scriptState without touching Building::m_state (construction/working/demolition).
+inline constexpr int32_t kBuildingScriptStateChangeFlag = 1;
+
 // The object script interpreter (script_program_exec.h) run on a game object: the state lists (entry, exit, update), message
 // receipt and sending. Everything the script does to the object (variables, built-in functions, messages, animation, sound) goes
 // through the object's virtual methods (docs/architecture/objects.md "Execution"). Each entry counts its

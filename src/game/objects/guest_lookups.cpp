@@ -157,8 +157,8 @@ Building* ComplaintsHut()
 
 Building* WharfOrStop()
 {
-    object::Base* found = FirstBuilding(BuildingBehavior::ShipStop);
-    return static_cast<Building*>(found ? found : FirstBuilding(BuildingBehavior::BusStop));
+    const auto list = obl::object_manager::FindArrivalStops(*GetObjectManager());
+    return list.empty() ? nullptr : static_cast<Building*>(list.front());
 }
 
 // The goal is the first fitting point around the serve position: walkpoint 0 (y first, then x) and walkpoint index 0, then the guest walks there on the pavement.

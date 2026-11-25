@@ -199,6 +199,7 @@ template<class Env> EnterReport EnterState(Env& env, object::Building& building,
 inline bool ShowSwimmingAreaFlag(object::Building& building, bool open)
 {
     ui::SpriteInstance* flag = building.m_animSprites[0];
+    if (!flag) return false;
     const int32_t anim = open ? 0 : 1;
     if (flag->m_animIndex == anim) return false;
     flag->m_animIndex = anim;
@@ -233,7 +234,7 @@ template<class Env> ExitReport ExitState(Env& env, object::Building& building, c
     ExitReport report;
     if (building.m_state != kBuildingStateStartup) return report;
     report.startupDone = true;
-    if (building.m_definition->m_Behavior == BuildingBehavior::LifeguardPost) {
+    if (building.m_definition->m_Traits.ownsSwimmingArea) {
         report.swimmingArea = true;
         building.m_InfluenceArea = env.FindSwimmingArea();
         ShowSwimmingAreaFlag(building, env.IsSwimmingAreaOpen(building.m_InfluenceArea));
@@ -516,9 +517,7 @@ template<class Env> int BoardVehicle(Env& env, object::Building& building, const
 // building named COMPLAINTHUT, where the guest stays where it stands. Env: `void Enqueue(int32_t guestId, bool moveGuest, int32_t slot)`. Returns `moveGuest`.
 template<class Env> bool WaitForBoat(Env& env, object::Building& building, const messages::Message& message)
 {
-    const BuildingBehavior behavior = building.m_definition->m_Behavior;
-    const bool moveGuest =
-            behavior != BuildingBehavior::ShipStop && behavior != BuildingBehavior::BusStop && behavior != BuildingBehavior::ComplaintsHut;
+    const bool moveGuest = !building.m_definition->m_Traits.boardsGuests;
     env.Enqueue(message.sender, moveGuest, 0);
     return moveGuest;
 }
@@ -650,8 +649,7 @@ inline constexpr float kReadyDelay = 3.0f;
 template<class Env> GuestServedReport GuestServed(Env& env, object::Building& building, const messages::Message& message)
 {
     GuestServedReport report;
-    const BuildingBehavior behavior = building.m_definition->m_Behavior;
-    if (behavior == BuildingBehavior::ShipStop || behavior == BuildingBehavior::BusStop || behavior == BuildingBehavior::ComplaintsHut) {
+    if (building.m_definition->m_Traits.boardsGuests) {
         env.BoardQueuedGuests(message.sender);
         report.boarded = true;
         return report;
@@ -863,10 +861,8 @@ template<class Env> ImReadyReport ImReady(Env& env, object::Building& building, 
     float* category = nullptr;
     switch (def.m_Category) {
     case 0:
-        category = building.m_definition->m_Behavior == BuildingBehavior::Hotel ||
-                        building.m_definition->m_Behavior == BuildingBehavior::AccomBlock
-                ? &world.m_accomIncomeToday
-                : &world.m_retailIncomeToday;
+        category = building.m_definition->m_Traits.accommodation != AccommodationKind::None ? &world.m_accomIncomeToday
+                                                                                            : &world.m_retailIncomeToday;
         break;
     case 1: category = &world.m_retailIncomeToday; break;
     case 2: category = &world.m_attractIncomeToday; break;
@@ -882,8 +878,7 @@ template<class Env> ImReadyReport ImReady(Env& env, object::Building& building, 
     const int32_t family = env.FamilyOf(commodity);
     if ((family == env.FamilyId("MEALS") || family == env.FamilyId("SNACKS") || family == env.FamilyId("ALCOHOL") ||
                 family == env.FamilyId("SOFTDRNK")) &&
-            world.m_waterContam > 0.0f && building.m_definition->m_Behavior != BuildingBehavior::IceStall &&
-            building.m_definition->m_Behavior != BuildingBehavior::FastFood) {
+            world.m_waterContam > 0.0f && !building.m_definition->m_Traits.contaminationSafe) {
         uint32_t cleaners = 0;
         object::Base* const* list = env.FindBuildings(BuildingBehavior::WaterCleaner, cleaners);
         float amount = world.m_waterContam;

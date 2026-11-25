@@ -5,7 +5,9 @@
 #include "game/game/rng.h"
 #include "game/messages/message_state.h"
 #include "game/objects/script_program_types.h"
+#include "game/objects/entity_lifecycle.h"
 #include "game/objects/object_base.h"
+#include "game/objects/object_building.h"
 #include "game/objects/script_program_exec.h"
 #include "game/objects/mod_script_functions.h"
 #include "game/objects/script_program_api.h"
@@ -52,6 +54,8 @@ public:
     ScriptValue GetValue(int32_t key, void* data) const
     {
         if (mod_script::IsRegister(key)) return m_registers.Get(key);
+        if (key == entity::lifecycle::kKeyState && m_object->m_type == object::ObjectType::Building)
+            return ScriptValue{entity::lifecycle::kTypeInt, static_cast<const object::Building*>(m_object)->m_scriptState};
         ScriptValue out{};
         m_object->GetValue(&out, key, reinterpret_cast<intptr_t>(data));
         return out;
@@ -79,8 +83,28 @@ public:
             if (row.id == id) name = row.name.c_str();
         FatalError("A mod object script failed at line %d: Function %s: %s", line, name, error.c_str());
     }
-    void Send(const Message& message) const { m_object->Send(message); }
-    void SendDelayed(const Message& message, float delay) const { m_object->SendDelayed(message, delay); }
+    void Send(const Message& message) const
+    {
+        if (m_object->m_type == object::ObjectType::Building && message.type == messages::MT_STATECHANGE &&
+                message.receiver == static_cast<int32_t>(m_object->m_id)) {
+            Message tagged = message;
+            tagged.flags = kBuildingScriptStateChangeFlag;
+            m_object->Send(tagged);
+            return;
+        }
+        m_object->Send(message);
+    }
+    void SendDelayed(const Message& message, float delay) const
+    {
+        if (m_object->m_type == object::ObjectType::Building && message.type == messages::MT_STATECHANGE &&
+                message.receiver == static_cast<int32_t>(m_object->m_id)) {
+            Message tagged = message;
+            tagged.flags = kBuildingScriptStateChangeFlag;
+            m_object->SendDelayed(tagged, delay);
+            return;
+        }
+        m_object->SendDelayed(message, delay);
+    }
     float PlayAnimation(const char* name, int32_t reverse, int32_t exitState, int32_t loop, const char* finish) const
     {
         return m_object->PlayAnimation(name, static_cast<uint32_t>(reverse), exitState, static_cast<uint32_t>(loop), finish);
@@ -91,7 +115,11 @@ public:
         audio::CurrentSound()->Play3D(name, position, 1, -1);
     }
     int32_t Id() const { return static_cast<int32_t>(m_object->m_id); }
-    int32_t State() const { return m_object->m_state; }
+    int32_t State() const
+    {
+        if (m_object->m_type == object::ObjectType::Building) return static_cast<const object::Building*>(m_object)->m_scriptState;
+        return m_object->m_state;
+    }
     int Rand() const { return game::Rand(); }
     // A float script value converted to int the same way as everywhere else in the simulation (script_value::ToInt).
     int32_t FloatToIntWrap(int32_t floatBits) const { return script_value::ToInt(ex::kTypeFloat, static_cast<uint32_t>(floatBits)); }

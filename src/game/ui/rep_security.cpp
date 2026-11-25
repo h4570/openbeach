@@ -82,7 +82,7 @@ template<class Member> struct GameEnv {
     }
     bool IsJetty(const object::Base* building)
     {
-        return static_cast<const object::Building*>(building)->m_definition->m_Behavior == BuildingBehavior::Jetty;
+        return static_cast<const object::Building*>(building)->m_definition->m_Traits.patrolExempt;
     }
     bool IsApproachable(object::Base* guest) { return object::GuestIsApproachable(static_cast<object::Guest&>(*guest)); }
     bool FindWalkablePointNear(float pos[3], int dx, int dy) { return kFindWalkable(&member, pos, dx, dy); }

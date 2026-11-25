@@ -48,7 +48,8 @@ public:
     {
         object::Base* object = ObjectById(id);
         if (static_cast<uint8_t>(object->m_type) != static_cast<uint8_t>(object::ObjectType::Building)) return BuildingBehavior::None;
-        return static_cast<Building*>(object)->m_definition->m_Behavior;
+        const auto* def = static_cast<Building*>(object)->m_definition;
+        return def && def->m_Traits.toilet ? BuildingBehavior::Toilet : BuildingBehavior::None;
     }
     bool IsCleanerClaimed(int id) { return static_cast<Prop*>(ObjectById(id))->IsCleanerClaimed(); }
     bool IsMechanicClaimed(int id) { return static_cast<Prop*>(ObjectById(id))->IsMechanicClaimed(); }

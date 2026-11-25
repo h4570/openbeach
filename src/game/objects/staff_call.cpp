@@ -272,7 +272,7 @@ struct LifeguardEnv : CleanerEnv {
     void FindBeach() { LifeguardFindBeach(Lifeguard()); }
     object::Base* Hotel()
     {
-        const auto hotels = obl::object_manager::FindBuildings(*GetObjectManager(), BuildingBehavior::Hotel);
+        const auto hotels = obl::object_manager::FindBuildingsByAccommodation(*GetObjectManager(), AccommodationKind::Hotel);
         return hotels.empty() ? nullptr : hotels.front();
     }
     void Teleport(object::Base* object, float x, float y, float z) { static_cast<object::Mover*>(object)->Teleport(x, y, z); }

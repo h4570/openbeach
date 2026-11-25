@@ -308,6 +308,8 @@ struct BuildingDef {
     std::vector<int> m_VehicleDir = std::vector<int>(kBuildingVehiclePlaces);
     // The catalog's `behavior` (building_behavior.h): the engine's dispatch value, read from the building's key by the converter.
     BuildingBehavior m_Behavior{};
+    // Combinable traits derived from m_Behavior and optionally overridden by fields in catalog/buildings/<key>.json.
+    BuildingTraits m_Traits{};
     int16_t m_ServeOffset[2]{}; // X/YSERVEOFFSET
     int16_t m_StaffOffset[2]{}; // STAFF_X/YOFFSET
     uint32_t m_BuildOn{}; // BUILDON mask: LAND 1, BEACH 2, SHALLOW_WATER 4, DEEP_SEA 8, WATER 0xc

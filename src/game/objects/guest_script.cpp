@@ -161,7 +161,12 @@ public:
     object::Base* Object(int32_t id) const { return object_manager::ObjectById(GetObjectManager(), id); }
     object::Base* const* FindBuildings(BuildingBehavior behavior, uint32_t& count) const
     {
-        m_found = obl::object_manager::FindBuildings(*GetObjectManager(), behavior);
+        if (behavior == BuildingBehavior::Hotel)
+            m_found = obl::object_manager::FindBuildingsByAccommodation(*GetObjectManager(), AccommodationKind::Hotel);
+        else if (behavior == BuildingBehavior::BusStop)
+            m_found = obl::object_manager::FindArrivalStops(*GetObjectManager());
+        else
+            m_found = obl::object_manager::FindBuildings(*GetObjectManager(), behavior);
         count = static_cast<uint32_t>(m_found.size());
         return m_found.data();
     }

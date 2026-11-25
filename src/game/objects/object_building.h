@@ -14,6 +14,9 @@
 namespace obl::object {
 struct BuildingEvents;
 }
+namespace obl::script {
+struct ScriptProgram;
+}
 
 // The name for facade readers that only need the forward declaration.
 namespace obl::world_data {
@@ -155,6 +158,11 @@ struct Building : Prop {
     ThoughtList m_ThoughtList;
     int32_t m_InfluenceArea = 0;
     float m_buildingAnimTime = 0;
+    // Optional mod object script (BuildingTraits::objectScript): looked up on construction, runs while standing (states 0 and 4).
+    // Its own state is separate from Building::m_state (the construction/working/demolition lifecycle) and saved only when m_script != nullptr.
+    script::ScriptProgram* m_script = nullptr;
+    int32_t m_scriptState = 0;
+    uint8_t m_scriptEntered = 0;
 };
 
 // The building's save records, then Prop's (the caller). Visitor: Int/UInt/Float/Bool(key, field, hashed),

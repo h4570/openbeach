@@ -5105,6 +5105,9 @@
           "$ref": "#/$defs/f32",
           "default": 0.0
         },
+        "script_state": {
+          "$ref": "#/$defs/object_state"
+        },
         "sprites": {
           "type": "array",
           "items": {

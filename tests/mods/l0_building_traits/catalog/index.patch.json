@@ -1,0 +1,11 @@
+{
+  "format": "obl.catalog_index_patch",
+  "version": 1,
+  "add": {
+    "buildings": [
+      "trait_pier",
+      "trait_bar",
+      "trait_stage"
+    ]
+  }
+}

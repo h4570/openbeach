@@ -114,8 +114,7 @@ template<class Env> void CollectPowerGenerators(Table& table, float dt, Env& env
     table.m_rows.m_end = table.m_rows.m_begin;
     for (uint32_t i = 0, count = static_cast<uint32_t>(objects.m_buildings.size()); i < count; ++i) {
         object::Base* building = objects.m_buildings[i];
-        if (static_cast<const object::Building*>(building)->m_definition->m_Behavior == BuildingBehavior::PowerGenerator &&
-                !building->m_waitingForDeath)
+        if (static_cast<const object::Building*>(building)->m_definition->m_Traits.powerGenerator && !building->m_waitingForDeath)
             PushWidget(table.m_rows, building, env);
     }
     table.m_count = RowCount(table);
