@@ -4,7 +4,7 @@
 
 <p align="center">Open the page and drop your own Beach Life disc image (.iso).<br>
 It works on Windows, macOS, Linux and Android, in any modern browser.<br>
-Mods add optional features on top: install them from a zip file or a catalog on the Mods screen.</p>
+Make it yours with mods: drop in a zip or add a catalog, right from the Mods screen.</p>
 
 <p align="center">
   <a href="https://github.com/h4570/openbeach/stargazers"><img src="https://raw.githubusercontent.com/h4570/openbeach/stargazers-data/stargazers.svg" alt="Stargazers of OpenBeach"></a>
@@ -23,6 +23,7 @@ Mods add optional features on top: install them from a zip file or a catalog on 
   <img src="https://img.shields.io/badge/Browser-supported-0078D4?logo=googlechrome&logoColor=white" alt="Browser">
   <img src="https://img.shields.io/badge/macOS-experimental-FF7A59?logo=apple&logoColor=white" alt="macOS: experimental">
   <img src="https://img.shields.io/badge/Android-experimental-FF7A59?logo=android&logoColor=white" alt="Android: experimental">
+  <a href="docs/modding/index.md"><img src="https://img.shields.io/badge/Mods-experimental-FF7A59?logo=lua&logoColor=white" alt="Mods: experimental"></a>
 </p>
 
 <p align="center">
