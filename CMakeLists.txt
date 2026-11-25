@@ -72,6 +72,7 @@ add_subdirectory(src/formats)
 add_subdirectory(src/game)
 add_subdirectory(importer)
 add_subdirectory(src/app)
+add_subdirectory(src/catalog_tool)
 add_subdirectory(src/imgdiff)
 add_subdirectory(src/launcher)
 

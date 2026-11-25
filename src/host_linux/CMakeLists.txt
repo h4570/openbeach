@@ -79,6 +79,16 @@ if(NOT ANDROID)
     target_include_directories(synthetic_old_save PRIVATE ${REPO} ${REPO}/tests/unit ${REPO}/importer/include)
     add_executable(launcher_old_saves_helper ${REPO}/tests/tools/launcher_old_saves_main.cpp ${REPO}/src/launcher/old_saves.cpp)
     target_include_directories(launcher_old_saves_helper PRIVATE ${REPO}/src/launcher)
+    # Signer/verifier for obl.mod_catalog indexes using the engine's own Ed25519 and canonical-JSON code.
+    add_executable(obl_catalog_sign
+        ${REPO}/src/catalog_tool/main.cpp
+        ${REPO}/src/core/os.cpp
+        ${REPO}/src/core/pack_path.cpp
+        ${REPO}/src/core/sha256.cpp
+        ${REPO}/src/game/mods/ed25519.cpp
+        ${REPO}/src/game/mods/mod_catalog.cpp)
+    target_include_directories(obl_catalog_sign PRIVATE ${REPO}/src ${REPO})
+    target_link_libraries(obl_catalog_sign PRIVATE nlohmann_json::nlohmann_json)
 endif()
 FetchContent_Declare(pl_mpeg
     URL https://raw.githubusercontent.com/phoboslab/pl_mpeg/c871f2be022ece7ef4f64230b4fb8e1fb9eb6023/pl_mpeg.h

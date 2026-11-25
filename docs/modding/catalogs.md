@@ -77,6 +77,11 @@ Catalog indexes are signed with **Ed25519** (RFC 8032):
 4. Sign those bytes with the catalog's 32-byte Ed25519 private seed and write the 64-byte signature as 128 lowercase hex
    characters into `"signature"`.
 
+Use `tools/build_catalog.py` (with `obl_catalog_sign`, built from `src/catalog_tool/`) to package mod directories into
+deterministic ZIP archives, fill `size` and `sha256`, sign `catalog.json` with the engine's own Ed25519 implementation,
+and verify the result with the engine's parser. The private key is read from an environment variable
+(`OBL_CATALOG_PRIVATE_KEY` by default) or `--key-file` and is never stored in the repository.
+
 When a player adds a catalog, OpenBeach pins its `public_key` in `mod-catalogs.json` (trust on first use). On every refresh,
 the signature is verified against the downloaded `public_key`, and that key is compared against the pinned key. If the key
 changes, the game refuses the update and warns the player, requiring explicit confirmation before trusting the new key.
