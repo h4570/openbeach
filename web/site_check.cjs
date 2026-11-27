@@ -1,7 +1,8 @@
 // Runs the site's page logic (site.js) under Node against a fake DOM, OPFS and Worker: which layer shows, when the game
-// script is added, what the importer worker is sent. With a site directory (tools/web_site.sh's output) it also checks
-// that every file the page loads is there. tools/wasm_linux.sh runs it.
-//   node site_check.cjs [<site.js>] [--site <directory>]
+// script is added, what the importer worker is sent. With --pages <directory> (site_pages.cjs's output) it checks the
+// rendered language pages and sitemap without needing the WebAssembly build. With --site <directory> (tools/web_site.sh's
+// output) it also checks that every file the page loads is there. tools/wasm_linux.sh and CI lint run it.
+//   node site_check.cjs [<site.js>] [--pages <directory>] [--site <directory>]
 // Exit code 1 on a failed check.
 "use strict";
 
@@ -16,6 +17,8 @@ function check(condition, what) {
 }
 
 const args = process.argv.slice(2);
+const pagesIndex = args.indexOf("--pages");
+const pagesDir = pagesIndex >= 0 ? args.splice(pagesIndex, 2)[1] : null;
 const siteIndex = args.indexOf("--site");
 const siteDir = siteIndex >= 0 ? args.splice(siteIndex, 2)[1] : null;
 const scriptPath = args[0] || path.join(__dirname, "site.js");
@@ -601,6 +604,8 @@ async function main() {
 
     check(withLanguage("[Beach Life Options]\r\n[Language]\r\nLanguage=0\r\n", "fr") ===
         "[Beach Life Options]\r\nVersion=1\r\n[Language]\r\nLanguage=1\r\n", "language: a main section without Version gets it");
+
+    if (pagesDir) checkLanguagePages(pagesDir);
 
     if (siteDir) {
         // The page, its script, what it loads and the wasm beside each Emscripten script.

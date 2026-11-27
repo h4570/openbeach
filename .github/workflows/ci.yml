@@ -25,9 +25,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # A change to documentation alone (tools/ci_changes.py) skips the builds and tests; lint still checks the docs. Skipped
-  # jobs count as passed for the required checks, so the matrix job `unit` skips its steps instead of the job: a skipped
-  # matrix job reports under another name.
+  # A change to documentation or the browser site alone (tools/ci_changes.py) skips the builds and game tests; lint still
+  # checks the docs and the rendered site pages. Skipped jobs count as passed for the required checks, so the matrix job
+  # `unit` skips its steps instead of the job: a skipped matrix job reports under another name.
   changes:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -37,7 +37,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
-      - name: Documentation only?
+      - name: Documentation or site only?
         id: changes
         env:
           EVENT: ${{ github.event_name }}
@@ -87,6 +87,10 @@ jobs:
           python tests/tools/test_check_docs.py
           python tests/tools/test_gui_frame_checkers.py
           python -m unittest discover -s tools/tests
+      - name: Site checks
+        run: |
+          node web/site_pages.cjs build/site-pages
+          node web/site_check.cjs web/site.js --pages build/site-pages
 
   unit:
     needs: changes
