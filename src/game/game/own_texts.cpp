@@ -200,11 +200,11 @@ constexpr Row kModsRows[] = {
                         u"Requiere un juego m\x00e1s reciente (API %s)", u"Wymaga nowszej gry (API %s)"}},
         {"OBL_MODS_PROBLEM_ENGINE",
                 {u"Needs OpenBeach %s or newer",
-                        u"N e9"
-                        u"cessite OpenBeach %s ou plus r e9"
+                        u"N\x00e9"
+                        u"cessite OpenBeach %s ou plus r\x00e9"
                         u"cent",
-                        u"Richiede OpenBeach %s o pi f9 recente", u"Ben f6tigt OpenBeach %s oder neuer",
-                        u"Requiere OpenBeach %s o m e1s reciente", u"Wymaga OpenBeach %s lub nowszego"}},
+                        u"Richiede OpenBeach %s o pi\x00f9 recente", u"Ben\x00f6tigt OpenBeach %s oder neuer",
+                        u"Requiere OpenBeach %s o m\x00e1s reciente", u"Wymaga OpenBeach %s lub nowszego"}},
         {"OBL_MODS_GAME_VERSION", {u"OpenBeach %s", u"OpenBeach %s", u"OpenBeach %s", u"OpenBeach %s", u"OpenBeach %s", u"OpenBeach %s"}},
         {"OBL_MODS_PROBLEM_MISSING",
                 {u"Needs %s, which is off",
