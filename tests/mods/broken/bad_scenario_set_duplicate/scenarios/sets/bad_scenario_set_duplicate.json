@@ -1,0 +1,10 @@
+{
+  "format": "obl.scenario_set",
+  "version": 1,
+  "id": "bad_scenario_set_duplicate",
+  "title": "L0_TITLE",
+  "scenarios": [
+    { "scenario": "bad_scenario_set_duplicate_one" },
+    { "scenario": "bad_scenario_set_duplicate_one" }
+  ]
+}

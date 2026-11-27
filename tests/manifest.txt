@@ -92,3 +92,4 @@ replay_l0_rejected.txt @l0
 replay_l0_mod_script.txt @l0
 replay_l0_mod_world_script.txt @l0
 replay_l0_mod_world_script_refused.txt @l0
+l0_mod_scenario_sets.txt @l0

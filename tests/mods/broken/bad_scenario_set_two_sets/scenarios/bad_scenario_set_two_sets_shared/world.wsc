@@ -1,0 +1,9 @@
+#obl-script 1 world
+State STATE_WORLD_STARTUP
+	OnEntry
+	End
+	OnUpdate
+	End
+	OnExit
+	End
+End

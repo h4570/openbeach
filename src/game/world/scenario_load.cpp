@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <fstream>
+#include <set>
 #include <stdexcept>
 
 namespace obl::scenario_load {
@@ -172,6 +173,20 @@ bool LoadPack(const std::filesystem::path& pack, std::string_view id, Setup& out
         const json scenario = ReadDocument(file, schemas, "obl.scenario");
         const std::string mapId = scenario.at("map").get<std::string>();
         const auto mapFile = pack_path::Resolve(pack, std::filesystem::path("maps") / mapId / "map.json");
+        std::error_code ec;
+        if (!std::filesystem::is_regular_file(mapFile, ec)) {
+            std::string message = "unknown map \"" + mapId + "\"";
+            const auto maps = ListMapIds(pack);
+            if (!maps.empty()) {
+                message += " (available maps: ";
+                for (size_t i = 0; i < maps.size(); ++i) {
+                    if (i > 0) message += ", ";
+                    message += maps[i];
+                }
+                message += ")";
+            }
+            throw std::runtime_error(message);
+        }
         const json map = ReadDocument(mapFile, schemas, "obl.map");
         out = Fill(scenario, map, std::string(id));
         return true;
@@ -226,6 +241,61 @@ bool LoadCampaign(const std::filesystem::path& pack, Campaign& out, std::string&
         error = file.string() + ": " + failure.what();
         return false;
     }
+}
+
+bool LoadScenarioSet(const std::filesystem::path& file, ScenarioSetDefinition& out, std::string& error)
+{
+    error.clear();
+    try {
+        const json doc = ReadDocument(file, GetSchemas(), "obl.scenario_set");
+        ScenarioSetDefinition parsed;
+        parsed.id = doc.at("id").get<std::string>();
+        parsed.title = doc.at("title").get<std::string>();
+        parsed.description = doc.value("description", std::string());
+        for (const json& entry : doc.value("scenarios", json::array())) parsed.scenarios.push_back(entry.at("scenario").get<std::string>());
+        const std::string unlock = doc.value("unlock", std::string("sequential"));
+        parsed.unlock = unlock == "all" ? SetUnlock::All : SetUnlock::Sequential;
+        for (const json& id : doc.value("initially_available", json::array())) parsed.initiallyAvailable.push_back(id.get<std::string>());
+        for (const json& id : doc.value("requires_completed", json::array())) parsed.requiresCompleted.push_back(id.get<std::string>());
+        for (const json& entry : doc.value("sandboxes", json::array())) parsed.sandboxes.push_back(entry.at("scenario").get<std::string>());
+        const std::string sandboxUnlock = doc.value("sandbox_unlock", std::string("all"));
+        parsed.sandboxUnlock = sandboxUnlock == "set_completed" ? SandboxUnlock::SetCompleted : SandboxUnlock::All;
+        out = std::move(parsed);
+        return true;
+    } catch (const std::exception& failure) {
+        error = failure.what();
+        return false;
+    }
+}
+
+std::string ModPrefix(std::string_view modId)
+{
+    std::string prefix(modId);
+    for (char& c : prefix)
+        if (c == '-') c = '_';
+    return prefix;
+}
+
+bool HasModPrefix(std::string_view id, std::string_view modId)
+{
+    const std::string prefix = ModPrefix(modId);
+    if (prefix.empty()) return false;
+    return id == prefix || (id.size() > prefix.size() && id.starts_with(prefix) && id[prefix.size()] == '_');
+}
+
+std::vector<std::string> ListMapIds(const std::filesystem::path& pack)
+{
+    std::set<std::string> ids;
+    for (const auto& layer : pack_path::Layers(pack)) {
+        const auto mapsDir = layer / "maps";
+        std::error_code ec;
+        if (!std::filesystem::is_directory(mapsDir, ec)) continue;
+        for (std::filesystem::directory_iterator it(mapsDir, ec), end; !ec && it != end; it.increment(ec)) {
+            if (!it->is_directory(ec)) continue;
+            if (std::filesystem::is_regular_file(it->path() / "map.json", ec)) ids.insert(it->path().filename().string());
+        }
+    }
+    return {ids.begin(), ids.end()};
 }
 
 } // namespace obl::scenario_load

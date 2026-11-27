@@ -1,7 +1,7 @@
 function(obl_catalog_schemas target)
     set(root "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/..")
     set(OBL_CATALOG_SCHEMAS "")
-    foreach(name common catalog_index commodity_family commodity opening_hours desire desire_slot guest_need staff event beer fine vehicle table scenery building guest_set map scenario campaign text gui_layouts)
+    foreach(name common catalog_index commodity_family commodity opening_hours desire desire_slot guest_need staff event beer fine vehicle table scenery building guest_set map scenario campaign scenario_set text gui_layouts)
         set(path "${root}/data/schemas/${name}.schema.json")
         file(READ "${path}" content)
         set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${path}")

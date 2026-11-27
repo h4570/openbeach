@@ -42,6 +42,16 @@ int BeerId(const char* name)
 {
     return world_params::GetBeerId(game::GetWorldParams(), name);
 }
+bool IsFromActiveMod(const std::filesystem::path& resolved)
+{
+    const auto norm = resolved.lexically_normal();
+    for (const auto& mod : mod_pack::Active()) {
+        const auto rel = norm.lexically_relative(mod.directory.lexically_normal());
+        if (!rel.empty() && !rel.generic_string().starts_with("..")) return true;
+    }
+    return false;
+}
+
 // The loading bar starts from the length of the script text, as it did from the size of the `.ble` file.
 bool TryParse(WorldScript& script, const char* logicalPath, const ws::Memory& memory, uint32_t& size, std::string& error)
 {
@@ -57,6 +67,13 @@ bool TryParse(WorldScript& script, const char* logicalPath, const ws::Memory& me
     } catch (const std::exception& failure) {
         error = failure.what();
         return false;
+    }
+    if (IsFromActiveMod(pack_path::Resolve(g_packDirectory, logicalPath))) {
+        std::string reason;
+        if (!ws::ValidateModScenarioScript(script, reason)) {
+            error = reason;
+            return false;
+        }
     }
     return true;
 }
