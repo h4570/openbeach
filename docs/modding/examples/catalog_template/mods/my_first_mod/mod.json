@@ -3,6 +3,7 @@
   "version": 1,
   "id": "my_first_mod",
   "title": "My first mod",
+  "description": "Says what the mod does in a sentence or two.",
   "mod_version": "1.0.0",
   "pack": "l0",
   "scope": "world",

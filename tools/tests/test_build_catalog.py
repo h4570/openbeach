@@ -83,6 +83,17 @@ class BuildCatalogTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     build_catalog.build_entry(self.make_mod(root, {"engine_min": bad}), root / "out", "MIT")
 
+    def test_description_is_copied_and_checked(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            entry = build_catalog.build_entry(self.make_mod(root, {"description": "Warm evening light."}), root / "out", "MIT")
+            self.assertEqual(entry["description"], "Warm evening light.")
+        for bad in ("", "x" * 501, 7):
+            with self.subTest(description=bad), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                with self.assertRaises(ValueError):
+                    build_catalog.build_entry(self.make_mod(root, {"description": bad}), root / "out", "MIT")
+
     def test_sign_verify_and_determinism_with_engine_signer(self):
         signer = locate_signer()
         if signer is None:
