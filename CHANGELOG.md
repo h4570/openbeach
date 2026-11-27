@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.15.0](https://github.com/h4570/openbeach/compare/v1.14.0...v1.15.0) (2026-11-27)
+
+
+### Features
+
+* **game:** let mods and catalogs describe themselves ([4d93080](https://github.com/h4570/openbeach/commit/4d9308028e6c63eb969538c3e8397f41bee15448))
+* **game:** list a community mod catalog by default ([#188](https://github.com/h4570/openbeach/issues/188)) ([2ab3739](https://github.com/h4570/openbeach/commit/2ab373938048de7b6a32551b844728dec000f058))
+* **game:** split the mods screen into installed, browse and sources ([3afb326](https://github.com/h4570/openbeach/commit/3afb3267be5d677d6db81fdfb110fe4f9ae3b918))
+* **game:** switch a mod on when it is installed ([d751bdb](https://github.com/h4570/openbeach/commit/d751bdb8f21bf78ed64f139093ca1106249fd92f))
+
+
+### Bug Fixes
+
+* **game:** offer update only for an older installed mod ([766fa15](https://github.com/h4570/openbeach/commit/766fa1543b6fb67bb018d2515bbb5d1d1fa00354))
+* **game:** show the whole "needs a newer game" text in every language ([4284c93](https://github.com/h4570/openbeach/commit/4284c9368c2108acff7c178f6e4b4d25cd8b87ef))
+
 ## [1.14.0](https://github.com/h4570/openbeach/compare/v1.13.0...v1.14.0) (2026-11-27)
 
 
