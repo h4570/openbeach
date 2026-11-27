@@ -1,5 +1,20 @@
 # Publish a mod
 
+## Where players see it
+- **The official catalog**, which every player has: a mod that needs nothing but the engine, works on the L0 pack and
+  takes no game data can be proposed as a pull request that adds it to `data/mods/` of this repository, with its tests
+  and a page like the ones in [Official mods](../official-mods.md).
+- **A community catalog** for any other mod, for example one written for the converted `base` pack. Community catalogs
+  are run by their own maintainers, not reviewed by the OpenBeach project. Known ones:
+
+  | Catalog | Address | How to add a mod |
+  |---|---|---|
+  | Community Mods (listed in the game by default) | `https://openbeach-larry.github.io/mods/catalog.json` | A pull request to [openbeach-larry/mods](https://github.com/openbeach-larry/mods) |
+
+- **Your own catalog**: [Host your own mod catalog](own-catalog.md).
+
+## Steps
+
 1. Check the source with [check_mod.py](../reference/check-mods.md) on each target pack. Pick a version and include a license
    for the files you distribute.
 2. ZIP the mod folder with its `mod.json` directly inside that folder. Its name must equal the manifest id. For example,
