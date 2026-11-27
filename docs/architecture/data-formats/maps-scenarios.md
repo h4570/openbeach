@@ -97,9 +97,16 @@ Ids are ours and match the replay header (`s1`..`s12`, `sandbox1`..`sandbox12`; 
 - `available_buildings` replaces `BUILDING_<n>`; order and duplicates are kept, stopping at the first missing or
   wrong-type entry and the engine's 128 slots. `messages` names suppressed feedback message types, also stopping at
   the first gap; these are not greetings.
-- `objectives_title` preserves `SCENARIO_OBJ_OBJECTIVES`; `menu_texts` preserves the menu's independently generated
-  title/description keys. In sandbox gameplay the title uses `menu_texts.title`. Pictures may be image paths or
-  `{sprite, frame}` references; the installed game uses shared large/small sprite sheets, frame `n - 1`.
+- `objectives_title` preserves `SCENARIO_OBJ_OBJECTIVES`. The scenario menu reads the text keys
+  `menu_texts.title` and `menu_texts.description`. Sandbox gameplay and newly written sandbox saves also use
+  `menu_texts.title`. Campaign gameplay uses `title`. If `menu_texts` is absent, the engine uses `MAINSS_SCENARIO<n>_TITLE` and
+  `MAINSS_SCENARIO<n>_DESC`, or `MAINSS_SANDBOX<n>_TITLE` and `MAINSS_SANDBOX<n>_DESC` for sandboxes,
+  where `n` is the 1-based menu slot.
+- `pictures.large`, `pictures.load` and `pictures.save` select the menu and save panel previews. Each can
+  name a `{sprite, frame}` or a pack-relative PNG path. Active mods can override these assets. An omitted
+  picture uses frame `n - 1` of `ui3_fe_is_pics_large` for `large` and `ui3_fe_is_pics_small` for `load` and `save`.
+- `script` names the world script relative to `scenarios/<id>/`. It defaults to `world.wsc`. The engine looks
+  up the file through the pack and active mod layers.
 
 Conversion and engine checks: [converter/scenarios.md](converter/scenarios.md).
 

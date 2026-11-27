@@ -16,7 +16,7 @@
 // calls stays unit-tested without the game (tests/unit/world_script_host_test.cpp):
 //   void SetHost(WorldScriptHost*)                       game::Context::worldScriptHost
 //   void ConstructObject(ScriptProgram&) / LoadObject(ScriptProgram&, path) / DestroyObject(ScriptProgram&)
-//   void ConstructWorld(WorldScript&) / uint32_t LoadWorld(WorldScript&, path) / DestroyWorld(WorldScript&)
+//   void ConstructWorld(WorldScript&) / uint32_t LoadWorld(WorldScript&, path, logicalPath) / DestroyWorld(WorldScript&)
 // The former ten fixed slots were not bounds-checked; the vector has no limit.
 namespace obl::world_script_host {
 
@@ -38,12 +38,12 @@ public:
     }
 
     // WorldScriptHost::LoadScript: replaces the scenario script; returns what the loader returns (the `.ble` size).
-    template<class Env> uint32_t LoadScript(const char* path, Env& env)
+    template<class Env> uint32_t LoadScript(const char* path, const char* logicalPath, Env& env)
     {
         DropWorldScript(env);
         m_worldScript = std::make_unique<world_script::WorldScript>();
         env.ConstructWorld(*m_worldScript);
-        return env.LoadWorld(*m_worldScript, path);
+        return env.LoadWorld(*m_worldScript, path, logicalPath);
     }
 
     // WorldScriptHost::AddScriptProgram: one object logic under `name`, built and loaded from `path`.
@@ -91,7 +91,7 @@ public:
     // `world-script-host.*` counter). `Create` binds the game context's host, `Release` frees it and clears the binding.
     static WorldScriptHost* Create();
     static void Release(WorldScriptHost* host);
-    uint32_t Load(const char* path);
+    uint32_t Load(const char* path, const char* logicalPath);
     void LoadModScripts();
     void AddScript(const char* name, const char* path);
     script::ScriptProgram* Find(const char* name) const;

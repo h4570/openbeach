@@ -15,12 +15,12 @@ namespace obl::save_slots {
 struct Slot {
     int32_t m_number; // N of the file name
     uint32_t m_time; // save time (32-bit time_t)
-    int32_t m_scenario;
+    scenario_load::ScenarioRef m_scenario;
     int32_t m_day;
     float m_hour;
     float m_cash;
     int32_t m_guests;
-    char m_title[64]; // text-table key; the scanner reads but does not keep the sandbox flag
+    std::string m_title; // saved text-table key or plain title
     bool m_oblSave; // the slot's file is save<N>.obl.save, else the old save<N>.dat (save-switch.md)
 };
 
@@ -72,13 +72,6 @@ inline std::string SlotPath(int number)
     std::snprintf(path, sizeof(path), "savegames\\save%d.dat", number);
     return path;
 }
-// A sandbox save stores the title key, not the text; the key is 1-based.
-inline std::string SandboxTitleKey(int scenario)
-{
-    char title[128];
-    std::snprintf(title, sizeof(title), "MAINSS_SANDBOX%d_TITLE", scenario + 1);
-    return title;
-}
 // Row 0 of the save list is "new save"; rows 1..count are existing slots. An empty selection reads as row 0.
 inline int SelectedRow(const int* selBegin, const int* selEnd)
 {
@@ -112,7 +105,7 @@ void ClearSaveSlots();
 void FillLoadList();
 void FillSaveList();
 bool IsExistingSlotSelected();
-int SelectedImageId();
+const scenario_load::ScenarioPicture* SelectedLoadPicture();
 void RequestLoadSelected();
 void DeleteSelectedSave();
 void DeleteSelectedLoad();

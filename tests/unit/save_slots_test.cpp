@@ -55,7 +55,6 @@ OBL_TEST_CASE("save_slots.header_filename_path_and_selection")
     OBL_CHECK_EQ(obl::save_slots::SlotNumber("save12.dat"), 12);
     OBL_CHECK_EQ(obl::save_slots::SlotNumber("savex.dat"), 0);
     OBL_CHECK_EQ(obl::save_slots::SlotPath(3), std::string("savegames\\save3.dat"));
-    OBL_CHECK_EQ(obl::save_slots::SandboxTitleKey(0), std::string("MAINSS_SANDBOX1_TITLE"));
     int rows[] = {2};
     OBL_CHECK_EQ(obl::save_slots::SelectedRow(rows, rows), 0);
     OBL_CHECK_EQ(obl::save_slots::SelectedRow(rows, rows + 1), 2);
@@ -80,9 +79,10 @@ OBL_TEST_CASE("save_slots.obl_header_reads_the_summary_and_stops_after_the_heade
         "sandbox": false, "title": "MAINSS_S12_TITLE", "title_text": "Happy", "day": 3, "day_time": 7.75, "cash": "f32:7f800000",
         "guests": 12, "packs": [{"id": "beachlife-2002", "content_version": "1.0.0"}], "converted_from": {"file": "x"}}, "world": {)");
     obl::save_slots::Slot slot{};
-    OBL_REQUIRE(obl::save_slots::ReadOblHeader(in, slot, HeaderRegistry()));
+    const auto registry = HeaderRegistry();
+    OBL_REQUIRE(obl::save_slots::ReadOblHeader(in, slot, registry));
     OBL_CHECK_EQ(slot.m_time, 0xffffffffu);
-    OBL_CHECK_EQ(slot.m_scenario, 1);
+    OBL_CHECK_EQ(registry.Get(slot.m_scenario).menuSlot, 1);
     OBL_CHECK_EQ(slot.m_day, 3);
     OBL_CHECK_EQ(slot.m_hour, 7.75f);
     OBL_CHECK(std::isinf(slot.m_cash));
@@ -94,8 +94,11 @@ OBL_TEST_CASE("save_slots.obl_header_title_text_and_sandbox_number")
     std::istringstream in(R"({"format": "obl.save", "version": 2, "header": {"saved_at": 5, "scenario": "sandbox2", "sandbox": true,
         "title_text": "Plain", "day": 0, "day_time": 0, "cash": -1.5, "guests": 0, "packs": [], "converted_from": null}})");
     obl::save_slots::Slot slot{};
-    OBL_REQUIRE(obl::save_slots::ReadOblHeader(in, slot, HeaderRegistry()));
-    OBL_CHECK_EQ(slot.m_scenario, 1);
+    const auto registry = HeaderRegistry();
+    OBL_REQUIRE(obl::save_slots::ReadOblHeader(in, slot, registry));
+    const auto& entry = registry.Get(slot.m_scenario);
+    OBL_CHECK_EQ(entry.menuSlot, 1);
+    OBL_CHECK(entry.IsSandbox());
     OBL_CHECK_EQ(slot.m_cash, -1.5f);
     OBL_CHECK_EQ(std::string(slot.m_title), std::string("Plain"));
 }
@@ -117,18 +120,17 @@ OBL_TEST_CASE("save_slots.obl_header_rejects_other_documents")
         OBL_CHECK(!obl::save_slots::ReadOblHeader(in, slot, HeaderRegistry()));
     }
 }
-OBL_TEST_CASE("save_slots.obl_header_scenario_is_the_registry_menu_slot_of_its_id_and_kind")
+OBL_TEST_CASE("save_slots.obl_header_scenario_is_the_registry_reference_for_its_id_and_kind")
 {
     const auto read = [](const char* scenario, const char* sandbox) {
         std::istringstream in(std::string(R"({"format": "obl.save", "version": 2, "header": {"saved_at": 1, "scenario": ")") + scenario +
                 R"(", "sandbox": )" + sandbox + R"(, "title": "T", "day": 0, "day_time": 0, "cash": 0, "guests": 0}})");
         obl::save_slots::Slot slot{};
-        slot.m_scenario = -2;
         const bool listed = obl::save_slots::ReadOblHeader(in, slot, HeaderRegistry());
-        return listed ? slot.m_scenario : -2;
+        return listed ? slot.m_scenario.index : -2;
     };
     OBL_CHECK_EQ(read("s1", "false"), 2); // the third campaign entry, not the first
-    OBL_CHECK_EQ(read("s1", "true"), 0); // the same id as a sandbox has its own slot
+    OBL_CHECK_EQ(read("s1", "true"), 3); // the same id as a sandbox has its own entry
     OBL_CHECK_EQ(read("lagoon", "false"), 0); // an id without digits is listed
     OBL_CHECK_EQ(read("dunes", "false"), -1); // a sandbox id read as a campaign: no entry, listed without a picture
     OBL_CHECK_EQ(read("s7", "false"), -1); // a scenario the pack does not have

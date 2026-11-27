@@ -18,7 +18,8 @@ ScenarioRegistry::Entry MakeEntry(const std::string& id, ScenarioKind kind, int3
     entry.id = id;
     entry.kind = kind;
     entry.menuSlot = slot;
-    entry.pictures.frame = slot;
+    const SpritePicture small{"ui3_fe_is_pics_small", slot};
+    entry.pictures = {SpritePicture{"ui3_fe_is_pics_large", slot}, small, small};
     entry.textKeys = MenuTextKeys(slot, kind);
     return entry;
 }
@@ -46,7 +47,10 @@ bool ScenarioRegistry::LoadFromPack(const std::filesystem::path& pack, ScenarioR
 {
     Campaign campaign;
     if (!LoadCampaign(pack, campaign, error)) return false;
-    out = FromCampaign(campaign);
+    auto registry = FromCampaign(campaign);
+    for (Entry& entry : registry.m_entries)
+        if (!LoadPresentation(pack, entry.id, entry.textKeys, entry.pictures, error)) return false;
+    out = std::move(registry);
     return true;
 }
 

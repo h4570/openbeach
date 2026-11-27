@@ -144,9 +144,9 @@ void Sandbox(Game* game, uint8_t sandbox)
 }
 void Scan(Game* game)
 {
-    scenario_load::Campaign campaign;
-    LoadCampaignOrFatal(campaign);
-    game_logic::ScanScenarios(*game, campaign);
+    std::string error;
+    if (!scenario_load::ScenarioRegistry::LoadFromPack(pack_path::Selected(), game->m_scenarioRegistry, error))
+        FatalError("Scenario registry: %s. Import the game data again", error.c_str());
 }
 uint8_t ReturnToMenu(Game* game)
 {

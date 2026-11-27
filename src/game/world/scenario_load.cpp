@@ -3,6 +3,7 @@
 #include "core/json_schema.h"
 #include "core/pack_path.h"
 #include "formats/data_patch.h"
+#include "formats/script_pack.h"
 
 #include <algorithm>
 #include <fstream>
@@ -29,6 +30,24 @@ json ReadDocument(const std::filesystem::path& path, const json_schema::Registry
     return doc;
 }
 
+const json_schema::Registry& GetSchemas()
+{
+    // Validation caches references and patterns, so reuse the schemas across the entries in a campaign scan.
+    static thread_local const auto schemas = [] {
+        json_schema::Registry registry;
+        std::string error;
+        for (const char* schema : catalog::kSchemas)
+            if (!registry.Add(json::parse(schema), error)) throw std::runtime_error(error);
+        return registry;
+    }();
+    return schemas;
+}
+
+std::string ScenarioPath(std::string_view id)
+{
+    return "scenarios/" + std::string(id) + "/";
+}
+
 // The optional text of a converted key: absent (or null) means the lookup gave null.
 std::optional<std::string> OptionalText(const json& object, const char* key)
 {
@@ -44,13 +63,20 @@ std::string WaterAnimPath(const std::string& water)
     return "data/wateranims/WaterAnim" + water.substr(prefix.size()) + ".bin";
 }
 
-// The folder of a numbered scenario's own files (its script): `scenario<n>` for a campaign, `sandscenario<n>` for a sandbox. A sandbox
-// plays on its campaign's island, so its script folder is not its map's.
-std::string ScenarioFolder(const std::string& id)
+// Keep the name the script host received for numbered scenarios. The file lookup uses the JSON path.
+std::string HostScriptPath(std::string_view id)
 {
-    constexpr std::string_view sandbox = "sandbox";
-    if (id.compare(0, sandbox.size(), sandbox) == 0) return "sandscenario" + id.substr(sandbox.size());
-    return "scenario" + id.substr(1);
+    const bool sandbox = id.starts_with("sandbox");
+    if (!sandbox && !id.starts_with('s')) return {};
+    const std::string_view number = id.substr(sandbox ? 7 : 1);
+    if (number.empty() || number.find_first_not_of("0123456789") != std::string_view::npos) return {};
+    return MapPath((sandbox ? "sandscenario" : "scenario") + std::string(number), ".lgc");
+}
+
+ScenarioPicture ReadPicture(const json& picture)
+{
+    if (picture.is_string()) return picture.get<std::string>();
+    return SpritePicture{picture.at("sprite").get<std::string>(), picture.at("frame").get<int32_t>()};
 }
 
 Setup Fill(const json& scenario, const json& map, const std::string& id)
@@ -77,8 +103,8 @@ Setup Fill(const json& scenario, const json& map, const std::string& id)
     const std::string mapId = scenario.at("map").get<std::string>();
     s.mapId = mapId;
     s.mapFile = MapPath(mapId, ".biz");
-    const std::string folder = ScenarioFolder(id);
-    s.script = "data/Scenario/" + folder + "/" + folder + ".lgc";
+    s.script = ScenarioPath(id) + scenario.value("script", "world.wsc");
+    s.hostScript = HostScriptPath(id);
     s.heightMap = MapPath(mapId, "height.tga");
     s.grid = MapPath(mapId, "grid.dat");
     s.waterAnim = WaterAnimPath(map.at("water_anim").get<std::string>());
@@ -109,15 +135,40 @@ std::string ScenarioId(int number, bool sandbox)
     return (sandbox ? "sandbox" : "s") + std::to_string(number);
 }
 
+bool LoadPresentation(
+        const std::filesystem::path& pack, std::string_view id, ScenarioTextKeys& text, ScenarioPictures& pictures, std::string& error)
+{
+    error.clear();
+    const auto file = pack_path::Resolve(pack, ScenarioPath(id) + "scenario.json");
+    try {
+        const json scenario = ReadDocument(file, GetSchemas(), "obl.scenario");
+        if (const auto menu = scenario.find("menu_texts"); menu != scenario.end()) {
+            text.title = menu->at("title").get<std::string>();
+            text.description = menu->at("description").get<std::string>();
+        }
+        if (const auto fields = scenario.find("pictures"); fields != scenario.end()) {
+            if (fields->contains("large")) pictures.large = ReadPicture(fields->at("large"));
+            if (fields->contains("load")) pictures.load = ReadPicture(fields->at("load"));
+            if (fields->contains("save")) pictures.save = ReadPicture(fields->at("save"));
+        }
+        return true;
+    } catch (const std::exception& failure) {
+        error = file.string() + ": " + failure.what();
+        return false;
+    }
+}
+
+bool ReadWorldScript(const std::filesystem::path& pack, const std::filesystem::path& script, std::string& text, std::string& error)
+{
+    return script_pack::ReadScript(pack_path::Resolve(pack, script), script_pack::Kind::World, text, error);
+}
+
 bool LoadPack(const std::filesystem::path& pack, std::string_view id, Setup& out, std::string& error)
 {
     error.clear();
-    const auto file = pack_path::Resolve(pack, "scenarios/" + std::string(id) + "/scenario.json");
+    const auto file = pack_path::Resolve(pack, ScenarioPath(id) + "scenario.json");
     try {
-        json_schema::Registry schemas;
-        std::string schemaError;
-        for (const char* schema : catalog::kSchemas)
-            if (!schemas.Add(json::parse(schema), schemaError)) throw std::runtime_error(schemaError);
+        const auto& schemas = GetSchemas();
         const json scenario = ReadDocument(file, schemas, "obl.scenario");
         const std::string mapId = scenario.at("map").get<std::string>();
         const auto mapFile = pack_path::Resolve(pack, std::filesystem::path("maps") / mapId / "map.json");
@@ -168,10 +219,7 @@ bool LoadCampaign(const std::filesystem::path& pack, Campaign& out, std::string&
     error.clear();
     const auto file = pack_path::Resolve(pack, "scenarios/campaign.json");
     try {
-        json_schema::Registry schemas;
-        std::string schemaError;
-        for (const char* schema : catalog::kSchemas)
-            if (!schemas.Add(json::parse(schema), schemaError)) throw std::runtime_error(schemaError);
+        const auto& schemas = GetSchemas();
         out = ReadCampaign(ReadDocument(file, schemas, "obl.campaign"));
         return true;
     } catch (const std::exception& failure) {

@@ -21,17 +21,6 @@ struct ScenarioRef {
     constexpr bool operator==(const ScenarioRef&) const = default;
 };
 
-struct ScenarioPictures {
-    std::string largeSprite = "ui3_fe_is_pics_large";
-    std::string smallSprite = "ui3_fe_is_pics_small";
-    int32_t frame = 0;
-};
-
-struct ScenarioTextKeys {
-    std::string title;
-    std::string description;
-};
-
 // Owns the scenarios declared in scenarios/campaign.json with their kind, menu slot, pictures and text keys.
 class ScenarioRegistry {
 public:

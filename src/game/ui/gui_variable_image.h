@@ -1,5 +1,7 @@
 #pragma once
 
+#include "game/world/scenario_load.h"
+
 #include <cstdint>
 #include <iterator>
 #include <string>
@@ -74,8 +76,8 @@ public:
     virtual const void* BuildingAt(uint32_t index) const = 0;
 
     virtual bool EventIntensity(const void* provider, uint32_t slot, bool female, float& intensity) const = 0;
-    virtual int SelectedSaveImage() const = 0; // ui.game-get-selected-save-image-id, -1 none
-    virtual int ScenarioPicture() const = 0;
+    virtual const scenario_load::ScenarioPicture* SelectedSavePicture() const = 0;
+    virtual const scenario_load::ScenarioPictures* SelectedScenarioPictures() const = 0;
 
     virtual int SelectedBuilding() const = 0;
     virtual int SelectedScenery() const = 0;
@@ -110,6 +112,7 @@ public:
     virtual void SetAnimType(int type) = 0; // SpriteInstance::m_animType (3 = frame set from outside)
     virtual void SetFrame(int frame) = 0; // SpriteInstance::m_frameIndex
     virtual void SetDirection(int direction) = 0; // SpriteInstance::m_direction
+    virtual void DrawImageFile(const char* path, int x, int y) = 0;
     virtual void DrawClipped(int x, int y, uint32_t depth) = 0; // clipped draw with the animation time 999999.0
     virtual void Draw(int x, int y, int left, int top, int right, int bottom, uint32_t depth) = 0; // partial draw of the frame
     virtual void Release() = 0; // hands the instance back to the sprite bank
@@ -155,7 +158,7 @@ uint32_t Atoi(const char* text); // msvcrt atoi, wrapping
 
 // A canvas that only notes what was asked of it, with the metrics from `Env`.
 struct Call {
-    enum Kind { Create, DrawClipped, Draw } kind;
+    enum Kind { Create, DrawClipped, Draw, DrawFile } kind;
     CreateCall create; // Create
     std::string name; // Create: requested name; draws: the instance's name
     int animType, frame, direction; // instance state at the draw
@@ -177,6 +180,7 @@ public:
     void SetAnimType(int type) override { m_animType = type; }
     void SetFrame(int frame) override { m_frame = frame; }
     void SetDirection(int direction) override { m_direction = direction; }
+    void DrawImageFile(const char* path, int x, int y) override;
     void DrawClipped(int x, int y, uint32_t depth) override;
     void Draw(int x, int y, int left, int top, int right, int bottom, uint32_t depth) override;
     void Release() override { ++released; }

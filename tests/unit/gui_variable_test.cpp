@@ -171,9 +171,9 @@ public:
                 {"SP_DESC_PALM_TREE", u"A palm tree"}, {"BUILDMENU_APPEAL", u"Appeals"}, {"OBJ_SCENARIO_DESCRIPTION", u"Goal"},
                 {"OBJ_SCENARIO_OBJECTIVES", u"Tasks"}, {"OBJ_SCENARIO_PROGRESS", u"Progress"}, {"DESC_KEY", u"Build a resort"},
                 {"OBJS_KEY", u"Make money"}, {"TITLE_KEY", u"Beach Basics"}, {"OBJ_A", u"Objective A"}, {"OBJ_B", u"Objective B"},
-                {"OBJ_C", u"Objective C"}, {"OBJ_D", u"Objective D"}, {"MAINSS_SCENARIO3_TITLE", u"Scenario three"},
-                {"MAINSS_SANDBOX3_TITLE", u"Sandbox three"}, {"MAINSS_SCENARIO3_DESC", u"About scenario three"},
-                {"MAINSS_SANDBOX3_DESC", u"About sandbox three"}, {"MAINSS_SCENARIO_COMPLETE", u"Complete"},
+                {"OBJ_C", u"Objective C"}, {"OBJ_D", u"Objective D"}, {"REEF_MENU_TITLE", u"Scenario three"},
+                {"DUNES_MENU_TITLE", u"Sandbox three"}, {"REEF_MENU_DESC", u"About scenario three"},
+                {"DUNES_MENU_DESC", u"About sandbox three"}, {"MAINSS_SCENARIO_COMPLETE", u"Complete"},
                 {"MAINSS_SCENARIO_ALWAYS", u"Always open"}, {"MAINSS_SCENARIO_NOTCOMPLETED", u"Not completed"},
                 {"PM_BUILD_TREE_FORMAT", u"%d of %d built"}, {"PM_5_UNIQUE_FORMAT", u"%d unique"}, {"STAFFB_STAFF_ALL", u"%d staff"},
                 {"STAFFB_HIRED_MAXIMUM", u"%d %s (max %d)"}, {"STAFFB_TITLE_CLEANER", u"cleaner"}, {"STAFFB_FILTER_CLEANERS", u"cleaners"},
@@ -276,6 +276,8 @@ public:
     uint32_t ObjectiveStatus(uint32_t index) const override { return objectiveStatus[index]; }
     int WorldCounterValue(WorldCounter counter) const override { return counters[static_cast<int>(counter)]; }
     bool SandboxMode() const override { return sandbox; }
+    const char* MenuScenarioTitleKey() const override { return sandbox ? "DUNES_MENU_TITLE" : "REEF_MENU_TITLE"; }
+    const char* MenuScenarioDescriptionKey() const override { return sandbox ? "DUNES_MENU_DESC" : "REEF_MENU_DESC"; }
     int CurrentScenario() const override { return scenario; }
     bool ScenarioCompleted(int s) const override { return completed[s]; }
     bool ScenarioAlwaysAvailable(int s) const override { return always[s]; }

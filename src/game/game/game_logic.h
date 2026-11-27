@@ -61,13 +61,6 @@ template<class Env> void SetSandbox(game::Game& game, uint8_t sandbox, Env& env)
     LoadProgress(game, env);
 }
 
-// The scenario screen's names in directory-scan order; nothing is read from an installed
-// Data/Scenario tree. The names are ASCII, so widening is a plain cast.
-inline void ScanScenarios(game::Game& game, const scenario_load::Campaign& campaign)
-{
-    game.m_scenarioRegistry = scenario_load::ScenarioRegistry::FromCampaign(campaign);
-}
-
 // Variable env (Game::GetVariable):
 //   auto& Settings()                         scroll, sea, lighting and outline options
 //   bool StaffSelected()                     the GUI context's staff slot is set

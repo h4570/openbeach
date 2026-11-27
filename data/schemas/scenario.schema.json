@@ -131,7 +131,8 @@
                 },
                 "frame": {
                   "type": "integer",
-                  "minimum": 0
+                  "minimum": 0,
+                  "maximum": 2147483647
                 }
               },
               "required": [
@@ -155,7 +156,8 @@
                 },
                 "frame": {
                   "type": "integer",
-                  "minimum": 0
+                  "minimum": 0,
+                  "maximum": 2147483647
                 }
               },
               "required": [
@@ -179,7 +181,8 @@
                 },
                 "frame": {
                   "type": "integer",
-                  "minimum": 0
+                  "minimum": 0,
+                  "maximum": 2147483647
                 }
               },
               "required": [
@@ -199,7 +202,7 @@
       "description": "Name of a GUI dialog (gui/*.gui)."
     },
     "script": {
-      "description": "World script relative to the scenario directory.",
+      "description": "World script relative to the scenario directory (defaults to world.wsc).",
       "$ref": "obl.common#/$defs/path"
     },
     "objectives_title": {
@@ -232,8 +235,7 @@
     "start_view",
     "catalog",
     "guests",
-    "available_buildings",
-    "script"
+    "available_buildings"
   ],
   "additionalProperties": false
 }

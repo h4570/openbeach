@@ -6,11 +6,12 @@
 #include <string>
 #include <string_view>
 #include <utility>
+#include <variant>
 #include <vector>
 
 // The scenario the engine builds a world from (obl.scenario, maps-scenarios.md "Scenarios"): the converted `scenarios/<id>/scenario.json`
 // and the `maps/<map>/map.json` it names. The values are the ones the engine used to read from the `.pis` file (ConstructWorld's
-// header, texts, messages and buildings), so the same world results; the engine paths (BIZ, script, grid, water animation) are derived
+// header, texts, messages and buildings), so the same world results; the engine paths (BIZ, grid, water animation) are derived
 // from the map id exactly as the `.pis` file spells them.
 namespace obl::scenario_load {
 
@@ -40,7 +41,8 @@ struct Setup {
     std::vector<std::string> buildings; // BUILDING_<n>: the engine's spelling of each key (the catalog's "/key"), in order
     std::string mapId; // the pack's map id, the scenario's `map`
     std::string mapFile; // WORLD_MAPFILENAME: data/Scenario/<map>/<map>.biz
-    std::string script; // WORLD_SCRIPT: data/Scenario/<map>/<map>.lgc
+    std::string script; // logical pack path, scenarios/<id>/<script>
+    std::string hostScript; // WORLD_SCRIPT spelling passed to the host for numbered scenarios
     std::string heightMap; // WORLD_MAPHEIGHTMAP: data/Scenario/<map>/<map>height.tga
     std::string grid; // WORLD_MAPGRID: data/Scenario/<map>/<map>grid.dat
     std::string waterAnim; // WORLD_WATERANIM: data/wateranims/WaterAnim<n>.bin
@@ -55,6 +57,31 @@ struct Setup {
     std::optional<Radar> radar; // RADAR_IMAGE with RADAR_POSX/Y
     std::optional<std::string> progressDialog; // PROGRESS_DIALOG
 };
+
+struct SpritePicture {
+    std::string sprite;
+    int32_t frame = 0;
+};
+
+using ScenarioPicture = std::variant<SpritePicture, std::string>; // sprite frame or logical PNG path
+
+struct ScenarioPictures {
+    ScenarioPicture large;
+    ScenarioPicture load;
+    ScenarioPicture save;
+};
+
+struct ScenarioTextKeys {
+    std::string title;
+    std::string description;
+};
+
+// Applies the presentation fields of a validated scenario to the caller's defaults.
+bool LoadPresentation(
+        const std::filesystem::path& pack, std::string_view id, ScenarioTextKeys& text, ScenarioPictures& pictures, std::string& error);
+
+// Reads a world script at a logical pack path, including mod overrides.
+bool ReadWorldScript(const std::filesystem::path& pack, const std::filesystem::path& script, std::string& text, std::string& error);
 
 // Loads `<pack>/scenarios/<id>/scenario.json` and its map's `maps/<map>/map.json` (both validated against their schemas) into `out`.
 // Transactional: on failure `out` is untouched and `error` names the file and the reason.

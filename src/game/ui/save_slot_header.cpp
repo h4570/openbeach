@@ -136,15 +136,14 @@ bool ReadOblHeader(std::istream& in, Slot& slot, const scenario_load::ScenarioRe
     // at all. A scenario the pack no longer has keeps the save listed, without a picture (its load is refused with a message).
     const auto kind = *reader.sandbox ? scenario_load::ScenarioKind::Sandbox : scenario_load::ScenarioKind::Campaign;
     const auto ref = registry.FindById(reader.scenario, kind);
-    slot.m_scenario = ref ? registry.Get(*ref).menuSlot : -1;
+    slot.m_scenario = ref.value_or(scenario_load::ScenarioRef{});
     slot.m_time = *reader.savedAt;
     slot.m_day = int32_t(*reader.day);
     slot.m_hour = *reader.dayTime;
     slot.m_cash = *reader.cash;
     slot.m_guests = int32_t(*reader.guests);
     // The text-table key when the title is one, else its text (a title the old save stored as plain text).
-    const std::string& title = reader.title.empty() ? reader.titleText : reader.title;
-    std::snprintf(slot.m_title, sizeof(slot.m_title), "%s", title.c_str());
+    slot.m_title = reader.title.empty() ? std::move(reader.titleText) : std::move(reader.title);
     return true;
 }
 

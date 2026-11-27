@@ -314,7 +314,8 @@ OBL_TEST_CASE("data.scenario_load_matches_engine")
 
             OBL_CHECK_EQ(setup.mapFile, std::string(header.mapFile));
             OBL_CHECK_EQ(setup.mapId, obl::map_pack::BizMapId(header.mapFile));
-            OBL_CHECK_EQ(setup.script, std::string(header.script));
+            OBL_CHECK_EQ(setup.hostScript, std::string(header.script));
+            OBL_CHECK_EQ(setup.script, "scenarios/" + id + "/world.wsc");
             OBL_CHECK_EQ(setup.heightMap, std::string(header.heightmap));
             OBL_CHECK_EQ(setup.grid, std::string(header.grid));
             OBL_CHECK_EQ(setup.waterAnim, std::string(header.waterAnim));

@@ -27,7 +27,7 @@ using obl::world_script_host::WorldScriptHost;
 struct HostEnv {
     void SetHost(WorldScriptHost*) {}
     void ConstructWorld(WorldScript&) {}
-    uint32_t LoadWorld(WorldScript&, const char*) { return 0; }
+    uint32_t LoadWorld(WorldScript&, const char*, const char*) { return 0; }
     void DestroyWorld(WorldScript&) {}
     void DestroyObject(obl::script::ScriptProgram&) {}
 };
@@ -95,7 +95,7 @@ OBL_TEST_CASE("world_script_mod.scenario_script_then_mod_scripts_in_load_order_o
 {
     HostEnv env;
     WorldScriptHost host(env);
-    host.LoadScript("scenario.wsc", env);
+    host.LoadScript("scenario.wsc", "scenarios/s1/world.wsc", env);
     host.AddModWorldScript("first", "a.wsc", env);
     host.AddModWorldScript("second", "b.wsc", env);
     std::vector<std::string> order;

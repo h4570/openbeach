@@ -207,6 +207,16 @@ public:
     const char* ScenarioDescriptionKey() const override { return game::GetWorld()->m_scenarioDescription.c_str(); }
     const char* ScenarioObjectivesKey() const override { return game::GetWorld()->m_scenarioObjectives.c_str(); }
     const char* ScenarioTitleKey() const override { return game::GetWorld()->m_scenarioTitle.c_str(); }
+    const char* MenuScenarioTitleKey() const override
+    {
+        const auto* entry = game::SelectedEntry(*game::GetGame());
+        return entry ? entry->textKeys.title.c_str() : nullptr;
+    }
+    const char* MenuScenarioDescriptionKey() const override
+    {
+        const auto* entry = game::SelectedEntry(*game::GetGame());
+        return entry ? entry->textKeys.description.c_str() : nullptr;
+    }
     uint32_t ObjectiveCount() const override { return game::GetWorld()->m_numObjectives; }
 
     const char* ObjectiveKey(uint32_t index) const override { return index < 4 ? game::GetWorld()->m_objectiveText[index].c_str() : ""; }

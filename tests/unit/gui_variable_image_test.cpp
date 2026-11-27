@@ -32,7 +32,9 @@ public:
     bool hasEvents = true;
     float eventIntensity[4][2] = {};
     mutable uint32_t eventSlot = 99;
-    int saveImage = -1, scenarioPicture = 0;
+    obl::scenario_load::ScenarioPictures pictures{obl::scenario_load::SpritePicture{"ui3_fe_is_pics_large", 0},
+            obl::scenario_load::SpritePicture{"ui3_fe_is_pics_small", 0}, obl::scenario_load::SpritePicture{"ui3_fe_is_pics_small", 0}};
+    bool hasSelectedSave = false;
     std::map<std::string, bool> idle;
     std::map<std::string, SpriteMetrics> metrics;
     mutable std::vector<std::string> idleAsked;
@@ -125,8 +127,8 @@ public:
         intensity = eventIntensity[slot][isFemale ? 1 : 0];
         return true;
     }
-    int SelectedSaveImage() const override { return saveImage; }
-    int ScenarioPicture() const override { return scenarioPicture; }
+    const obl::scenario_load::ScenarioPicture* SelectedSavePicture() const override { return hasSelectedSave ? &pictures.load : nullptr; }
+    const obl::scenario_load::ScenarioPictures* SelectedScenarioPictures() const override { return &pictures; }
     bool HasIdleBuilding(const char* name) const override
     {
         idleAsked.push_back(name);
@@ -491,17 +493,20 @@ OBL_TEST_CASE("gui_variable_image.event_slot_past_the_shows_is_undefined")
 OBL_TEST_CASE("gui_variable_image.scenario_pictures_and_built_ticks")
 {
     FakeEnv env;
-    env.saveImage = -1;
     OBL_CHECK(Run("SCENARIO_PIC_LOAD", env).canvas.calls.empty());
-    env.saveImage = 2;
+    env.hasSelectedSave = true;
+    env.pictures.load = obl::scenario_load::SpritePicture{"reef_load_sheet", 2};
     Run load("SCENARIO_PIC_LOAD", env);
     OBL_REQUIRE(load.canvas.calls.size() == 2u);
-    OBL_CHECK(load.canvas.calls[0].name == "ui3_fe_is_pics_small");
+    OBL_CHECK(load.canvas.calls[0].name == "reef_load_sheet");
     OBL_CHECK_EQ(load.canvas.calls[1].frame, 2);
     OBL_CHECK_EQ(load.canvas.calls[1].animType, 3);
     OBL_CHECK_EQ(load.canvas.calls[1].depth, 0xffffu);
-    env.scenarioPicture = 5;
-    OBL_CHECK_EQ(FrameOf(Run("SCENARIO_PIC_SAVE", env)), 5);
+    env.pictures.save = "images/screens/reef_save.png";
+    Run save("SCENARIO_PIC_SAVE", env);
+    OBL_REQUIRE(save.canvas.calls.size() == 1u);
+    OBL_CHECK_EQ(save.canvas.calls[0].kind, Call::DrawFile);
+    OBL_CHECK_EQ(save.canvas.calls[0].name, "images/screens/reef_save.png");
 
     static const std::pair<const char*, const char*> kBuilt[] = {
             {"WATERCLN_BUILT", "WATERCLN"}, {"STORE_BUILT", "GENSTORE"}, {"CLUB2_BUILT", "CLUB2"}};
@@ -675,7 +680,7 @@ OBL_TEST_CASE("gui_variable_image.photos_follow_the_window_object")
     env.provider = nullptr;
     OBL_CHECK(DrawRun("STAFF_PHOTO", env).result == Result::Undefined);
     OBL_CHECK(DrawRun("GUEST_PHOTO", env).result == Result::Undefined);
-    env.scenarioPicture = 3;
+    std::get<obl::scenario_load::SpritePicture>(env.pictures.large).frame = 3;
     DrawRun large("SCENARIO_PIC_LARGE", env);
     OBL_CHECK(large.canvas.calls[0].name == "ui3_fe_is_pics_large");
     OBL_CHECK_EQ(large.canvas.calls[1].frame, 3);

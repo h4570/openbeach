@@ -89,7 +89,7 @@ OBL_TEST_CASE("Game logic resets progress from the campaign without a progress f
 {
     Game game{};
     FakeEnv env;
-    logic::ScanScenarios(game, logic::Campaign(env));
+    game.m_scenarioRegistry = obl::scenario_load::ScenarioRegistry::FromCampaign(logic::Campaign(env));
     logic::LoadProgress(game, env);
     OBL_CHECK(StateOf(game, 0) == State::AlwaysAvailable);
     OBL_CHECK(StateOf(game, 1) == State::Unlocked);
@@ -101,7 +101,7 @@ OBL_TEST_CASE("Game logic saves completion and loads it back with the next scena
 {
     Game game{};
     FakeEnv env;
-    logic::ScanScenarios(game, logic::Campaign(env));
+    game.m_scenarioRegistry = obl::scenario_load::ScenarioRegistry::FromCampaign(logic::Campaign(env));
     logic::LoadProgress(game, env);
     obl::game::SelectMenuSlot(game, 1);
     logic::CompleteScenario(game, env);
@@ -110,7 +110,7 @@ OBL_TEST_CASE("Game logic saves completion and loads it back with the next scena
     OBL_CHECK(StateOf(game, 2) == State::Unlocked);
 
     Game loaded{};
-    logic::ScanScenarios(loaded, logic::Campaign(env));
+    loaded.m_scenarioRegistry = obl::scenario_load::ScenarioRegistry::FromCampaign(logic::Campaign(env));
     logic::LoadProgress(loaded, env);
     OBL_CHECK(loaded.m_scenarioProgress.ToJson() == game.m_scenarioProgress.ToJson());
     OBL_CHECK_EQ(obl::game::SelectedMenuSlot(loaded), 2);
@@ -125,7 +125,7 @@ OBL_TEST_CASE("Game logic resets progress from a broken progress file")
     Game game{};
     FakeEnv env;
     env.files[obl::progress_file::kFileName] = "not json";
-    logic::ScanScenarios(game, logic::Campaign(env));
+    game.m_scenarioRegistry = obl::scenario_load::ScenarioRegistry::FromCampaign(logic::Campaign(env));
     logic::LoadProgress(game, env);
     OBL_CHECK(StateOf(game, 0) == State::AlwaysAvailable);
     OBL_CHECK(StateOf(game, 1) == State::Unlocked);
@@ -135,7 +135,7 @@ OBL_TEST_CASE("Game logic lists campaign and sandbox scenarios in name order")
 {
     Game game{};
     FakeEnv env;
-    logic::ScanScenarios(game, logic::Campaign(env));
+    game.m_scenarioRegistry = obl::scenario_load::ScenarioRegistry::FromCampaign(logic::Campaign(env));
     OBL_REQUIRE(game.m_scenarioRegistry.ListCount() == 5);
     OBL_CHECK(game.m_scenarioRegistry.ListName(0) == u"SandScenario1");
     OBL_CHECK(game.m_scenarioRegistry.ListName(2) == u"Scenario1");
@@ -156,7 +156,7 @@ OBL_TEST_CASE("Game logic answers the GUI variables")
     OBL_CHECK_EQ(Value(logic::GetVariable(game, "GAME_GAME_SPEED", env)), 3);
     OBL_CHECK_EQ(Value(logic::GetVariable(game, "GAME_GAME_SPEED_STATUS_2", env)), 1);
     FakeEnv campaignEnv;
-    logic::ScanScenarios(game, logic::Campaign(campaignEnv));
+    game.m_scenarioRegistry = obl::scenario_load::ScenarioRegistry::FromCampaign(logic::Campaign(campaignEnv));
     logic::LoadProgress(game, campaignEnv);
     OBL_CHECK_EQ(Value(logic::GetVariable(game, "GAME_SCENARIO_SELECT_STATUS_1", env)), 1);
     OBL_CHECK_EQ(Value(logic::GetVariable(game, "GAME_SCENARIO_SELECT_STATUS_2", env)), 0);
@@ -202,7 +202,7 @@ OBL_TEST_CASE("Game logic stores GUI variables and forwards them")
     logic::SetVariable(game, "GAME_SEA", 5, env);
     logic::SetVariable(game, "GAME_KEYLINES", 0, env);
     logic::SetVariable(game, "GAME_LIGHTS", 1, env);
-    logic::ScanScenarios(game, logic::Campaign(scenarioEnv));
+    game.m_scenarioRegistry = obl::scenario_load::ScenarioRegistry::FromCampaign(logic::Campaign(scenarioEnv));
     logic::SetVariable(game, "GAME_SCENARIO_SELECT", 1, env);
     logic::SetVariable(game, "GAME_GAME_SPEED", 2, env);
     logic::SetVariable(game, "PLAYLIST_MODE", 0, env);
