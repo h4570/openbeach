@@ -25,6 +25,32 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # A change to documentation alone (tools/ci_changes.py) skips the builds and tests; lint still checks the docs. Skipped
+  # jobs count as passed for the required checks, so the matrix job `unit` skips its steps instead of the job: a skipped
+  # matrix job reports under another name.
+  changes:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      code: ${{ steps.changes.outputs.code }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Documentation only?
+        id: changes
+        env:
+          EVENT: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+        run: |
+          case "$EVENT" in
+            pull_request) python3 tools/ci_changes.py --range "$PR_BASE...$PR_HEAD" >> "$GITHUB_OUTPUT" ;;
+            push) python3 tools/ci_changes.py --range "$PUSH_BEFORE..$GITHUB_SHA" >> "$GITHUB_OUTPUT" ;;
+            *) echo "code=true" >> "$GITHUB_OUTPUT" ;;
+          esac
+
   lint:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -63,6 +89,7 @@ jobs:
           python -m unittest discover -s tools/tests
 
   unit:
+    needs: changes
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     strategy:
@@ -77,25 +104,33 @@ jobs:
       CCACHE_MAXSIZE: 400M
       CCACHE_ARGS: -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
       OBL_UNIT_SKIP_DATA: "1"
+      CODE: ${{ needs.changes.outputs.code }}
     steps:
       - uses: actions/checkout@v5
+        if: env.CODE == 'true'
       - uses: actions/setup-python@v6
+        if: env.CODE == 'true'
         with:
           python-version: "3.12"
       - name: Packages
+        if: env.CODE == 'true'
         run: |
           sudo apt-get -o Acquire::Retries=3 update -q
           sudo apt-get install -y -q --no-install-recommends ninja-build zstd ccache clang
       - name: Compiler cache
+        if: env.CODE == 'true'
         uses: actions/cache@v5
         with:
           path: .ccache
           key: ccache-${{ matrix.compiler }}-${{ github.sha }}
           restore-keys: ccache-${{ matrix.compiler }}-
       - name: Unit tests
+        if: env.CODE == 'true'
         run: bash tools/unit_linux.sh ${{ matrix.compiler }} $CCACHE_ARGS -DOBL_UNIT_RELOCATABLE=ON
 
   sim:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     outputs:
@@ -184,6 +219,8 @@ jobs:
           if-no-files-found: ignore
 
   wasm:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     env:
