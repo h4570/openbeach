@@ -886,6 +886,14 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
         MarkDirty();
     }
 
+    mods::CatalogOffer OfferFor(const mods::CatalogEntry& entry) const
+    {
+        const mods::Entry* installed = m_list ? m_list->Find(entry.id) : nullptr;
+        if (!installed) return mods::CatalogOffer::Install;
+        const std::string version = installed->mod.valid ? installed->mod.manifest.modVersion : std::string();
+        return mods::OfferFor(entry, &version);
+    }
+
     int CatalogPageCount() const
     {
         if (m_catalogRows.empty()) return 1;
@@ -1072,6 +1080,8 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
     void InstallFromCatalog(const std::string& modId)
     {
         if (m_activeFetch.handle) return;
+        const auto row = std::find_if(m_catalogRows.begin(), m_catalogRows.end(), [&](const CatalogRow& r) { return r.entry.id == modId; });
+        if (row == m_catalogRows.end() || OfferFor(row->entry) == mods::CatalogOffer::UpToDate) return;
         std::vector<mods::CatalogEntry> available;
         available.reserve(m_catalogRows.size());
         for (const CatalogRow& r : m_catalogRows) available.push_back(r.entry);
@@ -1272,7 +1282,7 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
             // Selected catalog mod Install / Update button.
             const auto selIt = std::find_if(
                     m_catalogRows.begin(), m_catalogRows.end(), [&](const CatalogRow& r) { return r.entry.id == m_selectedCatalogModId; });
-            if (selIt != m_catalogRows.end()) {
+            if (selIt != m_catalogRows.end() && OfferFor(selIt->entry) != mods::CatalogOffer::UpToDate) {
                 const std::string id = selIt->entry.id;
                 m_targets.push_back(
                         {"catalog.install." + id, m_x0 + 414, m_y0 + 210, m_x0 + 570, m_y0 + 242, [this, id] { InstallFromCatalog(id); }});
@@ -1542,13 +1552,12 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
             own::Box(x0, rowY, x1, rowY + 44, m_round, selected ? m_pal.foam : m_pal.white, selected ? m_pal.sea : m_pal.border);
             own::Text(1, x0 + 10, rowY + 6, 360, Utf8ToEngine(row.entry.title).c_str(), m_pal.ink, 0);
 
-            const mods::Entry* installed = m_list ? m_list->Find(row.entry.id) : nullptr;
+            const mods::CatalogOffer offer = OfferFor(row.entry);
             std::u16string sub = Utf8ToEngine(row.entry.id + "  " + row.entry.modVersion + "  ");
             sub += ScopeText(row.entry.scope);
-            if (installed && installed->mod.valid) {
+            if (offer != mods::CatalogOffer::Install) {
                 sub += u"  (";
-                sub += Lookup(
-                        installed->mod.manifest.modVersion == row.entry.modVersion ? "OBL_MODS_CAT_UP_TO_DATE" : "OBL_MODS_CAT_UPDATE");
+                sub += Lookup(offer == mods::CatalogOffer::UpToDate ? "OBL_MODS_CAT_UP_TO_DATE" : "OBL_MODS_CAT_UPDATE");
                 sub += u")";
             }
             own::Text(0, x0 + 10, rowY + 24, 360, sub.c_str(), m_pal.grey, 0);
@@ -1591,9 +1600,14 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
                 own::Text(0, x0 + 10, y, innerW, Format(Lookup("OBL_MODS_REQUIRES"), {Utf8ToEngine(Join(e.requiresMods, ", "))}).c_str(),
                         m_pal.ink, 0);
             }
-            const mods::Entry* installed = m_list ? m_list->Find(e.id) : nullptr;
-            const char* btnKey = installed ? "OBL_MODS_CAT_UPDATE" : "OBL_MODS_CAT_INSTALL";
-            DrawButton(m_x0 + 414, m_y0 + 210, m_x0 + 570, m_y0 + 242, Lookup(btnKey).c_str(), m_pal.sea, m_pal.white);
+            const mods::CatalogOffer offer = OfferFor(e);
+            if (offer == mods::CatalogOffer::UpToDate) {
+                DrawButton(
+                        m_x0 + 414, m_y0 + 210, m_x0 + 570, m_y0 + 242, Lookup("OBL_MODS_CAT_UP_TO_DATE").c_str(), m_pal.sand, m_pal.grey);
+            } else {
+                const char* btnKey = offer == mods::CatalogOffer::Update ? "OBL_MODS_CAT_UPDATE" : "OBL_MODS_CAT_INSTALL";
+                DrawButton(m_x0 + 414, m_y0 + 210, m_x0 + 570, m_y0 + 242, Lookup(btnKey).c_str(), m_pal.sea, m_pal.white);
+            }
         }
 
         // Bottom card: added catalogs list + Add / Refresh / Remove.

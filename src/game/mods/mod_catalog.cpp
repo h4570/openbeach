@@ -502,6 +502,16 @@ bool ResolveInstallOrder(std::string_view targetId, std::span<const CatalogEntry
     return visit(visit, targetId, true);
 }
 
+CatalogOffer OfferFor(const CatalogEntry& entry, const std::string* installedVersion)
+{
+    if (!installedVersion) return CatalogOffer::Install;
+    SemVer installed, offered;
+    // A broken local version cannot be compared; replacing it with the catalog's copy repairs it.
+    if (!ParseVersion(*installedVersion, installed)) return CatalogOffer::Update;
+    if (!ParseVersion(entry.modVersion, offered)) return CatalogOffer::UpToDate;
+    return CompareVersion(installed, offered) < 0 ? CatalogOffer::Update : CatalogOffer::UpToDate;
+}
+
 bool VerifyCatalogDownload(std::span<const uint8_t> bytes, const CatalogEntry& entry, std::string& error)
 {
     if (bytes.size() != entry.size) {
