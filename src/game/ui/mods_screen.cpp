@@ -316,6 +316,7 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
     {
         if (m_pendingBack) {
             m_pendingBack = false;
+            if (m_settle) SettleList();
             ui::GuiManager* gui = game::GetGuiManager();
             if (gui) {
                 gui->CloseAllDialogs();
@@ -323,7 +324,9 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
             }
             return;
         }
-        if (m_pendingReload) {
+        // The reload rebuilds the panel, so it waits for the downloads, the dialog and the settling that belong to this one.
+        if (m_settle && !IsBusyWithFiles()) SettleList();
+        if (m_pendingReload && !IsBusyWithFiles()) {
             m_pendingReload = false;
             game::game_api::ReloadFrontEnd(own_layer::kModsDialog);
             return;
@@ -594,14 +597,97 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
         return m_pendingReplace || !m_pendingRemove.empty() || m_pendingAddCatalog.has_value() || m_pendingKeyChange.has_value();
     }
 
+    bool IsBusyWithFiles() const { return m_activeFetch.handle || !m_downloadQueue.empty() || IsConfirming(); }
+
+    static const mod_pack::ActiveMod* FindLive(const std::string& id)
+    {
+        const auto& live = mod_pack::Active();
+        const auto found = std::find_if(live.begin(), live.end(), [&](const auto& mod) { return mod.manifest.id == id; });
+        return found == live.end() ? nullptr : &*found;
+    }
+
+    // A running world mod holds its files until the game starts again; a presentation mod lets go of them (ReleaseFiles).
     bool CanChangeFiles(const std::string& id)
     {
-        const auto* entry = m_list ? m_list->Find(id) : nullptr;
-        const auto& live = mod_pack::Active();
-        if ((!entry || !entry->on) && std::none_of(live.begin(), live.end(), [&](const auto& mod) { return mod.manifest.id == id; }))
-            return true;
+        const mod_pack::ActiveMod* live = FindLive(id);
+        if (!live || live->manifest.scope != mod_pack::Scope::World) return true;
         SetArchiveStatus("OBL_MODS_ARCHIVE_ACTIVE", id, true);
         return false;
+    }
+
+    // Before the files of a running presentation mod change, the game runs without presentation mods; SettleList brings the list
+    // back once the change is written, so updating or removing an active mod is one step for the player.
+    bool ReleaseFiles(const std::string& id)
+    {
+        if (!CanChangeFiles(id)) return false;
+        if (!FindLive(id)) return true;
+        std::vector<std::string> worldOnly;
+        for (const mod_pack::ActiveMod& mod : mod_pack::Active())
+            if (mod.manifest.scope == mod_pack::Scope::World) worldOnly.push_back(mod.manifest.id);
+        std::string error;
+        if (!mod_pack::ActivateList(GameDirectory(), pack_path::SelectedId(), worldOnly, error)) {
+            SetArchiveStatus("OBL_MODS_CANNOT_START", error, true);
+            return false;
+        }
+        mods::RestartPresentationScripts();
+        OBL_LOG("mods screen: released %s", id.c_str());
+        m_settle = true;
+        m_pendingReload = true; // the menus drop what the mod patched, also when it does not come back
+        return true;
+    }
+
+    // Applies the list once the files of a batch are written: switches on what the batch installed (a player who installs a mod
+    // means to use it), switches off an active mod that can no longer start (a mod it needs was removed or changed) and brings back
+    // what ReleaseFiles let go of.
+    void SettleList()
+    {
+        m_settle = false;
+        const std::vector<std::string> installed = std::exchange(m_switchOn, {});
+        if (!m_list) return;
+        std::u16string message = g_statusText;
+        bool error = g_statusIsError;
+        std::string switchedOn;
+        for (const std::string& id : installed) {
+            mods::Problem why = mods::Problem::None;
+            std::string detail;
+            const mods::Entry* entry = m_list->Find(id);
+            if (entry && entry->on) {
+                OBL_LOG("mods screen: kept on after update: %s", id.c_str());
+            } else if (m_list->SetOn(id, true, why, detail)) {
+                switchedOn = id;
+            } else {
+                message = Format(Lookup("OBL_MODS_REFUSED"), {Utf8ToEngine(id), ProblemText(why, detail)});
+                error = true;
+                OBL_LOG("mods screen: refused %s (%s)", id.c_str(), detail.c_str());
+            }
+        }
+        while (!m_list->CanStart()) {
+            const auto& entries = m_list->Entries();
+            const auto bad = std::find_if(
+                    entries.begin(), entries.end(), [](const mods::Entry& e) { return e.on && e.problem != mods::Problem::None; });
+            if (bad == entries.end()) break;
+            const std::string id = bad->mod.id;
+            message = Format(Lookup("OBL_MODS_SWITCHED_OFF"), {Utf8ToEngine(id), ProblemText(bad->problem, bad->detail)});
+            error = true;
+            OBL_LOG("mods screen: switched off %s (%s)", id.c_str(), bad->detail.c_str());
+            if (id == switchedOn) switchedOn.clear();
+            mods::Problem why = mods::Problem::None;
+            std::string detail;
+            m_list->SetOn(id, false, why, detail);
+        }
+        if (!switchedOn.empty() && !error) {
+            const mods::Entry* entry = m_list->Find(switchedOn);
+            const bool world = entry && entry->mod.valid && entry->mod.manifest.scope == mod_pack::Scope::World;
+            message = Format(Lookup(world ? "OBL_MODS_INSTALLED_NEXT" : "OBL_MODS_INSTALLED_ON"), {Utf8ToEngine(TitleOf(switchedOn))});
+            OBL_LOG("mods screen: switched on after install: %s", switchedOn.c_str());
+        }
+        ApplyChanges();
+        if (!g_statusIsError) {
+            g_statusText = message;
+            g_statusIsError = error;
+        }
+        RebuildTargets();
+        MarkDirty();
     }
 
     void SetArchiveStatus(const char* key, std::string_view detail, bool error)
@@ -707,16 +793,19 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
             RebuildTargets();
             MarkDirty();
         } else if (result == mods::ModArchive::Result::Installed) {
-            OnInstalled(archive.Id());
+            OnInstalled(archive.Id(), true);
         } else {
             SetArchiveStatus("OBL_MODS_INSTALL_ERROR", error, true);
         }
     }
 
-    void OnInstalled(const std::string& id)
+    // `switchOn`: a new mod, or a replaced one that was on; SettleList switches it on after the last download of the batch.
+    void OnInstalled(const std::string& id, bool switchOn)
     {
         PersistModChange(id);
         g_selectedId = id;
+        if (switchOn && std::find(m_switchOn.begin(), m_switchOn.end(), id) == m_switchOn.end()) m_switchOn.push_back(id);
+        m_settle = true;
         LoadList();
         EnsureVisible(id);
         SetArchiveStatus("OBL_MODS_INSTALLED", id, false);
@@ -736,13 +825,18 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
     {
         auto replace = std::exchange(m_pendingReplace, std::nullopt);
         const auto remove = std::exchange(m_pendingRemove, {});
-        const auto& id = replace ? replace->Id() : remove;
-        if (!CanChangeFiles(id)) return;
+        const std::string id = replace ? replace->Id() : remove;
+        const mods::Entry* entry = m_list ? m_list->Find(id) : nullptr;
+        const bool wasOn = entry && entry->on;
+        if (!ReleaseFiles(id)) {
+            m_downloadQueue.clear();
+            return;
+        }
 
         std::string error;
         if (replace) {
             if (replace->Write(GameDirectory(), true, error) == mods::ModArchive::Result::Installed) {
-                OnInstalled(id);
+                OnInstalled(id, wasOn);
                 StartNextQueuedDownload();
             } else {
                 m_downloadQueue.clear();
@@ -750,6 +844,7 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
             }
         } else if (mods::RemoveMod(GameDirectory(), id, error)) {
             PersistModChange(id);
+            m_settle = m_settle || wasOn;
             LoadList();
             SetArchiveStatus("OBL_MODS_REMOVED", id, false);
         } else {
@@ -1105,7 +1200,7 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
                 RebuildTargets();
                 MarkDirty();
             } else if (writeRes == mods::ModArchive::Result::Installed) {
-                OnInstalled(archive.Id());
+                OnInstalled(archive.Id(), true);
                 StartNextQueuedDownload();
             } else {
                 m_downloadQueue.clear();
@@ -1694,8 +1789,8 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
 
         Button(ix, actionsY, ix + 150, actionsY + 32, Lookup(sel.on ? "OBL_MODS_TURN_OFF" : "OBL_MODS_TURN_ON"), Look::Primary,
                 "card.toggle", [this, id] { OnToggle(id); });
-        Button(x1 - 132, actionsY, x1 - 12, actionsY + 32, Lookup("OBL_MODS_REMOVE_BUTTON"), sel.on ? Look::Disabled : Look::Danger,
-                "remove." + id, [this, id] { OnRemove(id); });
+        Button(x1 - 132, actionsY, x1 - 12, actionsY + 32, Lookup("OBL_MODS_REMOVE_BUTTON"), Look::Danger, "remove." + id,
+                [this, id] { OnRemove(id); });
     }
 
     int LayoutSettings(const mods::Entry& sel, int ix, int y, int iw, int limit)
@@ -1999,6 +2094,8 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
     std::vector<mods::CatalogEntry> m_downloadQueue;
     bool m_pendingBack = false;
     bool m_pendingReload = false;
+    bool m_settle = false; // files changed: SettleList applies the list once the batch is done
+    std::vector<std::string> m_switchOn; // installed by the current batch, dependencies first
 };
 
 } // namespace
