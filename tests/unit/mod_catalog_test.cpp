@@ -301,6 +301,20 @@ OBL_TEST_CASE("mod_catalog.filters_by_engine_version_pack_and_api")
     OBL_CHECK(filtered[0].id == "ok");
 }
 
+// The mods screen once offered Update for every installed mod, the same version included.
+OBL_TEST_CASE("mod_catalog.offers_update_only_for_an_older_installed_version")
+{
+    mods::CatalogEntry entry;
+    entry.id = "night_glow";
+    entry.modVersion = "1.1.0";
+    const std::string older = "1.0.9", same = "1.1.0", newer = "1.2.0", broken = "one";
+    OBL_CHECK(mods::OfferFor(entry, nullptr) == mods::CatalogOffer::Install);
+    OBL_CHECK(mods::OfferFor(entry, &older) == mods::CatalogOffer::Update);
+    OBL_CHECK(mods::OfferFor(entry, &same) == mods::CatalogOffer::UpToDate);
+    OBL_CHECK(mods::OfferFor(entry, &newer) == mods::CatalogOffer::UpToDate);
+    OBL_CHECK(mods::OfferFor(entry, &broken) == mods::CatalogOffer::Update);
+}
+
 OBL_TEST_CASE("mod_catalog.resolves_dependency_order_and_rejects_cycles_or_missing")
 {
     mods::CatalogEntry base;

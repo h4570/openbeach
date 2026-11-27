@@ -76,6 +76,11 @@ std::vector<CatalogEntry> FilterCompatibleMods(
 bool ResolveInstallOrder(std::string_view targetId, std::span<const CatalogEntry> available, std::span<const std::string> installedIds,
         bool includeTargetIfInstalled, std::vector<CatalogEntry>& orderOut, std::string& error);
 
+// What the online list offers for a catalog entry: Install when the mod is not installed (`installedVersion` null), Update when the
+// installed version is older or not a valid version, UpToDate when it is the same or newer (a newer local copy is never replaced).
+enum class CatalogOffer { Install, Update, UpToDate };
+CatalogOffer OfferFor(const CatalogEntry& entry, const std::string* installedVersion);
+
 // Checks that downloaded archive bytes match the catalog entry's declared size and SHA-256 before passing to ModArchive.
 bool VerifyCatalogDownload(std::span<const uint8_t> bytes, const CatalogEntry& entry, std::string& error);
 
