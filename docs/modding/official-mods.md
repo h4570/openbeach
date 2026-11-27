@@ -1,16 +1,16 @@
 # Official mods
 
-OpenBeach ships with no built-in catalog and no bundled mods. Official mods live in `data/mods/` and are published as a
-signed [mod catalog](catalogs.md) alongside the project's site:
+Official mods live in `data/mods/` and are published as a signed [mod catalog](catalogs.md) alongside the project's site:
 
 ```text
 https://openbeach.app/mods/catalog.json
 ```
 
-To install official mods in the game, open **Mods → Catalogs → Add catalog** from the main menu, enter the address above,
-and confirm the notice. See [Installing from catalogs](players/mods-screen.md#installing-from-catalogs) for how updates and
-key pinning work. Because the site is served on GitHub Pages, both `catalog.json` and the mod `.zip` archives include the
-CORS headers required by the browser build.
+In the game, open **Mods → Online sources** from the main menu: **OpenBeach Official Mods** is listed first by default
+(it can be switched off, but not removed) and fetches the official catalog automatically. See
+[Installing from online sources](players/mods-screen.md#installing-from-online-sources) for how updates and key pinning
+work. Because the catalog is published alongside the browser site on GitHub Pages (same origin and permissive CORS headers),
+both `catalog.json` and the mod `.zip` archives are reachable from the browser build as well.
 
 ## Frame Counter
 

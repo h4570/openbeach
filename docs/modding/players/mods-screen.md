@@ -17,8 +17,11 @@ file picker. The folder name must match the manifest's id. The installed mod app
 If the id is already installed, the game asks before replacing its files. Switch off an active mod before replacing
 or removing it. If a world mod is still running after you switch it off, restart the game first.
 
-Select a mod, choose **Remove**, then confirm to delete its files and generated assets. Your mod settings and private
+Click **X** on a mod's row, then confirm to delete its files and generated assets. Your mod settings and private
 data are kept. In the browser, changes are saved to that site's browser storage.
+
+The **?** button in the bottom right corner opens this help page in your browser (if opening fails, the address is shown
+in the status bar).
 
 The archive must be a standard ZIP with stored or deflated entries and portable ASCII filenames. Links, encrypted files
 and split archives are refused. Limits are 64 MiB for the ZIP, 32 MiB for one file, 128 MiB expanded and 4,096 entries.
@@ -26,20 +29,23 @@ The game checks the manifest, target pack, game version (`engine_min`), script A
 [asset recipes](../reference/recipes.md), the game builds their outputs from the current pack during installation.
 An unavailable source disables that recipe and leaves a message in the log.
 
-## Installing from catalogs
-OpenBeach includes no built-in catalog. Choose **Catalogs** in the **Mods** screen header to manage third-party catalogs
-and install or update mods from them:
+## Installing from online sources
+Choose **Online sources** in the **Mods** screen header to browse and install or update mods from online sources:
 
-- Choose **Add catalog**, enter or paste an `https://` `catalog.json` address, and confirm the third-party notice.
-- The game verifies the catalog's Ed25519 signature and remembers its signing key. If a catalog's signing key ever changes on
+- **OpenBeach Official Mods** (`https://openbeach.app/mods/catalog.json`) is listed first by default and cannot be removed
+  (you can switch it off with **On** / **Off**).
+- Choose **Add source**, enter or paste an `https://` `catalog.json` address, and confirm the third-party notice to add a
+  third-party online source.
+- The game verifies each catalog's Ed25519 signature and remembers its signing key. If a source's signing key ever changes on
   refresh, the game warns you and asks before trusting the new key.
-- Select a compatible mod from the catalog list and choose **Install** (or **Update** if an older version is installed). Any
-  required mods from your added catalogs are installed first in dependency order.
+- Select a compatible mod from the list and choose **Install** (or **Update** if an older version is installed). Any
+  required mods from your enabled online sources are installed first in dependency order.
 - Every download is checked against the catalog's declared byte size and SHA-256 hash, then validated and installed through
   the same ZIP installer and replace/remove rules (switch off an active mod before updating it).
-- Choose **Refresh** to check added catalogs for updates, or **Remove** beside a catalog to drop it from your list.
-- If a save names a missing world mod, the game checks your added catalogs by mod id and content hash and notes where it is
-  available.
+- Choose **Refresh** to check enabled online sources for updates, or **Remove** beside a third-party source to drop it from
+  your list.
+- If a save names a missing world mod, the game checks your enabled online sources by mod id and content hash and notes where
+  it is available.
 
 See [mod catalogs](../catalogs.md) for the catalog format and hosting requirements.
 

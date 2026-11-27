@@ -10,6 +10,7 @@
 #include <array>
 #include <bit>
 #include <charconv>
+#include <fstream>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -221,11 +222,13 @@ OBL_TEST_CASE("mod_catalog.pins_key_and_warns_on_key_change")
     OBL_REQUIRE(store.AddOrUpdate(url, catA, false, false, error) == mods::CatalogStore::UpdateStatus::Added);
     OBL_REQUIRE(store.Save(dir.path, error));
 
-    // Reload from disk and verify pinned key persists.
+    // Reload from disk and verify official source is first and pinned key persists.
     mods::CatalogStore reloaded;
     OBL_REQUIRE(reloaded.Load(dir.path, error));
-    OBL_REQUIRE(reloaded.Catalogs().size() == 1);
-    OBL_CHECK(reloaded.Catalogs()[0].pinnedPublicKeyHex == catA.publicKeyHex);
+    OBL_REQUIRE(reloaded.Catalogs().size() == 2);
+    OBL_CHECK(reloaded.Catalogs()[0].official);
+    OBL_CHECK(reloaded.Catalogs()[0].url == mods::kOfficialCatalogUrl);
+    OBL_CHECK(reloaded.Catalogs()[1].pinnedPublicKeyHex == catA.publicKeyHex);
 
     // Refresh with same key succeeds.
     OBL_CHECK(reloaded.AddOrUpdate(url, catA, false, false, error) == mods::CatalogStore::UpdateStatus::Updated);
@@ -364,4 +367,57 @@ OBL_TEST_CASE("mod_catalog.finds_missing_save_mod_by_id_and_hash")
 
     OBL_CHECK(!store.FindModByIdAndHash("fps_counter", "0000000000000000000000000000000000000000000000000000000000000000").has_value());
     OBL_CHECK(!store.FindModByIdAndHash("other", "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210").has_value());
+}
+
+OBL_TEST_CASE("mod_catalog.official_source_is_first_cannot_be_removed_and_loads_old_store")
+{
+    test::TempPath dir("mod-catalog-official");
+    std::filesystem::create_directory(dir.path);
+
+    // Fresh store has the official source first, enabled, and cannot be removed.
+    mods::CatalogStore store;
+    OBL_REQUIRE(store.Catalogs().size() == 1);
+    OBL_CHECK(store.Catalogs()[0].official);
+    OBL_CHECK(store.Catalogs()[0].enabled);
+    OBL_CHECK(store.Catalogs()[0].url == mods::kOfficialCatalogUrl);
+    OBL_CHECK(!store.Remove(mods::kOfficialCatalogUrl));
+
+    // Switching it off persists across Save/Load.
+    OBL_CHECK(store.SetEnabled(mods::kOfficialCatalogUrl, false));
+    std::string error;
+    OBL_REQUIRE(store.Save(dir.path, error));
+
+    mods::CatalogStore reloaded;
+    OBL_REQUIRE(reloaded.Load(dir.path, error));
+    OBL_REQUIRE(reloaded.Catalogs().size() == 1);
+    OBL_CHECK(reloaded.Catalogs()[0].official);
+    OBL_CHECK(!reloaded.Catalogs()[0].enabled);
+
+    // Old mod-catalogs.json without enabled or official entry still loads, with official inserted first.
+    mods::Catalog cat;
+    const std::string thirdPartyUrl = "https://example.org/catalog.json";
+    OBL_REQUIRE(mods::ParseCatalog(MakeSignedCatalog(SampleCatalogJson(), kSeedA), thirdPartyUrl, false, cat, error));
+    const nlohmann::json legacy = {
+            {"format", mods::kCatalogStoreFormat},
+            {"version", mods::kCatalogStoreVersion},
+            {"catalogs",
+                    nlohmann::json::array({{
+                            {"url", thirdPartyUrl},
+                            {"title", cat.title},
+                            {"public_key", cat.publicKeyHex},
+                            {"mods", nlohmann::json::array()},
+                    }})},
+    };
+    {
+        std::ofstream out(dir.path / mods::kCatalogStoreFile, std::ios::binary);
+        out << legacy.dump(2) << '\n';
+    }
+    mods::CatalogStore fromLegacy;
+    OBL_REQUIRE(fromLegacy.Load(dir.path, error));
+    OBL_REQUIRE(fromLegacy.Catalogs().size() == 2);
+    OBL_CHECK(fromLegacy.Catalogs()[0].official);
+    OBL_CHECK(fromLegacy.Catalogs()[0].enabled);
+    OBL_CHECK(!fromLegacy.Catalogs()[1].official);
+    OBL_CHECK(fromLegacy.Catalogs()[1].enabled);
+    OBL_CHECK(fromLegacy.Catalogs()[1].url == thirdPartyUrl);
 }

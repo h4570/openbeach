@@ -1,9 +1,9 @@
 # Mod catalogs
 
-A mod catalog is a signed `catalog.json` file hosted at an HTTPS address. OpenBeach ships with no built-in catalog:
-players add the HTTPS addresses of catalogs they trust from the [Mods screen](players/mods-screen.md#installing-from-catalogs),
-and the game downloads, verifies and installs mods through the same [ZIP installer](players/mods-screen.md#installing-and-removing-mods)
-used for local archives.
+A mod catalog is a signed `catalog.json` file hosted at an HTTPS address. The official OpenBeach online source is listed
+first by default, and players can add the HTTPS addresses of third-party online sources they trust from the
+[Mods screen](players/mods-screen.md#installing-from-online-sources). The game downloads, verifies and installs mods through
+the same [ZIP installer](players/mods-screen.md#installing-and-removing-mods) used for local archives.
 
 ## Catalog format (`obl.mod_catalog`)
 
