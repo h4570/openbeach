@@ -17,8 +17,12 @@ inline constexpr const char* kLayerName = "OpenBeach";
 inline constexpr const char* kModsButtonId = "mods_button";
 inline constexpr const char* kModsDialog = "ModsScreen";
 inline constexpr const char* kModsPanelId = "mods_panel";
+inline constexpr const char* kMoreScenariosButtonId = "more_scenarios_button";
+inline constexpr const char* kExtraScenariosDialog = "ExtraScenarios";
+inline constexpr const char* kExtraScenariosPanelId = "extra_scenarios_panel";
 
 // The layer's patches of `layout` (a key of gui/layouts.json), applied before the mods' patches; empty for a layout it leaves alone.
-std::vector<gui_patch::PatchSource> GuiPatches(std::string_view layout);
+// `hasExtraScenarios` enables the ScenarioScreen entry point and ExtraScenarios dialog when mod scenario sets are loaded.
+std::vector<gui_patch::PatchSource> GuiPatches(std::string_view layout, bool hasExtraScenarios = false);
 
 } // namespace obl::own_layer

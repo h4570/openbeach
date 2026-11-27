@@ -14,3 +14,4 @@ Copy the [template](mod_template/index.md) for a first text mod. The other guide
 | [Key action](../guides/first-action.md) | [l0_actions](../../../tests/mods/l0_actions/mod.json) | [Named actions](../../../tests/l0_mod_actions.txt) |
 | [Own catalog](../guides/own-catalog.md) | [catalog_template](catalog_template/index.md) | [Catalog tool test](../../../tools/tests/test_build_catalog.py) |
 | [Publishing](../guides/publishing.md) | [mod_template](mod_template/index.md) | [Template and developer mode](../../../tests/l0_mod_template_dev.txt) |
+| [First scenario](../guides/first-scenario.md) | [scenario_template](scenario_template/index.md) | [Scenario template](../../../tests/l0_mod_scenario_template.txt) |

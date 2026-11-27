@@ -9,6 +9,7 @@
 #include "game/ui/gui_modes_tools.h"
 #include "game/ui/gui_patch_runtime.h"
 #include "game/ui/input.h"
+#include "game/ui/extra_scenarios_screen.h"
 #include "game/ui/mods_screen.h"
 #include "game/ui/own_layer.h"
 #include "gui_tree.h"
@@ -448,9 +449,13 @@ bool ExecuteGuiControlCommand(const std::string& name, const std::vector<std::st
         OBL_LOG("autotest: gui-animate %s type=%d seconds=%s delay=%d", args[0].c_str(), type, args[2].c_str(), delay);
     } else {
         const std::vector<std::string> selector(args.begin() + 1, args.end());
-        if (selector.size() == 2 && ascii::EqualsNoCase(selector[0], "target") && ascii::EqualsNoCase(args[0], own_layer::kModsDialog)) {
+        if (selector.size() == 2 && ascii::EqualsNoCase(selector[0], "target") &&
+                (ascii::EqualsNoCase(args[0], own_layer::kModsDialog) || ascii::EqualsNoCase(args[0], own_layer::kExtraScenariosDialog))) {
             int x = 0, y = 0;
-            if (!obl::gui::mods_screen::FindTarget(selector[1], x, y)) {
+            const bool found = ascii::EqualsNoCase(args[0], own_layer::kModsDialog)
+                    ? obl::gui::mods_screen::FindTarget(selector[1], x, y)
+                    : obl::gui::extra_scenarios_screen::FindTarget(selector[1], x, y);
+            if (!found) {
                 OBL_LOG("autotest: FAILED gui-move %s: no target %s", args[0].c_str(), selector[1].c_str());
                 return true;
             }

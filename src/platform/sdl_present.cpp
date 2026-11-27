@@ -24,6 +24,7 @@
 #include "core/platform_main.h"
 #include "openbeach_icon.gen.h"
 
+#include "game/ui/extra_scenarios_screen.h"
 #include "game/ui/mods_screen.h"
 
 #include <SDL3/SDL.h>
@@ -476,6 +477,10 @@ SdlPumpResult PumpSdlEvents()
         while (SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_EVENT_KEY_DOWN, SDL_EVENT_KEY_DOWN) > 0) {
             const bool ctrl = (event.key.mod & SDL_KMOD_CTRL) != 0;
             gui::mods_screen::HandleKeyDown(static_cast<int>(event.key.scancode), ctrl);
+        }
+    } else if (gui::extra_scenarios_screen::IsOpen()) {
+        while (SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_EVENT_KEY_DOWN, SDL_EVENT_KEY_DOWN) > 0) {
+            gui::extra_scenarios_screen::HandleKeyDown(static_cast<int>(event.key.scancode));
         }
     }
     while (SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_EVENT_QUIT, SDL_EVENT_TERMINATING) > 0) g_quitRequested = true;

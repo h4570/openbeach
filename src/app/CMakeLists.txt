@@ -341,6 +341,8 @@ add_library(openbeach OBJECT
     ../game/ui/gui_layouts_runtime.cpp
     ../game/ui/gui_patch_runtime.cpp
     ../game/ui/gui_patch_runtime.h
+    ../game/ui/extra_scenarios_screen.cpp
+    ../game/ui/extra_scenarios_screen.h
     ../game/ui/mods_screen.cpp
     ../game/ui/mods_screen.h
     ../game/ui/own_widgets.cpp

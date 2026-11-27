@@ -17,3 +17,4 @@ Step-by-step guides for mod authors, from nothing to a working mod.
 | [Own catalog](own-catalog.md) | Hosting a signed catalog on GitHub Pages: key, workflow, publishing, new versions and a lost key. |
 | [Developer mode](developer-mode.md) | Reloading active mods while developing them. |
 | [first-busker.md](first-busker.md) | A character that does something: the generic object functions find a kiosk, walk to it, cheer the guests around and earn money. |
+| [First scenario](first-scenario.md) | Adding a one-scenario set on an island of the player's copy with `scenario.json`, texts, `world.wsc`, and a preview picture. |

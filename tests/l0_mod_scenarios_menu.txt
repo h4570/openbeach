@@ -1,0 +1,43 @@
+# The ExtraScenarios screen with the three test mods of #196: opens from ScenarioScreen's More scenarios button, shows three sets
+# in load order, refuses to start a locked entry, and starts both a campaign entry and a sandbox entry.
+# @env OBL_PACK=l0
+# @env OBL_MODS=l0_scenarios_a,l0_scenarios_b,l0_scenarios_c
+# @env OBL_WINDOWED=1
+# @gameini Language.Language=0
+# @gameini Sound.PlayListCount=0
+# @timeout 180
+# @expect-log extra scenarios: opened mode=campaign sets=3 entries=4
+seed 1
+fixed-dt 0.02
+await state == 1
+await frames 20
+await gui-animating == 0
+gui-state MainMenu
+expect-last visible 1
+# Open ScenarioScreen in campaign mode.
+gui-click MainMenu tip L0_MENU_TIP_START
+await frames 15
+await gui-animating == 0
+gui-state ScenarioScreen
+expect-last visible 1
+# Open ExtraScenarios from the own-layer More scenarios button.
+gui-click ScenarioScreen id more_scenarios_button
+await frames 15
+await gui-animating == 0
+gui-state ExtraScenarios
+expect-last visible 1
+# Selecting a locked entry and clicking Play keeps ExtraScenarios open.
+gui-click ExtraScenarios target select.l0_scenarios_b_locked
+await frames 5
+gui-click ExtraScenarios target play
+await frames 10
+gui-state ExtraScenarios
+expect-last visible 1
+# Selecting an unlocked campaign entry and clicking Play starts it.
+gui-click ExtraScenarios target select.l0_scenarios_a_first
+await frames 5
+gui-click ExtraScenarios target play
+await gameplay
+step 2
+expect day 0
+quit

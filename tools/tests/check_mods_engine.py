@@ -108,6 +108,7 @@ class ModChecker(unittest.TestCase):
         fixtures = [p for p in FIXTURES.iterdir() if p.name != "broken" and (p / "mod.json").is_file()]
         fixtures.append(ROOT / "data/mods/frame_counter")
         fixtures.append(ROOT / "docs/modding/examples/mod_template")
+        fixtures.append(ROOT / "docs/modding/examples/scenario_template")
         for source in sorted(fixtures):
             self.install(source)
         for source in sorted(fixtures):
