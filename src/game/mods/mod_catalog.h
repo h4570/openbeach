@@ -30,6 +30,11 @@ inline constexpr int kCatalogStoreVersion = 1;
 inline constexpr const char* kCatalogStoreFile = "mod-catalogs.json";
 inline constexpr const char* kOfficialCatalogUrl = "https://openbeach.app/mods/catalog.json";
 inline constexpr const char* kOfficialCatalogTitle = "OpenBeach Official Mods";
+// A third-party source listed after the official one. It is added once, so a player who removes it keeps it removed, and its
+// key ships pinned: a catalog at that address signed with any other key asks the player before it is trusted.
+inline constexpr const char* kCommunityCatalogUrl = "https://openbeach-larry.github.io/mods/catalog.json";
+inline constexpr const char* kCommunityCatalogTitle = "Community Mods";
+inline constexpr const char* kCommunityCatalogPublicKey = "06a123bc3a0f9683d8b54f927973fbd0c61c71f11770554af8be675f07f6ea3c";
 inline constexpr size_t kMaxCatalogBytes = 4 * 1024 * 1024;
 inline constexpr size_t kMaxCatalogEntries = 2048;
 
@@ -128,8 +133,11 @@ public:
 
 private:
     void EnsureOfficialCatalog();
+    void EnsureDefaultCatalogs();
 
     std::vector<StoredCatalog> m_catalogs;
+    // Default sources already offered to this player (`seeded_defaults`), so a removed one is not added back.
+    std::vector<std::string> m_seededDefaults;
 };
 
 } // namespace obl::mods

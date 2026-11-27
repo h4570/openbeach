@@ -63,6 +63,8 @@ marked), description and the mods it needs.
 **Sources** lists where mods come from:
 
 - **OpenBeach Official Mods** (`https://openbeach.app/mods/catalog.json`) is listed first by default and cannot be removed.
+- **Community Mods** (`https://openbeach-larry.github.io/mods/catalog.json`), a third-party source, follows it, switched
+  on. The game knows its signing key in advance. You can switch it off or remove it; a removed one does not come back.
 - Choose **+ Add**, enter or paste an `https://` `catalog.json` address, and confirm the third-party notice to add a source.
 - Each source has a switch to stop listing its mods without forgetting it; **Remove** drops a third-party source.
 - The game verifies each catalog's Ed25519 signature and remembers its signing key. If a source's signing key ever changes on
