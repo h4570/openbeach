@@ -55,7 +55,13 @@ namespace own = own_widgets;
 constexpr const char* kHelpUrl = "https://github.com/h4570/openbeach/blob/main/docs/modding/players/mods-screen.md";
 constexpr int kPageSize = 9;
 constexpr int kMaxSettingRows = 5;
-constexpr int kMaxConflictRows = 4;
+constexpr int kMaxOverlapBanners = 2;
+constexpr size_t kMaxSourceRows = 7;
+// The screen's grid on the 800x600 menu: a header bar of tabs, a list on the left, a card on the right, a status bar.
+constexpr int kHeaderH = 48, kFooterH = 44, kTopY = 56, kRowH = 40, kRowPitch = 44, kSectionH = 22;
+constexpr int kListX0 = 12, kListX1 = 428, kCardX0 = 438, kCardX1 = 788, kBarY = 512, kCardBottom = 548;
+constexpr uint32_t kAmber = 0xc8820a; // needs attention, short of an error
+constexpr char16_t kDot[] = {u' ', 0x00b7, u' ', 0};
 
 // State that survives a front-end reload when a presentation mod changes (ReloadFrontEnd destroys and rebuilds the dialog tree).
 std::filesystem::path g_gameDirectory;
@@ -64,6 +70,10 @@ std::vector<std::string> g_startupWorldMods;
 std::vector<std::string> g_desiredActive;
 std::string g_selectedId;
 int g_page = 0;
+enum class Tab { Installed, Browse, Sources };
+Tab g_tab = Tab::Installed;
+std::string g_selectedCatalogId;
+bool g_showTechnical = false;
 std::u16string g_statusText;
 bool g_statusIsError = false;
 
@@ -341,16 +351,20 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
 
     bool MouseWheel(int x, int y, int delta) override
     {
-        if (!m_visible || !HitTestBase(x, y) || !m_list) return false;
-        if (delta > 0)
-            ChangePage(-1);
-        else if (delta < 0)
-            ChangePage(1);
+        if (!m_visible || !HitTestBase(x, y) || !delta || m_editingUrl || IsConfirming()) return false;
+        if (g_tab == Tab::Installed)
+            ChangePage(delta > 0 ? -1 : 1);
+        else if (g_tab == Tab::Browse)
+            ChangeCatalogPage(delta > 0 ? -1 : 1);
         return true;
     }
 
     own::Palette m_pal;
     int m_round = 0; // corner radius of boxes (0: square)
+    bool m_packLook = false;
+    uint32_t m_amber = kAmber;
+    bool m_drawing = false; // Layout draws as well as recording the tap targets
+    bool m_recordTargets = true; // false behind a dialog
 
     static uint32_t LerpRgb(uint32_t a, uint32_t b, int step, int steps)
     {
@@ -366,83 +380,9 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
     {
         if (!m_visible || !m_dirty) return;
         if (!m_list) LoadList();
-        RebuildTargets();
-
-        const int w = m_x1 - m_x0;
-        const int h = m_y1 - m_y0;
-        // A pack with coloured menu buttons gives the screen its colour and rounded boxes; any other pack keeps the flat style.
-        const own::PackLook& look = own::GetPackLook();
-        m_pal = look.available ? look.palette : own::Palette{};
-        m_round = look.available ? 8 : 0;
-        if (look.available) {
-            // Sky-like backdrop: from the foam tint at the top to the sand tint at the bottom.
-            for (int y = m_y0; y < m_y1; ++y)
-                own::Fill(m_x0, y, m_x1, y + 1, LerpRgb(m_pal.foam, m_pal.sand, y - m_y0, std::max(1, h - 1)));
-        } else {
-            own::Fill(m_x0, m_y0, m_x1, m_y1, m_pal.sand);
-        }
-
-        // Header bar.
-        own::Fill(m_x0, m_y0, m_x1, m_y0 + 48, m_pal.sea);
-        own::Text(2, m_x0 + 16, m_y0 + 5, 130, Lookup("OBL_MODS_TITLE").c_str(), m_pal.white, 0);
-        // The game version a mod's `engine_min` is checked against.
-        own::Text(0, m_x0 + 16, m_y0 + 30, 130,
-                Format(Lookup("OBL_MODS_GAME_VERSION"), {Utf8ToEngine(std::string(kEngineVersion))}).c_str(), m_pal.white, 0);
-        DrawButton(m_x0 + 150, m_y0 + 8, m_x0 + 310, m_y0 + 40,
-                Lookup(m_catalogView ? "OBL_MODS_INSTALLED_TAB" : "OBL_MODS_CATALOGS").c_str(), m_catalogView ? m_pal.foam : m_pal.seaDark,
-                m_catalogView ? m_pal.ink : m_pal.white);
-        if (!m_catalogView) {
-            DrawButton(m_x0 + 318, m_y0 + 8, m_x0 + 520, m_y0 + 40, Lookup("OBL_MODS_INSTALL").c_str(), m_pal.seaDark, m_pal.white);
-        }
-        DrawButton(m_x0 + 696, m_y0 + 8, m_x0 + 784, m_y0 + 40, Lookup("OBL_MODS_BACK").c_str(), m_pal.foam, m_pal.ink);
-
-        if (m_catalogView) {
-            DrawCatalogListColumn();
-            DrawCatalogRightColumn();
-        } else {
-            DrawListColumn();
-            DrawRightColumn();
-        }
-
-        // Footer status bar.
-        const int footerY = m_y0 + h - 44;
-        own::Fill(m_x0, footerY, m_x0 + w, m_y1, m_pal.seaDark);
-        std::u16string footer;
-        uint32_t footerColor = m_pal.white;
-        if (m_editingUrl) {
-            own::Box(m_x0 + 12, footerY + 6, m_x0 + 500, footerY + 38, m_round, m_pal.white, m_pal.sea);
-            const std::u16string shown = m_urlDraft.empty() ? Lookup("OBL_MODS_CAT_URL_HINT") : Utf8ToEngine(m_urlDraft + "_");
-            own::Text(0, m_x0 + 18, footerY + 14, 476, shown.c_str(), m_urlDraft.empty() ? m_pal.grey : m_pal.ink, 0);
-            DrawButton(m_x0 + 506, footerY + 6, m_x0 + 586, footerY + 38, Lookup("OBL_MODS_CAT_PASTE").c_str(), m_pal.sea, m_pal.white);
-            DrawButton(m_x0 + 592, footerY + 6, m_x0 + 684, footerY + 38, Lookup("OBL_MODS_CONFIRM").c_str(), m_pal.green, m_pal.white);
-            DrawButton(m_x0 + 690, footerY + 6, m_x0 + 784, footerY + 38, Lookup("OBL_MODS_CANCEL").c_str(), m_pal.foam, m_pal.ink);
-        } else if (IsConfirming()) {
-            if (m_pendingKeyChange) {
-                footer = Format(Lookup("OBL_MODS_CAT_KEY_CHANGED"), {Utf8ToEngine(m_pendingKeyChange->catalog.title)});
-                footerColor = 0xffc8c8;
-            } else if (m_pendingAddCatalog) {
-                footer = Format(Lookup("OBL_MODS_CAT_ADD_CONFIRM"), {Utf8ToEngine(m_pendingAddCatalog->url)});
-            } else {
-                const auto& id = m_pendingReplace ? m_pendingReplace->Id() : m_pendingRemove;
-                footer = Format(Lookup(m_pendingReplace ? "OBL_MODS_REPLACE_CONFIRM" : "OBL_MODS_REMOVE_CONFIRM"), {Utf8ToEngine(id)});
-            }
-            DrawButton(m_x0 + 570, footerY + 6, m_x0 + 672, footerY + 38, Lookup("OBL_MODS_CONFIRM").c_str(), m_pal.sea, m_pal.white);
-            DrawButton(m_x0 + 680, footerY + 6, m_x0 + 784, footerY + 38, Lookup("OBL_MODS_CANCEL").c_str(), m_pal.foam, m_pal.ink);
-        } else if (!g_statusText.empty()) {
-            footer = g_statusText;
-            footerColor = g_statusIsError ? 0xffc8c8 : m_pal.white;
-        } else if (m_list && !m_list->CanStart()) {
-            footer = Lookup("OBL_MODS_FIX_FIRST");
-            footerColor = 0xffc8c8;
-        } else if (WorldModsChanged()) {
-            footer = Lookup("OBL_MODS_WORLD_NEXT");
-            footerColor = m_pal.foam;
-        }
-        if (!footer.empty()) own::Text(1, m_x0 + 16, footerY + 14, IsConfirming() ? 546 : w - 64, footer.c_str(), footerColor, 0);
-        if (!m_editingUrl && !IsConfirming()) {
-            DrawButton(m_x0 + w - 40, footerY + 6, m_x0 + w - 8, footerY + 38, u"?", m_pal.sea, m_pal.white);
-        }
-
+        m_drawing = true;
+        Layout();
+        m_drawing = false;
         m_dirty = 0;
     }
 
@@ -874,10 +814,10 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
                 m_catalogRows.push_back({cat.title, cat.url, e});
             }
         }
-        if (m_selectedCatalogModId.empty() || std::none_of(m_catalogRows.begin(), m_catalogRows.end(), [&](const CatalogRow& r) {
-                return r.entry.id == m_selectedCatalogModId;
+        if (g_selectedCatalogId.empty() || std::none_of(m_catalogRows.begin(), m_catalogRows.end(), [&](const CatalogRow& r) {
+                return r.entry.id == g_selectedCatalogId;
             })) {
-            m_selectedCatalogModId = m_catalogRows.empty() ? std::string() : m_catalogRows[0].entry.id;
+            g_selectedCatalogId = m_catalogRows.empty() ? std::string() : m_catalogRows[0].entry.id;
         }
         const int pages = CatalogPageCount();
         if (m_catalogPage < 0) m_catalogPage = 0;
@@ -1220,426 +1160,809 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
         }
     }
 
+    // ---- Layout ----
+    // One pass lays the screen out: it draws while m_drawing is set and records the tap targets either way, so what the player
+    // sees and what a tap reaches never disagree.
+
+    enum class Look { Primary, Secondary, Danger, DangerSolid, Disabled };
+
     void RebuildTargets()
     {
+        m_drawing = false;
+        Layout();
+    }
+
+    void Layout()
+    {
         m_targets.clear();
-        const int footerY = m_y1 - 44;
-        if (m_editingUrl) {
-            m_targets.push_back({"catalog.paste", m_x0 + 506, footerY + 6, m_x0 + 586, footerY + 38, [this] { PasteIntoUrlDraft(); }});
-            m_targets.push_back(
-                    {"catalog.url_ok", m_x0 + 592, footerY + 6, m_x0 + 684, footerY + 38, [this] { SubmitCatalogUrl(m_urlDraft, false); }});
-            m_targets.push_back({"catalog.url_cancel", m_x0 + 690, footerY + 6, m_x0 + 784, footerY + 38, [this] {
-                                     StopUrlInput();
-                                     RebuildTargets();
-                                     MarkDirty();
-                                 }});
-            return;
-        }
-        if (IsConfirming()) {
-            const char* confirmName =
-                    m_pendingKeyChange ? "catalog.trust_key" : (m_pendingAddCatalog ? "catalog.confirm" : "archive.confirm");
-            const char* cancelName = (m_pendingKeyChange || m_pendingAddCatalog) ? "catalog.cancel" : "archive.cancel";
-            m_targets.push_back({confirmName, m_x0 + 570, footerY + 6, m_x0 + 672, footerY + 38, [this] { ConfirmCatalogAction(); }});
-            m_targets.push_back({cancelName, m_x0 + 680, footerY + 6, m_x0 + 784, footerY + 38, [this] { CancelConfirmAction(); }});
-            return;
-        }
-        m_targets.push_back({"catalogs", m_x0 + 150, m_y0 + 8, m_x0 + 310, m_y0 + 40, [this] {
-                                 m_catalogView = !m_catalogView;
-                                 if (m_catalogView && !os::HasEnv("OBL_SCRIPT")) {
-                                     const mods::StoredCatalog* official = m_catalogStore.Find(mods::kOfficialCatalogUrl);
-                                     if (official && official->enabled && official->mods.empty()) {
-                                         BeginFetchCatalog(mods::kOfficialCatalogUrl, false);
-                                     }
-                                 }
-                                 RebuildTargets();
-                                 MarkDirty();
-                             }});
-        if (!m_catalogView) {
-            m_targets.push_back({"install", m_x0 + 318, m_y0 + 8, m_x0 + 520, m_y0 + 40, [this] { OnInstall(); }});
-        }
-        m_targets.push_back({"back", m_x0 + 696, m_y0 + 8, m_x0 + 784, m_y0 + 40, [this] { m_pendingBack = true; }});
-        m_targets.push_back({"help", m_x1 - 40, footerY + 6, m_x1 - 8, footerY + 38, [this] { OnHelp(); }});
+        const own::PackLook& look = own::GetPackLook();
+        m_packLook = look.available;
+        const own::Palette base = look.available ? look.palette : own::Palette{};
+        m_round = look.available ? 8 : 0;
+        // A dialog dims the screen behind it and takes every tap. The renderer cannot blend, so the screen is drawn in darker
+        // colours instead.
+        const bool dialog = m_editingUrl || IsConfirming();
+        m_pal = dialog ? Dimmed(base) : base;
+        m_amber = dialog ? Dim(kAmber) : kAmber;
+        m_recordTargets = !dialog;
 
-        if (m_catalogView) {
-            const size_t start = static_cast<size_t>(m_catalogPage * kPageSize);
-            const size_t end = std::min(m_catalogRows.size(), start + static_cast<size_t>(kPageSize));
-            for (size_t i = start; i < end; ++i) {
-                const int rowY = m_y0 + 58 + static_cast<int>(i - start) * 48;
-                const std::string id = m_catalogRows[i].entry.id;
-                m_targets.push_back({"select." + id, m_x0 + 12, rowY, m_x0 + 394, rowY + 44, [this, id] {
-                                         m_selectedCatalogModId = id;
-                                         RebuildTargets();
-                                         MarkDirty();
-                                     }});
-            }
-            const int pages = CatalogPageCount();
-            if (pages > 1) {
-                if (m_catalogPage > 0)
-                    m_targets.push_back({"page.prev", m_x0 + 14, m_y0 + 504, m_x0 + 124, m_y0 + 536, [this] { ChangeCatalogPage(-1); }});
-                if (m_catalogPage + 1 < pages)
-                    m_targets.push_back({"page.next", m_x0 + 282, m_y0 + 504, m_x0 + 392, m_y0 + 536, [this] { ChangeCatalogPage(1); }});
-            }
-            // Selected catalog mod Install / Update button.
-            const auto selIt = std::find_if(
-                    m_catalogRows.begin(), m_catalogRows.end(), [&](const CatalogRow& r) { return r.entry.id == m_selectedCatalogModId; });
-            if (selIt != m_catalogRows.end() && OfferFor(selIt->entry) != mods::CatalogOffer::UpToDate) {
-                const std::string id = selIt->entry.id;
-                m_targets.push_back(
-                        {"catalog.install." + id, m_x0 + 414, m_y0 + 210, m_x0 + 570, m_y0 + 242, [this, id] { InstallFromCatalog(id); }});
-            }
-            // Added catalogs management buttons.
-            m_targets.push_back({"catalog.add", m_x0 + 560, m_y0 + 264, m_x0 + 676, m_y0 + 292, [this] { StartUrlInput(); }});
-            m_targets.push_back({"catalog.refresh", m_x0 + 682, m_y0 + 264, m_x0 + 780, m_y0 + 292, [this] { RefreshAllCatalogs(); }});
-            const auto& cats = m_catalogStore.Catalogs();
-            const size_t maxShown = std::min<size_t>(cats.size(), 6);
-            for (size_t i = 0; i < maxShown; ++i) {
-                const int y = m_y0 + 300 + static_cast<int>(i) * 38;
-                if (cats[i].official) {
-                    m_targets.push_back({"catalog.toggle." + std::to_string(i), m_x0 + 706, y + 4, m_x0 + 780, y + 32,
-                            [this, i] { ToggleCatalogAt(i); }});
-                } else {
-                    m_targets.push_back({"catalog.remove." + std::to_string(i), m_x0 + 706, y + 4, m_x0 + 780, y + 32,
-                            [this, i] { RemoveCatalogAt(i); }});
-                }
-            }
-            return;
+        if (m_drawing) {
+            for (int y = m_y0; y < m_y1; ++y) own::Fill(m_x0, y, m_x1, y + 1, BackdropAt(y));
         }
-        if (!m_list) return;
-
-        const auto& entries = m_list->Entries();
-        const size_t activeCount = m_list->ActiveCount();
-        const size_t start = static_cast<size_t>(g_page * kPageSize);
-        const size_t end = std::min(entries.size(), start + static_cast<size_t>(kPageSize));
-
-        for (size_t i = start; i < end; ++i) {
-            const mods::Entry& entry = entries[i];
-            const int rowY = m_y0 + 58 + static_cast<int>(i - start) * 48;
-            const std::string id = entry.mod.id;
-            m_targets.push_back({"toggle." + id, m_x0 + 18, rowY + 6, m_x0 + 70, rowY + 38, [this, id] { OnToggle(id); }});
-            m_targets.push_back({"select." + id, m_x0 + 74, rowY + 2, m_x0 + (entry.on ? 292 : 354), rowY + 42, [this, id] {
-                                     g_selectedId = id;
-                                     RebuildTargets();
-                                     MarkDirty();
-                                 }});
-            if (entry.on) {
-                if (i > 0) m_targets.push_back({"up." + id, m_x0 + 296, rowY + 6, m_x0 + 324, rowY + 38, [this, id] { OnMove(id, -1); }});
-                if (i + 1 < activeCount)
-                    m_targets.push_back({"down." + id, m_x0 + 328, rowY + 6, m_x0 + 356, rowY + 38, [this, id] { OnMove(id, 1); }});
-            }
-            m_targets.push_back({"remove." + id, m_x0 + 360, rowY + 6, m_x0 + 388, rowY + 38, [this, id] { OnRemove(id); }});
+        LayoutHeader();
+        switch (g_tab) {
+        case Tab::Installed: LayoutInstalled(); break;
+        case Tab::Browse: LayoutBrowse(); break;
+        case Tab::Sources: LayoutSources(); break;
         }
+        LayoutFooter();
 
-        const int pages = PageCount();
-        if (pages > 1) {
-            if (g_page > 0) m_targets.push_back({"page.prev", m_x0 + 14, m_y0 + 504, m_x0 + 124, m_y0 + 536, [this] { ChangePage(-1); }});
-            if (g_page + 1 < pages)
-                m_targets.push_back({"page.next", m_x0 + 282, m_y0 + 504, m_x0 + 392, m_y0 + 536, [this] { ChangePage(1); }});
-        }
-
-        // Settings targets for the selected active mod.
-        const mods::Entry* selected = m_list->Find(g_selectedId);
-        if (selected && selected->on && selected->mod.valid && selected->problem == mods::Problem::None &&
-                !selected->mod.manifest.settings.empty()) {
-            const auto& active = mod_pack::Active();
-            const auto live = std::find_if(active.begin(), active.end(), [&](const auto& m) { return m.manifest.id == g_selectedId; });
-            if (live != active.end()) {
-                const auto& fields = selected->mod.manifest.settings;
-                const size_t count = std::min(fields.size(), static_cast<size_t>(kMaxSettingRows));
-                for (size_t i = 0; i < count; ++i) {
-                    const settings_schema::Field field = fields[i];
-                    const std::string modId = selected->mod.id;
-                    const int y = m_y0 + 254 + static_cast<int>(i) * 28;
-                    m_targets.push_back({"setting." + field.id + ".prev", m_x0 + 610, y, m_x0 + 638, y + 24,
-                            [this, modId, field] { OnStepSetting(modId, field, -1); }});
-                    m_targets.push_back({"setting." + field.id + ".next", m_x0 + 752, y, m_x0 + 780, y + 24,
-                            [this, modId, field] { OnStepSetting(modId, field, 1); }});
-                }
-            }
-        }
+        m_pal = base;
+        m_amber = kAmber;
+        m_recordTargets = true;
+        if (dialog) LayoutDialog();
     }
 
-    void DrawButton(int x0, int y0, int x1, int y1, const Char16* label, uint32_t fill, uint32_t ink) const
+    static uint32_t Mix(uint32_t a, uint32_t b, int step, int steps) { return LerpRgb(a, b, step, steps); }
+    static uint32_t Dim(uint32_t rgb) { return LerpRgb(rgb, 0x0a1622, 11, 20); }
+
+    static own::Palette Dimmed(own::Palette p)
     {
-        own::Box(x0, y0, x1, y1, m_round ? std::min((y1 - y0) / 2, 16) : 0, fill, m_pal.border);
-        const int y = (y0 + y1) / 2 - own::InkCentre(1);
-        own::Text(1, x0 + 4, y, x1 - x0 - 8, label, ink, 2);
+        for (uint32_t* c : {&p.sea, &p.seaDark, &p.sand, &p.foam, &p.ink, &p.red, &p.green, &p.grey, &p.white, &p.border}) *c = Dim(*c);
+        return p;
     }
 
-    void DrawListColumn() const
+    uint32_t BackdropAt(int y) const
     {
-        const int x0 = m_x0 + 12;
-        const int x1 = m_x0 + 394;
-        if (!m_list || m_list->Entries().empty()) {
-            own::Box(x0, m_y0 + 58, x1, m_y0 + 116, m_round, m_pal.foam, m_pal.border);
-            own::TextWrapped(1, x0 + 10, m_y0 + 68, x1 - x0 - 20, 44, Lookup("OBL_MODS_NONE").c_str(), m_pal.ink, 0);
-            return;
-        }
-        const auto& entries = m_list->Entries();
-        const size_t activeCount = m_list->ActiveCount();
-        const size_t start = static_cast<size_t>(g_page * kPageSize);
-        const size_t end = std::min(entries.size(), start + static_cast<size_t>(kPageSize));
-
-        for (size_t i = start; i < end; ++i) {
-            const mods::Entry& entry = entries[i];
-            const int rowY = m_y0 + 58 + static_cast<int>(i - start) * 48;
-            const bool selected = entry.mod.id == g_selectedId;
-            const bool hasProblem = entry.problem != mods::Problem::None;
-            own::Box(x0, rowY, x1, rowY + 44, m_round, selected ? m_pal.foam : m_pal.white,
-                    hasProblem ? m_pal.red : (selected ? m_pal.sea : m_pal.border));
-
-            const uint32_t toggleFill = entry.on ? m_pal.green : (hasProblem ? m_pal.grey : m_pal.seaDark);
-            DrawButton(m_x0 + 18, rowY + 6, m_x0 + 70, rowY + 38, Lookup(entry.on ? "OBL_MODS_ON" : "OBL_MODS_OFF").c_str(), toggleFill,
-                    m_pal.white);
-
-            const std::string& title = (entry.mod.valid && !entry.mod.manifest.title.empty()) ? entry.mod.manifest.title : entry.mod.id;
-            const int textW = entry.on ? 216 : 278;
-            own::Text(1, m_x0 + 76, rowY + 6, textW, Utf8ToEngine(title).c_str(), hasProblem ? m_pal.red : m_pal.ink, 0);
-
-            if (hasProblem) {
-                own::Text(0, m_x0 + 76, rowY + 24, textW, ProblemText(entry.problem, entry.detail).c_str(), m_pal.red, 0);
-            } else {
-                std::u16string sub = Utf8ToEngine(entry.mod.id + "  " + entry.mod.manifest.modVersion + "  ");
-                sub += ScopeText(entry.mod.manifest.scope);
-                own::Text(0, m_x0 + 76, rowY + 24, textW, sub.c_str(), m_pal.grey, 0);
-            }
-
-            if (entry.on) {
-                const bool canUp = i > 0;
-                const bool canDown = i + 1 < activeCount;
-                DrawButton(m_x0 + 296, rowY + 6, m_x0 + 324, rowY + 38, u"^", canUp ? m_pal.sea : m_pal.sand,
-                        canUp ? m_pal.white : m_pal.grey);
-                DrawButton(m_x0 + 328, rowY + 6, m_x0 + 356, rowY + 38, u"v", canDown ? m_pal.sea : m_pal.sand,
-                        canDown ? m_pal.white : m_pal.grey);
-            }
-            DrawButton(m_x0 + 360, rowY + 6, m_x0 + 388, rowY + 38, u"X", entry.on ? m_pal.sand : m_pal.seaDark,
-                    entry.on ? m_pal.grey : m_pal.white);
-        }
-
-        const int pages = PageCount();
-        if (pages > 1) {
-            DrawButton(m_x0 + 14, m_y0 + 504, m_x0 + 124, m_y0 + 536, Lookup("OBL_MODS_PREVIOUS").c_str(),
-                    g_page > 0 ? m_pal.sea : m_pal.sand, g_page > 0 ? m_pal.white : m_pal.grey);
-            const std::u16string pageLabel = Utf8ToEngine(std::to_string(g_page + 1) + " / " + std::to_string(pages));
-            own::Text(1, m_x0 + 130, m_y0 + 512, 146, pageLabel.c_str(), m_pal.ink, 2);
-            DrawButton(m_x0 + 282, m_y0 + 504, m_x0 + 392, m_y0 + 536, Lookup("OBL_MODS_NEXT").c_str(),
-                    g_page + 1 < pages ? m_pal.sea : m_pal.sand, g_page + 1 < pages ? m_pal.white : m_pal.grey);
-        }
+        // Sky-like on a pack with coloured menu buttons: from the foam tint at the top to the sand tint at the bottom.
+        return m_packLook ? LerpRgb(m_pal.foam, m_pal.sand, y - m_y0, std::max(1, m_y1 - m_y0 - 1)) : m_pal.sand;
     }
 
-    void DrawRightColumn() const
+    void AddTarget(std::string name, int x0, int y0, int x1, int y1, std::function<void()> onClick)
     {
-        const int x0 = m_x0 + 404;
-        const int x1 = m_x0 + 788;
-        const int innerW = x1 - x0 - 20;
+        if (m_recordTargets) m_targets.push_back({std::move(name), x0, y0, x1, y1, std::move(onClick)});
+    }
 
-        // Top card: selected mod info.
-        own::Box(x0, m_y0 + 58, x1, m_y0 + 216, m_round, m_pal.foam, m_pal.border);
-        const mods::Entry* selected = m_list ? m_list->Find(g_selectedId) : nullptr;
-        if (selected) {
-            const std::string& title =
-                    (selected->mod.valid && !selected->mod.manifest.title.empty()) ? selected->mod.manifest.title : selected->mod.id;
-            own::Text(2, x0 + 10, m_y0 + 66, innerW, Utf8ToEngine(title).c_str(), m_pal.ink, 0);
-            int y = m_y0 + 90;
-            if (selected->mod.valid) {
-                const auto& m = selected->mod.manifest;
-                own::Text(0, x0 + 10, y, innerW, Format(Lookup("OBL_MODS_VERSION"), {Utf8ToEngine(m.modVersion)}).c_str(), m_pal.ink, 0);
-                y += 16;
+    void Label(int font, int x, int y, int width, const std::u16string& text, uint32_t rgb, int align = 0) const
+    {
+        if (m_drawing && width > 0 && !text.empty()) own::Text(font, x, y, width, text.c_str(), rgb, align);
+    }
+
+    struct Colours {
+        uint32_t fill, border, ink;
+    };
+
+    Colours ColoursOf(Look look) const
+    {
+        switch (look) {
+        case Look::Primary: break;
+        case Look::Secondary: return {m_pal.white, m_pal.sea, m_pal.seaDark};
+        case Look::Danger: return {m_pal.white, m_pal.red, m_pal.red};
+        case Look::DangerSolid: return {m_pal.red, m_pal.red, m_pal.white};
+        case Look::Disabled: return {m_pal.sand, m_pal.border, m_pal.grey};
+        }
+        return {m_pal.seaDark, m_pal.seaDark, m_pal.white};
+    }
+
+    void Button(int x0, int y0, int x1, int y1, const std::u16string& label, Look look, std::string name = {},
+            std::function<void()> onClick = {})
+    {
+        if (m_drawing) {
+            const Colours c = ColoursOf(look);
+            own::Box(x0, y0, x1, y1, m_round ? std::min((y1 - y0) / 2, 16) : 0, c.fill, c.border);
+            if (!label.empty()) own::Text(1, x0 + 4, (y0 + y1) / 2 - own::InkCentre(1), x1 - x0 - 8, label.c_str(), c.ink, 2);
+        }
+        if (look != Look::Disabled && !name.empty()) AddTarget(std::move(name), x0, y0, x1, y1, std::move(onClick));
+    }
+
+    // The order buttons draw their arrow from pixels: font glyphs differ from pack to pack and sit off centre. The triangle is
+    // 12 x 6 around the centre of the button (an even box), moved a pixel toward its tip so it looks centred.
+    void ArrowButton(int x0, int y0, int x1, int y1, bool up, Look look, std::string name, std::function<void()> onClick)
+    {
+        Button(x0, y0, x1, y1, {}, look, std::move(name), std::move(onClick));
+        if (!m_drawing) return;
+        const int cx = (x0 + x1) / 2, cy = (y0 + y1) / 2 + (up ? -1 : 1);
+        const uint32_t ink = ColoursOf(look).ink;
+        for (int row = 0; row < 6; ++row) {
+            const int half = row + 1, y = up ? cy - 3 + row : cy + 2 - row;
+            own::Fill(cx - half, y, cx + half, y + 1, ink);
+        }
+    }
+    // A switch says "state" where a button says "action": a track that is green when on, with its knob at that end.
+    void Switch(int x, int y, bool on, bool usable, std::string name, std::function<void()> onClick)
+    {
+        constexpr int kW = 40, kH = 20;
+        if (m_drawing) {
+            const uint32_t track = on ? m_pal.green : (usable ? Mix(m_pal.grey, m_pal.white, 1, 3) : Mix(m_pal.border, m_pal.white, 1, 2));
+            own::Box(x, y, x + kW, y + kH, m_round ? kH / 2 : 0, track, Mix(track, m_pal.ink, 1, 5));
+            const int knob = on ? x + kW - kH + 2 : x + 2;
+            own::Box(knob, y + 2, knob + kH - 4, y + kH - 2, m_round ? (kH - 4) / 2 : 0, m_pal.white, Mix(track, m_pal.ink, 1, 4));
+        }
+        AddTarget(std::move(name), x - 6, y - 8, x + kW + 6, y + kH + 8, std::move(onClick));
+    }
+
+    void Marker(int cx, int cy, uint32_t fill) const
+    {
+        if (!m_drawing) return;
+        own::Box(cx - 9, cy - 9, cx + 9, cy + 9, m_round ? 9 : 0, fill, fill);
+        // From pixels like the arrows: a 2-pixel bar and dot, centred in the 18-pixel mark.
+        own::Fill(cx - 1, cy - 5, cx + 1, cy + 2, m_pal.white);
+        own::Fill(cx - 1, cy + 3, cx + 1, cy + 5, m_pal.white);
+    }
+
+    // A small pill ending at `right`; returns its left edge.
+    int Badge(int right, int y, const std::u16string& text, uint32_t tone) const
+    {
+        const int left = right - own::TextWidth(0, text.c_str()) - 16;
+        if (m_drawing) {
+            own::Box(left, y, right, y + 18, m_round ? 9 : 0, Mix(tone, m_pal.white, 4, 5), Mix(tone, m_pal.white, 1, 3));
+            own::Text(0, left, y + 9 - own::InkCentre(0), right - left, text.c_str(), Mix(tone, m_pal.ink, 1, 3), 2);
+        }
+        return left;
+    }
+
+    // Wrapped small text of at most `maxLines` lines above `limitY`, cut at a word with an ellipsis; returns the height used.
+    int Paragraph(int x, int y, int width, std::u16string text, int maxLines, int limitY, uint32_t ink)
+    {
+        const int lh = own::LineHeight(0);
+        maxLines = std::min(maxLines, (limitY - y) / lh);
+        if (maxLines <= 0 || text.empty()) return 0;
+        if (own::TextLines(0, text.c_str(), width) > maxLines) {
+            while (!text.empty()) {
+                const size_t space = text.find_last_of(u' ');
+                text.resize(space == std::u16string::npos ? 0 : space);
+                if (own::TextLines(0, (text + u"...").c_str(), width) <= maxLines) break;
+            }
+            text += u"...";
+        }
+        const int lines = std::max(1, own::TextLines(0, text.c_str(), width));
+        if (m_drawing) own::TextWrapped(0, x, y, width, lines * lh, text.c_str(), ink, 0);
+        return lines * lh + 6;
+    }
+
+    // A tinted box with what the player should notice about the selected mod, and a button that resolves it when there is one.
+    int Banner(int x0, int y, int x1, int limitY, const std::u16string& text, uint32_t tone, const std::u16string& action = {},
+            std::string name = {}, std::function<void()> onClick = {})
+    {
+        const int lh = own::LineHeight(0);
+        const int lines = std::clamp(own::TextLines(0, text.c_str(), x1 - x0 - 16), 1, 3);
+        const int h = lines * lh + 12 + (action.empty() ? 0 : 34);
+        if (y + h > limitY) return 0;
+        if (m_drawing) {
+            own::Box(x0, y, x1, y + h, m_round ? 6 : 0, Mix(tone, m_pal.white, 5, 6), Mix(tone, m_pal.white, 1, 3));
+            own::TextWrapped(0, x0 + 8, y + 6, x1 - x0 - 16, lines * lh, text.c_str(), Mix(tone, m_pal.ink, 1, 2), 0);
+        }
+        if (!action.empty()) {
+            const int w = std::min(x1 - x0 - 16, own::TextWidth(1, action.c_str()) + 32);
+            Button(x1 - 8 - w, y + h - 36, x1 - 8, y + h - 8, action, Look::Secondary, std::move(name), std::move(onClick));
+        }
+        return h + 8;
+    }
+
+    void LayoutHeader()
+    {
+        if (m_drawing) {
+            own::Fill(m_x0, m_y0, m_x1, m_y0 + kHeaderH, m_pal.sea);
+            own::Text(2, m_x0 + 16, m_y0 + kHeaderH / 2 - own::InkCentre(2), 92, Lookup("OBL_MODS_TITLE").c_str(), m_pal.white, 0);
+        }
+        const size_t installed = m_list ? m_list->Entries().size() : 0;
+        const std::u16string labels[] = {Format(Lookup("OBL_MODS_TAB_INSTALLED"), {Utf8ToEngine(std::to_string(installed))}),
+                Lookup("OBL_MODS_TAB_BROWSE"), Lookup("OBL_MODS_TAB_SOURCES")};
+        static constexpr const char* kNames[] = {"tab.installed", "tab.browse", "tab.sources"};
+        static constexpr int kEdges[] = {112, 304, 448, 592};
+        for (int i = 0; i < 3; ++i) {
+            const int x0 = m_x0 + kEdges[i] + 2, x1 = m_x0 + kEdges[i + 1] - 2;
+            const bool open = static_cast<int>(g_tab) == i;
+            const int top = m_y0 + (open ? 8 : 12);
+            if (m_drawing) {
+                // The open tab takes the colour of the page and runs into it, like a folder tab; the others sit in the bar.
+                own::Box(x0, top, x1, m_y0 + kHeaderH + 8, m_round, open ? BackdropAt(m_y0 + kHeaderH) : m_pal.seaDark,
+                        open ? m_pal.border : m_pal.seaDark);
+                for (int y = m_y0 + kHeaderH; y < m_y0 + kHeaderH + 8; ++y) own::Fill(x0, y, x1, y + 1, BackdropAt(y));
+                own::Text(1, x0 + 6, (top + m_y0 + kHeaderH) / 2 - own::InkCentre(1), x1 - x0 - 12, labels[i].c_str(),
+                        open ? m_pal.ink : m_pal.white, 2);
+            }
+            AddTarget(kNames[i], x0, m_y0 + 8, x1, m_y0 + kHeaderH, [this, i] { SelectTab(static_cast<Tab>(i)); });
+        }
+        Button(m_x0 + 696, m_y0 + 8, m_x0 + 784, m_y0 + 40, Lookup("OBL_MODS_BACK"), Look::Secondary, "back",
+                [this] { m_pendingBack = true; });
+    }
+
+    void LayoutFooter()
+    {
+        const int footerY = m_y1 - kFooterH;
+        std::u16string text;
+        uint32_t ink = m_pal.white;
+        if (!g_statusText.empty()) {
+            text = g_statusText;
+            if (g_statusIsError) ink = Mix(m_pal.red, m_pal.white, 3, 4);
+        } else if (m_list && !m_list->CanStart()) {
+            text = Lookup("OBL_MODS_FIX_FIRST");
+            ink = Mix(m_pal.red, m_pal.white, 3, 4);
+        } else if (WorldModsChanged()) {
+            text = Lookup("OBL_MODS_WORLD_NEXT");
+            ink = Mix(m_amber, m_pal.white, 1, 2);
+        }
+        if (m_drawing) {
+            own::Fill(m_x0, footerY, m_x1, m_y1, m_pal.seaDark);
+            // The game version a mod's `engine_min` is checked against.
+            const std::u16string version = Format(Lookup("OBL_MODS_GAME_VERSION"), {Utf8ToEngine(std::string(kEngineVersion))});
+            const int versionW = own::TextWidth(0, version.c_str());
+            own::Text(0, m_x1 - 52 - versionW, footerY + kFooterH / 2 - own::InkCentre(0), versionW + 4, version.c_str(),
+                    Mix(m_pal.white, m_pal.seaDark, 1, 3), 0);
+            if (!text.empty())
                 own::Text(
-                        0, x0 + 10, y, innerW, Format(Lookup("OBL_MODS_PACKS"), {Utf8ToEngine(Join(m.packs, ", "))}).c_str(), m_pal.ink, 0);
-                y += 16;
-                own::Text(0, x0 + 10, y, innerW, Format(Lookup("OBL_MODS_SCOPE"), {ScopeText(m.scope)}).c_str(), m_pal.ink, 0);
-                y += 16;
-                if (!m.takesOver.empty() && y <= m_y0 + 194) {
-                    own::Text(0, x0 + 10, y, innerW, Format(Lookup("OBL_MODS_TAKES_OVER"), {Utf8ToEngine(Join(m.takesOver, ", "))}).c_str(),
-                            m_pal.ink, 0);
-                    y += 16;
-                }
-                if (!m.actions.empty() && y <= m_y0 + 194) {
-                    own::Text(0, x0 + 10, y, innerW, Format(Lookup("OBL_MODS_ACTIONS"), {Utf8ToEngine(FormatActions(m.actions))}).c_str(),
-                            m_pal.ink, 0);
-                    y += 16;
-                }
-                if (!m.bindings.empty() && y <= m_y0 + 194) {
-                    own::Text(0, x0 + 10, y, innerW,
-                            Format(Lookup("OBL_MODS_BINDINGS"), {Utf8ToEngine(FormatBindings(m.bindings))}).c_str(), m_pal.ink, 0);
-                    y += 16;
-                }
-                if (!m.requiredMods.empty() && y <= m_y0 + 194) {
-                    own::Text(0, x0 + 10, y, innerW,
-                            Format(Lookup("OBL_MODS_REQUIRES"), {Utf8ToEngine(Join(m.requiredMods, ", "))}).c_str(), m_pal.ink, 0);
-                    y += 16;
-                }
-                if (!m.conflictingMods.empty() && y <= m_y0 + 194) {
-                    own::Text(0, x0 + 10, y, innerW,
-                            Format(Lookup("OBL_MODS_INCOMPATIBLE"), {Utf8ToEngine(Join(m.conflictingMods, ", "))}).c_str(), m_pal.ink, 0);
-                    y += 16;
-                }
+                        1, m_x0 + 16, footerY + kFooterH / 2 - own::InkCentre(1), m_x1 - 68 - versionW - (m_x0 + 16), text.c_str(), ink, 0);
+        }
+        Button(m_x1 - 40, footerY + 6, m_x1 - 8, footerY + 38, u"?", Look::Secondary, "help", [this] { OnHelp(); });
+    }
+
+    void LayoutPager(int page, int pages, void (GuiModsPanel::*change)(int))
+    {
+        if (pages <= 1) return;
+        const int x1 = m_x0 + kListX1, y0 = m_y0 + kBarY, y1 = y0 + 32;
+        Button(x1 - 112, y0, x1 - 80, y1, u"<", page > 0 ? Look::Secondary : Look::Disabled, "page.prev",
+                [this, change] { (this->*change)(-1); });
+        Label(1, x1 - 80, y0 + 16 - own::InkCentre(1), 48, Utf8ToEngine(std::to_string(page + 1) + "/" + std::to_string(pages)), m_pal.ink,
+                2);
+        Button(x1 - 32, y0, x1, y1, u">", page + 1 < pages ? Look::Secondary : Look::Disabled, "page.next",
+                [this, change] { (this->*change)(1); });
+    }
+
+    // ---- Installed tab ----
+
+    struct Slot {
+        int y = 0;
+        size_t index = 0; // into m_list->Entries()
+        bool header = false; // a section title before the entry
+        bool on = false;
+    };
+
+    // The rows of the current page: the active mods under one title (in load order), the others under another.
+    std::vector<Slot> InstalledSlots() const
+    {
+        std::vector<Slot> out;
+        if (!m_list) return out;
+        const size_t activeCount = m_list->ActiveCount();
+        const size_t start = static_cast<size_t>(g_page * kPageSize);
+        const size_t end = std::min(m_list->Entries().size(), start + static_cast<size_t>(kPageSize));
+        int y = m_y0 + kTopY;
+        bool titledOn = false, titledOff = false;
+        for (size_t i = start; i < end; ++i) {
+            const bool on = i < activeCount;
+            if (on ? !titledOn : !titledOff) {
+                out.push_back({y, i, true, on});
+                y += kSectionH;
+                (on ? titledOn : titledOff) = true;
             }
-            if (selected->problem != mods::Problem::None) {
-                own::Text(1, x0 + 10, std::min(y + 4, m_y0 + 194), innerW, ProblemText(selected->problem, selected->detail).c_str(),
-                        m_pal.red, 0);
+            out.push_back({y, i, false, on});
+            y += kRowPitch;
+        }
+        return out;
+    }
+
+    static bool IsHardProblem(mods::Problem problem)
+    {
+        return problem == mods::Problem::Invalid || problem == mods::Problem::WrongPack || problem == mods::Problem::NeedsApi ||
+                problem == mods::Problem::NeedsEngine;
+    }
+
+    std::string TitleOf(const mods::Entry& entry) const
+    {
+        return entry.mod.valid && !entry.mod.manifest.title.empty() ? entry.mod.manifest.title : entry.mod.id;
+    }
+
+    std::string TitleOf(const std::string& id) const
+    {
+        const mods::Entry* entry = m_list ? m_list->Find(id) : nullptr;
+        return entry ? TitleOf(*entry) : id;
+    }
+
+    // Why the entry cannot start, naming other mods by their titles.
+    std::u16string ProblemLine(const mods::Entry& entry) const
+    {
+        const bool namesMod = entry.problem == mods::Problem::MissingRequirement || entry.problem == mods::Problem::RequirementLater ||
+                entry.problem == mods::Problem::ConflictsWith;
+        return ProblemText(entry.problem, namesMod ? TitleOf(entry.detail) : entry.detail);
+    }
+
+    std::u16string Meta(const std::string& version, mod_pack::Scope scope) const
+    {
+        std::u16string out = Format(Lookup("OBL_MODS_VERSION"), {Utf8ToEngine(version)});
+        out += kDot;
+        out += ScopeText(scope);
+        return out;
+    }
+
+    // A world mod switched on or off since the game started: the running world still has the old list.
+    bool PendingRestart(const mods::Entry& entry) const
+    {
+        if (!entry.mod.valid || entry.mod.manifest.scope != mod_pack::Scope::World) return false;
+        const bool started = std::find(g_startupWorldMods.begin(), g_startupWorldMods.end(), entry.mod.id) != g_startupWorldMods.end();
+        return entry.on != started;
+    }
+
+    static bool Involves(const mods::Conflict& c, const std::string& id)
+    {
+        return c.winner == id || c.loser == id || (c.winner.empty() && c.what.find(id) != std::string::npos);
+    }
+
+    bool InConflict(const std::string& id) const
+    {
+        if (!m_list) return false;
+        const auto& all = m_list->Conflicts();
+        return std::any_of(all.begin(), all.end(), [&](const mods::Conflict& c) { return Involves(c, id); });
+    }
+
+    std::u16string ConflictLine(const mods::Conflict& c) const
+    {
+        if (c.winner.empty()) return Utf8ToEngine(c.what);
+        return Format(
+                Lookup("OBL_MODS_CONFLICT_VALUE"), {Utf8ToEngine(TitleOf(c.winner)), Utf8ToEngine(TitleOf(c.loser)), Utf8ToEngine(c.what)});
+    }
+
+    void Select(const std::string& id)
+    {
+        g_selectedId = id;
+        RebuildTargets();
+        MarkDirty();
+    }
+
+    void SelectFirstOverlap()
+    {
+        if (!m_list || m_list->Conflicts().empty()) return;
+        const mods::Conflict& c = m_list->Conflicts().front();
+        const std::string id = !c.loser.empty() ? c.loser : c.winner;
+        if (id.empty() || !m_list->Find(id)) return;
+        EnsureVisible(id);
+        Select(id);
+    }
+
+    void SelectTab(Tab tab)
+    {
+        g_tab = tab;
+        if (tab == Tab::Browse && !os::HasEnv("OBL_SCRIPT")) {
+            const mods::StoredCatalog* official = m_catalogStore.Find(mods::kOfficialCatalogUrl);
+            if (official && official->enabled && official->mods.empty()) BeginFetchCatalog(mods::kOfficialCatalogUrl, false);
+        }
+        RebuildTargets();
+        MarkDirty();
+    }
+
+    void LayoutInstalled()
+    {
+        const int x0 = m_x0 + kListX0, x1 = m_x0 + kListX1;
+        if (!m_list || m_list->Entries().empty()) {
+            if (m_drawing) own::Box(x0, m_y0 + kTopY, x1, m_y0 + kTopY + 64, m_round, m_pal.foam, m_pal.border);
+            Paragraph(x0 + 12, m_y0 + kTopY + 10, x1 - x0 - 24, Lookup("OBL_MODS_NONE"), 3, m_y0 + kTopY + 60, m_pal.ink);
+        } else {
+            for (const Slot& slot : InstalledSlots()) {
+                if (slot.header)
+                    LayoutSection(slot);
+                else
+                    LayoutModRow(slot);
             }
         }
+        Button(x0, m_y0 + kBarY, x0 + 200, m_y0 + kBarY + 32, u"+ " + Lookup("OBL_MODS_INSTALL"), Look::Secondary, "install",
+                [this] { OnInstall(); });
+        LayoutPager(g_page, PageCount(), &GuiModsPanel::ChangePage);
+        LayoutModCard();
+    }
 
-        // Middle card: settings of the selected mod.
-        own::Box(x0, m_y0 + 224, x1, m_y0 + 402, m_round, m_pal.foam, m_pal.border);
-        own::Text(1, x0 + 10, m_y0 + 232, innerW, Lookup("OBL_MODS_SETTINGS").c_str(), m_pal.seaDark, 0);
-        if (!selected || !selected->mod.valid || selected->mod.manifest.settings.empty()) {
-            own::Text(0, x0 + 10, m_y0 + 258, innerW, Lookup("OBL_MODS_NO_SETTINGS").c_str(), m_pal.grey, 0);
-        } else {
-            const auto& active = mod_pack::Active();
-            const auto live = std::find_if(active.begin(), active.end(), [&](const auto& m) { return m.manifest.id == g_selectedId; });
-            if (!selected->on || selected->problem != mods::Problem::None || live == active.end()) {
-                own::Text(0, x0 + 10, m_y0 + 258, innerW, Lookup("OBL_MODS_SETTINGS_OFF").c_str(), m_pal.grey, 0);
-            } else {
-                const auto& fields = selected->mod.manifest.settings;
-                const size_t count = std::min(fields.size(), static_cast<size_t>(kMaxSettingRows));
-                for (size_t i = 0; i < count; ++i) {
-                    const settings_schema::Field& field = fields[i];
-                    const int y = m_y0 + 254 + static_cast<int>(i) * 28;
-                    own::Text(0, x0 + 10, y + 6, 190, Utf8ToEngine(field.label).c_str(), m_pal.ink, 0);
-                    DrawButton(m_x0 + 610, y, m_x0 + 638, y + 24, u"<", m_pal.sea, m_pal.white);
-                    own::Box(m_x0 + 640, y, m_x0 + 750, y + 24, m_round, m_pal.white, m_pal.border);
-                    const std::string current = mods::ModSettingValue(*live, field);
-                    std::u16string shown;
-                    if (field.kind == settings_schema::Kind::Toggle)
-                        shown = Lookup(settings_schema::IsOn(current) ? "OBL_MODS_ON" : "OBL_MODS_OFF");
-                    else
-                        shown = Utf8ToEngine(settings_schema::Display(field, current));
-                    own::Text(0, m_x0 + 644, y + 6, 102, shown.c_str(), m_pal.ink, 2);
-                    DrawButton(m_x0 + 752, y, m_x0 + 780, y + 24, u">", m_pal.sea, m_pal.white);
-                }
-            }
-        }
-
-        // Bottom card: conflicts of the active list.
-        own::Box(x0, m_y0 + 410, x1, m_y0 + 548, m_round, m_pal.foam, m_pal.border);
-        own::Text(1, x0 + 10, m_y0 + 418, innerW, Lookup("OBL_MODS_CONFLICTS").c_str(), m_pal.seaDark, 0);
-        if (!m_list || m_list->Conflicts().empty()) {
-            own::Text(0, x0 + 10, m_y0 + 444, innerW, Lookup("OBL_MODS_NO_CONFLICTS").c_str(), m_pal.grey, 0);
-        } else {
-            own::Text(0, x0 + 10, m_y0 + 438, innerW, Lookup("OBL_MODS_CONFLICT_HINT").c_str(), m_pal.grey, 0);
-            const auto& conflicts = m_list->Conflicts();
-            const size_t count = std::min(conflicts.size(), static_cast<size_t>(kMaxConflictRows));
-            for (size_t i = 0; i < count; ++i) {
-                const mods::Conflict& c = conflicts[i];
-                const std::u16string line = c.winner.empty()
-                        ? Utf8ToEngine(c.what)
-                        : Format(Lookup("OBL_MODS_CONFLICT_VALUE"), {Utf8ToEngine(c.winner), Utf8ToEngine(c.loser), Utf8ToEngine(c.what)});
-                own::Text(0, x0 + 10, m_y0 + 458 + static_cast<int>(i) * 20, innerW, line.c_str(), m_pal.red, 0);
-            }
+    void LayoutSection(const Slot& slot)
+    {
+        const int x0 = m_x0 + kListX0, x1 = m_x0 + kListX1;
+        Label(1, x0 + 4, slot.y + 4, 280, Lookup(slot.on ? "OBL_MODS_SECTION_ON" : "OBL_MODS_SECTION_OFF"), m_pal.seaDark);
+        if (slot.on && m_list && !m_list->Conflicts().empty()) {
+            const std::u16string text = Format(Lookup("OBL_MODS_OVERLAPS"), {Utf8ToEngine(std::to_string(m_list->Conflicts().size()))});
+            const int left = Badge(x1 - 4, slot.y + 1, text, m_amber);
+            AddTarget("overlaps", left, slot.y, x1 - 4, slot.y + 20, [this] { SelectFirstOverlap(); });
         }
     }
 
-    void DrawCatalogListColumn() const
+    void LayoutModRow(const Slot& slot)
     {
-        const int x0 = m_x0 + 12;
-        const int x1 = m_x0 + 394;
+        const mods::Entry& entry = m_list->Entries()[slot.index];
+        const std::string id = entry.mod.id;
+        const int x0 = m_x0 + kListX0, x1 = m_x0 + kListX1, y = slot.y;
+        const bool selected = id == g_selectedId;
+        const bool hard = IsHardProblem(entry.problem);
+        const bool attention = entry.problem != mods::Problem::None || (entry.on && InConflict(id));
+        if (m_drawing) {
+            own::Box(x0, y, x1, y + kRowH, m_round, selected ? m_pal.foam : m_pal.white, selected ? m_pal.sea : m_pal.border);
+            if (entry.problem != mods::Problem::None) own::Fill(x0 + 1, y + 8, x0 + 4, y + kRowH - 8, hard ? m_pal.red : m_amber);
+            if (slot.on)
+                own::Text(1, x0 + 4, y + kRowH / 2 - own::InkCentre(1), 22, Utf8ToEngine(std::to_string(slot.index + 1)).c_str(),
+                        m_pal.grey, 2);
+        }
+        Switch(x0 + 28, y + 10, entry.on, !hard, "toggle." + id, [this, id] { OnToggle(id); });
+
+        // The selected active mod gets its order buttons; any other row shows a mark when it needs attention.
+        int right = x1 - 8;
+        if (selected && entry.on) {
+            const bool canUp = slot.index > 0, canDown = slot.index + 1 < m_list->ActiveCount();
+            ArrowButton(x1 - 66, y + 6, x1 - 38, y + 34, true, canUp ? Look::Secondary : Look::Disabled, "up." + id,
+                    [this, id] { OnMove(id, -1); });
+            ArrowButton(x1 - 34, y + 6, x1 - 6, y + 34, false, canDown ? Look::Secondary : Look::Disabled, "down." + id,
+                    [this, id] { OnMove(id, 1); });
+            right = x1 - 72;
+        } else if (attention) {
+            Marker(x1 - 18, y + kRowH / 2, hard ? m_pal.red : m_amber);
+            right = x1 - 32;
+        }
+
+        const int tx = x0 + 78;
+        Label(1, tx, y + 4, right - tx, Utf8ToEngine(TitleOf(entry)), hard ? m_pal.red : m_pal.ink);
+        std::u16string sub;
+        uint32_t subInk = m_pal.grey;
+        if (entry.problem != mods::Problem::None) {
+            sub = ProblemLine(entry);
+            subInk = hard ? m_pal.red : Mix(m_amber, m_pal.ink, 1, 3);
+        } else if (entry.mod.valid) {
+            sub = Meta(entry.mod.manifest.modVersion, entry.mod.manifest.scope);
+            if (PendingRestart(entry)) {
+                sub += kDot;
+                sub += Lookup("OBL_MODS_AFTER_RESTART");
+                subInk = Mix(m_amber, m_pal.ink, 1, 3);
+            }
+        }
+        Label(0, tx, y + 22, right - tx, sub, subInk);
+        // Last, so the switch and the order buttons above win their taps.
+        AddTarget("select." + id, x0, y, x1, y + kRowH, [this, id] { Select(id); });
+    }
+
+    void LayoutModCard()
+    {
+        const int x0 = m_x0 + kCardX0, x1 = m_x0 + kCardX1, top = m_y0 + kTopY, bottom = m_y0 + kCardBottom;
+        if (m_drawing) own::Box(x0, top, x1, bottom, m_round, m_pal.foam, m_pal.border);
+        const mods::Entry* selected = m_list ? m_list->Find(g_selectedId) : nullptr;
+        if (!selected) return;
+        const mods::Entry& sel = *selected;
+        const std::string id = sel.mod.id;
+        const int ix = x0 + 12, iw = x1 - x0 - 24;
+        const int actionsY = bottom - 44;
+        const int limit = actionsY - 8;
+        const int lh0 = own::LineHeight(0), lh1 = own::LineHeight(1);
+
+        int y = top + 10;
+        Label(2, ix, y, iw, Utf8ToEngine(TitleOf(sel)), m_pal.ink);
+        y += own::LineHeight(2) + 6;
+        if (sel.mod.valid) {
+            Label(0, ix, y, iw, Meta(sel.mod.manifest.modVersion, sel.mod.manifest.scope), m_pal.grey);
+            y += lh0 + 8;
+            if (!sel.mod.manifest.description.empty())
+                y += Paragraph(ix, y, iw, Utf8ToEngine(sel.mod.manifest.description), 4, limit, m_pal.ink);
+        }
+
+        if (sel.problem != mods::Problem::None) {
+            std::u16string action;
+            std::function<void()> fix;
+            const mods::Entry* other = m_list->Find(sel.detail);
+            if (other && sel.problem == mods::Problem::ConflictsWith && other->on) {
+                action = Format(Lookup("OBL_MODS_FIX_OFF"), {Utf8ToEngine(TitleOf(*other))});
+            } else if (other && sel.problem == mods::Problem::MissingRequirement && !other->on && !IsHardProblem(other->problem)) {
+                action = Format(Lookup("OBL_MODS_FIX_ON"), {Utf8ToEngine(TitleOf(*other))});
+            }
+            if (!action.empty()) {
+                const std::string otherId = other->mod.id;
+                fix = [this, otherId] { OnToggle(otherId); };
+            }
+            y += Banner(
+                    ix, y, x1 - 12, limit, ProblemLine(sel), IsHardProblem(sel.problem) ? m_pal.red : m_amber, action, "fix." + id, fix);
+        }
+        if (PendingRestart(sel)) y += Banner(ix, y, x1 - 12, limit, Lookup("OBL_MODS_WORLD_NEXT"), m_amber);
+        if (sel.on && m_list) {
+            int shown = 0;
+            for (const mods::Conflict& c : m_list->Conflicts()) {
+                if (!Involves(c, id) || shown == kMaxOverlapBanners) continue;
+                const int used = Banner(ix, y, x1 - 12, limit, ConflictLine(c), m_amber);
+                if (!used) break;
+                y += used;
+                ++shown;
+            }
+            if (shown) y += Paragraph(ix, y, iw, Lookup("OBL_MODS_CONFLICT_HINT"), 2, limit, m_pal.grey);
+        }
+
+        if (sel.mod.valid && !sel.mod.manifest.settings.empty()) y = LayoutSettings(sel, ix, y, iw, limit);
+
+        if (sel.mod.valid && y + lh1 <= limit) {
+            const std::u16string label = (g_showTechnical ? u"- " : u"+ ") + Lookup("OBL_MODS_TECHNICAL");
+            Label(1, ix, y, iw, label, m_pal.seaDark);
+            AddTarget("technical", ix, y - 4, ix + std::min(iw, own::TextWidth(1, label.c_str()) + 8), y + lh1 + 4, [this] {
+                g_showTechnical = !g_showTechnical;
+                RebuildTargets();
+                MarkDirty();
+            });
+            y += lh1 + 6;
+            if (g_showTechnical) {
+                const auto& m = sel.mod.manifest;
+                std::vector<std::u16string> lines = {Format(Lookup("OBL_MODS_PACKS"), {Utf8ToEngine(Join(m.packs, ", "))})};
+                if (!m.takesOver.empty()) lines.push_back(Format(Lookup("OBL_MODS_TAKES_OVER"), {Utf8ToEngine(Join(m.takesOver, ", "))}));
+                if (!m.actions.empty()) lines.push_back(Format(Lookup("OBL_MODS_ACTIONS"), {Utf8ToEngine(FormatActions(m.actions))}));
+                if (!m.bindings.empty()) lines.push_back(Format(Lookup("OBL_MODS_BINDINGS"), {Utf8ToEngine(FormatBindings(m.bindings))}));
+                if (!m.requiredMods.empty())
+                    lines.push_back(Format(Lookup("OBL_MODS_REQUIRES"), {Utf8ToEngine(Join(m.requiredMods, ", "))}));
+                if (!m.conflictingMods.empty())
+                    lines.push_back(Format(Lookup("OBL_MODS_INCOMPATIBLE"), {Utf8ToEngine(Join(m.conflictingMods, ", "))}));
+                for (const std::u16string& line : lines) {
+                    if (y + lh0 > limit) break;
+                    Label(0, ix, y, iw, line, m_pal.ink);
+                    y += lh0 + 2;
+                }
+            }
+        }
+
+        Button(ix, actionsY, ix + 150, actionsY + 32, Lookup(sel.on ? "OBL_MODS_TURN_OFF" : "OBL_MODS_TURN_ON"), Look::Primary,
+                "card.toggle", [this, id] { OnToggle(id); });
+        Button(x1 - 132, actionsY, x1 - 12, actionsY + 32, Lookup("OBL_MODS_REMOVE_BUTTON"), sel.on ? Look::Disabled : Look::Danger,
+                "remove." + id, [this, id] { OnRemove(id); });
+    }
+
+    int LayoutSettings(const mods::Entry& sel, int ix, int y, int iw, int limit)
+    {
+        const int lh1 = own::LineHeight(1);
+        if (y + lh1 + 6 > limit) return y;
+        Label(1, ix, y, iw, Lookup("OBL_MODS_SETTINGS"), m_pal.seaDark);
+        y += lh1 + 6;
+        const auto& active = mod_pack::Active();
+        const auto live = std::find_if(active.begin(), active.end(), [&](const auto& m) { return m.manifest.id == sel.mod.id; });
+        if (!sel.on || sel.problem != mods::Problem::None || live == active.end())
+            return y + Paragraph(ix, y, iw, Lookup("OBL_MODS_SETTINGS_OFF"), 2, limit, m_pal.grey);
+        const auto& fields = sel.mod.manifest.settings;
+        const int right = ix + iw;
+        for (size_t i = 0; i < fields.size() && i < static_cast<size_t>(kMaxSettingRows); ++i) {
+            if (y + 26 > limit) break;
+            const settings_schema::Field field = fields[i];
+            const std::string modId = sel.mod.id;
+            Label(0, ix, y + 12 - own::InkCentre(0), iw - 176, Utf8ToEngine(field.label), m_pal.ink);
+            Button(right - 168, y, right - 140, y + 24, u"<", Look::Secondary, "setting." + field.id + ".prev",
+                    [this, modId, field] { OnStepSetting(modId, field, -1); });
+            if (m_drawing) {
+                own::Box(right - 136, y, right - 32, y + 24, m_round ? 6 : 0, m_pal.white, m_pal.border);
+                const std::string current = mods::ModSettingValue(*live, field);
+                const std::u16string shown = field.kind == settings_schema::Kind::Toggle
+                        ? Lookup(settings_schema::IsOn(current) ? "OBL_MODS_ON" : "OBL_MODS_OFF")
+                        : Utf8ToEngine(settings_schema::Display(field, current));
+                own::Text(0, right - 132, y + 12 - own::InkCentre(0), 96, shown.c_str(), m_pal.ink, 2);
+            }
+            Button(right - 28, y, right, y + 24, u">", Look::Secondary, "setting." + field.id + ".next",
+                    [this, modId, field] { OnStepSetting(modId, field, 1); });
+            y += 30;
+        }
+        return y + 4;
+    }
+
+    // ---- Browse tab ----
+
+    void LayoutBrowse()
+    {
         if (m_catalogRows.empty()) {
-            own::Box(x0, m_y0 + 58, x1, m_y0 + 126, m_round, m_pal.foam, m_pal.border);
-            const auto& cats = m_catalogStore.Catalogs();
-            const bool anyEnabled = std::any_of(cats.begin(), cats.end(), [](const mods::StoredCatalog& c) { return c.enabled; });
-            const char* key = anyEnabled ? "OBL_MODS_CAT_NO_MODS" : "OBL_MODS_CAT_NONE";
-            own::TextWrapped(1, x0 + 10, m_y0 + 68, x1 - x0 - 20, 52, Lookup(key).c_str(), m_pal.ink, 0);
+            LayoutBrowseEmpty();
             return;
         }
         const size_t start = static_cast<size_t>(m_catalogPage * kPageSize);
         const size_t end = std::min(m_catalogRows.size(), start + static_cast<size_t>(kPageSize));
-        for (size_t i = start; i < end; ++i) {
-            const CatalogRow& row = m_catalogRows[i];
-            const int rowY = m_y0 + 58 + static_cast<int>(i - start) * 48;
-            const bool selected = row.entry.id == m_selectedCatalogModId;
-            own::Box(x0, rowY, x1, rowY + 44, m_round, selected ? m_pal.foam : m_pal.white, selected ? m_pal.sea : m_pal.border);
-            own::Text(1, x0 + 10, rowY + 6, 360, Utf8ToEngine(row.entry.title).c_str(), m_pal.ink, 0);
+        int y = m_y0 + kTopY;
+        for (size_t i = start; i < end; ++i, y += kRowPitch) LayoutCatalogRow(m_catalogRows[i], y);
+        LayoutPager(m_catalogPage, CatalogPageCount(), &GuiModsPanel::ChangeCatalogPage);
+        LayoutCatalogCard();
+    }
 
-            const mods::CatalogOffer offer = OfferFor(row.entry);
-            std::u16string sub = Utf8ToEngine(row.entry.id + "  " + row.entry.modVersion + "  ");
-            sub += ScopeText(row.entry.scope);
-            if (offer != mods::CatalogOffer::Install) {
-                sub += u"  (";
-                sub += Lookup(offer == mods::CatalogOffer::UpToDate ? "OBL_MODS_CAT_UP_TO_DATE" : "OBL_MODS_CAT_UPDATE");
-                sub += u")";
+    void LayoutBrowseEmpty()
+    {
+        const int x0 = m_x0 + kListX0, x1 = m_x0 + kCardX1, top = m_y0 + kTopY;
+        if (m_drawing) own::Box(x0, top, x1, top + 112, m_round, m_pal.foam, m_pal.border);
+        const auto& cats = m_catalogStore.Catalogs();
+        const bool anyEnabled = std::any_of(cats.begin(), cats.end(), [](const mods::StoredCatalog& c) { return c.enabled; });
+        const char* key = m_activeFetch.handle && !m_activeFetch.isModZip ? "OBL_MODS_CAT_LOADING"
+                : anyEnabled                                              ? "OBL_MODS_CAT_NO_MODS"
+                                                                          : "OBL_MODS_CAT_NONE";
+        Paragraph(x0 + 14, top + 14, x1 - x0 - 28, Lookup(key), 3, top + 64, m_pal.ink);
+        Button(x0 + 14, top + 68, x0 + 174, top + 100, Lookup("OBL_MODS_CAT_REFRESH"),
+                m_activeFetch.handle ? Look::Disabled : Look::Secondary, "catalog.refresh", [this] { RefreshAllCatalogs(); });
+        Button(x0 + 182, top + 68, x0 + 342, top + 100, Lookup("OBL_MODS_TAB_SOURCES"), Look::Secondary, "browse.sources",
+                [this] { SelectTab(Tab::Sources); });
+    }
+
+    void LayoutCatalogRow(const CatalogRow& row, int y)
+    {
+        const std::string id = row.entry.id;
+        const int x0 = m_x0 + kListX0, x1 = m_x0 + kListX1;
+        const bool selected = id == g_selectedCatalogId;
+        if (m_drawing) own::Box(x0, y, x1, y + kRowH, m_round, selected ? m_pal.foam : m_pal.white, selected ? m_pal.sea : m_pal.border);
+        int right = x1 - 8;
+        const mods::CatalogOffer offer = OfferFor(row.entry);
+        if (offer == mods::CatalogOffer::UpToDate)
+            right = Badge(x1 - 8, y + 11, Lookup("OBL_MODS_CAT_UP_TO_DATE"), m_pal.green) - 8;
+        else if (offer == mods::CatalogOffer::Update)
+            right = Badge(x1 - 8, y + 11, Lookup("OBL_MODS_CAT_UPDATE_BADGE"), m_amber) - 8;
+        Label(1, x0 + 12, y + 4, right - x0 - 12, Utf8ToEngine(row.entry.title), m_pal.ink);
+        std::u16string sub = Meta(row.entry.modVersion, row.entry.scope);
+        sub += kDot;
+        sub += Utf8ToEngine(row.catalogTitle);
+        Label(0, x0 + 12, y + 22, right - x0 - 12, sub, m_pal.grey);
+        AddTarget("select." + id, x0, y, x1, y + kRowH, [this, id] {
+            g_selectedCatalogId = id;
+            RebuildTargets();
+            MarkDirty();
+        });
+    }
+
+    void LayoutCatalogCard()
+    {
+        const int x0 = m_x0 + kCardX0, x1 = m_x0 + kCardX1, top = m_y0 + kTopY, bottom = m_y0 + kCardBottom;
+        if (m_drawing) own::Box(x0, top, x1, bottom, m_round, m_pal.foam, m_pal.border);
+        const auto row = std::find_if(
+                m_catalogRows.begin(), m_catalogRows.end(), [&](const CatalogRow& r) { return r.entry.id == g_selectedCatalogId; });
+        if (row == m_catalogRows.end()) return;
+        const mods::CatalogEntry& e = row->entry;
+        const int ix = x0 + 12, iw = x1 - x0 - 24;
+        const int actionsY = bottom - 44;
+        const int limit = actionsY - 8;
+        const int lh0 = own::LineHeight(0);
+
+        int y = top + 10;
+        Label(2, ix, y, iw, Utf8ToEngine(e.title), m_pal.ink);
+        y += own::LineHeight(2) + 6;
+        std::u16string meta = Meta(e.modVersion, e.scope);
+        meta += kDot;
+        meta += Format(Lookup("OBL_MODS_CAT_LICENSE"), {Utf8ToEngine(e.license)});
+        Label(0, ix, y, iw, meta, m_pal.grey);
+        y += lh0 + 2;
+        std::u16string source = Format(Lookup("OBL_MODS_CAT_FROM"), {Utf8ToEngine(row->catalogTitle)});
+        const mods::StoredCatalog* catalog = m_catalogStore.Find(row->catalogUrl);
+        if (!catalog || !catalog->official) source += u" (" + Lookup("OBL_MODS_CAT_THIRD_PARTY") + u")";
+        Label(0, ix, y, iw, source, m_pal.grey);
+        y += lh0 + 8;
+        if (!e.description.empty()) y += Paragraph(ix, y, iw, Utf8ToEngine(e.description), 8, limit, m_pal.ink);
+        if (!e.requiresMods.empty()) {
+            // Name the mods by their catalog titles; the ones not installed yet come along with this one.
+            std::vector<std::string> missing, all;
+            for (const std::string& need : e.requiresMods) {
+                const auto found =
+                        std::find_if(m_catalogRows.begin(), m_catalogRows.end(), [&](const CatalogRow& r) { return r.entry.id == need; });
+                const std::string title = found != m_catalogRows.end() ? found->entry.title : need;
+                all.push_back(title);
+                if (!m_list || !m_list->Find(need)) missing.push_back(title);
             }
-            own::Text(0, x0 + 10, rowY + 24, 360, sub.c_str(), m_pal.grey, 0);
+            const std::u16string line = missing.empty() ? Format(Lookup("OBL_MODS_REQUIRES"), {Utf8ToEngine(Join(all, ", "))})
+                                                        : Format(Lookup("OBL_MODS_CAT_ALSO_INSTALLS"), {Utf8ToEngine(Join(missing, ", "))});
+            y += Paragraph(ix, y, iw, line, 2, limit, m_pal.ink);
         }
-        const int pages = CatalogPageCount();
-        if (pages > 1) {
-            DrawButton(m_x0 + 14, m_y0 + 504, m_x0 + 124, m_y0 + 536, Lookup("OBL_MODS_PREVIOUS").c_str(),
-                    m_catalogPage > 0 ? m_pal.sea : m_pal.sand, m_catalogPage > 0 ? m_pal.white : m_pal.grey);
-            const std::u16string pageLabel = Utf8ToEngine(std::to_string(m_catalogPage + 1) + " / " + std::to_string(pages));
-            own::Text(1, m_x0 + 130, m_y0 + 512, 146, pageLabel.c_str(), m_pal.ink, 2);
-            DrawButton(m_x0 + 282, m_y0 + 504, m_x0 + 392, m_y0 + 536, Lookup("OBL_MODS_NEXT").c_str(),
-                    m_catalogPage + 1 < pages ? m_pal.sea : m_pal.sand, m_catalogPage + 1 < pages ? m_pal.white : m_pal.grey);
+
+        const mods::CatalogOffer offer = OfferFor(e);
+        std::u16string label;
+        Look look = Look::Primary;
+        if (m_activeFetch.handle) {
+            label = Lookup("OBL_MODS_CAT_BUSY");
+            look = Look::Disabled;
+        } else if (offer == mods::CatalogOffer::UpToDate) {
+            label = Lookup("OBL_MODS_CAT_UP_TO_DATE_BUTTON");
+            look = Look::Disabled;
+        } else if (offer == mods::CatalogOffer::Update) {
+            label = Format(Lookup("OBL_MODS_CAT_UPDATE_TO"), {Utf8ToEngine(e.modVersion)});
+        } else {
+            label = Lookup("OBL_MODS_CAT_INSTALL");
+        }
+        const std::string id = e.id;
+        Button(ix, actionsY, x1 - 12, actionsY + 32, label, look, "catalog.install." + id, [this, id] { InstallFromCatalog(id); });
+    }
+
+    // ---- Sources tab ----
+
+    void LayoutSources()
+    {
+        const int x0 = m_x0 + kListX0, x1 = m_x0 + kCardX1;
+        int y = m_y0 + kTopY;
+        Label(1, x0 + 4, y + 2, 420, Lookup("OBL_MODS_CATALOGS"), m_pal.seaDark);
+        Label(0, x0 + 4, y + 22, 480, Lookup("OBL_MODS_CAT_SIGNED_NOTE"), m_pal.grey);
+        Button(x1 - 250, y + 4, x1 - 128, y + 36, Lookup("OBL_MODS_CAT_REFRESH"), m_activeFetch.handle ? Look::Disabled : Look::Secondary,
+                "catalog.refresh", [this] { RefreshAllCatalogs(); });
+        Button(x1 - 120, y + 4, x1, y + 36, u"+ " + Lookup("OBL_MODS_CAT_ADD_BUTTON"), Look::Primary, "catalog.add",
+                [this] { StartUrlInput(); });
+        y += 50;
+
+        const auto& cats = m_catalogStore.Catalogs();
+        const size_t shown = std::min<size_t>(cats.size(), kMaxSourceRows);
+        for (size_t i = 0; i < shown; ++i, y += 56) {
+            const mods::StoredCatalog& cat = cats[i];
+            if (m_drawing) own::Box(x0, y, x1, y + 50, m_round, m_pal.white, m_pal.border);
+            const std::u16string title = Utf8ToEngine(cat.title.empty() ? cat.url : cat.title);
+            const std::u16string kind = Lookup(cat.official ? "OBL_MODS_CAT_OFFICIAL" : "OBL_MODS_CAT_THIRD_PARTY");
+            const int kindW = own::TextWidth(0, kind.c_str()) + 16;
+            const int titleW = std::min(own::TextWidth(1, title.c_str()) + 4, 470 - kindW);
+            Label(1, x0 + 12, y + 6, titleW, title, cat.enabled ? m_pal.ink : m_pal.grey);
+            Badge(x0 + 12 + titleW + 8 + kindW, y + 6, kind, cat.official ? m_pal.sea : m_amber);
+            Label(0, x0 + 12, y + 28, 500, Utf8ToEngine(cat.url), m_pal.grey);
+            const std::u16string state = cat.enabled ? Format(Lookup("OBL_MODS_CAT_COUNT"), {Utf8ToEngine(std::to_string(cat.mods.size()))})
+                                                     : Lookup("OBL_MODS_CAT_SWITCHED_OFF");
+            Label(0, x1 - 260, y + 25 - own::InkCentre(0), 120, state, m_pal.grey, 1);
+            Switch(x1 - 130, y + 15, cat.enabled, true, "catalog.toggle." + std::to_string(i), [this, i] { ToggleCatalogAt(i); });
+            if (!cat.official)
+                Button(x1 - 82, y + 10, x1 - 10, y + 40, Lookup("OBL_MODS_REMOVE"), Look::Danger, "catalog.remove." + std::to_string(i),
+                        [this, i] { RemoveCatalogAt(i); });
         }
     }
 
-    void DrawCatalogRightColumn() const
+    // ---- Dialogs ----
+
+    void LayoutDialog()
     {
-        const int x0 = m_x0 + 404;
-        const int x1 = m_x0 + 788;
-        const int innerW = x1 - x0 - 20;
-
-        // Top card: selected catalog mod details and Install/Update button.
-        own::Box(x0, m_y0 + 58, x1, m_y0 + 250, m_round, m_pal.foam, m_pal.border);
-        const auto selIt = std::find_if(
-                m_catalogRows.begin(), m_catalogRows.end(), [&](const CatalogRow& r) { return r.entry.id == m_selectedCatalogModId; });
-        if (selIt != m_catalogRows.end()) {
-            const auto& e = selIt->entry;
-            own::Text(2, x0 + 10, m_y0 + 66, innerW, Utf8ToEngine(e.title).c_str(), m_pal.ink, 0);
-            int y = m_y0 + 90;
-            own::Text(0, x0 + 10, y, innerW, Format(Lookup("OBL_MODS_VERSION"), {Utf8ToEngine(e.modVersion)}).c_str(), m_pal.ink, 0);
-            y += 16;
-            own::Text(
-                    0, x0 + 10, y, innerW, Format(Lookup("OBL_MODS_CAT_FROM"), {Utf8ToEngine(selIt->catalogTitle)}).c_str(), m_pal.ink, 0);
-            y += 16;
-            own::Text(0, x0 + 10, y, innerW, Format(Lookup("OBL_MODS_SCOPE"), {ScopeText(e.scope)}).c_str(), m_pal.ink, 0);
-            y += 16;
-            own::Text(0, x0 + 10, y, innerW, Format(Lookup("OBL_MODS_CAT_LICENSE"), {Utf8ToEngine(e.license)}).c_str(), m_pal.ink, 0);
-            y += 16;
-            if (!e.requiresMods.empty()) {
-                own::Text(0, x0 + 10, y, innerW, Format(Lookup("OBL_MODS_REQUIRES"), {Utf8ToEngine(Join(e.requiresMods, ", "))}).c_str(),
-                        m_pal.ink, 0);
-            }
-            const mods::CatalogOffer offer = OfferFor(e);
-            if (offer == mods::CatalogOffer::UpToDate) {
-                DrawButton(
-                        m_x0 + 414, m_y0 + 210, m_x0 + 570, m_y0 + 242, Lookup("OBL_MODS_CAT_UP_TO_DATE").c_str(), m_pal.sand, m_pal.grey);
-            } else {
-                const char* btnKey = offer == mods::CatalogOffer::Update ? "OBL_MODS_CAT_UPDATE" : "OBL_MODS_CAT_INSTALL";
-                DrawButton(m_x0 + 414, m_y0 + 210, m_x0 + 570, m_y0 + 242, Lookup(btnKey).c_str(), m_pal.sea, m_pal.white);
-            }
-        }
-
-        // Bottom card: added catalogs list + Add / Refresh / Remove.
-        own::Box(x0, m_y0 + 258, x1, m_y0 + 548, m_round, m_pal.foam, m_pal.border);
-        own::Text(1, x0 + 10, m_y0 + 270, 140, Lookup("OBL_MODS_CATALOGS").c_str(), m_pal.seaDark, 0);
-        DrawButton(m_x0 + 560, m_y0 + 264, m_x0 + 676, m_y0 + 292, Lookup("OBL_MODS_CAT_ADD").c_str(), m_pal.sea, m_pal.white);
-        DrawButton(m_x0 + 682, m_y0 + 264, m_x0 + 780, m_y0 + 292, Lookup("OBL_MODS_CAT_REFRESH").c_str(), m_pal.seaDark, m_pal.white);
-
-        const auto& cats = m_catalogStore.Catalogs();
-        if (cats.empty()) {
-            own::TextWrapped(0, x0 + 10, m_y0 + 306, innerW, 60, Lookup("OBL_MODS_CAT_NONE").c_str(), m_pal.grey, 0);
+        std::u16string title, body;
+        std::u16string confirm = Lookup("OBL_MODS_CONFIRM");
+        Look confirmLook = Look::Primary;
+        std::string confirmName = "archive.confirm", cancelName = "archive.cancel";
+        if (m_editingUrl) {
+            title = Lookup("OBL_MODS_CAT_ADD");
+            body = Lookup("OBL_MODS_CAT_URL_HINT");
+            confirm = Lookup("OBL_MODS_CAT_ADD_BUTTON");
+        } else if (m_pendingKeyChange) {
+            title = Lookup("OBL_MODS_CAT_KEY_TITLE");
+            body = Format(Lookup("OBL_MODS_CAT_KEY_CHANGED"), {Utf8ToEngine(m_pendingKeyChange->catalog.title)});
+            confirm = Lookup("OBL_MODS_CAT_TRUST");
+            confirmLook = Look::DangerSolid;
+            confirmName = "catalog.trust_key";
+            cancelName = "catalog.cancel";
+        } else if (m_pendingAddCatalog) {
+            title = Lookup("OBL_MODS_CAT_ADD_TITLE");
+            body = Format(Lookup("OBL_MODS_CAT_ADD_CONFIRM"), {Utf8ToEngine(m_pendingAddCatalog->url)});
+            confirm = Lookup("OBL_MODS_CAT_ADD_BUTTON");
+            confirmName = "catalog.confirm";
+            cancelName = "catalog.cancel";
+        } else if (m_pendingReplace) {
+            title = Lookup("OBL_MODS_REPLACE_TITLE");
+            body = Format(Lookup("OBL_MODS_REPLACE_CONFIRM"), {Utf8ToEngine(TitleOf(m_pendingReplace->Id()))});
+            confirm = Lookup("OBL_MODS_REPLACE");
         } else {
-            const size_t maxShown = std::min<size_t>(cats.size(), 6);
-            for (size_t i = 0; i < maxShown; ++i) {
-                const int y = m_y0 + 300 + static_cast<int>(i) * 38;
-                own::Box(x0 + 8, y, x1 - 8, y + 34, m_round, m_pal.white, m_pal.border);
-                std::u16string title = Utf8ToEngine(cats[i].title);
-                if (!cats[i].official) {
-                    title += u" (";
-                    title += Lookup("OBL_MODS_CAT_THIRD_PARTY");
-                    title += u")";
-                }
-                own::Text(0, x0 + 14, y + 4, 280, title.c_str(), cats[i].enabled ? m_pal.ink : m_pal.grey, 0);
-                own::Text(0, x0 + 14, y + 18, 280, Utf8ToEngine(cats[i].url).c_str(), m_pal.grey, 0);
-                if (cats[i].official) {
-                    DrawButton(m_x0 + 706, y + 4, m_x0 + 780, y + 32, Lookup(cats[i].enabled ? "OBL_MODS_ON" : "OBL_MODS_OFF").c_str(),
-                            cats[i].enabled ? m_pal.green : m_pal.seaDark, m_pal.white);
-                } else {
-                    DrawButton(m_x0 + 706, y + 4, m_x0 + 780, y + 32, Lookup("OBL_MODS_REMOVE").c_str(), m_pal.seaDark, m_pal.white);
-                }
-            }
+            title = Lookup("OBL_MODS_REMOVE_TITLE");
+            body = Format(Lookup("OBL_MODS_REMOVE_CONFIRM"), {Utf8ToEngine(TitleOf(m_pendingRemove))});
+            confirm = Lookup("OBL_MODS_REMOVE");
+            confirmLook = Look::DangerSolid;
         }
+
+        constexpr int kW = 460;
+        const int x0 = m_x0 + (m_x1 - m_x0 - kW) / 2, x1 = x0 + kW;
+        const int lh1 = own::LineHeight(1);
+        const int bodyLines = std::clamp(own::TextLines(1, body.c_str(), kW - 48), 1, 6);
+        const int fieldH = m_editingUrl ? 40 : 0;
+        const int h = 20 + own::LineHeight(2) + 12 + bodyLines * lh1 + 16 + fieldH + 32 + 20;
+        const int y0 = m_y0 + (m_y1 - m_y0 - h) / 2 - 16, y1 = y0 + h;
+        if (m_drawing) {
+            own::Box(x0 + 6, y0 + 6, x1 + 6, y1 + 6, m_round, Dim(Dim(m_pal.seaDark)), Dim(Dim(m_pal.seaDark)));
+            own::Box(x0, y0, x1, y1, m_round, m_pal.white, m_pal.seaDark);
+            own::Text(2, x0 + 24, y0 + 20, kW - 48, title.c_str(), m_pal.ink, 0);
+            own::TextWrapped(1, x0 + 24, y0 + 20 + own::LineHeight(2) + 12, kW - 48, bodyLines * lh1, body.c_str(), m_pal.ink, 0);
+        }
+        const int buttonsY = y1 - 20 - 32;
+        if (m_editingUrl) {
+            const int fy = buttonsY - 16 - 32;
+            if (m_drawing) {
+                own::Box(x0 + 24, fy, x1 - 24, fy + 32, m_round ? 6 : 0, m_pal.foam, m_pal.sea);
+                // The end of a long address is the part being typed, so a long one shows its tail.
+                std::u16string shown = m_urlDraft.empty() ? u"https://" : Utf8ToEngine(m_urlDraft + "_");
+                const int fieldW = kW - 64;
+                bool cut = false;
+                while (shown.size() > 4 && own::TextWidth(0, shown.c_str()) > fieldW - 16) {
+                    shown.erase(0, 1);
+                    cut = true;
+                }
+                if (cut) shown = u"..." + shown;
+                own::Text(0, x0 + 32, fy + 16 - own::InkCentre(0), fieldW, shown.c_str(), m_urlDraft.empty() ? m_pal.grey : m_pal.ink, 0);
+            }
+            Button(x0 + 24, buttonsY, x0 + 134, buttonsY + 32, Lookup("OBL_MODS_CAT_PASTE"), Look::Secondary, "catalog.paste",
+                    [this] { PasteIntoUrlDraft(); });
+            Button(x1 - 270, buttonsY, x1 - 150, buttonsY + 32, Lookup("OBL_MODS_CANCEL"), Look::Secondary, "catalog.url_cancel", [this] {
+                StopUrlInput();
+                RebuildTargets();
+                MarkDirty();
+            });
+            Button(x1 - 142, buttonsY, x1 - 24, buttonsY + 32, confirm, Look::Primary, "catalog.url_ok",
+                    [this] { SubmitCatalogUrl(m_urlDraft, false); });
+            return;
+        }
+        Button(x1 - 270, buttonsY, x1 - 150, buttonsY + 32, Lookup("OBL_MODS_CANCEL"), Look::Secondary, cancelName,
+                [this] { CancelConfirmAction(); });
+        Button(x1 - 142, buttonsY, x1 - 24, buttonsY + 32, confirm, confirmLook, confirmName, [this] { ConfirmCatalogAction(); });
     }
 
     void EnsureVisible(std::string_view id)
@@ -1664,12 +1987,10 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
     std::string m_droppedFile;
     std::optional<mods::ModArchive> m_pendingReplace;
     std::string m_pendingRemove;
-    bool m_catalogView = false;
     bool m_editingUrl = false;
     std::string m_urlDraft;
     mods::CatalogStore m_catalogStore;
     std::vector<CatalogRow> m_catalogRows;
-    std::string m_selectedCatalogModId;
     int m_catalogPage = 0;
     std::optional<PendingAddCatalog> m_pendingAddCatalog;
     std::optional<PendingKeyChange> m_pendingKeyChange;
@@ -1703,7 +2024,7 @@ bool QueueArchive(std::string_view path)
 bool QueueCatalogUrl(std::string_view url, bool allowLocal)
 {
     if (!g_openPanel || !g_openPanel->m_visible || g_openPanel->IsConfirming()) return false;
-    g_openPanel->m_catalogView = true;
+    g_tab = Tab::Sources;
     g_openPanel->SubmitCatalogUrl(url, allowLocal);
     return true;
 }
@@ -1756,10 +2077,12 @@ bool FindTarget(std::string_view name, int& x, int& y)
 {
     if (!g_openPanel || !g_openPanel->m_visible) return false;
     for (std::string_view prefix : {"toggle.", "select.", "up.", "down.", "remove."}) {
-        if (name.starts_with(prefix)) {
-            g_openPanel->EnsureVisible(name.substr(prefix.size()));
-            break;
-        }
+        if (g_tab != Tab::Installed || !name.starts_with(prefix)) continue;
+        const std::string id(name.substr(prefix.size()));
+        g_openPanel->EnsureVisible(id);
+        // The order buttons and Remove belong to the selected mod, so a player selects it first.
+        if (prefix == "up." || prefix == "down." || prefix == "remove.") g_openPanel->Select(id);
+        break;
     }
     for (const Target& target : g_openPanel->m_targets) {
         if (target.name == name) {

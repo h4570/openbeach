@@ -108,6 +108,19 @@ int LineHeight(int font)
     return bitmap ? static_cast<int>(bitmap->m_size) + 2 : 12;
 }
 
+int TextWidth(int font, const Char16* text)
+{
+    ui::TextRenderer* renderer = Renderer(font);
+    return renderer && text ? ui::font_text::MeasureWidth(renderer, text) : 0;
+}
+
+int TextLines(int font, const Char16* text, int width)
+{
+    ui::TextRenderer* renderer = Renderer(font);
+    if (!renderer || !text || !*text || width <= 0) return 0;
+    return std::max(1, ui::font_text::CountLines(renderer, text, static_cast<uint32_t>(width), 0));
+}
+
 void Text(int font, int x, int y, int width, const Char16* text, uint32_t rgb, int align)
 {
     ui::TextRenderer* renderer = Renderer(font);

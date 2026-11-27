@@ -6,8 +6,8 @@ Official mods live in `data/mods/` and are published as a signed [mod catalog](c
 https://openbeach.app/mods/catalog.json
 ```
 
-In the game, open **Mods → Online sources** from the main menu: **OpenBeach Official Mods** is listed first by default
-(it can be switched off, but not removed) and fetches the official catalog automatically. See
+In the game, open **Mods → Browse** from the main menu: **OpenBeach Official Mods** is listed first under **Sources** by
+default (it can be switched off, but not removed) and **Browse** fetches the official catalog automatically. See
 [Installing from online sources](players/mods-screen.md#installing-from-online-sources) for how updates and key pinning
 work. Because the catalog is published alongside the browser site on GitHub Pages (same origin and permissive CORS headers),
 both `catalog.json` and the mod `.zip` archives are reachable from the browser build as well.

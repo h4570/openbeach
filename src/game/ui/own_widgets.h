@@ -50,6 +50,9 @@ void Frame(int x0, int y0, int x1, int y1, uint32_t rgb);
 void Text(int font, int x, int y, int width, const Char16* text, uint32_t rgb, int align = 0);
 void TextWrapped(int font, int x, int y, int width, int height, const Char16* text, uint32_t rgb, int align = 0);
 int LineHeight(int font);
+// The width a line of text takes in a font slot, and the lines TextWrapped breaks it into at `width`, for laying out by content.
+int TextWidth(int font, const Char16* text);
+int TextLines(int font, const Char16* text, int width);
 // Distance from the top of a text line to the visual middle of its capital letters, to centre a label in a button.
 int InkCentre(int font);
 

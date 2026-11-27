@@ -22,9 +22,11 @@ gui-stage-catalog l0_zip 504b030414000000080000002100c3315d50670000007e0000000f0
 await frames 3
 gui-click ModsScreen target catalog.confirm
 await frames 5
+gui-click ModsScreen target tab.browse
+await frames 3
 gui-click ModsScreen target catalog.install.l0_zip
 await frames 5
-gui-click ModsScreen target catalogs
+gui-click ModsScreen target tab.installed
 await frames 3
 gui-click ModsScreen target toggle.l0_zip
 await frames 20
