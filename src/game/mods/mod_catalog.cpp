@@ -185,6 +185,15 @@ bool ParseEntryJson(
         return false;
     }
     if (!reqString("title", out.title) || !reqString("mod_version", out.modVersion) || !reqString("license", out.license)) return false;
+    if (const auto descIt = obj.find("description"); descIt != obj.end()) {
+        if (!descIt->is_string() || descIt->get_ref<const std::string&>().empty() ||
+                descIt->get_ref<const std::string&>().size() > mod_pack::kMaxDescriptionBytes) {
+            error = "mod \"" + out.id + "\" \"description\" must be a string of 1 to " + std::to_string(mod_pack::kMaxDescriptionBytes) +
+                    " bytes";
+            return false;
+        }
+        out.description = descIt->get<std::string>();
+    }
 
     // pack / packs (same contract as mod.json)
     const auto packIt = obj.find("pack");
@@ -325,6 +334,7 @@ json SerializeEntry(const CatalogEntry& e)
     json obj = json::object();
     obj["id"] = e.id;
     obj["title"] = e.title;
+    if (!e.description.empty()) obj["description"] = e.description;
     obj["mod_version"] = e.modVersion;
     obj["packs"] = e.packs;
     obj["scope"] = e.scope == mod_pack::Scope::Presentation ? "presentation" : "world";

@@ -375,6 +375,14 @@ bool ParseManifest(std::string_view text, Manifest& manifest, std::string& error
         error = "id \"" + m.id + "\" is not a mod id (lowercase letters, digits, _ and -)";
         return false;
     }
+    if (const auto it = doc.find("description"); it != doc.end()) {
+        if (!it->is_string() || it->get_ref<const std::string&>().empty() ||
+                it->get_ref<const std::string&>().size() > kMaxDescriptionBytes) {
+            error = "description is not a string of 1 to " + std::to_string(kMaxDescriptionBytes) + " bytes";
+            return false;
+        }
+        m.description = it->get<std::string>();
+    }
     if (const auto it = doc.find("scope"); it != doc.end()) {
         const std::string scope = it->is_string() ? it->get<std::string>() : std::string();
         if (scope == "presentation")

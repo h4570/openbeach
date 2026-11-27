@@ -253,6 +253,22 @@ OBL_TEST_CASE("mod_pack.a_presentation_mod_ships_no_simulation_data")
     OBL_CHECK(Accepted(game.path, "l0", "world", error));
 }
 
+OBL_TEST_CASE("mod_pack.description_is_optional_and_bounded")
+{
+    const std::string head = R"({"format":"obl.mod","version":1,"id":"m","title":"T","mod_version":"1","pack":"l0")";
+    mod_pack::Manifest manifest;
+    std::string error;
+    OBL_CHECK(mod_pack::ParseManifest(head + "}", manifest, error) && manifest.description.empty());
+    OBL_CHECK(mod_pack::ParseManifest(head + R"(,"description":"Warm evening light."})", manifest, error));
+    OBL_CHECK_EQ(manifest.description, "Warm evening light.");
+    const std::string longest(mod_pack::kMaxDescriptionBytes, 'x');
+    OBL_CHECK(mod_pack::ParseManifest(head + R"(,"description":")" + longest + R"("})", manifest, error));
+    for (const std::string bad : {std::string(R"("")"), std::string("7"), "\"" + longest + "x\""}) {
+        OBL_CHECK(!mod_pack::ParseManifest(head + R"(,"description":)" + bad + "}", manifest, error));
+        OBL_CHECK(error.find("description") != std::string::npos);
+    }
+}
+
 OBL_TEST_CASE("mod_pack.engine_min_parses_and_is_compared_with_the_game")
 {
     const std::string head = R"({"format":"obl.mod","version":1,"id":"m","title":"T","mod_version":"1","pack":"l0")";

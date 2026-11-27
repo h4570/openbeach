@@ -36,6 +36,7 @@ inline constexpr size_t kMaxCatalogEntries = 2048;
 struct CatalogEntry {
     std::string id;
     std::string title;
+    std::string description; // optional, as in mod.json
     std::string modVersion;
     std::vector<std::string> packs;
     mod_pack::Scope scope = mod_pack::Scope::World;

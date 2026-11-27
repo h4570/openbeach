@@ -301,6 +301,37 @@ OBL_TEST_CASE("mod_catalog.filters_by_engine_version_pack_and_api")
     OBL_CHECK(filtered[0].id == "ok");
 }
 
+OBL_TEST_CASE("mod_catalog.description_is_optional_and_kept_in_the_store")
+{
+    test::TempPath dir("mod-catalog-description");
+    std::filesystem::create_directory(dir.path);
+    const std::string url = "https://example.org/catalog.json";
+    std::string error;
+
+    auto doc = SampleCatalogJson();
+    doc["mods"][0]["description"] = "Shows the frame rate in a corner.";
+    mods::Catalog parsed;
+    OBL_REQUIRE(mods::ParseCatalog(MakeSignedCatalog(doc), url, false, parsed, error));
+    OBL_CHECK_EQ(parsed.mods[0].description, "Shows the frame rate in a corner.");
+
+    mods::CatalogStore store;
+    OBL_REQUIRE(store.AddOrUpdate(url, parsed, false, false, error) == mods::CatalogStore::UpdateStatus::Added);
+    OBL_REQUIRE(store.Save(dir.path, error));
+    mods::CatalogStore reloaded;
+    OBL_REQUIRE(reloaded.Load(dir.path, error));
+    OBL_REQUIRE(reloaded.Find(url) && reloaded.Find(url)->mods.size() == 1);
+    OBL_CHECK_EQ(reloaded.Find(url)->mods[0].description, "Shows the frame rate in a corner.");
+
+    for (const nlohmann::json& bad :
+            {nlohmann::json(""), nlohmann::json(7), nlohmann::json(std::string(mod_pack::kMaxDescriptionBytes + 1, 'x'))}) {
+        auto badDoc = SampleCatalogJson();
+        badDoc["mods"][0]["description"] = bad;
+        mods::Catalog refused;
+        OBL_CHECK(!mods::ParseCatalog(MakeSignedCatalog(badDoc), url, false, refused, error));
+        OBL_CHECK(error.find("description") != std::string::npos);
+    }
+}
+
 // The mods screen once offered Update for every installed mod, the same version included.
 OBL_TEST_CASE("mod_catalog.offers_update_only_for_an_older_installed_version")
 {

@@ -28,6 +28,8 @@ inline constexpr const char* kOverlayImages = "overlay";
 inline constexpr size_t kMaxSettings = 32;
 // Actions a mod may declare in mod.json (docs/modding/reference/actions.md).
 inline constexpr size_t kMaxActions = 64;
+// `description` in mod.json and in a catalog entry: a few lines the mods screen shows, in UTF-8 bytes.
+inline constexpr size_t kMaxDescriptionBytes = 500;
 // takes_over names for the engine's actions: "action." and the action's name from formats/key_actions.h.
 inline constexpr std::string_view kTakeOverActionPrefix = "action.";
 
@@ -42,6 +44,7 @@ inline constexpr std::string_view kTakeOverAreas[] = {"input.touch", "input.mous
 struct Manifest {
     std::string id;
     std::string title;
+    std::string description; // optional, what the mod does in the player's words; empty when the manifest names none
     std::string modVersion;
     std::vector<std::string> packs; // the pack ids the mod starts on (`pack` or `packs`)
     std::vector<std::string> requiredMods; // mod ids that must be active and earlier in the load order

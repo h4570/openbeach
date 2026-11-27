@@ -96,7 +96,11 @@ def build_entry(mod_dir: Path, out_dir: Path, default_license: str | None) -> di
     if engine_min is not None and not (isinstance(engine_min, str) and ENGINE_VERSION.fullmatch(engine_min)):
         raise ValueError(f"{manifest_path}: engine_min is not a MAJOR.MINOR.PATCH version")
 
-    for optional_key in ("scope", "api", "engine_min", "requires"):
+    description = manifest.get("description")
+    if description is not None and not (isinstance(description, str) and 0 < len(description.encode("utf-8")) <= 500):
+        raise ValueError(f"{manifest_path}: description is not a string of 1 to 500 bytes")
+
+    for optional_key in ("description", "scope", "api", "engine_min", "requires"):
         if optional_key in manifest:
             entry[optional_key] = manifest[optional_key]
 

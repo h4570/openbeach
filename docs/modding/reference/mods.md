@@ -15,6 +15,7 @@ Players install it from the [Mods screen](../players/mods-screen.md#installing-a
   "version": 1,
   "id": "my_mod",
   "title": "My mod",
+  "description": "Busier summers: more guests arrive in July and August.",
   "mod_version": "1.0.0",
   "pack": "base",
   "requires": ["other_mod"],
@@ -24,6 +25,8 @@ Players install it from the [Mods screen](../players/mods-screen.md#installing-a
 }
 ```
 - `id`: the directory name; lowercase letters, digits, `_` and `-` (the rules of a pack id, `pack_path::PackDirectory`).
+- `description` (optional): 1 to 500 bytes of UTF-8 saying what the mod does, in the mod's own language; the Mods screen
+  shows it under the title, and `tools/build_catalog.py` copies it into the catalog entry. An older game ignores it.
 - `pack`: the id of the pack the mod was made for (`base`, `l0`); the mod only starts on that pack. A mod that does not depend
   on content lists several instead, `"packs": ["base", "l0"]`, and starts on any of them; a manifest names `pack` or `packs`,
   not both.

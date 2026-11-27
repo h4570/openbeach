@@ -20,6 +20,7 @@ A catalog is a UTF-8 JSON object (at most 4 MiB, at most 2,048 entries):
     {
       "id": "frame_counter",
       "title": "Frame counter",
+      "description": "Shows the frame rate in a corner of the screen.",
       "mod_version": "1.0.0",
       "packs": ["base", "l0"],
       "scope": "presentation",
@@ -54,6 +55,7 @@ A catalog is a UTF-8 JSON object (at most 4 MiB, at most 2,048 entries):
 |---|---|---|
 | `id` | yes | Mod directory id (lowercase ASCII letters, digits, `_`, `-`). Must match the ZIP root folder and `mod.json` `id`. |
 | `title` | yes | Non-empty display title. |
+| `description` | no | 1 to 500 bytes of UTF-8 the Mods screen shows under the title. `tools/build_catalog.py` copies it from `mod.json`. |
 | `mod_version` | yes | Non-empty version string. |
 | `pack` or `packs` | yes | Target pack id or non-empty list of pack ids (`base`, `l0`, ...). Cannot set both. |
 | `scope` | no | `"world"` (default) or `"presentation"`. |
