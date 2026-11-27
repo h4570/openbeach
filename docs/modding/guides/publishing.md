@@ -10,7 +10,7 @@
    On Linux, use `wc -c < mod_template-1.0.0.zip` and `sha256sum mod_template-1.0.0.zip`.
 5. Add those values, the HTTPS ZIP URL and matching manifest metadata to a [catalog entry](../catalogs.md#mod-entry-fields).
    Sign the complete catalog as described in the [signing reference](../catalogs.md#signing-and-key-pinning), then add its
-   URL from **Mods → Catalogs** and test the download. Use `tools/build_catalog.py` to package and sign a catalog from
+   URL from **Mods → Sources** and test the download. Use `tools/build_catalog.py` to package and sign a catalog from
    a directory of mod sources in one step.
 
 To host many mods for others, follow [Host your own mod catalog](own-catalog.md).

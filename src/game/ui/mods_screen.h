@@ -36,9 +36,12 @@ bool HandleTextInput(std::string_view utf8);
 bool HandleKeyDown(int scancode, bool ctrl);
 
 // Test support (`gui-click ModsScreen target <name>`): the centre of a tap target of the open screen, false when it shows none of
-// that name. Names: `toggle.<mod>`, `select.<mod>`, `up.<mod>`, `down.<mod>`, `setting.<id>.prev`, `setting.<id>.next` (of the
-// selected mod), `page.prev`, `page.next`, `catalogs`, `catalog.add`, `catalog.refresh`, `catalog.confirm`, `catalog.cancel`,
-// `catalog.trust_key`, `catalog.install.<mod>`, `catalog.remove.<index>`, `help`, `back`.
+// that name. Names: `tab.installed`, `tab.browse`, `tab.sources`, `back`, `help`, `install`, `page.prev`, `page.next`; on the
+// Installed tab `toggle.<mod>`, `select.<mod>`, `up.<mod>`, `down.<mod>` and `remove.<mod>` (these three select the mod first),
+// `card.toggle`, `fix.<mod>`, `technical`, `overlaps`, `setting.<id>.prev`, `setting.<id>.next` (of the selected mod); on the
+// Browse tab `select.<mod>`, `catalog.install.<mod>`, `catalog.refresh`, `browse.sources`; on the Sources tab `catalog.add`,
+// `catalog.refresh`, `catalog.toggle.<index>`, `catalog.remove.<index>`; in a dialog `archive.confirm`, `archive.cancel`,
+// `catalog.confirm`, `catalog.cancel`, `catalog.trust_key`, `catalog.paste`, `catalog.url_ok`, `catalog.url_cancel`.
 bool FindTarget(std::string_view name, int& x, int& y);
 
 } // namespace obl::gui::mods_screen
