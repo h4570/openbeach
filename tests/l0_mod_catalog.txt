@@ -1,4 +1,4 @@
-# Add a local signed catalog, install its mod through the zip path, activate its script, then remove it.
+# Add a local signed catalog, install its mod through the zip path, which switches it on, then remove it while it is on.
 # Reuses the deflated l0_zip archive fixture (mod.json, presentation script, 8x8 L0 title crop recipe) with no network.
 # @env OBL_PACK=l0
 # @env OBL_MODS=
@@ -8,7 +8,9 @@
 # @timeout 120
 # @expect-log mods screen: OBL_MODS_CAT_ADDED: Local Test Catalog
 # @expect-log mods screen: OBL_MODS_INSTALLED: l0_zip
+# @expect-log mods screen: switched on after install: l0_zip
 # @expect-log mod l0_zip: installed ZIP started
+# @expect-log mods screen: released l0_zip
 # @expect-log mods screen: OBL_MODS_REMOVED: l0_zip
 seed 1
 fixed-dt 0.02
@@ -25,19 +27,15 @@ await frames 5
 gui-click ModsScreen target tab.browse
 await frames 3
 gui-click ModsScreen target catalog.install.l0_zip
-await frames 5
+await frames 20
+await gui-animating == 0
 gui-click ModsScreen target tab.installed
 await frames 3
-gui-click ModsScreen target toggle.l0_zip
-await frames 20
-await gui-animating == 0
-gui-click ModsScreen target toggle.l0_zip
-await frames 20
-await gui-animating == 0
 gui-click ModsScreen target remove.l0_zip
 await frames 3
 gui-click ModsScreen target archive.confirm
-await frames 3
+await frames 20
+await gui-animating == 0
 gui-click ModsScreen target back
 await frames 15
 boot-gameplay scenario 1

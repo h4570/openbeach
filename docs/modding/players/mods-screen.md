@@ -21,7 +21,7 @@ boxes and pills in that colour, and any other pack gets a plain flat style. Noth
   attention, its settings and, under **Technical details**, its packs, taken-over defaults (`takes_over`, including `action.*`),
   declared `actions` and key `bindings`, requirements and incompatible mods.
 - The selected active mod shows up and down arrows on its row to move it earlier or later in the load order.
-- The card's **Switch on** / **Switch off** button does what the row's switch does; **Remove...** deletes a mod that is off.
+- The card's **Switch on** / **Switch off** button does what the row's switch does; **Remove...** deletes the mod.
 - A mark on a row means the mod needs attention: red when it cannot start at all, amber when it overlaps with another mod or
   cannot start beside the current list. The card explains why and, when one click fixes it, offers that button (for example
   **Switch off Calm Music** or **Switch on Tourist Season**).
@@ -29,14 +29,16 @@ boxes and pills in that colour, and any other pack gets a plain flat style. Noth
 ## Installing and removing mods
 Choose **+ Install from file** under the Installed list and select a ZIP containing one mod folder, with its `mod.json`
 directly inside that folder. On desktop and in the browser, you can also drop the ZIP onto the game while **Mods** is open.
-Android opens the system file picker. The folder name must match the manifest's id. The installed mod appears in the list,
-ready to switch on.
+Android opens the system file picker. The folder name must match the manifest's id. The installed mod is switched on at
+once, at the end of the load order; a world mod starts when the game starts again. If it cannot start beside the current
+list, it stays off and the status bar says why.
 
-If the id is already installed, the game asks before replacing its files. Switch off an active mod before replacing
-or removing it. If a world mod is still running after you switch it off, restart the game first.
+If the id is already installed, the game asks before replacing its files. An active mod stays on after the update, and a mod
+that was off stays off. A world mod that is running in the current game cannot be replaced or removed: switch it off and
+restart the game first.
 
-Choose **Remove...** in the card, then confirm to delete the mod's files and generated assets. Your mod settings and private
-data are kept. In the browser, changes are saved to that site's browser storage.
+Choose **Remove...** in the card, then confirm to delete the mod's files and generated assets; an active mod is switched off
+first. An active mod that needed the removed one is switched off too. Your mod settings and private data are kept. In the browser, changes are saved to that site's browser storage.
 
 The archive must be a standard ZIP with stored or deflated entries and portable ASCII filenames. Links, encrypted files
 and split archives are refused. Limits are 64 MiB for the ZIP, 32 MiB for one file, 128 MiB expanded and 4,096 entries.
@@ -49,11 +51,12 @@ An unavailable source disables that recipe and leaves a message in the log.
 **Update** when the source has a newer one. The card shows the mod's version, kind, license, source (third-party sources are
 marked), description and the mods it needs.
 
-- Choose **Install**, or **Update to <version>** when an older version is installed. Any required mods from your enabled
-  online sources are installed first in dependency order. An installed mod of the same or a newer version shows
+- Choose **Install and switch on**, or **Update to <version>** when an older version is installed. Any required mods from
+  your enabled online sources are installed first in dependency order, and the new mods are switched on together once the
+  last one is written. An installed mod of the same or a newer version shows
   **Installed, up to date** instead.
 - Every download is checked against the catalog's declared byte size and SHA-256 hash, then validated and installed through
-  the same ZIP installer and replace/remove rules (switch off an active mod before updating it).
+  the same ZIP installer and replace/remove rules.
 - If a save names a missing world mod, the game checks your enabled online sources by mod id and content hash and notes where
   it is available.
 

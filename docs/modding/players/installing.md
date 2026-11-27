@@ -1,11 +1,11 @@
 # Install and find your mods
 
-Open **Mods** from the main menu, then choose **+ Install from file** under the Installed list and select the ZIP. On desktop and in the browser you
-can also drop the ZIP onto the open Mods screen. On Android, use the system file picker.
+Open **Mods** from the main menu, then choose **+ Install from file** under the Installed list and select the ZIP. On
+desktop and in the browser you can also drop the ZIP onto the open Mods screen. On Android, use the system file picker.
 
 To install from a catalog on any platform, choose **Mods → Sources → + Add**, enter its HTTPS address and confirm
-the notice. On **Browse**, select an entry and choose **Install**. Then switch the mod on from the Mods screen. See
-[the Mods screen](mods-screen.md) for updates, dependencies and conflicts.
+the notice. On **Browse**, select an entry and choose **Install and switch on**. Either way the new mod is switched on at
+once (a world mod when the game starts again). See [the Mods screen](mods-screen.md) for updates, dependencies and conflicts.
 
 The installed mod lives in `mods/<id>/` next to `openbeach.ini` in the game directory.
 
