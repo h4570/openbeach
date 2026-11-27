@@ -1,0 +1,8 @@
+{
+  "format": "obl.mod",
+  "version": 1,
+  "id": "bad_scenario_set_prefix",
+  "title": "Broken: scenario set with wrong prefix",
+  "mod_version": "1.0.0",
+  "pack": "l0"
+}

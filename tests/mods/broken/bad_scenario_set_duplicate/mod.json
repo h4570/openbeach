@@ -1,0 +1,8 @@
+{
+  "format": "obl.mod",
+  "version": 1,
+  "id": "bad_scenario_set_duplicate",
+  "title": "Broken: duplicate scenario id in set",
+  "mod_version": "1.0.0",
+  "pack": "l0"
+}

@@ -1,0 +1,18 @@
+{
+  "format": "obl.scenario_set",
+  "version": 1,
+  "id": "lagoon_tales",
+  "title": "LAGOON_TALES_TITLE",
+  "description": "LAGOON_TALES_DESC",
+  "scenarios": [
+    { "scenario": "lagoon_tales_reef" },
+    { "scenario": "lagoon_tales_storm" }
+  ],
+  "unlock": "sequential",
+  "initially_available": ["lagoon_tales_reef"],
+  "requires_completed": ["s1"],
+  "sandboxes": [
+    { "scenario": "lagoon_tales_free" }
+  ],
+  "sandbox_unlock": "all"
+}

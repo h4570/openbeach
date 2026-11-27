@@ -824,7 +824,17 @@ bool QueueOblSave(const std::filesystem::path& file, std::string& error)
     const auto kind = sandbox ? scenario_load::ScenarioKind::Sandbox : scenario_load::ScenarioKind::Campaign;
     const auto ref = GetGame()->m_scenarioRegistry.FindById(scenario, kind);
     if (!ref) {
-        error = "header: unknown scenario \"" + scenario + "\"";
+        std::string modHint;
+        if (const auto modsIt = header.find("mods"); modsIt != header.end() && modsIt->is_array()) {
+            for (const nlohmann::json& savedMod : *modsIt) {
+                const std::string id = savedMod.is_object() ? savedMod.value("id", std::string()) : std::string();
+                if (!id.empty() && scenario_load::HasModPrefix(scenario, id)) {
+                    modHint = " (from mod \"" + id + "\")";
+                    break;
+                }
+            }
+        }
+        error = "header: unknown scenario \"" + scenario + "\"" + modHint;
         return false;
     }
     ui::PendingLoad pending;

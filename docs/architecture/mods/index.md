@@ -52,6 +52,11 @@ script or a change of the scope rule adds its line here.
   `obl.save` writes `guest.needs` and world snapshots hash `guest.needs` only when the guest's type has needs; an old save loaded into a
   world with needs initializes missing named needs to the midpoint of `preferences.<need>` without drawing RNG. Tests: `l0_mod_guest_needs`
   and `replay_l0_mod_guest_needs` (mod `l0_yoga`).
+- Scenario sets (`scenarios/sets/<set id>.json`, `obl.scenario_set` v1, [scenarios.md](../../modding/reference/scenarios.md)):
+  `ScenarioRegistry::LoadFromPack` discovers sets across active mods in load order then set order, appending extra campaign and
+  sandbox entries after the pack's (`menuSlot = -1`). `ScenarioProgress` stores extra progress by id in `progress.json`'s optional
+  `"extra"` object while keeping inactive mods' entries. Mod scenario scripts allow `UnlockNextScenario` and
+  `ShowMenu ScenarioWon`/`ScenarioLost` while refusing `ShowMenu GameWon`.
 
 ## Installing an archive
 

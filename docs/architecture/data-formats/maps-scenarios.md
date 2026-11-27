@@ -119,6 +119,21 @@ sequential unlocking. The installed game starts with `s1`, `s2`, `s3` selectable
 is completed or always available. No per-scenario `completion_screen` is emitted for this installation: its nine
 completion images belong to the GameWon credits pages. A save names its scenario by id ([saves.md](saves.md)).
 
+## Scenario sets
+Mods can add extra campaign scenarios and sandboxes beside `scenarios/campaign.json` via `scenarios/sets/<set id>.json`
+(`obl.scenario_set` v1; [../../modding/reference/scenarios.md](../../modding/reference/scenarios.md)).
+- `ScenarioRegistry::LoadFromPack` discovers `scenarios/sets/*.json` over active mod layers (`pack_path::ListStems`),
+  orders sets by mod load order then set stem, and appends extra entries after the pack's with `menuSlot = -1` so pack
+  `ScenarioRef` indices never move.
+- Each set id and every scenario/sandbox id it lists must start with the owning mod id (`-` written as `_`). Start-up
+  and `--check-mods` refuse wrong prefixes, duplicate ids, missing `scenario.json`/map/script (listing available pack
+  maps on an unknown `map`), and unknown `requires_completed` pack campaign ids.
+- `ScenarioProgress` stores extra scenario progress in `progress.json` under the optional `"extra": { "<id>": <flags> }`
+  object using the same flag bits (`1` locked, `2` unlocked, `4` always available, `8` completed). Entries of inactive
+  mods are preserved when `progress.json` is written.
+- A mod scenario's own `world.wsc` is parsed in strict mod mode: `UnlockNextScenario` and `ShowMenu ScenarioWon` /
+  `ScenarioLost` are allowed, while `ShowMenu GameWon` is reserved for the pack campaign.
+
 The engine reads the order from this file (`scenario_load::LoadCampaign`): the menu index (0-based) selects
 `campaign[index]` or `sandboxes[index]`, the new game's progress table starts from `game_core::Reset` with the two
 availability lists as menu indices, and a world loads the scenario id it names. The file must hold 12 entries of each list

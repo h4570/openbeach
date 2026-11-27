@@ -1,0 +1,20 @@
+# Three independent mods add scenario sets beside the L0 campaign: winning l0_scenarios_a_first opens the next scenario
+# in its set, and l0_scenarios_a_second survives a save and load round trip.
+# @env OBL_PACK=l0
+# @env OBL_MODS=l0_scenarios_a,l0_scenarios_b,l0_scenarios_c
+# @timeout 180
+seed 1
+fixed-dt 0.02
+boot-gameplay scenario l0_scenarios_a_first
+await gameplay
+step 2
+boot-gameplay scenario l0_scenarios_a_second
+await gameplay
+step 2
+expect day 0
+save-obl testlogs/l0_mod_scenario_sets.obl.save
+load-obl-save testlogs/l0_mod_scenario_sets.obl.save
+await world-loaded
+step 2
+expect day 0
+quit

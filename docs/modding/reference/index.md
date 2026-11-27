@@ -16,6 +16,7 @@ the DSL commands and the actions.
 | [scripting.md](scripting.md) | Presentation scripts: `scripts/presentation/*.lua`, the `presentation` scope, the lifecycle, the sandbox and its limits, the `obl` API, the commands open to scripts, the per-mod store, the API version and the interpreter. |
 | [recipes.md](recipes.md) | Asset recipes (`recipes/*.json`, `obl.asset_recipe` v1): deterministic integer/fixed-point image operations, PNG and indexed `obl.sprite` outputs, `mod-cache/<id>/` caching, missing sources, and the presentation scope rule. |
 | [world-scripts.md](world-scripts.md) | World mod scripts: `scripts/world/*.wsc`, load order beside the scenario script, per-script state and variable budgets, `OnEvent` hooks, refused winning/losing calls, and save/replay behavior. |
+| [scenarios.md](scenarios.md) | Mod scenario sets (`scenarios/sets/<id>.json`, `obl.scenario_set` v1): ids, unlock rules, pictures, texts, scenario scripts, progress, saves and replays. |
 | [check-mods.md](check-mods.md) | Check an active mod list or one source directory in a terminal or CI. |
 | [API versions](api-versions.md) | Presentation script versions and migration notes. |
 | [Format schemas](formats.md) | JSON schemas for pack and mod data. |

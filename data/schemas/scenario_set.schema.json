@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "obl.scenario_set",
+  "title": "Scenario set (scenarios/sets/<id>.json)",
+  "description": "Extra campaign scenarios and sandboxes shipped by a mod alongside the pack's campaign.",
+  "type": "object",
+  "properties": {
+    "format": {
+      "const": "obl.scenario_set"
+    },
+    "version": {
+      "const": 1
+    },
+    "id": {
+      "description": "Set identifier, starting with the owning mod id (- written as _).",
+      "$ref": "obl.common#/$defs/key"
+    },
+    "title": {
+      "$ref": "obl.common#/$defs/text_key"
+    },
+    "description": {
+      "$ref": "obl.common#/$defs/text_key"
+    },
+    "scenarios": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "scenario": {
+            "$ref": "obl.common#/$defs/key"
+          }
+        },
+        "required": [
+          "scenario"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "unlock": {
+      "description": "sequential: winning one opens the next of the set; all: every scenario of the set is open.",
+      "enum": [
+        "sequential",
+        "all"
+      ]
+    },
+    "initially_available": {
+      "$ref": "obl.common#/$defs/key_list"
+    },
+    "requires_completed": {
+      "$ref": "obl.common#/$defs/key_list"
+    },
+    "sandboxes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "scenario": {
+            "$ref": "obl.common#/$defs/key"
+          }
+        },
+        "required": [
+          "scenario"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "sandbox_unlock": {
+      "description": "all: every sandbox is open; set_completed: sandboxes open after every campaign scenario in the set is completed.",
+      "enum": [
+        "all",
+        "set_completed"
+      ]
+    }
+  },
+  "required": [
+    "format",
+    "version",
+    "id",
+    "title"
+  ],
+  "additionalProperties": false
+}

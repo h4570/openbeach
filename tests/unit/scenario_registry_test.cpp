@@ -1,3 +1,6 @@
+#include "core/pack_path.h"
+#include "formats/mod_pack.h"
+#include "game/game/scenario_progress.h"
 #include "game/world/scenario_registry.h"
 #include "unit_test.h"
 
@@ -189,4 +192,134 @@ OBL_TEST_CASE("scenario_registry.resolves_start_names")
     for (const char* bad : {"", "s", "s0", "s01", "s-1", "s1x", "s4", "4", "sandbox", "sandbox0", "sandbox4", "S1", "x1", "mesa", "0", "01",
                  "+1", "-1", "scenario1"})
         OBL_CHECK(!name(bad).has_value());
+}
+
+namespace {
+struct ActiveModsGuard {
+    std::filesystem::path gameDir;
+    std::filesystem::path packDir;
+    ActiveModsGuard()
+        : gameDir(std::filesystem::temp_directory_path() /
+                  ("obl-sets-" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()))),
+          packDir(gameDir / "packs" / "l0")
+    {
+        std::filesystem::create_directories(gameDir / "mods");
+        std::filesystem::create_directories(packDir.parent_path());
+        std::filesystem::copy(std::filesystem::path(OBL_REPO_DIR) / "data/packs/l0", packDir, std::filesystem::copy_options::recursive);
+    }
+    ~ActiveModsGuard()
+    {
+        std::string ignored;
+        obl::mod_pack::Activate(gameDir, "l0", "", ignored);
+        std::filesystem::remove_all(gameDir);
+    }
+    void CopyMod(const std::filesystem::path& source, const std::string& id) const
+    {
+        std::filesystem::copy(source, gameDir / "mods" / id, std::filesystem::copy_options::recursive);
+    }
+    bool Activate(std::string_view list, std::string& error) const { return obl::mod_pack::Activate(gameDir, "l0", list, error); }
+};
+} // namespace
+
+OBL_TEST_CASE("scenario_registry.loads_multiple_mod_scenario_sets_and_progress")
+{
+    ActiveModsGuard env;
+    const auto modsRoot = std::filesystem::path(OBL_REPO_DIR) / "tests/mods";
+    env.CopyMod(modsRoot / "l0_scenarios_a", "l0_scenarios_a");
+    env.CopyMod(modsRoot / "l0_scenarios_b", "l0_scenarios_b");
+    env.CopyMod(modsRoot / "l0_scenarios_c", "l0_scenarios_c");
+
+    std::string error;
+    OBL_REQUIRE(env.Activate("l0_scenarios_a,l0_scenarios_b,l0_scenarios_c", error));
+
+    sl::ScenarioRegistry registry;
+    OBL_REQUIRE(sl::ScenarioRegistry::LoadFromPack(env.packDir, registry, error));
+    OBL_CHECK_EQ(registry.CampaignCount(), 1);
+    OBL_CHECK_EQ(registry.SandboxCount(), 1);
+    OBL_CHECK_EQ(registry.Sets().size(), 3u);
+    OBL_CHECK_EQ(registry.Entries().size(), 7u);
+
+    // Pack entries stay at the front; extra entries follow in mod load order then set order with menuSlot = -1.
+    OBL_CHECK_EQ(registry.Entries()[0].id, "s1");
+    OBL_CHECK_EQ(registry.Entries()[0].menuSlot, 0);
+    OBL_CHECK_EQ(registry.Entries()[1].id, "s1");
+    OBL_CHECK_EQ(registry.Entries()[1].menuSlot, 0);
+    OBL_CHECK_EQ(registry.Entries()[2].id, "l0_scenarios_a_first");
+    OBL_CHECK_EQ(registry.Entries()[2].menuSlot, -1);
+    OBL_CHECK_EQ(registry.Entries()[3].id, "l0_scenarios_a_second");
+    OBL_CHECK_EQ(registry.Entries()[4].id, "l0_scenarios_b_locked");
+    OBL_CHECK_EQ(registry.Entries()[5].id, "l0_scenarios_b_free");
+    OBL_CHECK(registry.Entries()[5].IsSandbox());
+    OBL_CHECK_EQ(registry.Entries()[6].id, "l0_scenarios_c_pic");
+    OBL_CHECK_EQ(std::get<std::string>(registry.Entries()[6].pictures.large), "scenarios/l0_scenarios_c_pic/preview.png");
+
+    const auto refA1 = registry.FindByStartName("l0_scenarios_a_first");
+    const auto refA2 = registry.FindByStartName("l0_scenarios_a_second");
+    const auto refB1 = registry.FindByStartName("l0_scenarios_b_locked");
+    const auto refBFree = registry.FindByStartName("l0_scenarios_b_free");
+    const auto refC = registry.FindByStartName("l0_scenarios_c_pic");
+    const auto refS1 = registry.FindById("s1", sl::ScenarioKind::Campaign);
+    OBL_REQUIRE(refA1 && refA2 && refB1 && refBFree && refC && refS1);
+
+    obl::scenario_progress::ScenarioProgress progress;
+    const int32_t initial[] = {0};
+    const int32_t always[] = {0};
+    progress.Reset(initial, always);
+
+    // Sequential unlock in set A, requires_completed in set B, unlock: all in set C.
+    OBL_CHECK(progress.IsSelectable(registry, *refA1, false));
+    OBL_CHECK(!progress.IsSelectable(registry, *refA2, false));
+    OBL_CHECK(!progress.IsSelectable(registry, *refB1, false));
+    OBL_CHECK(progress.IsSelectable(registry, *refC, false));
+
+    // Completing A1 opens A2 and writes "extra" to progress.json.
+    progress.Complete(registry, *refA1, registry.CampaignCount());
+    OBL_CHECK(progress.IsComplete(registry, *refA1));
+    OBL_CHECK(progress.IsSelectable(registry, *refA2, false));
+    const std::string saved = progress.ToJson();
+    OBL_CHECK(saved.find("\"extra\"") != std::string::npos);
+    OBL_CHECK(saved.find("\"l0_scenarios_a_first\"") != std::string::npos);
+    OBL_CHECK(saved.find("\"l0_scenarios_a_second\"") != std::string::npos);
+
+    // Completing s1 satisfies requires_completed for set B.
+    progress.Complete(registry, *refS1, registry.CampaignCount());
+    OBL_CHECK(progress.IsSelectable(registry, *refB1, false));
+    OBL_CHECK(progress.IsSelectable(registry, *refBFree, true));
+
+    // Inactive mod entries in progress.json are preserved across round-trip.
+    auto doc = Json::parse(progress.ToJson());
+    doc["extra"]["inactive_mod_scen"] = 10;
+    obl::scenario_progress::ScenarioProgress reloaded;
+    OBL_REQUIRE(reloaded.FromJson(doc.dump()));
+    OBL_CHECK(reloaded.ToJson().find("\"inactive_mod_scen\": 10") != std::string::npos);
+
+    // UnlockAll and Reset cover extras.
+    reloaded.Reset(initial, always);
+    OBL_CHECK(!reloaded.IsSelectable(registry, *refA2, false));
+    reloaded.UnlockAll(registry, false, registry.CampaignCount());
+    OBL_CHECK(reloaded.IsSelectable(registry, *refA2, false));
+}
+
+OBL_TEST_CASE("scenario_registry.refuses_broken_scenario_sets")
+{
+    const auto brokenRoot = std::filesystem::path(OBL_REPO_DIR) / "tests/mods/broken";
+    struct Case {
+        const char* mod;
+        const char* expectedSubstring;
+    };
+    for (const Case& item : {
+                 Case{"bad_scenario_set_prefix", "must start with"},
+                 Case{"bad_scenario_set_duplicate", "duplicate scenario id"},
+                 Case{"bad_scenario_set_two_sets", "duplicate scenario id"},
+                 Case{"bad_scenario_set_map", "available maps: scenario1"},
+         }) {
+        ActiveModsGuard env;
+        env.CopyMod(brokenRoot / item.mod, item.mod);
+        std::string error;
+        OBL_REQUIRE(env.Activate(item.mod, error));
+        sl::ScenarioRegistry registry;
+        OBL_CHECK(!sl::ScenarioRegistry::LoadFromPack(env.packDir, registry, error));
+        OBL_CHECK(error.find(item.mod) != std::string::npos);
+        OBL_CHECK(error.find(item.expectedSubstring) != std::string::npos);
+    }
 }

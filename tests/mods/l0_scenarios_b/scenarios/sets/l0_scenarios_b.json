@@ -1,0 +1,15 @@
+{
+  "format": "obl.scenario_set",
+  "version": 1,
+  "id": "l0_scenarios_b",
+  "title": "L0_TITLE",
+  "scenarios": [
+    { "scenario": "l0_scenarios_b_locked" }
+  ],
+  "unlock": "sequential",
+  "requires_completed": ["s1"],
+  "sandboxes": [
+    { "scenario": "l0_scenarios_b_free" }
+  ],
+  "sandbox_unlock": "all"
+}

@@ -44,6 +44,8 @@ void Destroy(world_script::WorldScript& script, const Memory& memory);
 // Checks that a parsed mod world script has STATE_WORLD_STARTUP and makes no refused scenario-outcome calls
 // (Function UnlockNextScenario, ShowMenu ScenarioWon/GameWon/ScenarioLost). False with `error` naming the refused call.
 bool ValidateModWorldScript(const world_script::WorldScript& script, std::string& error);
+// Checks a mod scenario's own world script: allows UnlockNextScenario and ShowMenu ScenarioWon/ScenarioLost, refuses ShowMenu GameWon.
+bool ValidateModScenarioScript(const world_script::WorldScript& script, std::string& error);
 
 // Lifecycle contracts of construct and destruct.
 // Construct writes every field but the parse cursor and the parsed list; the parser's If stack (a game global)

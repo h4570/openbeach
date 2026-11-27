@@ -102,4 +102,30 @@ struct Campaign {
 // entries of the campaign order; only `unlock: sequential` and `sandbox_unlock: campaign_completed_or_always` are supported (game_core.h).
 bool LoadCampaign(const std::filesystem::path& pack, Campaign& out, std::string& error);
 
+enum class SetUnlock : uint8_t { Sequential, All };
+enum class SandboxUnlock : uint8_t { All, SetCompleted };
+
+// A mod-shipped scenario set (`scenarios/sets/<id>.json`, format `obl.scenario_set` v1).
+struct ScenarioSetDefinition {
+    std::string id;
+    std::string title;
+    std::string description;
+    std::vector<std::string> scenarios;
+    SetUnlock unlock = SetUnlock::Sequential;
+    std::vector<std::string> initiallyAvailable;
+    std::vector<std::string> requiresCompleted;
+    std::vector<std::string> sandboxes;
+    SandboxUnlock sandboxUnlock = SandboxUnlock::All;
+};
+
+// Loads and validates one `obl.scenario_set` file.
+bool LoadScenarioSet(const std::filesystem::path& file, ScenarioSetDefinition& out, std::string& error);
+
+// Mod id with `-` written as `_`, the required prefix for set ids and scenario ids owned by that mod.
+std::string ModPrefix(std::string_view modId);
+bool HasModPrefix(std::string_view id, std::string_view modId);
+
+// Sorted map keys available in the pack and active layers (subdirectories under `maps/` with `map.json`).
+std::vector<std::string> ListMapIds(const std::filesystem::path& pack);
+
 } // namespace obl::scenario_load

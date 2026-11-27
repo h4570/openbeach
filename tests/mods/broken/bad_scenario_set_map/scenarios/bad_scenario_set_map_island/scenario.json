@@ -1,0 +1,14 @@
+{
+  "format": "obl.scenario",
+  "version": 1,
+  "id": "bad_scenario_set_map_island",
+  "kind": "campaign",
+  "title": "L0_TITLE",
+  "description": "L0_DESC",
+  "map": "no_such_island",
+  "start_view": [2048, 2048],
+  "catalog": "catalog/index.json",
+  "guests": "l0",
+  "available_buildings": ["loo", "kiosk", "hut"],
+  "script": "world.wsc"
+}

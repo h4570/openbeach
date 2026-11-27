@@ -1,0 +1,13 @@
+{
+  "format": "obl.scenario_set",
+  "version": 1,
+  "id": "l0_scenarios_a",
+  "title": "L0_TITLE",
+  "description": "L0_DESC",
+  "scenarios": [
+    { "scenario": "l0_scenarios_a_first" },
+    { "scenario": "l0_scenarios_a_second" }
+  ],
+  "unlock": "sequential",
+  "initially_available": ["l0_scenarios_a_first"]
+}

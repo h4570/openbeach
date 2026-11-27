@@ -23,6 +23,7 @@
 #include "game/ui/gui_patch.h"
 #include "game/ui/own_layer.h"
 #include "game/world/scenario_load.h"
+#include "game/world/scenario_registry.h"
 #include "game/world/world_script_load.h"
 
 #include <algorithm>
@@ -306,6 +307,8 @@ void CheckData(const fs::path& pack, const ModFiles& files, const std::set<std::
         }
     }
     CheckSprites(pack, sprites, files, recipeSprites, errors);
+    scenario_load::ScenarioRegistry registry;
+    scenario_load::ScenarioRegistry::LoadFromPack(pack, registry, error, &errors);
 }
 
 void CheckPresentation(const fs::path& ini, Messages& errors)

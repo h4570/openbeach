@@ -1168,6 +1168,40 @@ bool ValidateModWorldScript(const world_script::WorldScript& script, std::string
     error.clear();
     return true;
 }
+bool ValidateModScenarioScript(const world_script::WorldScript& script, std::string& error)
+{
+    if (script.m_numStates == 0 || script::FindStateIndex(script.m_stateNames, script.m_numStates, script::kStartupState) < 0) {
+        error = std::string("missing required ") + script::kStartupState + " state";
+        return false;
+    }
+    auto checkList = [&](auto&& recurse, const ScriptCommand* list) -> bool {
+        for (const ScriptCommand* node = list; node; node = node->m_next) {
+            if (!node->m_data) continue;
+            if (node->m_opcode == kScriptOpShowMenu) {
+                const auto& data = *static_cast<const WorldScriptTwoTextsData*>(node->m_data);
+                if (data.m_first && std::string_view(data.m_first) == "GameWon") {
+                    error = "mod scenario scripts may not call ShowMenu GameWon (reserved for the pack campaign)";
+                    return false;
+                }
+            } else if (node->m_opcode == kScriptOpIf) {
+                const auto& data = *static_cast<const ScriptIfData*>(node->m_data);
+                if (!recurse(recurse, data.m_true) || !recurse(recurse, data.m_false)) return false;
+            }
+        }
+        return true;
+    };
+    for (uint32_t i = 0; i < script.m_numStates; ++i) {
+        const auto& state = script.m_states[i];
+        if (!checkList(checkList, state.m_onEntry) || !checkList(checkList, state.m_onExit) || !checkList(checkList, state.m_onUpdate))
+            return false;
+        for (uint32_t j = 0; j < state.m_NumHandlers; ++j)
+            if (!checkList(checkList, state.m_handlers[j].m_onReceipt) || !checkList(checkList, state.m_handlers[j].m_onSend)) return false;
+        for (const auto& handler : script.m_onEvent[i])
+            if (!checkList(checkList, handler.commands)) return false;
+    }
+    error.clear();
+    return true;
+}
 std::string Diff(const world_script::WorldScript& a, const world_script::WorldScript& b, const ParseDetails* bDetails)
 {
     return Compare(a, b, nullptr, bDetails);

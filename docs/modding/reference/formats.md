@@ -32,6 +32,7 @@ the schemas for recipes and object vocabulary patches.
 - [pack](../../../data/schemas/pack.schema.json)
 - [palette modifiers](../../../data/schemas/palette_modifiers.schema.json)
 - [save](../../../data/schemas/save.schema.json)
+- [scenario set](../../../data/schemas/scenario_set.schema.json)
 - [scenario](../../../data/schemas/scenario.schema.json)
 - [scenery](../../../data/schemas/scenery.schema.json)
 - [sound script](../../../data/schemas/sound_script.schema.json)

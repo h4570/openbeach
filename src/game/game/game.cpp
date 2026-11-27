@@ -634,7 +634,7 @@ void Update(Game* game)
     const ui::Input& input = *GetInput();
     if (InputKeyHeld(input, obl::input::KeyCode::LeftShift) && InputKeyPressed(input, obl::input::KeyCode::U) &&
             InputKeyHeld(input, obl::input::KeyCode::LeftAlt) && !GetWorld()) {
-        game->m_scenarioProgress.UnlockAll(game->m_sandbox != 0, CampaignCount());
+        game->m_scenarioProgress.UnlockAll(game->m_scenarioRegistry, game->m_sandbox != 0, CampaignCount());
         Save(game);
     }
 }

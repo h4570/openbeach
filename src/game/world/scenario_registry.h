@@ -27,15 +27,32 @@ public:
     struct Entry {
         std::string id;
         ScenarioKind kind = ScenarioKind::Campaign;
-        int32_t menuSlot = 0;
+        int32_t menuSlot = 0; // -1 for extra entries from mod scenario sets
+        int32_t setIndex = -1; // -1 for pack entries, index into Sets() for mod sets
+        std::string modId; // owning mod id for set entries, empty for pack entries
         ScenarioPictures pictures;
         ScenarioTextKeys textKeys;
 
         bool IsSandbox() const { return kind == ScenarioKind::Sandbox; }
+        bool IsExtra() const { return menuSlot < 0; }
+    };
+
+    struct ScenarioSet {
+        std::string id;
+        std::string modId;
+        std::string title;
+        std::string description;
+        SetUnlock unlock = SetUnlock::Sequential;
+        SandboxUnlock sandboxUnlock = SandboxUnlock::All;
+        std::vector<std::string> initiallyAvailable;
+        std::vector<std::string> requiresCompleted;
+        std::vector<ScenarioRef> scenarios;
+        std::vector<ScenarioRef> sandboxes;
     };
 
     static ScenarioRegistry FromCampaign(const Campaign& campaign);
-    static bool LoadFromPack(const std::filesystem::path& pack, ScenarioRegistry& out, std::string& error);
+    static bool LoadFromPack(
+            const std::filesystem::path& pack, ScenarioRegistry& out, std::string& error, std::vector<std::string>* allErrors = nullptr);
 
     int32_t CampaignCount() const { return m_campaignCount; }
     int32_t SandboxCount() const { return m_sandboxCount; }
@@ -43,6 +60,8 @@ public:
     const std::u16string& ListName(int32_t index) const { return m_listNames.at(static_cast<size_t>(index)); }
 
     const std::vector<Entry>& Entries() const { return m_entries; }
+    const std::vector<ScenarioSet>& Sets() const { return m_sets; }
+    const ScenarioSet* FindSet(int32_t setIndex) const;
     const Entry& Get(ScenarioRef ref) const { return m_entries.at(static_cast<size_t>(ref.index)); }
     const Entry* Find(ScenarioRef ref) const;
 
@@ -57,6 +76,7 @@ public:
 
 private:
     std::vector<Entry> m_entries;
+    std::vector<ScenarioSet> m_sets;
     std::vector<std::u16string> m_listNames;
     int32_t m_campaignCount = 0;
     int32_t m_sandboxCount = 0;

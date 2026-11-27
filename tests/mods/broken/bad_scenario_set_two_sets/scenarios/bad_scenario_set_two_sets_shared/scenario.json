@@ -1,0 +1,13 @@
+{
+  "format": "obl.scenario",
+  "version": 1,
+  "id": "bad_scenario_set_two_sets_shared",
+  "kind": "campaign",
+  "title": "L0_TITLE",
+  "map": "scenario1",
+  "start_view": [2048, 2048],
+  "catalog": "catalog/index.json",
+  "guests": "l0",
+  "available_buildings": ["loo", "kiosk", "hut"],
+  "script": "world.wsc"
+}
