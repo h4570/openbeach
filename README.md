@@ -4,7 +4,7 @@
 
 <p align="center">Open the page and drop your own Beach Life disc image (.iso).<br>
 It works on Windows, macOS, Linux and Android, in any modern browser.<br>
-Make it yours with mods: drop in a zip or add a catalog, right from the Mods screen.</p>
+Make it yours with mods: browse and install them in one click from the Mods screen.</p>
 
 <p align="center">
   <a href="https://github.com/h4570/openbeach/stargazers"><img src="https://raw.githubusercontent.com/h4570/openbeach/stargazers-data/stargazers.svg" alt="Stargazers of OpenBeach"></a>
