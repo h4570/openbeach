@@ -1,5 +1,54 @@
 # Changelog
 
+## [1.14.0](https://github.com/h4570/openbeach/compare/v1.13.0...v1.14.0) (2026-11-27)
+
+
+### Features
+
+* **game:** add a headless mod checker ([#161](https://github.com/h4570/openbeach/issues/161)) ([01d69f1](https://github.com/h4570/openbeach/commit/01d69f1b983d2af275795221812caced316b35b9))
+* **game:** add a mod template, guides and dev mode ([#165](https://github.com/h4570/openbeach/issues/165)) ([9e39ca9](https://github.com/h4570/openbeach/commit/9e39ca9756aee9900194ca6da0b06715cfff894b))
+* **game:** add a mods screen to the main menu ([#148](https://github.com/h4570/openbeach/issues/148)) ([7d6ee0f](https://github.com/h4570/openbeach/commit/7d6ee0f5610d0e843ca2f82ec8cacf88af0b2371)), closes [#118](https://github.com/h4570/openbeach/issues/118)
+* **game:** add generic object script functions for mod characters ([#168](https://github.com/h4570/openbeach/issues/168)) ([e3dc77d](https://github.com/h4570/openbeach/commit/e3dc77d5f446f5b9f72404871d9274a6680b5e22))
+* **game:** add mod variables and world events to scripts ([#167](https://github.com/h4570/openbeach/issues/167)) ([a96b2f4](https://github.com/h4570/openbeach/commit/a96b2f4d7791606640f0c4cbb5a45ba69dc7d654)), closes [#131](https://github.com/h4570/openbeach/issues/131)
+* **game:** add scope, packs and api to mod manifests ([5e9393d](https://github.com/h4570/openbeach/commit/5e9393d99657c0df46bd49f9a557824d711089b4))
+* **game:** add the official frame counter mod ([#156](https://github.com/h4570/openbeach/issues/156)) ([bceea4d](https://github.com/h4570/openbeach/commit/bceea4d1cfeb9a93156f3248d46e24ba4a33f95d))
+* **game:** bind hotkeys to named actions that mods and players can move ([#152](https://github.com/h4570/openbeach/issues/152)) ([779a9eb](https://github.com/h4570/openbeach/commit/779a9eb56eab32c7ee80cf0550acc236ca581937))
+* **game:** give mod scripts input, camera and overlay drawing ([#144](https://github.com/h4570/openbeach/issues/144)) ([0cf1721](https://github.com/h4570/openbeach/commit/0cf172106a597208a5ecec857f54d3286c65277b))
+* **game:** give the mods screen the pack's own look ([#169](https://github.com/h4570/openbeach/issues/169)) ([7360f13](https://github.com/h4570/openbeach/commit/7360f130f2ac90fa0bc415851c24a133dd30d1da))
+* **game:** install and remove mods from zip files ([#159](https://github.com/h4570/openbeach/issues/159)) ([1ceaa2c](https://github.com/h4570/openbeach/commit/1ceaa2cb517d32333a79449aea20b6297964c597))
+* **game:** install mods from catalogs players add ([#162](https://github.com/h4570/openbeach/issues/162)) ([a9c160f](https://github.com/h4570/openbeach/commit/a9c160fa50ae1ef2eb3012b10df670f7a6ae39c3))
+* **game:** let mods add buildings players can build ([#145](https://github.com/h4570/openbeach/issues/145)) ([41391be](https://github.com/h4570/openbeach/commit/41391becb2eba402ffa9ba956dffec1114e6e8d6)), closes [#125](https://github.com/h4570/openbeach/issues/125)
+* **game:** let mods add guest needs ([#184](https://github.com/h4570/openbeach/issues/184)) ([24e7333](https://github.com/h4570/openbeach/commit/24e7333bb53b8f30bd77e2000f876d270a0e1c9e))
+* **game:** let mods append catalog records ([#113](https://github.com/h4570/openbeach/issues/113)) ([16bdf43](https://github.com/h4570/openbeach/commit/16bdf43726e54410b0fd8f575b470998be409740)), closes [#104](https://github.com/h4570/openbeach/issues/104)
+* **game:** let mods combine building traits ([#174](https://github.com/h4570/openbeach/issues/174)) ([5e8b5dd](https://github.com/h4570/openbeach/commit/5e8b5dd7e4bce1ea7bea7463466515eccc7868de))
+* **game:** let mods declare settings kept out of the simulation ([#146](https://github.com/h4570/openbeach/issues/146)) ([5d3ddac](https://github.com/h4570/openbeach/commit/5d3ddacbb76255306193be13c3e3efa2599f8b17))
+* **game:** let mods name the oldest game version they need ([#177](https://github.com/h4570/openbeach/issues/177)) ([441ade5](https://github.com/h4570/openbeach/commit/441ade53bee289552d20c3fd72b103ea858708e9))
+* **game:** let mods patch any json data file by key ([#139](https://github.com/h4570/openbeach/issues/139)) ([faaaf18](https://github.com/h4570/openbeach/commit/faaaf187e35d3a829407d7a46222dee5ef88a274))
+* **game:** let mods patch gui layouts with ids, slots and anchors ([#141](https://github.com/h4570/openbeach/issues/141)) ([16a5d1c](https://github.com/h4570/openbeach/commit/16a5d1c51543e4e0b72b9513c56db71e3a6ae5a8))
+* **game:** let mods ship object scripts for their guests and staff ([#149](https://github.com/h4570/openbeach/issues/149)) ([9cc11ef](https://github.com/h4570/openbeach/commit/9cc11efaeb205e5d017d61426899bd8256227d2e))
+* **game:** let presentation mods list and rebind actions ([#179](https://github.com/h4570/openbeach/issues/179)) ([828701f](https://github.com/h4570/openbeach/commit/828701f3b4bd26d065ce16007238fed9b4084c56))
+* **game:** let world mods run scripts beside the scenario ([#151](https://github.com/h4570/openbeach/issues/151)) ([06301df](https://github.com/h4570/openbeach/commit/06301df488775364f227adf7d1752c66b5b70f33))
+* **game:** load mods as packages with a manifest and load order ([#111](https://github.com/h4570/openbeach/issues/111)) ([2aaa4e8](https://github.com/h4570/openbeach/commit/2aaa4e87a88cc1cea7eb5cd765093045f172a0b8))
+* **game:** merge text tables from mods by key ([#112](https://github.com/h4570/openbeach/issues/112)) ([20f9a06](https://github.com/h4570/openbeach/commit/20f9a068b2f2a8a55b20697be8d3db7a3303bd74)), closes [#105](https://github.com/h4570/openbeach/issues/105)
+* **game:** rework the mods screen layout ([#186](https://github.com/h4570/openbeach/issues/186)) ([b17eb7c](https://github.com/h4570/openbeach/commit/b17eb7cf8cc003550c9fb22cd3d927d0f8c77be5))
+* **game:** run sandboxed presentation scripts from mods ([c7dd8b5](https://github.com/h4570/openbeach/commit/c7dd8b59aeeb9868843e28ce8a4b50c5607e9410))
+* **importer:** build mod assets from the player's copy by recipe ([a07ddf6](https://github.com/h4570/openbeach/commit/a07ddf623b2f98b3cff9f80757d05e758e86be31)), closes [#122](https://github.com/h4570/openbeach/issues/122)
+* **saves:** record active mods in saves and replays ([#135](https://github.com/h4570/openbeach/issues/135)) ([d62deb7](https://github.com/h4570/openbeach/commit/d62deb7e831a8c40cd024cdb7bf2d7dfbe6fbaa8)), closes [#103](https://github.com/h4570/openbeach/issues/103)
+* **site:** add google tag manager snippet to site pages ([#150](https://github.com/h4570/openbeach/issues/150)) ([5f5faed](https://github.com/h4570/openbeach/commit/5f5faed985fdaa9aaaf5067fa1c65118fde60fbd))
+* **site:** improve titles, game copy and metadata for beach life search ([#178](https://github.com/h4570/openbeach/issues/178)) ([63bfd6f](https://github.com/h4570/openbeach/commit/63bfd6f96798b787be73ea78dace4b6aa5d57dc8))
+* **site:** say "beach life game" in titles and descriptions ([#147](https://github.com/h4570/openbeach/issues/147)) ([925cc0b](https://github.com/h4570/openbeach/commit/925cc0be012cd991f93da049c15bf7ee22446463))
+* **tools:** let linux_check pick the wsl user ([#136](https://github.com/h4570/openbeach/issues/136)) ([a458597](https://github.com/h4570/openbeach/commit/a4585971206fcbf2bd90388c54a8327860173547))
+* **tools:** publish official mods as a signed catalog ([#163](https://github.com/h4570/openbeach/issues/163)) ([117c226](https://github.com/h4570/openbeach/commit/117c226f13147d78782b0645bcdd543d6a9f5553))
+* **tools:** ship the catalog signer and a catalog template ([#181](https://github.com/h4570/openbeach/issues/181)) ([8f1b4af](https://github.com/h4570/openbeach/commit/8f1b4afade4d08048db2f685e2edce8968530016))
+
+
+### Bug Fixes
+
+* **game:** accept crlf line ends in mod scripts ([#160](https://github.com/h4570/openbeach/issues/160)) ([5c1cf31](https://github.com/h4570/openbeach/commit/5c1cf31901567de328bc7b0ce928b190c84bec26))
+* **game:** list a save's scenario by its registry entry ([#143](https://github.com/h4570/openbeach/issues/143)) ([76757ae](https://github.com/h4570/openbeach/commit/76757aeda6352418ce532ebff9e0172c44cd087b))
+* **importer:** keep mod_pack out of the save document reader ([#137](https://github.com/h4570/openbeach/issues/137)) ([37eef7e](https://github.com/h4570/openbeach/commit/37eef7e1877cb8aec013ea0ae012e189dfcd5a26))
+* **tools:** read the test INI as Latin-1 in Windows PowerShell too ([#108](https://github.com/h4570/openbeach/issues/108)) ([3fcce2d](https://github.com/h4570/openbeach/commit/3fcce2d79563ba8411fe4bfc6d98dafb62d818b6))
+
 ## [1.13.0](https://github.com/h4570/openbeach/compare/v1.12.5...v1.13.0) (2026-11-22)
 
 
