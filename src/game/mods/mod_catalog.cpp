@@ -516,20 +516,47 @@ bool VerifyCatalogDownload(std::span<const uint8_t> bytes, const CatalogEntry& e
     return true;
 }
 
+CatalogStore::CatalogStore()
+{
+    EnsureOfficialCatalog();
+}
+
+void CatalogStore::EnsureOfficialCatalog()
+{
+    const auto it = std::find_if(m_catalogs.begin(), m_catalogs.end(), [](const StoredCatalog& c) { return c.url == kOfficialCatalogUrl; });
+    if (it != m_catalogs.end()) {
+        it->official = true;
+        if (it->title.empty()) it->title = kOfficialCatalogTitle;
+        if (it != m_catalogs.begin()) std::rotate(m_catalogs.begin(), it, it + 1);
+        return;
+    }
+    StoredCatalog official;
+    official.url = kOfficialCatalogUrl;
+    official.title = kOfficialCatalogTitle;
+    official.enabled = true;
+    official.official = true;
+    m_catalogs.insert(m_catalogs.begin(), std::move(official));
+}
+
 bool CatalogStore::Load(const fs::path& gameDir, std::string& error)
 {
     m_catalogs.clear();
     const fs::path path = gameDir / kCatalogStoreFile;
     std::error_code ec;
-    if (!fs::exists(path, ec)) return true; // no catalogs added yet
+    if (!fs::exists(path, ec)) {
+        EnsureOfficialCatalog();
+        return true; // no saved sources yet; start with the official source
+    }
     std::ifstream in(path, std::ios::binary);
     if (!in) {
+        EnsureOfficialCatalog();
         error = "cannot open " + path.generic_string();
         return false;
     }
     const json doc = json::parse(in, nullptr, false);
     if (doc.is_discarded() || !doc.is_object() || doc.value("format", std::string()) != kCatalogStoreFormat ||
             doc.value("version", 0) != kCatalogStoreVersion || !doc.contains("catalogs") || !doc["catalogs"].is_array()) {
+        EnsureOfficialCatalog();
         error = "invalid " + std::string(kCatalogStoreFile);
         return false;
     }
@@ -540,8 +567,12 @@ bool CatalogStore::Load(const fs::path& gameDir, std::string& error)
         stored.title = item.value("title", std::string());
         stored.pinnedPublicKeyHex = item.value("public_key", std::string());
         stored.allowLocal = item.value("allow_local", false);
+        stored.enabled = item.value("enabled", true);
+        stored.official = stored.url == kOfficialCatalogUrl;
         std::string urlErr;
-        if (!IsValidCatalogUrl(stored.url, stored.allowLocal, urlErr) || !IsLowerHex(stored.pinnedPublicKeyHex, 64)) continue;
+        if (!IsValidCatalogUrl(stored.url, stored.allowLocal, urlErr)) continue;
+        if (!stored.official && !IsLowerHex(stored.pinnedPublicKeyHex, 64)) continue;
+        if (stored.official && !stored.pinnedPublicKeyHex.empty() && !IsLowerHex(stored.pinnedPublicKeyHex, 64)) continue;
         if (item.contains("mods") && item["mods"].is_array()) {
             for (const json& m : item["mods"]) {
                 CatalogEntry entry;
@@ -551,6 +582,7 @@ bool CatalogStore::Load(const fs::path& gameDir, std::string& error)
         }
         m_catalogs.push_back(std::move(stored));
     }
+    EnsureOfficialCatalog();
     return true;
 }
 
@@ -566,6 +598,7 @@ bool CatalogStore::Save(const fs::path& gameDir, std::string& error) const
         item["title"] = c.title;
         item["public_key"] = c.pinnedPublicKeyHex;
         if (c.allowLocal) item["allow_local"] = true;
+        if (!c.enabled) item["enabled"] = false;
         json mods = json::array();
         for (const CatalogEntry& m : c.mods) mods.push_back(SerializeEntry(m));
         item["mods"] = std::move(mods);
@@ -590,7 +623,7 @@ CatalogStore::UpdateStatus CatalogStore::AddOrUpdate(
     if (!IsValidCatalogUrl(url, allowLocal, error)) return UpdateStatus::Failed;
     for (StoredCatalog& existing : m_catalogs) {
         if (existing.url == url) {
-            if (existing.pinnedPublicKeyHex != catalog.publicKeyHex && !trustNewKey) {
+            if (!existing.pinnedPublicKeyHex.empty() && existing.pinnedPublicKeyHex != catalog.publicKeyHex && !trustNewKey) {
                 error = "catalog signing key changed";
                 return UpdateStatus::KeyChanged;
             }
@@ -607,15 +640,27 @@ CatalogStore::UpdateStatus CatalogStore::AddOrUpdate(
     added.pinnedPublicKeyHex = catalog.publicKeyHex;
     added.mods = catalog.mods;
     added.allowLocal = allowLocal;
+    added.enabled = true;
+    added.official = url == kOfficialCatalogUrl;
     m_catalogs.push_back(std::move(added));
+    EnsureOfficialCatalog();
     return UpdateStatus::Added;
 }
 
 bool CatalogStore::Remove(std::string_view url)
 {
+    if (url == kOfficialCatalogUrl) return false;
     const auto it = std::find_if(m_catalogs.begin(), m_catalogs.end(), [&](const StoredCatalog& c) { return c.url == url; });
     if (it == m_catalogs.end()) return false;
     m_catalogs.erase(it);
+    return true;
+}
+
+bool CatalogStore::SetEnabled(std::string_view url, bool enabled)
+{
+    const auto it = std::find_if(m_catalogs.begin(), m_catalogs.end(), [&](const StoredCatalog& c) { return c.url == url; });
+    if (it == m_catalogs.end()) return false;
+    it->enabled = enabled;
     return true;
 }
 
@@ -629,6 +674,7 @@ std::optional<CatalogModMatch> CatalogStore::FindModByIdAndHash(std::string_view
 {
     if (id.empty() || contentHash.empty()) return std::nullopt;
     for (const StoredCatalog& c : m_catalogs) {
+        if (!c.enabled) continue;
         for (const CatalogEntry& e : c.mods) {
             if (e.id == id && !e.contentHash.empty() && e.contentHash == contentHash) {
                 return CatalogModMatch{c.title, c.url, e};

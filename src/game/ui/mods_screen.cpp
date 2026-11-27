@@ -388,14 +388,12 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
         // The game version a mod's `engine_min` is checked against.
         own::Text(0, m_x0 + 16, m_y0 + 30, 130,
                 Format(Lookup("OBL_MODS_GAME_VERSION"), {Utf8ToEngine(std::string(kEngineVersion))}).c_str(), m_pal.white, 0);
-        DrawButton(m_x0 + 150, m_y0 + 8, m_x0 + 264, m_y0 + 40,
+        DrawButton(m_x0 + 150, m_y0 + 8, m_x0 + 310, m_y0 + 40,
                 Lookup(m_catalogView ? "OBL_MODS_INSTALLED_TAB" : "OBL_MODS_CATALOGS").c_str(), m_catalogView ? m_pal.foam : m_pal.seaDark,
                 m_catalogView ? m_pal.ink : m_pal.white);
-        DrawButton(m_x0 + 272, m_y0 + 8, m_x0 + 464, m_y0 + 40, Lookup("OBL_MODS_INSTALL").c_str(), m_pal.seaDark, m_pal.white);
-        const bool canRemove = !m_catalogView && m_list && m_list->Find(g_selectedId);
-        DrawButton(m_x0 + 472, m_y0 + 8, m_x0 + 596, m_y0 + 40, Lookup("OBL_MODS_REMOVE").c_str(), canRemove ? m_pal.seaDark : m_pal.sand,
-                canRemove ? m_pal.white : m_pal.grey);
-        DrawButton(m_x0 + 604, m_y0 + 8, m_x0 + 688, m_y0 + 40, Lookup("OBL_MODS_HELP").c_str(), m_pal.seaDark, m_pal.white);
+        if (!m_catalogView) {
+            DrawButton(m_x0 + 318, m_y0 + 8, m_x0 + 520, m_y0 + 40, Lookup("OBL_MODS_INSTALL").c_str(), m_pal.seaDark, m_pal.white);
+        }
         DrawButton(m_x0 + 696, m_y0 + 8, m_x0 + 784, m_y0 + 40, Lookup("OBL_MODS_BACK").c_str(), m_pal.foam, m_pal.ink);
 
         if (m_catalogView) {
@@ -440,7 +438,10 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
             footer = Lookup("OBL_MODS_WORLD_NEXT");
             footerColor = m_pal.foam;
         }
-        if (!footer.empty()) own::Text(1, m_x0 + 16, footerY + 14, IsConfirming() ? 546 : w - 32, footer.c_str(), footerColor, 0);
+        if (!footer.empty()) own::Text(1, m_x0 + 16, footerY + 14, IsConfirming() ? 546 : w - 64, footer.c_str(), footerColor, 0);
+        if (!m_editingUrl && !IsConfirming()) {
+            DrawButton(m_x0 + w - 40, footerY + 6, m_x0 + w - 8, footerY + 38, u"?", m_pal.sea, m_pal.white);
+        }
 
         m_dirty = 0;
     }
@@ -781,10 +782,11 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
         SetArchiveStatus("OBL_MODS_INSTALLED", id, false);
     }
 
-    void OnRemove()
+    void OnRemove(const std::string& id)
     {
-        if (CanChangeFiles(g_selectedId)) {
-            m_pendingRemove = g_selectedId;
+        g_selectedId = id;
+        if (CanChangeFiles(id)) {
+            m_pendingRemove = id;
             RebuildTargets();
             MarkDirty();
         }
@@ -866,6 +868,7 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
         const mods::SemVer engineVer = EngineVersion();
         const std::string packId = pack_path::SelectedId();
         for (const mods::StoredCatalog& cat : m_catalogStore.Catalogs()) {
+            if (!cat.enabled) continue;
             const auto compatible = mods::FilterCompatibleMods(cat.mods, engineVer, packId, mod_pack::kPresentationApi);
             for (const mods::CatalogEntry& e : compatible) {
                 m_catalogRows.push_back({cat.title, cat.url, e});
@@ -968,7 +971,14 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
             SetArchiveStatus("OBL_MODS_CAT_ERROR", error, true);
             return;
         }
-        // Adding a third-party catalog always shows a notice and requires confirmation first.
+        if (rawUrl == mods::kOfficialCatalogUrl) {
+            m_catalogStore.SetEnabled(mods::kOfficialCatalogUrl, true);
+            SaveCatalogs();
+            RebuildCatalogRows();
+            BeginFetchCatalog(std::string(rawUrl), false);
+            return;
+        }
+        // Adding a third-party online source always shows a notice and requires confirmation first.
         m_pendingAddCatalog = PendingAddCatalog{std::string(rawUrl), allowLocal};
         RebuildTargets();
         MarkDirty();
@@ -1020,6 +1030,7 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
         if (m_activeFetch.handle) return;
         m_refreshQueue.clear();
         for (const mods::StoredCatalog& cat : m_catalogStore.Catalogs()) {
+            if (!cat.enabled) continue;
             m_refreshQueue.push_back({cat.url, cat.allowLocal});
         }
         StartNextRefresh();
@@ -1033,10 +1044,23 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
         BeginFetchCatalog(next.url, next.allowLocal);
     }
 
-    void RemoveCatalogAt(size_t index)
+    void ToggleCatalogAt(size_t index)
     {
         const auto& list = m_catalogStore.Catalogs();
         if (index >= list.size()) return;
+        const std::string url = list[index].url;
+        const bool nextEnabled = !list[index].enabled;
+        const bool needsFetch = nextEnabled && list[index].mods.empty() && !os::HasEnv("OBL_SCRIPT");
+        m_catalogStore.SetEnabled(url, nextEnabled);
+        SaveCatalogs();
+        RebuildCatalogRows();
+        if (needsFetch) BeginFetchCatalog(url, list[index].allowLocal);
+    }
+
+    void RemoveCatalogAt(size_t index)
+    {
+        const auto& list = m_catalogStore.Catalogs();
+        if (index >= list.size() || list[index].official) return;
         const std::string title = list[index].title;
         const std::string url = list[index].url;
         m_catalogStore.Remove(url);
@@ -1091,7 +1115,14 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
 
         if (!res.ok) {
             m_downloadQueue.clear();
-            SetArchiveStatus(finished.isModZip ? "OBL_MODS_INSTALL_ERROR" : "OBL_MODS_CAT_ERROR", res.error, true);
+            if (!finished.isModZip && finished.url == mods::kOfficialCatalogUrl) {
+                OBL_LOG("mods screen: official source unavailable: %s", res.error.c_str());
+                g_statusText = Lookup("OBL_MODS_CAT_OFFICIAL_UNAVAILABLE");
+                g_statusIsError = false;
+                MarkDirty();
+            } else {
+                SetArchiveStatus(finished.isModZip ? "OBL_MODS_INSTALL_ERROR" : "OBL_MODS_CAT_ERROR", res.error, true);
+            }
             StartNextRefresh();
             return;
         }
@@ -1138,7 +1169,14 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
         mods::Catalog parsed;
         std::string error;
         if (!mods::ParseCatalog(text, finished.url, finished.allowLocal, parsed, error)) {
-            SetArchiveStatus("OBL_MODS_CAT_ERROR", error, true);
+            if (finished.url == mods::kOfficialCatalogUrl) {
+                OBL_LOG("mods screen: official source parse failed: %s", error.c_str());
+                g_statusText = Lookup("OBL_MODS_CAT_OFFICIAL_UNAVAILABLE");
+                g_statusIsError = false;
+                MarkDirty();
+            } else {
+                SetArchiveStatus("OBL_MODS_CAT_ERROR", error, true);
+            }
             StartNextRefresh();
             return;
         }
@@ -1164,17 +1202,19 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
     void OnHelp()
     {
         OBL_LOG("mods screen: help %s", kHelpUrl);
-        if (!os::HasEnv("OBL_SCRIPT")) SDL_OpenURL(kHelpUrl);
-        g_statusText = Format(Lookup("OBL_MODS_HELP_OPENED"), {Utf8ToEngine(kHelpUrl)});
-        g_statusIsError = false;
-        MarkDirty();
+        if (os::HasEnv("OBL_SCRIPT")) return;
+        if (!SDL_OpenURL(kHelpUrl)) {
+            g_statusText = Format(Lookup("OBL_MODS_HELP_FAILED"), {Utf8ToEngine(kHelpUrl)});
+            g_statusIsError = true;
+            MarkDirty();
+        }
     }
 
     void RebuildTargets()
     {
         m_targets.clear();
+        const int footerY = m_y1 - 44;
         if (m_editingUrl) {
-            const int footerY = m_y1 - 44;
             m_targets.push_back({"catalog.paste", m_x0 + 506, footerY + 6, m_x0 + 586, footerY + 38, [this] { PasteIntoUrlDraft(); }});
             m_targets.push_back(
                     {"catalog.url_ok", m_x0 + 592, footerY + 6, m_x0 + 684, footerY + 38, [this] { SubmitCatalogUrl(m_urlDraft, false); }});
@@ -1186,7 +1226,6 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
             return;
         }
         if (IsConfirming()) {
-            const int footerY = m_y1 - 44;
             const char* confirmName =
                     m_pendingKeyChange ? "catalog.trust_key" : (m_pendingAddCatalog ? "catalog.confirm" : "archive.confirm");
             const char* cancelName = (m_pendingKeyChange || m_pendingAddCatalog) ? "catalog.cancel" : "archive.cancel";
@@ -1194,16 +1233,22 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
             m_targets.push_back({cancelName, m_x0 + 680, footerY + 6, m_x0 + 784, footerY + 38, [this] { CancelConfirmAction(); }});
             return;
         }
-        m_targets.push_back({"catalogs", m_x0 + 150, m_y0 + 8, m_x0 + 264, m_y0 + 40, [this] {
+        m_targets.push_back({"catalogs", m_x0 + 150, m_y0 + 8, m_x0 + 310, m_y0 + 40, [this] {
                                  m_catalogView = !m_catalogView;
+                                 if (m_catalogView && !os::HasEnv("OBL_SCRIPT")) {
+                                     const mods::StoredCatalog* official = m_catalogStore.Find(mods::kOfficialCatalogUrl);
+                                     if (official && official->enabled && official->mods.empty()) {
+                                         BeginFetchCatalog(mods::kOfficialCatalogUrl, false);
+                                     }
+                                 }
                                  RebuildTargets();
                                  MarkDirty();
                              }});
-        m_targets.push_back({"install", m_x0 + 272, m_y0 + 8, m_x0 + 464, m_y0 + 40, [this] { OnInstall(); }});
-        if (!m_catalogView && m_list && m_list->Find(g_selectedId))
-            m_targets.push_back({"remove", m_x0 + 472, m_y0 + 8, m_x0 + 596, m_y0 + 40, [this] { OnRemove(); }});
-        m_targets.push_back({"help", m_x0 + 604, m_y0 + 8, m_x0 + 688, m_y0 + 40, [this] { OnHelp(); }});
+        if (!m_catalogView) {
+            m_targets.push_back({"install", m_x0 + 318, m_y0 + 8, m_x0 + 520, m_y0 + 40, [this] { OnInstall(); }});
+        }
         m_targets.push_back({"back", m_x0 + 696, m_y0 + 8, m_x0 + 784, m_y0 + 40, [this] { m_pendingBack = true; }});
+        m_targets.push_back({"help", m_x1 - 40, footerY + 6, m_x1 - 8, footerY + 38, [this] { OnHelp(); }});
 
         if (m_catalogView) {
             const size_t start = static_cast<size_t>(m_catalogPage * kPageSize);
@@ -1239,8 +1284,13 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
             const size_t maxShown = std::min<size_t>(cats.size(), 6);
             for (size_t i = 0; i < maxShown; ++i) {
                 const int y = m_y0 + 300 + static_cast<int>(i) * 38;
-                m_targets.push_back(
-                        {"catalog.remove." + std::to_string(i), m_x0 + 706, y + 4, m_x0 + 780, y + 32, [this, i] { RemoveCatalogAt(i); }});
+                if (cats[i].official) {
+                    m_targets.push_back({"catalog.toggle." + std::to_string(i), m_x0 + 706, y + 4, m_x0 + 780, y + 32,
+                            [this, i] { ToggleCatalogAt(i); }});
+                } else {
+                    m_targets.push_back({"catalog.remove." + std::to_string(i), m_x0 + 706, y + 4, m_x0 + 780, y + 32,
+                            [this, i] { RemoveCatalogAt(i); }});
+                }
             }
             return;
         }
@@ -1256,16 +1306,17 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
             const int rowY = m_y0 + 58 + static_cast<int>(i - start) * 48;
             const std::string id = entry.mod.id;
             m_targets.push_back({"toggle." + id, m_x0 + 18, rowY + 6, m_x0 + 70, rowY + 38, [this, id] { OnToggle(id); }});
-            m_targets.push_back({"select." + id, m_x0 + 74, rowY + 2, m_x0 + 324, rowY + 42, [this, id] {
+            m_targets.push_back({"select." + id, m_x0 + 74, rowY + 2, m_x0 + (entry.on ? 292 : 354), rowY + 42, [this, id] {
                                      g_selectedId = id;
                                      RebuildTargets();
                                      MarkDirty();
                                  }});
             if (entry.on) {
-                if (i > 0) m_targets.push_back({"up." + id, m_x0 + 328, rowY + 6, m_x0 + 356, rowY + 38, [this, id] { OnMove(id, -1); }});
+                if (i > 0) m_targets.push_back({"up." + id, m_x0 + 296, rowY + 6, m_x0 + 324, rowY + 38, [this, id] { OnMove(id, -1); }});
                 if (i + 1 < activeCount)
-                    m_targets.push_back({"down." + id, m_x0 + 360, rowY + 6, m_x0 + 388, rowY + 38, [this, id] { OnMove(id, 1); }});
+                    m_targets.push_back({"down." + id, m_x0 + 328, rowY + 6, m_x0 + 356, rowY + 38, [this, id] { OnMove(id, 1); }});
             }
+            m_targets.push_back({"remove." + id, m_x0 + 360, rowY + 6, m_x0 + 388, rowY + 38, [this, id] { OnRemove(id); }});
         }
 
         const int pages = PageCount();
@@ -1331,24 +1382,27 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
                     m_pal.white);
 
             const std::string& title = (entry.mod.valid && !entry.mod.manifest.title.empty()) ? entry.mod.manifest.title : entry.mod.id;
-            own::Text(1, m_x0 + 76, rowY + 6, 246, Utf8ToEngine(title).c_str(), hasProblem ? m_pal.red : m_pal.ink, 0);
+            const int textW = entry.on ? 216 : 278;
+            own::Text(1, m_x0 + 76, rowY + 6, textW, Utf8ToEngine(title).c_str(), hasProblem ? m_pal.red : m_pal.ink, 0);
 
             if (hasProblem) {
-                own::Text(0, m_x0 + 76, rowY + 24, 246, ProblemText(entry.problem, entry.detail).c_str(), m_pal.red, 0);
+                own::Text(0, m_x0 + 76, rowY + 24, textW, ProblemText(entry.problem, entry.detail).c_str(), m_pal.red, 0);
             } else {
                 std::u16string sub = Utf8ToEngine(entry.mod.id + "  " + entry.mod.manifest.modVersion + "  ");
                 sub += ScopeText(entry.mod.manifest.scope);
-                own::Text(0, m_x0 + 76, rowY + 24, 246, sub.c_str(), m_pal.grey, 0);
+                own::Text(0, m_x0 + 76, rowY + 24, textW, sub.c_str(), m_pal.grey, 0);
             }
 
             if (entry.on) {
                 const bool canUp = i > 0;
                 const bool canDown = i + 1 < activeCount;
-                DrawButton(m_x0 + 328, rowY + 6, m_x0 + 356, rowY + 38, u"^", canUp ? m_pal.sea : m_pal.sand,
+                DrawButton(m_x0 + 296, rowY + 6, m_x0 + 324, rowY + 38, u"^", canUp ? m_pal.sea : m_pal.sand,
                         canUp ? m_pal.white : m_pal.grey);
-                DrawButton(m_x0 + 360, rowY + 6, m_x0 + 388, rowY + 38, u"v", canDown ? m_pal.sea : m_pal.sand,
+                DrawButton(m_x0 + 328, rowY + 6, m_x0 + 356, rowY + 38, u"v", canDown ? m_pal.sea : m_pal.sand,
                         canDown ? m_pal.white : m_pal.grey);
             }
+            DrawButton(m_x0 + 360, rowY + 6, m_x0 + 388, rowY + 38, u"X", entry.on ? m_pal.sand : m_pal.seaDark,
+                    entry.on ? m_pal.grey : m_pal.white);
         }
 
         const int pages = PageCount();
@@ -1473,7 +1527,9 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
         const int x1 = m_x0 + 394;
         if (m_catalogRows.empty()) {
             own::Box(x0, m_y0 + 58, x1, m_y0 + 126, m_round, m_pal.foam, m_pal.border);
-            const char* key = m_catalogStore.Catalogs().empty() ? "OBL_MODS_CAT_NONE" : "OBL_MODS_CAT_NO_MODS";
+            const auto& cats = m_catalogStore.Catalogs();
+            const bool anyEnabled = std::any_of(cats.begin(), cats.end(), [](const mods::StoredCatalog& c) { return c.enabled; });
+            const char* key = anyEnabled ? "OBL_MODS_CAT_NO_MODS" : "OBL_MODS_CAT_NONE";
             own::TextWrapped(1, x0 + 10, m_y0 + 68, x1 - x0 - 20, 52, Lookup(key).c_str(), m_pal.ink, 0);
             return;
         }
@@ -1554,9 +1610,20 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
             for (size_t i = 0; i < maxShown; ++i) {
                 const int y = m_y0 + 300 + static_cast<int>(i) * 38;
                 own::Box(x0 + 8, y, x1 - 8, y + 34, m_round, m_pal.white, m_pal.border);
-                own::Text(0, x0 + 14, y + 4, 280, Utf8ToEngine(cats[i].title).c_str(), m_pal.ink, 0);
+                std::u16string title = Utf8ToEngine(cats[i].title);
+                if (!cats[i].official) {
+                    title += u" (";
+                    title += Lookup("OBL_MODS_CAT_THIRD_PARTY");
+                    title += u")";
+                }
+                own::Text(0, x0 + 14, y + 4, 280, title.c_str(), cats[i].enabled ? m_pal.ink : m_pal.grey, 0);
                 own::Text(0, x0 + 14, y + 18, 280, Utf8ToEngine(cats[i].url).c_str(), m_pal.grey, 0);
-                DrawButton(m_x0 + 706, y + 4, m_x0 + 780, y + 32, Lookup("OBL_MODS_REMOVE").c_str(), m_pal.seaDark, m_pal.white);
+                if (cats[i].official) {
+                    DrawButton(m_x0 + 706, y + 4, m_x0 + 780, y + 32, Lookup(cats[i].enabled ? "OBL_MODS_ON" : "OBL_MODS_OFF").c_str(),
+                            cats[i].enabled ? m_pal.green : m_pal.seaDark, m_pal.white);
+                } else {
+                    DrawButton(m_x0 + 706, y + 4, m_x0 + 780, y + 32, Lookup("OBL_MODS_REMOVE").c_str(), m_pal.seaDark, m_pal.white);
+                }
             }
         }
     }
@@ -1674,7 +1741,7 @@ bool HandleKeyDown(int scancode, bool ctrl)
 bool FindTarget(std::string_view name, int& x, int& y)
 {
     if (!g_openPanel || !g_openPanel->m_visible) return false;
-    for (std::string_view prefix : {"toggle.", "select.", "up.", "down."}) {
+    for (std::string_view prefix : {"toggle.", "select.", "up.", "down.", "remove."}) {
         if (name.starts_with(prefix)) {
             g_openPanel->EnsureVisible(name.substr(prefix.size()));
             break;

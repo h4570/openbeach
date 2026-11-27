@@ -32,7 +32,7 @@ await gui-animating == 0
 gui-click ModsScreen target toggle.l0_zip
 await frames 20
 await gui-animating == 0
-gui-click ModsScreen target remove
+gui-click ModsScreen target remove.l0_zip
 await frames 3
 gui-click ModsScreen target archive.confirm
 await frames 3

@@ -28,6 +28,8 @@ inline constexpr int kCatalogVersion = 1;
 inline constexpr const char* kCatalogStoreFormat = "obl.mod_catalogs";
 inline constexpr int kCatalogStoreVersion = 1;
 inline constexpr const char* kCatalogStoreFile = "mod-catalogs.json";
+inline constexpr const char* kOfficialCatalogUrl = "https://openbeach.app/mods/catalog.json";
+inline constexpr const char* kOfficialCatalogTitle = "OpenBeach Official Mods";
 inline constexpr size_t kMaxCatalogBytes = 4 * 1024 * 1024;
 inline constexpr size_t kMaxCatalogEntries = 2048;
 
@@ -86,6 +88,8 @@ struct StoredCatalog {
     std::string pinnedPublicKeyHex;
     std::vector<CatalogEntry> mods;
     bool allowLocal = false;
+    bool enabled = true;
+    bool official = false;
 };
 
 struct CatalogModMatch {
@@ -94,10 +98,12 @@ struct CatalogModMatch {
     CatalogEntry entry;
 };
 
-// Persistent store of player-added catalogs (`<game dir>/mod-catalogs.json`) with TOFU key pinning.
+// Persistent store of online mod sources (`<game dir>/mod-catalogs.json`) with TOFU key pinning.
 class CatalogStore {
 public:
     enum class UpdateStatus { Added, Updated, KeyChanged, Failed };
+
+    CatalogStore();
 
     bool Load(const std::filesystem::path& gameDir, std::string& error);
     bool Save(const std::filesystem::path& gameDir, std::string& error) const;
@@ -107,13 +113,16 @@ public:
     UpdateStatus AddOrUpdate(std::string_view url, const Catalog& catalog, bool allowLocal, bool trustNewKey, std::string& error);
 
     bool Remove(std::string_view url);
+    bool SetEnabled(std::string_view url, bool enabled);
     const StoredCatalog* Find(std::string_view url) const;
     const std::vector<StoredCatalog>& Catalogs() const { return m_catalogs; }
 
-    // Looks up a missing save mod by id and content hash across all added catalogs.
+    // Looks up a missing save mod by id and content hash across all enabled online sources.
     std::optional<CatalogModMatch> FindModByIdAndHash(std::string_view id, std::string_view contentHash) const;
 
 private:
+    void EnsureOfficialCatalog();
+
     std::vector<StoredCatalog> m_catalogs;
 };
 
