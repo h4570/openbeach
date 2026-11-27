@@ -340,6 +340,7 @@ add_executable(obl_unit_tests
     gui_layouts_test.cpp
     gui_patch_test.cpp
     own_credits_test.cpp
+    own_texts_test.cpp
     own_controls_test.cpp
     convert_gui_tables_test.cpp
     convert_byte_source_test.cpp
