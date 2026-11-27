@@ -1,0 +1,11 @@
+{
+  "format": "obl.text_patch",
+  "version": 1,
+  "entries": {
+    "SCENARIO_TEMPLATE_SET_TITLE": "Scenario Template",
+    "SCENARIO_TEMPLATE_SET_DESC": "A minimal one-scenario set for L0.",
+    "SCENARIO_TEMPLATE_ONE_TITLE": "Template Beach",
+    "SCENARIO_TEMPLATE_ONE_DESC": "A minimal scenario with one win condition.",
+    "SCENARIO_TEMPLATE_WON": "Template Beach complete!"
+  }
+}

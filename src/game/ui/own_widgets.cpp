@@ -9,7 +9,9 @@
 #include "game/ui/gui_script.h"
 #include "game/ui/gui_script_state.h"
 #include "game/ui/gui_script_types.h"
+#include "game/ui/extra_scenarios_screen.h"
 #include "game/ui/mods_screen.h"
+#include "game/ui/own_layer.h"
 #include "game/ui/renderer_api.h"
 #include "game/ui/renderer_ops.h"
 #include "game/ui/renderer_types.h"
@@ -152,7 +154,9 @@ void TextWrapped(int font, int x, int y, int width, int height, const Char16* te
 bool Parse(ui::GuiScript& s, const char* name)
 {
     const bool button = std::strcmp(name, "OwnButton") == 0;
-    if (!button && std::strcmp(name, "ModsPanel") != 0) return false;
+    const bool modsPanel = std::strcmp(name, "ModsPanel") == 0;
+    const bool extraPanel = std::strcmp(name, "ExtraScenariosPanel") == 0;
+    if (!button && !modsPanel && !extraPanel) return false;
     if (s.m_text[s.m_cursor] != '(') return true;
     ++s.m_cursor;
     SkipBlanks(s);
@@ -169,9 +173,12 @@ bool Parse(ui::GuiScript& s, const char* name)
         GuiScriptReadToken(s, dialog);
         // NOLINTNEXTLINE(cppcoreguidelines-owning-memory): the dialog's widget tree owns its children (gui_widget_virtual.h)
         widget = new ui::GuiOwnButton(b.x0, b.y0, b.x1, b.y1, text, dialog);
-    } else {
+    } else if (modsPanel) {
         CloseAfterBounds(s);
         widget = mods_screen::CreatePanel(b.x0, b.y0, b.x1, b.y1);
+    } else {
+        CloseAfterBounds(s);
+        widget = extra_scenarios_screen::CreatePanel(b.x0, b.y0, b.x1, b.y1);
     }
     GuiScriptAddWidget(s, widget, false);
     return true;
@@ -330,6 +337,7 @@ void GuiOwnButton::SetVisible(uint32_t visible)
 
 bool GuiOwnButton::HitTest(int x, int y)
 {
+    if (m_dialog == own_layer::kExtraScenariosDialog && !gui::extra_scenarios_screen::HasEntriesForCurrentMode()) return false;
     const bool hit = HitTestBase(x, y);
     const int state = m_held ? 2 : (hit ? 1 : 0);
     if (state != m_drawnState) m_dirty = 1;
@@ -339,6 +347,10 @@ bool GuiOwnButton::HitTest(int x, int y)
 void GuiOwnButton::Draw()
 {
     if (!m_visible) return;
+    if (m_dialog == own_layer::kExtraScenariosDialog && !gui::extra_scenarios_screen::HasEntriesForCurrentMode()) {
+        m_dirty = 0;
+        return;
+    }
     ResolvePackSprite();
     const int state = m_held ? 2 : (m_hovered ? 1 : 0);
     if (!m_dirty && state == m_drawnState) return;
@@ -458,6 +470,7 @@ void GuiOwnButton::Draw()
 bool GuiOwnButton::MouseLeft(int x, int y, int state)
 {
     if (!m_visible || !HitTestBase(x, y)) return false;
+    if (m_dialog == own_layer::kExtraScenariosDialog && !gui::extra_scenarios_screen::HasEntriesForCurrentMode()) return false;
     if (state == 1) {
         // A tap of a touch screen is a press too (platform/touch_gestures.h), so the press acts.
         m_held = 1;

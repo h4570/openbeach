@@ -341,7 +341,8 @@ struct Parser {
         ctrl.kind = word;
 
         static constexpr std::string_view kOneRectLeaves[] = {"Button", "CheckBox", "Slider", "ComboBox", "Text", "Variable",
-                "VariableImage", "Image", "Icon", "TGA", "Bar", "ImageList", "NumberAdjust", "RadioButton", "OwnButton", "ModsPanel"};
+                "VariableImage", "Image", "Icon", "TGA", "Bar", "ImageList", "NumberAdjust", "RadioButton", "OwnButton", "ModsPanel",
+                "ExtraScenariosPanel"};
         const bool isOneRectLeaf = std::find(std::begin(kOneRectLeaves), std::end(kOneRectLeaves), word) != std::end(kOneRectLeaves);
 
         if (isOneRectLeaf) {

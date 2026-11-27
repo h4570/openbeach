@@ -1,0 +1,25 @@
+# The scenario_template example mod (docs/modding/examples/scenario_template): opens via More scenarios and plays on L0.
+# @env OBL_PACK=l0
+# @env OBL_MODS=scenario_template
+# @env OBL_WINDOWED=1
+# @gameini Language.Language=0
+# @gameini Sound.PlayListCount=0
+# @timeout 180
+seed 1
+fixed-dt 0.02
+await state == 1
+await frames 20
+await gui-animating == 0
+gui-click MainMenu tip L0_MENU_TIP_START
+await frames 15
+await gui-animating == 0
+gui-click ScenarioScreen id more_scenarios_button
+await frames 15
+await gui-animating == 0
+gui-click ExtraScenarios target select.scenario_template_one
+await frames 5
+gui-click ExtraScenarios target play
+await gameplay
+step 2
+expect day 0
+quit

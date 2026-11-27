@@ -371,6 +371,18 @@ constexpr Row kModsRows[] = {
         {"OBL_MODS_SWITCHED_OFF",
                 {u"Switched off %s: %s", u"%s d\u00e9sactiv\u00e9 : %s", u"%s disattivata: %s", u"%s ausgeschaltet: %s",
                         u"%s desactivado: %s", u"Wy\u0142\u0105czono %s: %s"}},
+        {"OBL_MENU_MORE_SCENARIOS",
+                {u"More scenarios", u"Plus de sc\u00e9narios", u"Altri scenari", u"Mehr Szenarien", u"M\u00e1s escenarios",
+                        u"Wi\u0119cej scenariuszy"}},
+        {"OBL_EXTRA_SCENARIOS_TITLE",
+                {u"More scenarios", u"Plus de sc\u00e9narios", u"Altri scenari", u"Mehr Szenarien", u"M\u00e1s escenarios",
+                        u"Wi\u0119cej scenariuszy"}},
+        {"OBL_EXTRA_PLAY", {u"Play", u"Jouer", u"Gioca", u"Spielen", u"Jugar", u"Graj"}},
+        {"OBL_EXTRA_LOCKED", {u"Locked", u"Verrouill\u00e9", u"Bloccato", u"Gesperrt", u"Bloqueado", u"Zablokowany"}},
+        {"OBL_EXTRA_DONE", {u"Done", u"Termin\u00e9", u"Completato", u"Geschafft", u"Completado", u"Uko\u0144czony"}},
+        {"OBL_EXTRA_LOCKED_WIN_FIRST",
+                {u"Win %s first", u"Gagnez %s d'abord", u"Vinci prima %s", u"Gewinne zuerst %s", u"Gana %s primero",
+                        u"Najpierw wygraj %s"}},
 };
 
 size_t LanguageIndex(std::string_view language)

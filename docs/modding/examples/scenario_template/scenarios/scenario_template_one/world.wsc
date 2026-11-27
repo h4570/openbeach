@@ -1,0 +1,42 @@
+#obl-script 1 world
+State STATE_WORLD_STARTUP
+	OnEntry
+		LoadScript GuestLogic data/script/object/guest.lgc;
+		LoadScript BuilderLogic data/script/object/builder.lgc;
+		Area Beach 1 54 54 50 50 78 50 50 78 78 78;
+		Create Building REP 60 60 0;
+		Create Building KIOSK 66 60 0;
+		Create Building BUILDERYARD 56 66 0;
+		Set PlayerCash 20000;
+		MoveCamera 2048 2048 0;
+		ChangeState STATE_WORLD_RUNGAME;
+	End
+	OnUpdate
+	End
+	OnExit
+	End
+End
+
+State STATE_WORLD_RUNGAME
+	OnEntry
+	End
+	OnUpdate
+		If ( PlayerCash >= 20000 )
+			ShowMenu ScenarioWon SCENARIO_TEMPLATE_WON;
+			Function UnlockNextScenario;
+			ChangeState STATE_WORLD_AFTERGAME;
+			Function PauseGame;
+		End
+	End
+	OnExit
+	End
+End
+
+State STATE_WORLD_AFTERGAME
+	OnEntry
+	End
+	OnUpdate
+	End
+	OnExit
+	End
+End

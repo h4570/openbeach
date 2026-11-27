@@ -19,13 +19,28 @@ constexpr const char* kMainMenuPatch = R"json({
   ]
 })json";
 
+constexpr const char* kScenarioScreenPatch = R"json({
+  "format": "obl.gui_patch",
+  "version": 1,
+  "ops": [
+    { "op": "add_control", "dialog": "ScenarioScreen", "id": "more_scenarios_button",
+      "anchor": "center_x",
+      "control": "OwnButton(290, 0, 530, 38, OBL_MENU_MORE_SCENARIOS, ExtraScenarios)" },
+    { "op": "add_dialog", "anchor": "center",
+      "dialog": "DialogItem ExtraScenarios(0, 0, 800, 600, None, 0, 0) { ExtraScenariosPanel(0, 0, 800, 600) id=extra_scenarios_panel }" }
+  ]
+})json";
+
 } // namespace
 
-std::vector<gui_patch::PatchSource> GuiPatches(std::string_view layout)
+std::vector<gui_patch::PatchSource> GuiPatches(std::string_view layout, bool hasExtraScenarios)
 {
     // The reset menu reads the same file as the main menu (gui/layouts.json), so it gets the same controls.
     if (layout != "main_menu" && layout != "reset_menu") return {};
-    return {{kLayerName, "OpenBeach main menu layer", kMainMenuPatch}};
+    std::vector<gui_patch::PatchSource> patches;
+    patches.push_back({kLayerName, "OpenBeach main menu layer", kMainMenuPatch});
+    if (hasExtraScenarios) patches.push_back({kLayerName, "OpenBeach scenario screen layer", kScenarioScreenPatch});
+    return patches;
 }
 
 } // namespace obl::own_layer

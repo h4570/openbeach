@@ -8,6 +8,7 @@
 #include "game/game/diagnostics.h"
 #include "game/ui/gui_layouts.h"
 #include "game/ui/gui_patch.h"
+#include "game/ui/extra_scenarios_screen.h"
 #include "game/ui/own_layer.h"
 #include "core/log.h"
 #include "core/wide_path.h"
@@ -96,7 +97,7 @@ std::string ReadPatchedScript(const char* file, int screenWidth, int screenHeigh
         }
     }
     if (layout.empty()) return base;
-    const auto own = obl::own_layer::GuiPatches(layout);
+    const auto own = obl::own_layer::GuiPatches(layout, obl::gui::extra_scenarios_screen::HasExtraScenarios());
     const auto patchFiles = obl::gui_patch::FindPatchFiles(g_pack, layout);
     if (patchFiles.empty() && own.empty()) return base;
     obl::gui_patch::ApplyResult result;
