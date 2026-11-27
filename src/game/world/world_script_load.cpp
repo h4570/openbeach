@@ -1,6 +1,7 @@
 #include "core/char16.h"
 #include "core/pack_path.h"
 #include "game/world/world_script_types.h"
+#include "game/world/scenario_load.h"
 #include "game/world/world_script_load.h"
 #include "game/game/diagnostics.h"
 
@@ -41,12 +42,11 @@ int BeerId(const char* name)
 {
     return world_params::GetBeerId(game::GetWorldParams(), name);
 }
-// Parses the converted scenario script of `path` (`Data/Scenario/<folder>/<name>.lgc`, read from the pack, script_pack.h). `size`
-// is the length of the script text: the loading bar starts from it, as from the size of the `.ble` file.
-bool TryParse(WorldScript& script, const char* path, const ws::Memory& memory, uint32_t& size, std::string& error)
+// The loading bar starts from the length of the script text, as it did from the size of the `.ble` file.
+bool TryParse(WorldScript& script, const char* logicalPath, const ws::Memory& memory, uint32_t& size, std::string& error)
 {
     std::string text;
-    if (!script_pack::ReadPackScript(g_packDirectory, path, script_pack::Kind::World, text, error)) return false;
+    if (!scenario_load::ReadWorldScript(g_packDirectory, logicalPath, text, error)) return false;
     size = static_cast<uint32_t>(text.size());
     text.push_back(static_cast<char>(file_io::kTerminator)); // the scanners read one byte past the text
     try {
@@ -68,7 +68,7 @@ uint32_t RecordLoadSize(uint32_t size)
     g_loadSeen = true;
     return size;
 }
-uint32_t LoadScript(WorldScript* script, const char* path)
+uint32_t LoadScript(WorldScript* script, const char* path, const char* logicalPath)
 {
     if (!g_vocabularyOk) {
         game::FatalError("Cannot load scripts/world_vocabulary.json (%s). Import the game data again", g_error.c_str());
@@ -77,7 +77,7 @@ uint32_t LoadScript(WorldScript* script, const char* path)
     uint32_t size = 0;
     std::string error;
     g_loadCalls.Count();
-    if (!TryParse(*script, path, kMemory, size, error)) game::FatalError("%s (%s)", error.c_str(), path);
+    if (!TryParse(*script, logicalPath, kMemory, size, error)) game::FatalError("%s (%s)", error.c_str(), path);
     return RecordLoadSize(size);
 }
 
@@ -104,9 +104,9 @@ void DestructScript(WorldScript* script)
 
 } // namespace
 
-uint32_t WorldScriptLoad(world_script::WorldScript& script, const char* path)
+uint32_t WorldScriptLoad(world_script::WorldScript& script, const char* path, const char* logicalPath)
 {
-    return LoadScript(&script, path);
+    return LoadScript(&script, path, logicalPath);
 }
 
 world_script::WorldScript* WorldScriptConstruct(world_script::WorldScript& script)

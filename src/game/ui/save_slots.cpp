@@ -108,18 +108,6 @@ void Write(game::Game* game, const uint32_t* timestamp = nullptr)
     std::error_code removed;
     std::filesystem::remove(os::ResolvePath(save_slots::SlotPath(number)), removed);
 }
-std::vector<SaveSlot> Snapshot(game::Game* game)
-{
-    std::vector<SaveSlot> slots;
-    for (const auto& value : game->m_saveSlots) {
-        SaveSlot slot{};
-        // Bytes after the title's terminator are not compared.
-        std::memcpy(&slot, value.get(), offsetof(SaveSlot, m_title));
-        std::snprintf(slot.m_title, sizeof(slot.m_title), "%s", value->m_title);
-        slots.push_back(slot);
-    }
-    return slots;
-}
 using List = ui::GuiListBox;
 List* FindList(game::Game* game, const char* name)
 {
@@ -157,7 +145,7 @@ void FillSlots(game::Game* game, List* list, int row, bool clear)
     game->m_selectedSaveSlot = nullptr;
     Char16 text[128];
     for (const auto& slot : game->m_saveSlots) {
-        AddText(list, row, 0, 300, Text(slot->m_title), true);
+        AddText(list, row, 0, 300, Text(slot->m_title.c_str()), true);
         text16::Format(text, std::size(text), Text("LOADSAVE_INFO_CONTENTS"), slot->m_day + 1, double(slot->m_cash));
         AddText(list, row, 279, 106, text, false);
         TimeText(text, "LOADSAVE_TIME_CONTENTS", slot->m_time);
@@ -184,9 +172,11 @@ bool Existing(game::Game* game)
     list->m_selCursor = 0;
     return save_slots::SelectedRow(list->m_selBegin, list->m_selEnd) != 0;
 }
-int ImageId(game::Game* game)
+const scenario_load::ScenarioPicture* FindLoadPicture(const game::Game& game)
 {
-    return game->m_selectedSaveSlot ? game->m_selectedSaveSlot->m_scenario : -1;
+    if (!game.m_selectedSaveSlot) return nullptr;
+    const auto* entry = game.m_scenarioRegistry.Find(game.m_selectedSaveSlot->m_scenario);
+    return entry ? &entry->pictures.load : nullptr;
 }
 void UpdateInfo(game::Game* game)
 {
@@ -200,7 +190,7 @@ void UpdateInfo(game::Game* game)
     list->m_selCursor = 0;
     const SaveSlot* slot = game->m_saveSlots[*list->m_selBegin].get();
     game->m_selectedSaveSlot = slot;
-    AddText(info, 0, 0, 350, Text(slot->m_title), true);
+    AddText(info, 0, 0, 350, Text(slot->m_title.c_str()), true);
     Char16 text[128];
     const int hour = int(std::floor(slot->m_hour));
     const int minute = save_slots::DisplayMinute(slot->m_hour);
@@ -413,8 +403,9 @@ void DriveScan(int count)
         game.m_loadListFilled = 1;
         Scan(&game);
         const bool oblRead = std::all_of(game.m_saveSlots.begin(), game.m_saveSlots.end(), [&](const auto& slot) {
-            return slot->m_oblSave && slot->m_scenario == sandbox->menuSlot && slot->m_day == slot->m_number / 2 + 10 &&
-                    slot->m_hour == 12.5f && slot->m_cash == 4321.25f && slot->m_guests == 7 && !std::strcmp(slot->m_title, "TEST_TITLE");
+            return slot->m_oblSave && game.m_scenarioRegistry.Find(slot->m_scenario) == &*sandbox &&
+                    slot->m_day == slot->m_number / 2 + 10 && slot->m_hour == 12.5f && slot->m_cash == 4321.25f && slot->m_guests == 7 &&
+                    slot->m_title == "TEST_TITLE";
         });
         g_checks.Record(game.m_saveSlots.size() == size_t(size + (size != 0)) && !game.m_loadListFilled && oblRead,
                 "fixture size=" + std::to_string(size));
@@ -433,13 +424,13 @@ std::string WrittenDifferences(const obl::game::Game& game, const SaveSlot& writ
         text << ' ' << field << '=' << actual << " expected " << expected;
         differs += text.str();
     };
-    expect("scenario", entry ? entry->menuSlot : -1, written.m_scenario);
+    expect("scenario", game.m_selectedScenario.index, written.m_scenario.index);
     expect("day", world->m_gameDay, written.m_day);
     expect("hour", world->m_gameDayTime, written.m_hour);
     expect("cash", world->m_player->m_cash, written.m_cash);
     expect("guests", world->m_numGuests, written.m_guests);
     const std::string title = entry && entry->IsSandbox() ? entry->textKeys.title : world->m_scenarioTitle.c_str();
-    expect("title", title, std::string(written.m_title));
+    expect("title", title, written.m_title);
     return differs;
 }
 const SaveSlot* FindSlot(const obl::game::Game& game, int number)
@@ -601,12 +592,14 @@ void DriveLists(int count)
             auto slot = std::make_unique<SaveSlot>();
             slot->m_number = i * 2;
             slot->m_time = 1700000000u + uint32_t(i * 61);
-            slot->m_scenario = i % 12;
+            const auto ref = game.m_scenarioRegistry.FindByMenuSlot(
+                    i % game.m_scenarioRegistry.SandboxCount(), scenario_load::ScenarioKind::Sandbox);
+            slot->m_scenario = *ref;
             slot->m_day = i;
             slot->m_hour = float(i % 24) + float(i % 4) * 0.25f;
             slot->m_cash = 12345.25f - float(i * 500);
             slot->m_guests = i * 7;
-            std::snprintf(slot->m_title, sizeof(slot->m_title), "MAINSS_SANDBOX%d_TITLE", i % 12 + 1);
+            slot->m_title = game.m_scenarioRegistry.Get(*ref).textKeys.title;
             game.m_saveSlots.push_back(std::move(slot));
         }
         auto compare = [&](test::CallCounter& check, List* list, auto operation, const char* what) {
@@ -637,7 +630,8 @@ void DriveLists(int count)
             ClearSelection(load);
             if (row >= 0) Select(load, row);
             compare(g_checkUpdateLoadInfoBox, info, [&] { UpdateInfo(&game); }, "info rows");
-            Record(g_image, ImageId(&game) == (row < 0 ? -1 : row % 12), "image scenario");
+            const auto expected = row < 0 ? nullptr : &game.m_scenarioRegistry.Get(game.m_saveSlots[row]->m_scenario).pictures.load;
+            Record(g_image, FindLoadPicture(game) == expected, "image scenario");
             if (row >= 0) {
                 const auto* next = game.m_nextState;
                 const int pending = row;
@@ -695,10 +689,10 @@ void DriveDeletes(int count)
         const int deletedNumber = game.m_saveSlots[countSlots - 1]->m_number;
         const std::string deletedPath = save_slots::SlotPath(*game.m_saveSlots[countSlots - 1]);
         DeleteSelected(&game, load);
-        const auto actual = Snapshot(&game);
+        const auto& actual = game.m_saveSlots;
         Record(check,
                 !std::filesystem::exists(os::ResolvePath(deletedPath)) &&
-                        std::none_of(actual.begin(), actual.end(), [&](const SaveSlot& slot) { return slot.m_number == deletedNumber; }) &&
+                        std::none_of(actual.begin(), actual.end(), [&](const auto& slot) { return slot->m_number == deletedNumber; }) &&
                         actual.size() == size_t(countSlots - 1) && !game.m_loadListFilled &&
                         (list->m_selBegin == list->m_selEnd) == expectedEmpty && list->m_selCursor == 0,
                 "delete file and rescan");
@@ -727,7 +721,7 @@ void DriveLoad(int count)
         auto* list = SaveList(&copy);
         // Selection uses a real allocator-backed list buffer because entering the state destroys GUI widgets.
         slot->m_time = 1700000000;
-        std::strcpy(slot->m_title, "MAINSS_SANDBOX1_TITLE");
+        slot->m_title = obl::game::SelectedEntry(copy)->textKeys.title;
         FillSave(&copy);
         Select(list, 1);
         const auto* world = obl::game::GetWorld();
@@ -783,9 +777,9 @@ bool IsExistingSlotSelected()
 {
     return Existing(obl::game::GetGame());
 }
-int SelectedImageId()
+const scenario_load::ScenarioPicture* SelectedLoadPicture()
 {
-    return ImageId(obl::game::GetGame());
+    return FindLoadPicture(*obl::game::GetGame());
 }
 void RequestLoadSelected()
 {

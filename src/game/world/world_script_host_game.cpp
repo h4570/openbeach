@@ -23,7 +23,7 @@ struct GameEnv {
     void LoadObject(ScriptProgram& p, const char* path) { object::ScriptProgramLoad(p, path); }
     void DestroyWorld(WorldScript& p) { WorldScriptDestruct(p); }
     void ConstructWorld(WorldScript& p) { WorldScriptConstruct(p); }
-    uint32_t LoadWorld(WorldScript& p, const char* path) { return WorldScriptLoad(p, path); }
+    uint32_t LoadWorld(WorldScript& p, const char* path, const char* logicalPath) { return WorldScriptLoad(p, path, logicalPath); }
 };
 
 } // namespace
@@ -53,10 +53,10 @@ void WorldScriptHost::Release(WorldScriptHost* host)
     g_destructCalls.Count();
 }
 
-uint32_t WorldScriptHost::Load(const char* path)
+uint32_t WorldScriptHost::Load(const char* path, const char* logicalPath)
 {
     GameEnv env;
-    const uint32_t result = LoadScript(path, env);
+    const uint32_t result = LoadScript(path, logicalPath, env);
     g_loadCalls.Count();
     return result;
 }

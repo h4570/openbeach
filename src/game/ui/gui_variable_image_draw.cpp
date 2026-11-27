@@ -30,6 +30,10 @@
 #include "game/objects/object_building.h"
 #include "core/ascii_case.h"
 #include "core/call_counter.h"
+#include "core/pack_path.h"
+#include "game/game/diagnostics.h"
+#include "game/ui/renderer_api.h"
+#include "game/ui/renderer_ops.h"
 #include "game/ui/text_table.h"
 
 #include <algorithm>
@@ -169,11 +173,11 @@ public:
     }
     bool SandboxMode() const override { return game::GetGame()->m_sandbox != 0; }
     int Language() const override { return game::settings_store::Current().m_shownLanguage; }
-    int SelectedSaveImage() const override { return ui::save_panel::SelectedImageId(); }
-    int ScenarioPicture() const override
+    const scenario_load::ScenarioPicture* SelectedSavePicture() const override { return ui::save_panel::SelectedLoadPicture(); }
+    const scenario_load::ScenarioPictures* SelectedScenarioPictures() const override
     {
         const auto* entry = game::SelectedEntry(*game::GetGame());
-        return entry ? entry->pictures.frame : 0;
+        return entry ? &entry->pictures : nullptr;
     }
     bool HasIdleBuilding(const char* name) const override
     {
@@ -211,7 +215,45 @@ private:
     }
 };
 
-// Performs the calls on the game's own sprite instance of one widget.
+uint16_t BlendPicturePixel(uint16_t background, const uint8_t* rgb, unsigned alpha, bool rgb555)
+{
+    const auto blend = [alpha](unsigned foreground, unsigned back) { return (foreground * alpha + back * (255 - alpha)) / 255; };
+    const unsigned red = ((background >> (rgb555 ? 10 : 11)) & 31) * 255 / 31;
+    const unsigned greenMax = rgb555 ? 31 : 63;
+    const unsigned green = ((background >> 5) & greenMax) * 255 / greenMax;
+    const unsigned blue = (background & 31) * 255 / 31;
+    return renderer_ops::PackColor(rgb555, blend(rgb[0], red), blend(rgb[1], green), blend(rgb[2], blue));
+}
+
+template<class Pixel>
+void DrawPicturePixels(const image::Image& image, Pixel* target, int pitch, int width, int height, int x, int y,
+        const screen::Rect& sourceRect, bool rgb555)
+{
+    const auto span =
+            renderer_ops::ClipFill(width, height, {x, y, x + sourceRect.right - sourceRect.left, y + sourceRect.bottom - sourceRect.top});
+    if (span.width <= 0 || span.height <= 0) return;
+    const int left = sourceRect.left + span.x - x;
+    const int top = sourceRect.top + span.y - y;
+    const int channels = image.bpp / 8;
+    for (int row = 0; row < span.height; ++row) {
+        const auto* source = image.pixels.data() + (static_cast<size_t>(top + row) * image.width + left) * channels;
+        auto* dest = target + static_cast<size_t>(span.y + row) * pitch + span.x;
+        for (int col = 0; col < span.width; ++col, source += channels, ++dest) {
+            const uint8_t gray[] = {*source, *source, *source};
+            const auto* rgb = channels != 1 ? source : image.palette.empty() ? gray : image.palette.data() + *source * 3;
+            const unsigned alpha = channels == 4 ? source[3] : 255;
+            if (alpha == 0) continue;
+            const uint16_t color = alpha == 255 ? renderer_ops::PackColor(rgb555, rgb[0], rgb[1], rgb[2])
+                                                : BlendPicturePixel(static_cast<uint16_t>(*dest), rgb, alpha, rgb555);
+            if constexpr (sizeof(Pixel) == sizeof(uint32_t))
+                *dest = (*dest & 0xffff0000u) | color;
+            else
+                *dest = color;
+        }
+    }
+}
+
+// Performs the calls on the game's own sprite instance or PNG picture.
 class LiveCanvas final : public gui_variable_image::Canvas {
 public:
     explicit LiveCanvas(Widget& widget) : m_widget(widget) {}
@@ -230,6 +272,32 @@ public:
     void SetAnimType(int type) override { m_instance->m_animType = type; }
     void SetFrame(int frame) override { m_instance->m_frameIndex = frame; }
     void SetDirection(int direction) override { m_instance->m_direction = direction; }
+    void DrawImageFile(const char* path, int x, int y) override
+    {
+        if (m_widget.m_picturePath != path) {
+            const auto file = pack_path::Resolve(pack_path::Selected(), path);
+            std::string error;
+            if (!image::LoadPng(file, m_widget.m_pictureImage, error)) {
+                game::FatalError("Cannot load scenario picture %s: %s", file.string().c_str(), error.c_str());
+                return;
+            }
+            m_widget.m_picturePath = path;
+        }
+        const auto& image = m_widget.m_pictureImage;
+        auto* renderer = game::GetRenderer();
+        screen::Rect source{0, 0, image.width, image.height};
+        if (!ui::renderer::ClipRect(renderer, &x, &y, &source.left, &source.top, &source.right, &source.bottom)) return;
+        const bool rgb555 = renderer->m_rgb555 != 0;
+        if (!renderer->m_directMode) {
+            DrawPicturePixels(
+                    image, renderer->m_workBuffer, renderer->m_width, renderer->m_width, renderer->m_height, x, y, source, rgb555);
+        } else if (auto* bits = ui::renderer::GetBackBufferBits(renderer)) {
+            const auto* surface = ui::SurfaceAt(*renderer, renderer->m_activeSurface);
+            DrawPicturePixels(image, bits, surface->m_pitch / sizeof(uint16_t), surface->m_width, surface->m_height, x - surface->m_originX,
+                    y - surface->m_originY, source, rgb555);
+            ui::renderer::UnlockSurface(renderer);
+        }
+    }
     void DrawClipped(int x, int y, uint32_t depth) override { (m_instance)->DrawClipped(x, y, depth, gui_variable_image::kClippedTime); }
     void Draw(int x, int y, int left, int top, int right, int bottom, uint32_t depth) override
     {

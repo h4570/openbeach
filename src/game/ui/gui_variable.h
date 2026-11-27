@@ -94,6 +94,8 @@ public:
     virtual const char* ScenarioDescriptionKey() const = 0; // World::m_scenarioDescription
     virtual const char* ScenarioObjectivesKey() const = 0; // World::m_scenarioObjectives
     virtual const char* ScenarioTitleKey() const = 0; // World::m_scenarioTitle
+    virtual const char* MenuScenarioTitleKey() const = 0;
+    virtual const char* MenuScenarioDescriptionKey() const = 0;
     virtual uint32_t ObjectiveCount() const = 0; // Number of scenario objectives.
     virtual const char* ObjectiveKey(uint32_t index) const = 0;
     virtual uint32_t ObjectiveStatus(uint32_t index) const = 0; // World::m_objectiveStatus[index], 1 = done

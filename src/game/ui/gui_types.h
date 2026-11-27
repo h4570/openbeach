@@ -1,10 +1,12 @@
 #pragma once
 
 #include "core/char16.h"
+#include "core/image_decode.h"
 #include "sprite.h"
 
 #include <cstdint>
 #include <new>
+#include <string>
 
 namespace obl::ui {
 
@@ -262,6 +264,8 @@ struct GuiVariableImageData : GuiWidget {
     char m_key[0x20] = {}; // variable name copied from the script
     void* m_instance = nullptr; // SpriteInstance of the latest draw (already released; written, never read back)
     void* m_object = nullptr; // object the picture reads (null: the variable provider of the open window)
+    std::string m_picturePath;
+    image::Image m_pictureImage;
 };
 
 struct GuiVariableImage final : GuiLeaf<GuiVariableImageData> {

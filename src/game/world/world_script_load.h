@@ -33,7 +33,7 @@ bool LoadModWorldScript(world_script::WorldScript& script, const ModWorldScriptF
 bool GetLastWorldScriptLoadSize(uint32_t& size);
 
 // Load (returns the .ble size), construct and destruct; the entry points forward to them.
-uint32_t WorldScriptLoad(world_script::WorldScript& script, const char* path);
+uint32_t WorldScriptLoad(world_script::WorldScript& script, const char* path, const char* logicalPath);
 world_script::WorldScript* WorldScriptConstruct(world_script::WorldScript& script);
 void WorldScriptDestruct(world_script::WorldScript& script);
 } // namespace obl::world

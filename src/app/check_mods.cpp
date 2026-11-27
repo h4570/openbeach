@@ -8,7 +8,6 @@
 #include "core/pack_path.h"
 #include "core/png_read.h"
 #include "formats/asset_recipe.h"
-#include "formats/script_pack.h"
 #include "formats/data_patch.h"
 #include "formats/gui_content.h"
 #include "formats/mod_pack.h"
@@ -252,7 +251,7 @@ void CheckScenario(const fs::path& pack, const fs::path& logical, const tables::
     if (scenario.pavement) sprites.insert(*scenario.pavement);
     if (scenario.beachEdge) sprites.insert(*scenario.beachEdge);
     std::string script;
-    if (!script_pack::ReadPackScript(pack, scenario.script, script_pack::Kind::World, script, error)) errors.push_back(prefix + error);
+    if (!scenario_load::ReadWorldScript(pack, scenario.script, script, error)) errors.push_back(prefix + error);
     if (!IsFile(pack_path::Resolve(pack, fs::path("guests") / (scenario.guestSet + ".json"))))
         errors.push_back(prefix + "missing guest set " + scenario.guestSet);
 }

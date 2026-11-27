@@ -28,9 +28,9 @@ struct Env {
     void LoadObject(ScriptProgram& p, const char* path) { Note(std::string("load ") + path, &p); }
     void DestroyObject(ScriptProgram& p) { Note("destroy object", &p); }
     void ConstructWorld(WorldScript& p) { Note("construct world", &p); }
-    uint32_t LoadWorld(WorldScript& p, const char* path)
+    uint32_t LoadWorld(WorldScript& p, const char* path, const char* logicalPath)
     {
-        Note(std::string("load ") + path, &p);
+        Note(std::string("load ") + path + " from " + logicalPath, &p);
         return 12345;
     }
     void DestroyWorld(WorldScript& p) { Note("destroy world", &p); }
@@ -83,13 +83,14 @@ OBL_TEST_CASE("world_script_host.load_replaces_the_world_script_and_keeps_script
     Env env;
     WorldScriptHost host(env);
     host.AddScriptProgram("GuestLogic", "a.lgc", env);
-    OBL_CHECK_EQ(host.LoadScript("scenario.ble", env), 12345u);
+    OBL_CHECK_EQ(host.LoadScript("scenario.ble", "scenarios/reef/world.wsc", env), 12345u);
     const WorldScript* first = host.WorldScript();
     OBL_CHECK(first != nullptr);
     env.calls.clear();
     env.pointers.clear();
-    OBL_CHECK_EQ(host.LoadScript("scenario.ble", env), 12345u);
-    OBL_CHECK(env.calls == std::vector<std::string>({"destroy world", "construct world", "load scenario.ble"}));
+    OBL_CHECK_EQ(host.LoadScript("scenario.ble", "scenarios/reef/world.wsc", env), 12345u);
+    OBL_CHECK(
+            env.calls == std::vector<std::string>({"destroy world", "construct world", "load scenario.ble from scenarios/reef/world.wsc"}));
     OBL_CHECK(env.pointers[0] == first && env.pointers[1] == host.WorldScript());
     OBL_CHECK_EQ(host.ScriptProgramCount(), 1u);
     host.Destroy(env);
@@ -101,7 +102,7 @@ OBL_TEST_CASE("world_script_host.destroy_frees_script_programs_then_the_world_sc
     WorldScriptHost host(env);
     host.AddScriptProgram("GuestLogic", "a.lgc", env);
     host.AddScriptProgram("CleanerLogic", "b.lgc", env);
-    host.LoadScript("scenario.ble", env);
+    host.LoadScript("scenario.ble", "scenarios/reef/world.wsc", env);
     const void* guest = &host.ScriptProgramAt(0);
     const void* cleaner = &host.ScriptProgramAt(1);
     const void* world = host.WorldScript();

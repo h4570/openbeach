@@ -160,7 +160,8 @@ World* ConstructWorld(World& world, ui::Cursor* cursor, ui::Input* input, const 
     world_construct_scenario::ApplyBuildings(world, setup, env);
 
     // WorldScriptHost::LoadScript leaves the size of the script's .ble file as its result; it sets where the loading bar starts.
-    const int scriptSize = static_cast<int>(world.m_worldScriptHost->Load(setup.script.c_str()));
+    const char* worldScript = setup.hostScript.empty() ? setup.script.c_str() : setup.hostScript.c_str();
+    const int scriptSize = static_cast<int>(world.m_worldScriptHost->Load(worldScript, setup.script.c_str()));
     world.m_worldScriptHost->LoadModScripts();
     const float fraction = pis::LoadFraction(scriptSize, world.m_loadingSave != 0);
     (world.m_mapView)->BuildTempMap(0x20, 0x20, 0x80, fraction);

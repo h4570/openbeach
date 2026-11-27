@@ -401,31 +401,28 @@ void ScenarioObjective(const Env& env, Output& out, const char* tail)
         env.Format()(out.text, u"");
 }
 
-// `MAINSS_SANDBOX%d_<what>` / `MAINSS_SCENARIO%d_<what>` of the scenario (1-based) the main menu has picked.
-void MenuScenarioText(const Env& env, Output& out, const char* scenarioFormat, const char* sandboxFormat)
+void MenuScenarioText(const Env& env, Output& out, const char* key)
 {
-    char textKey[kKeyCapacity];
-    std::snprintf(textKey, sizeof(textKey), env.SandboxMode() ? sandboxFormat : scenarioFormat, env.CurrentScenario() + 1);
-    env.Format()(out.text, env.Text(textKey));
+    env.Format()(out.text, key ? env.Text(key) : u"");
 }
 
 // The title of the running scenario: the PIS key in a scenario, the sandbox menu caption in a sandbox.
 void ScenarioTitle(const Env& env, Output& out)
 {
     if (env.SandboxMode())
-        MenuScenarioText(env, out, "MAINSS_SCENARIO%d_TITLE", "MAINSS_SANDBOX%d_TITLE");
+        MenuScenarioText(env, out, env.MenuScenarioTitleKey());
     else
         env.Format()(out.text, env.Text(env.ScenarioTitleKey()));
 }
 
 void MenuScenarioDescription(const Env& env, Output& out)
 {
-    MenuScenarioText(env, out, "MAINSS_SCENARIO%d_DESC", "MAINSS_SANDBOX%d_DESC");
+    MenuScenarioText(env, out, env.MenuScenarioDescriptionKey());
 }
 
 void MenuScenarioTitle(const Env& env, Output& out)
 {
-    MenuScenarioText(env, out, "MAINSS_SCENARIO%d_TITLE", "MAINSS_SANDBOX%d_TITLE");
+    MenuScenarioText(env, out, env.MenuScenarioTitleKey());
 }
 
 void MenuScenarioStatus(const Env& env, Output& out)

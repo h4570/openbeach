@@ -204,15 +204,6 @@ Result EventAppeal(const Widget& widget, const Env& env, Canvas& canvas, const c
     return Result::Handled;
 }
 
-void ScenarioPicture(const Widget& widget, Canvas& canvas, int frame)
-{
-    canvas.Create("ui3_fe_is_pics_small", CreateCall::Bank, true);
-    canvas.SetAnimType(3);
-    canvas.SetFrame(frame);
-    canvas.DrawClipped(widget.x0, widget.y0, kUiLayer);
-    canvas.Release();
-}
-
 // WATERCLN_BUILT, STORE_BUILT, CLUB2_BUILT: a tick once such a building stands with no build or demolish job.
 void BuiltTick(const Widget& widget, const Env& env, Canvas& canvas, const char* building)
 {
@@ -279,6 +270,14 @@ void FramePicture(const Widget& widget, Canvas& canvas, const char* sprite, Crea
     canvas.SetFrame(frame);
     canvas.DrawClipped(widget.x0, widget.y0, kUiLayer);
     canvas.Release();
+}
+
+void DrawScenarioPicture(const Widget& widget, Canvas& canvas, const scenario_load::ScenarioPicture& picture)
+{
+    if (const auto* sprite = std::get_if<scenario_load::SpritePicture>(&picture))
+        FramePicture(widget, canvas, sprite->sprite.c_str(), CreateCall::Bank, sprite->frame);
+    else
+        canvas.DrawImageFile(std::get<std::string>(picture).c_str(), widget.x0, widget.y0);
 }
 
 constexpr const char* kDrawKeys[] = {
@@ -379,10 +378,9 @@ Result DrawOverlay(const Widget& widget, const Env& env, Canvas& canvas)
     } else if (Is(key, "BI_FEMALE_APPEAL_STARS")) {
         return BuildingAppeal(widget, env, canvas, true);
     } else if (Is(key, "SCENARIO_PIC_LOAD")) {
-        const int image = env.SelectedSaveImage();
-        if (image != -1) ScenarioPicture(widget, canvas, image);
+        if (const auto* picture = env.SelectedSavePicture()) DrawScenarioPicture(widget, canvas, *picture);
     } else if (Is(key, "SCENARIO_PIC_SAVE")) {
-        ScenarioPicture(widget, canvas, env.ScenarioPicture());
+        if (const auto* pictures = env.SelectedScenarioPictures()) DrawScenarioPicture(widget, canvas, pictures->save);
     } else if (Is(key, "WATERCLN_BUILT")) {
         BuiltTick(widget, env, canvas, "WATERCLN");
     } else if (Is(key, "STORE_BUILT")) {
@@ -469,7 +467,7 @@ Result DrawWidget(const Widget& widget, const Env& env, Canvas& canvas)
         }
         PlainPicture(widget, canvas, env.SpriteName(slot), CreateCall::Sprite);
     } else if (Is(key, "SCENARIO_PIC_LARGE")) {
-        FramePicture(widget, canvas, "ui3_fe_is_pics_large", CreateCall::Bank, env.ScenarioPicture());
+        if (const auto* pictures = env.SelectedScenarioPictures()) DrawScenarioPicture(widget, canvas, pictures->large);
     } else if (Is(key, "GUEST_PHOTO")) {
         const void* guest = env.Provider();
         if (!guest) return Result::Undefined;
@@ -533,6 +531,16 @@ void RecordingCanvas::Create(const char* name, CreateCall call, bool)
     entry.kind = Call::Create;
     entry.create = call;
     entry.name = name;
+    calls.push_back(entry);
+}
+
+void RecordingCanvas::DrawImageFile(const char* path, int x, int y)
+{
+    Call entry{};
+    entry.kind = Call::DrawFile;
+    entry.name = path;
+    entry.x = x;
+    entry.y = y;
     calls.push_back(entry);
 }
 
