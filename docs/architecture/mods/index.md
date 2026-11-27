@@ -71,8 +71,10 @@ signatures (`src/game/mods/ed25519.h/.cpp`), filters entries by engine version (
 resolves dependency order, and verifies downloaded bytes against the declared `size` and `sha256` before handing them to
 `mods::ModArchive` (the same validation, recipe-building, replace-confirmation and browser OPFS path as local ZIPs).
 
-Added catalogs and their TOFU-pinned public keys live in `<game dir>/mod-catalogs.json` (persisted by `browser_files.js` in
-OPFS); no catalog is built in. Network code stays in `src/platform/http_fetch.cpp` (WinHTTP on Windows, `curl` on Linux/macOS,
+Catalogs and their TOFU-pinned public keys live in `<game dir>/mod-catalogs.json` (persisted by `browser_files.js` in
+OPFS). Two sources are built in: the official one, which cannot be removed, and the third-party Community Mods source,
+whose key ships pinned (`kCommunityCatalogPublicKey`). `seeded_defaults` in that file records the built-in sources a player
+has been offered, so a removed one stays removed. Network code stays in `src/platform/http_fetch.cpp` (WinHTTP on Windows, `curl` on Linux/macOS,
 JNI `HttpURLConnection` on Android, `fetch()` with CORS in the browser, plus `file://` for local test catalogs), behind the
 pure header `src/game/mods/http_fetch.h`, keeping `src/core/` and the simulation core free of network dependencies and world
 hashes unchanged. When loading a save with missing world mods (`src/game/game/save_load.cpp`), `CatalogStore::FindModByIdAndHash`

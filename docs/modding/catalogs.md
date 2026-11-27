@@ -1,7 +1,7 @@
 # Mod catalogs
 
 A mod catalog is a signed `catalog.json` file hosted at an HTTPS address. The official OpenBeach online source is listed
-first by default, and players can add the HTTPS addresses of third-party online sources they trust from the
+first by default, followed by the third-party **Community Mods** source, and players can add the HTTPS addresses of third-party online sources they trust from the
 [Mods screen](players/mods-screen.md#installing-from-online-sources). The game downloads, verifies and installs mods through
 the same [ZIP installer](players/mods-screen.md#installing-and-removing-mods) used for local archives.
 
@@ -89,6 +89,7 @@ and verify the result with the engine's parser. The private key is read from an 
 When a player adds a catalog, OpenBeach pins its `public_key` in `mod-catalogs.json` (trust on first use). On every refresh,
 the signature is verified against the downloaded `public_key`, and that key is compared against the pinned key. If the key
 changes, the game refuses the update and warns the player, requiring explicit confirmation before trusting the new key.
+The Community Mods source ships with its key already pinned, so even its first download is checked against it.
 
 ## Hosting requirements
 

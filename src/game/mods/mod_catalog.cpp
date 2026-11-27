@@ -538,7 +538,7 @@ bool VerifyCatalogDownload(std::span<const uint8_t> bytes, const CatalogEntry& e
 
 CatalogStore::CatalogStore()
 {
-    EnsureOfficialCatalog();
+    EnsureDefaultCatalogs();
 }
 
 void CatalogStore::EnsureOfficialCatalog()
@@ -558,25 +558,40 @@ void CatalogStore::EnsureOfficialCatalog()
     m_catalogs.insert(m_catalogs.begin(), std::move(official));
 }
 
+void CatalogStore::EnsureDefaultCatalogs()
+{
+    EnsureOfficialCatalog();
+    if (std::find(m_seededDefaults.begin(), m_seededDefaults.end(), kCommunityCatalogUrl) != m_seededDefaults.end()) return;
+    m_seededDefaults.emplace_back(kCommunityCatalogUrl);
+    if (Find(kCommunityCatalogUrl)) return; // the player added it by hand; keep their entry and key
+    StoredCatalog community;
+    community.url = kCommunityCatalogUrl;
+    community.title = kCommunityCatalogTitle;
+    community.pinnedPublicKeyHex = kCommunityCatalogPublicKey;
+    community.enabled = true;
+    m_catalogs.insert(m_catalogs.begin() + 1, std::move(community));
+}
+
 bool CatalogStore::Load(const fs::path& gameDir, std::string& error)
 {
     m_catalogs.clear();
+    m_seededDefaults.clear();
     const fs::path path = gameDir / kCatalogStoreFile;
     std::error_code ec;
     if (!fs::exists(path, ec)) {
-        EnsureOfficialCatalog();
-        return true; // no saved sources yet; start with the official source
+        EnsureDefaultCatalogs();
+        return true; // no saved sources yet; start with the default sources
     }
     std::ifstream in(path, std::ios::binary);
     if (!in) {
-        EnsureOfficialCatalog();
+        EnsureDefaultCatalogs();
         error = "cannot open " + path.generic_string();
         return false;
     }
     const json doc = json::parse(in, nullptr, false);
     if (doc.is_discarded() || !doc.is_object() || doc.value("format", std::string()) != kCatalogStoreFormat ||
             doc.value("version", 0) != kCatalogStoreVersion || !doc.contains("catalogs") || !doc["catalogs"].is_array()) {
-        EnsureOfficialCatalog();
+        EnsureDefaultCatalogs();
         error = "invalid " + std::string(kCatalogStoreFile);
         return false;
     }
@@ -602,7 +617,11 @@ bool CatalogStore::Load(const fs::path& gameDir, std::string& error)
         }
         m_catalogs.push_back(std::move(stored));
     }
-    EnsureOfficialCatalog();
+    if (doc.contains("seeded_defaults") && doc["seeded_defaults"].is_array()) {
+        for (const json& url : doc["seeded_defaults"])
+            if (url.is_string()) m_seededDefaults.push_back(url.get<std::string>());
+    }
+    EnsureDefaultCatalogs();
     return true;
 }
 
@@ -625,6 +644,7 @@ bool CatalogStore::Save(const fs::path& gameDir, std::string& error) const
         arr.push_back(std::move(item));
     }
     doc["catalogs"] = std::move(arr);
+    doc["seeded_defaults"] = m_seededDefaults;
 
     const fs::path path = gameDir / kCatalogStoreFile;
     std::ofstream out(path, std::ios::binary);

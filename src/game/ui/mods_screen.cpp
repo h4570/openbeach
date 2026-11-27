@@ -1616,9 +1616,14 @@ struct GuiModsPanel final : ui::GuiLeaf<ui::GuiWidget> {
     void SelectTab(Tab tab)
     {
         g_tab = tab;
-        if (tab == Tab::Browse && !os::HasEnv("OBL_SCRIPT")) {
-            const mods::StoredCatalog* official = m_catalogStore.Find(mods::kOfficialCatalogUrl);
-            if (official && official->enabled && official->mods.empty()) BeginFetchCatalog(mods::kOfficialCatalogUrl, false);
+        if (tab == Tab::Browse && !os::HasEnv("OBL_SCRIPT") && !m_activeFetch.handle) {
+            // The default sources fill Browse on the first visit, without waiting for Refresh.
+            m_refreshQueue.clear();
+            for (const char* url : {mods::kOfficialCatalogUrl, mods::kCommunityCatalogUrl}) {
+                const mods::StoredCatalog* cat = m_catalogStore.Find(url);
+                if (cat && cat->enabled && cat->mods.empty()) m_refreshQueue.push_back({cat->url, cat->allowLocal});
+            }
+            StartNextRefresh();
         }
         RebuildTargets();
         MarkDirty();

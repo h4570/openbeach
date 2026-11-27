@@ -225,10 +225,11 @@ OBL_TEST_CASE("mod_catalog.pins_key_and_warns_on_key_change")
     // Reload from disk and verify official source is first and pinned key persists.
     mods::CatalogStore reloaded;
     OBL_REQUIRE(reloaded.Load(dir.path, error));
-    OBL_REQUIRE(reloaded.Catalogs().size() == 2);
+    OBL_REQUIRE(reloaded.Catalogs().size() == 3);
     OBL_CHECK(reloaded.Catalogs()[0].official);
     OBL_CHECK(reloaded.Catalogs()[0].url == mods::kOfficialCatalogUrl);
-    OBL_CHECK(reloaded.Catalogs()[1].pinnedPublicKeyHex == catA.publicKeyHex);
+    OBL_CHECK(reloaded.Catalogs()[2].url == url);
+    OBL_CHECK(reloaded.Catalogs()[2].pinnedPublicKeyHex == catA.publicKeyHex);
 
     // Refresh with same key succeeds.
     OBL_CHECK(reloaded.AddOrUpdate(url, catA, false, false, error) == mods::CatalogStore::UpdateStatus::Updated);
@@ -421,7 +422,7 @@ OBL_TEST_CASE("mod_catalog.official_source_is_first_cannot_be_removed_and_loads_
 
     // Fresh store has the official source first, enabled, and cannot be removed.
     mods::CatalogStore store;
-    OBL_REQUIRE(store.Catalogs().size() == 1);
+    OBL_REQUIRE(store.Catalogs().size() == 2);
     OBL_CHECK(store.Catalogs()[0].official);
     OBL_CHECK(store.Catalogs()[0].enabled);
     OBL_CHECK(store.Catalogs()[0].url == mods::kOfficialCatalogUrl);
@@ -434,11 +435,11 @@ OBL_TEST_CASE("mod_catalog.official_source_is_first_cannot_be_removed_and_loads_
 
     mods::CatalogStore reloaded;
     OBL_REQUIRE(reloaded.Load(dir.path, error));
-    OBL_REQUIRE(reloaded.Catalogs().size() == 1);
+    OBL_REQUIRE(reloaded.Catalogs().size() == 2);
     OBL_CHECK(reloaded.Catalogs()[0].official);
     OBL_CHECK(!reloaded.Catalogs()[0].enabled);
 
-    // Old mod-catalogs.json without enabled or official entry still loads, with official inserted first.
+    // Old mod-catalogs.json without enabled, official or community entry still loads, with the default sources first.
     mods::Catalog cat;
     const std::string thirdPartyUrl = "https://example.org/catalog.json";
     OBL_REQUIRE(mods::ParseCatalog(MakeSignedCatalog(SampleCatalogJson(), kSeedA), thirdPartyUrl, false, cat, error));
@@ -459,10 +460,48 @@ OBL_TEST_CASE("mod_catalog.official_source_is_first_cannot_be_removed_and_loads_
     }
     mods::CatalogStore fromLegacy;
     OBL_REQUIRE(fromLegacy.Load(dir.path, error));
-    OBL_REQUIRE(fromLegacy.Catalogs().size() == 2);
+    OBL_REQUIRE(fromLegacy.Catalogs().size() == 3);
     OBL_CHECK(fromLegacy.Catalogs()[0].official);
     OBL_CHECK(fromLegacy.Catalogs()[0].enabled);
-    OBL_CHECK(!fromLegacy.Catalogs()[1].official);
-    OBL_CHECK(fromLegacy.Catalogs()[1].enabled);
-    OBL_CHECK(fromLegacy.Catalogs()[1].url == thirdPartyUrl);
+    OBL_CHECK(fromLegacy.Catalogs()[1].url == mods::kCommunityCatalogUrl);
+    OBL_CHECK(!fromLegacy.Catalogs()[2].official);
+    OBL_CHECK(fromLegacy.Catalogs()[2].enabled);
+    OBL_CHECK(fromLegacy.Catalogs()[2].url == thirdPartyUrl);
+}
+
+OBL_TEST_CASE("mod_catalog.community_source_is_listed_once_with_its_key_pinned")
+{
+    test::TempPath dir("mod-catalog-community");
+    std::filesystem::create_directory(dir.path);
+    std::string error;
+
+    // A fresh store lists the community source second: switched on, removable, its key pinned before the first fetch.
+    mods::CatalogStore store;
+    OBL_REQUIRE(store.Catalogs().size() == 2);
+    const mods::StoredCatalog& community = store.Catalogs()[1];
+    OBL_CHECK(community.url == mods::kCommunityCatalogUrl);
+    OBL_CHECK(community.title == mods::kCommunityCatalogTitle);
+    OBL_CHECK(community.enabled);
+    OBL_CHECK(!community.official);
+    OBL_CHECK(community.pinnedPublicKeyHex == mods::kCommunityCatalogPublicKey);
+
+    // A catalog at that address signed with another key is not trusted without the player's confirmation.
+    mods::Catalog impostor;
+    OBL_REQUIRE(mods::ParseCatalog(MakeSignedCatalog(SampleCatalogJson(), kSeedA), mods::kCommunityCatalogUrl, false, impostor, error));
+    OBL_CHECK(store.AddOrUpdate(mods::kCommunityCatalogUrl, impostor, false, false, error) == mods::CatalogStore::UpdateStatus::KeyChanged);
+    OBL_CHECK(store.Find(mods::kCommunityCatalogUrl)->pinnedPublicKeyHex == mods::kCommunityCatalogPublicKey);
+    OBL_CHECK(store.Find(mods::kCommunityCatalogUrl)->mods.empty());
+
+    // The store keeps it across a reload, and a removed one stays removed.
+    OBL_REQUIRE(store.Save(dir.path, error));
+    mods::CatalogStore reloaded;
+    OBL_REQUIRE(reloaded.Load(dir.path, error));
+    OBL_REQUIRE(reloaded.Catalogs().size() == 2);
+    OBL_CHECK(reloaded.Catalogs()[1].url == mods::kCommunityCatalogUrl);
+    OBL_CHECK(reloaded.Remove(mods::kCommunityCatalogUrl));
+    OBL_REQUIRE(reloaded.Save(dir.path, error));
+    mods::CatalogStore afterRemove;
+    OBL_REQUIRE(afterRemove.Load(dir.path, error));
+    OBL_CHECK(afterRemove.Catalogs().size() == 1);
+    OBL_CHECK(afterRemove.Find(mods::kCommunityCatalogUrl) == nullptr);
 }
