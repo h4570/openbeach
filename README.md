@@ -12,8 +12,6 @@ Make it yours with mods: browse and install them in one click from the Mods scre
 
 <p align="center">
   <a href="https://github.com/h4570/openbeach/actions/workflows/ci.yml"><img src="https://github.com/h4570/openbeach/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"></a>
-  <a href="https://github.com/h4570/openbeach/releases"><img src="https://img.shields.io/github/v/release/h4570/openbeach?label=release" alt="Release"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0--or--later-blue" alt="License: GPL-3.0-or-later"></a>
   <a href="https://discord.gg/PtJqgwGtZm"><img src="https://img.shields.io/badge/Discord-join-5865F2?logo=discord&logoColor=white" alt="Discord"></a>
 </p>
 
@@ -21,6 +19,9 @@ Make it yours with mods: browse and install them in one click from the Mods scre
   <img src="https://img.shields.io/badge/Windows-supported-0078D4?logo=pcgamingwiki&logoColor=white" alt="Windows: supported">
   <img src="https://img.shields.io/badge/Linux-supported-0078D4?logo=linux&logoColor=white" alt="Linux: supported">
   <img src="https://img.shields.io/badge/Browser-supported-0078D4?logo=googlechrome&logoColor=white" alt="Browser">
+</p>
+
+<p align="center">
   <img src="https://img.shields.io/badge/macOS-experimental-FF7A59?logo=apple&logoColor=white" alt="macOS: experimental">
   <img src="https://img.shields.io/badge/Android-experimental-FF7A59?logo=android&logoColor=white" alt="Android: experimental">
   <a href="docs/modding/index.md"><img src="https://img.shields.io/badge/Mods-experimental-FF7A59?logo=lua&logoColor=white" alt="Mods: experimental"></a>
