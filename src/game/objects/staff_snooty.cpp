@@ -114,7 +114,7 @@ SnootyStaff::SnootyStaff(const char* name) : Staff(name)
 {
     g_counter.Count();
     GameEnv env{*this};
-    snooty::Construct(*this, name, env);
+    snooty::Initialize(*this, name, env);
 }
 SnootyStaff::~SnootyStaff()
 {

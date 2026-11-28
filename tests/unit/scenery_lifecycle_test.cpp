@@ -93,7 +93,7 @@ Scenery::DrawFunc DrawLightOf(const Scenery& s)
 Scenery* Build(Scenery& s, const char* key, FakeEnv& env)
 {
     env.BaseConstruct(s, key);
-    return scenery_construction::Construct(s, key, env);
+    return scenery_construction::Initialize(s, key, env);
 }
 
 } // namespace
@@ -201,12 +201,12 @@ OBL_TEST_CASE("scenery_construction.destruct_releases_the_light_sprite")
     MakeFilled(s);
     Build(s, "STATUE01", env);
     env.log.clear();
-    scenery_construction::Destruct(s, env);
+    scenery_construction::Release(s, env);
     OBL_CHECK_EQ(env.log.size(), static_cast<size_t>(1));
     OBL_CHECK_EQ(env.log[0], std::string("release"));
     FakeEnv plain;
     s.m_lightSprite = nullptr;
-    scenery_construction::Destruct(s, plain);
+    scenery_construction::Release(s, plain);
     OBL_CHECK_EQ(plain.log.size(), static_cast<size_t>(0)); // no light sprite
 }
 

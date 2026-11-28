@@ -43,7 +43,7 @@ void* BuildingQueueConstruct(
 {
     g_construct.Count();
     LifecycleEnv env;
-    return ConstructBuildingQueue(env, *static_cast<BuildingQueue*>(queue), maxLength, serveX, serveY, directionX, directionY, ownerId);
+    return InitializeBuildingQueue(env, *static_cast<BuildingQueue*>(queue), maxLength, serveX, serveY, directionX, directionY, ownerId);
 }
 
 void BuildingQueueDelete(void* queue)
@@ -51,7 +51,7 @@ void BuildingQueueDelete(void* queue)
     g_destruct.Count();
     LifecycleEnv env;
     auto* const record = static_cast<BuildingQueue*>(queue);
-    DestructBuildingQueue(env, *record);
+    ReleaseBuildingQueue(env, *record);
     delete record;
 }
 

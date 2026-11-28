@@ -12,7 +12,7 @@
 // DeleteObject(id) -> bool: virtual destructor, then closes the gap
 // InsertLastBuildingByY: insertion-sorts the newest building into the by-Y order
 // What the manager does not own goes through an Env (the handler binds it to the game; the unit test to fakes):
-//   Entity* Construct(uint8_t type, const char* name)   operator_new + the class constructor; null when the allocation failed
+//   Entity* CreateObject(uint8_t type, const char* name)   operator_new + the class constructor; null when the allocation failed
 // void SetId(Entity*, uint32_t id) the object's SetId
 //   object::DestroyFunc Destroyer()                           `delete` through the virtual destructor; the manager owns the
 //                                                           object with it (object::Manager::Adopt)
@@ -37,7 +37,7 @@ template<class Env> object::Base* CreateObject(object::Manager& m, const char* n
         env.Fatal(kUnrecognisedType);
         return nullptr;
     }
-    object::Base* object = env.Construct(type, name);
+    object::Base* object = env.CreateObject(type, name);
     m.Adopt(object, env.Destroyer());
     const uint32_t id = m.m_nextFreeObjectId;
     if (type == static_cast<uint8_t>(ObjectType::Guest))

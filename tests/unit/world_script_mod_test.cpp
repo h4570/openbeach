@@ -29,7 +29,7 @@ struct HostEnv {
     void ConstructWorld(WorldScript&) {}
     uint32_t LoadWorld(WorldScript&, const char*, const char*) { return 0; }
     void DestroyWorld(WorldScript&) {}
-    void DestroyObject(obl::script::ScriptProgram&) {}
+    void ReleaseObjectScript(obl::script::ScriptProgram&) {}
 };
 
 void* Allocate(size_t size)

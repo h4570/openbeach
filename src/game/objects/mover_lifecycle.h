@@ -13,14 +13,14 @@
 #include <cstdint>
 #include <cstring>
 
-// The life cycle and the script variables of Mover. Construct (Mover's constructor, after the base object's),
-// Destruct (Mover's destructor, before the base object's), Teleport, GetValue and SetValue.
+// The life cycle and the script variables of Mover. Initialize (Mover's constructor, after the base object's),
+// Release (Mover's destructor, before the base object's), Teleport, GetValue and SetValue.
 // Pure logic: whatever leaves the object goes through an `Env` that the game side maps onto the game modules
 // (src/game/objects/mover_lifecycle.cpp) and the unit test onto a fake.
 //
 // Env:
-//   Construct:  int Rand   the game RNG
-//   Destruct:   void ReleaseCursor(path::RouteCursor*)                releasing the route cursor
+//   Initialize:  int Rand   the game RNG
+//   Release:   void ReleaseCursor(path::RouteCursor*)                releasing the route cursor
 //   Teleport:   void ScenerySetPosition(Mover&, const uint32_t xyz[3])   placing scenery in the grid (list of grid cells, terrain height)
 //   GetValue:   object::Base* Object(int32_t id)                 object lookup by id          void ServePosition(Entity* building, float out[2])
 //               ScriptValue Base(Mover&, key, data)             base object GetValue
@@ -31,12 +31,12 @@ using object::Mover;
 using script::ScriptValue;
 namespace ex = script_program::exec;
 
-// ---- Construct / Destruct --------------------------------------------------------------------------------------------------------------
+// ---- Initialize / Release --------------------------------------------------------------------------------------------------------------
 
 // The fields Mover's constructor sets. The ones not listed here (`m_GroupID`, the building walk-point fields, `m_buildingId`,
 // `m_buildingTraversal`) keep the zero of their member initializers.
 // The top speed is a draw of the game RNG: (rand % 40 - 20) + 35, i.e. 15..54 (signed division, a negative draw would stay negative).
-template<class Env> void Construct(Mover& moving, Env& env)
+template<class Env> void Initialize(Mover& moving, Env& env)
 {
     moving.m_moving = 0;
     moving.m_mass = 5.0f;
@@ -73,7 +73,7 @@ template<class Env> void Construct(Mover& moving, Env& env)
 }
 
 // The cursor of a route in progress is given back (the field keeps the dead pointer).
-template<class Env> void Destruct(Mover& moving, Env& env)
+template<class Env> void Release(Mover& moving, Env& env)
 {
     if (moving.m_pathCursor) env.ReleaseCursor(moving.m_pathCursor);
 }

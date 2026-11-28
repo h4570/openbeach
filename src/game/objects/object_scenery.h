@@ -57,7 +57,7 @@ struct Scenery : Prop {
     screen::Rect m_ScrXYRect = {};
     uint8_t m_bakePending =
             0; // Scenery initialization sets it; baking scenery into the background clears it once the background is baked (not saved)
-    // The light map of lamps, fountains and fires (scenery initialization; released by Destruct; not saved)
+    // The light map of lamps, fountains and fires (scenery initialization; released by Release; not saved)
     ui::SpriteInstance* m_lightSprite = nullptr;
     float m_lightsOn = 0;
     float m_lightsOff = 0;

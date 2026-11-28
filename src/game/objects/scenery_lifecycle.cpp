@@ -64,13 +64,13 @@ Scenery::Scenery(const char* key) : Prop(key)
 {
     g_construct.Count();
     GameEnv env;
-    scenery_construction::Construct(*this, key, env);
+    scenery_construction::Initialize(*this, key, env);
 }
 
 Scenery::~Scenery()
 {
     g_destroy.Count();
     GameEnv env;
-    scenery_construction::Destruct(*this, env);
+    scenery_construction::Release(*this, env);
 }
 } // namespace obl::object

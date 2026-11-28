@@ -24,9 +24,9 @@ struct Env {
         global = p;
         Note("global", p);
     }
-    void ConstructObject(ScriptProgram& p) { Note("construct object", &p); }
+    void ResetObjectScript(ScriptProgram& p) { Note("construct object", &p); }
     void LoadObject(ScriptProgram& p, const char* path) { Note(std::string("load ") + path, &p); }
-    void DestroyObject(ScriptProgram& p) { Note("destroy object", &p); }
+    void ReleaseObjectScript(ScriptProgram& p) { Note("destroy object", &p); }
     void ConstructWorld(WorldScript& p) { Note("construct world", &p); }
     uint32_t LoadWorld(WorldScript& p, const char* path, const char* logicalPath)
     {
@@ -46,7 +46,7 @@ OBL_TEST_CASE("world_script_host.construct_binds_the_global_and_starts_empty")
     host.Destroy(env);
 }
 
-OBL_TEST_CASE("world_script_host.add_script_program_constructs_then_loads_in_order")
+OBL_TEST_CASE("world_script_host.add_script_program_resets_then_loads_in_order")
 {
     Env env;
     WorldScriptHost host(env);

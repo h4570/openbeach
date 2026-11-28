@@ -903,7 +903,7 @@ void Destroy(ScriptProgram& script, const Memory& memory)
     script.m_NumStates = 0;
 }
 
-void Construct(ScriptProgram& script)
+void ResetProgram(ScriptProgram& script)
 {
     for (auto& state : script.m_states) {
         state.m_stateId = 0x0fffffff;
@@ -1000,7 +1000,7 @@ void FreeCommand(ScriptCommand& head, const Memory& memory)
     memory.release(data);
 }
 
-void DestructStates(ScriptProgram& script, const Memory& memory)
+void ReleaseProgramStates(ScriptProgram& script, const Memory& memory)
 {
     // Array destruction visits all 60 states and all 30 handlers in reverse order.
     for (int i = kMaxProgramStates - 1; i >= 0; --i) {

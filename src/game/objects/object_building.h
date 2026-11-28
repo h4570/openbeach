@@ -104,7 +104,7 @@ struct Building : Prop {
     float m_lightsOff = 0;
     uint8_t m_hasBall = 0;
     float m_BallPosition[3] = {};
-    ui::SpriteInstance* m_ballSprite = nullptr; // released by Destruct when m_hasBall
+    ui::SpriteInstance* m_ballSprite = nullptr; // released by Release when m_hasBall
     uint32_t m_OpenStatus = 0; // 0 open, 1 closed
     int32_t m_NumGuests = 0;
     float m_SatisfactionPercentage = 0;

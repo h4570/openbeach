@@ -17,13 +17,13 @@
 // through an `Env` that the game side maps onto the world, object and sprite services and the unit test onto a fake.
 //
 // Env:
-//   Construct:        const tables::TableDef* Definition(const char* key)       table definition of the world parameters
+//   Initialize:        const tables::TableDef* Definition(const char* key)       table definition of the world parameters
 //                     void* Allocate(uint32_t bytes)                            operator new
 //                     void ResetWorldPosition(Furniture&)                     world position (0, 0, 0)
 //                     SpriteInstance* CreateSprite(const char* name)            sprite from the sprite bank
 //                     void StartAnim(SpriteInstance*, const char* anim, float startTime)   start an animation by name
 //                     float WorldTime                                         current world time
-//   Destruct:         void ReleaseSprite(SpriteInstance*)                       return the sprite to the bank
+//   Release:         void ReleaseSprite(SpriteInstance*)                       return the sprite to the bank
 //                     void Free(void*)                                          operator delete
 //                     object::Base* Object(int32_t id)                          object by id (null = no such object)
 //   SeatGuest:        void SetGuestActionState(int32_t guest, int32_t value)    the guest's action state
@@ -61,9 +61,9 @@ inline bool HasEightDirections(const SpriteInstance& sprite)
     return sprite.m_sprite->m_anims[0]->m_directions == 8;
 }
 
-// Construct (Furniture's constructor, after Prop's; the table key). Not written (they keep the zero of their member
+// Initialize (Furniture's constructor, after Prop's; the table key). Not written (they keep the zero of their member
 // initializers): m_TestVar, the unnamed word after it, m_WaiterPos, m_WaiterID, m_ownerId and, without chairs or plates, the plate pointers.
-template<class Env> Furniture* Construct(Furniture& table, const char* name, Env& env)
+template<class Env> Furniture* Initialize(Furniture& table, const char* name, Env& env)
 {
     const tables::TableDef* definition = env.Definition(name);
     table.m_definition = definition;
@@ -112,7 +112,7 @@ template<class Env> Furniture* Construct(Furniture& table, const char* name, Env
 // Furniture's destructor body, before Prop's and the base object's. The chair sprites and their array, the chairs, then with plates the plate
 // sprites and their array (m_pbDrawPlate is never freed) and the waiter: it goes invisible and is marked for deletion. A table with plates
 // needs real chair sprites ("NONE" would leave the plate pointer unset); the data has no such table.
-template<class Env> void Destruct(Furniture& table, Env& env)
+template<class Env> void Release(Furniture& table, Env& env)
 {
     const tables::TableDef* definition = table.m_definition;
     if (table.m_chairSprites) {

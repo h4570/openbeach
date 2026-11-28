@@ -1,5 +1,5 @@
 // Object script Diff/Count and the public destructors on parsed scripts (src/game/objects/script_program.h): every branch of the
-// comparer (one mutation per payload field) and FreeCommand/DestructStates returning exactly the blocks Parse took.
+// comparer (one mutation per payload field) and FreeCommand/ReleaseProgramStates returning exactly the blocks Parse took.
 
 #include "unit_test.h"
 
@@ -199,8 +199,8 @@ OBL_TEST_CASE("script_program_diff.unrecognized_opcode_and_missing_payload")
     obl::script_program::FunctionCommand f{1};
     ScriptCommand a{nullptr, 12, &f}, b{nullptr, 12, &f};
     auto one = std::make_unique<ScriptProgram>(), two = std::make_unique<ScriptProgram>();
-    Construct(*one);
-    Construct(*two);
+    ResetProgram(*one);
+    ResetProgram(*two);
     one->m_NumStates = two->m_NumStates = 1;
     one->m_states[0].m_stateId = two->m_states[0].m_stateId = 1;
     one->m_states[0].m_onEntry = &a;
@@ -239,15 +239,15 @@ OBL_TEST_CASE("script_program_diff.count_walks_nested_lists")
     OBL_CHECK_EQ(handlers.nodes, 3);
 }
 
-OBL_TEST_CASE("script_program_diff.destruct_states_frees_exactly_what_parse_took")
+OBL_TEST_CASE("script_program_diff.release_states_frees_exactly_what_parse_took")
 {
     Parsed p(Rich());
     OBL_CHECK(!p.heap.live.empty());
     Memory memory = p.heap.memory();
-    DestructStates(*p.script, memory);
+    ReleaseProgramStates(*p.script, memory);
     OBL_CHECK(p.heap.live.empty());
     OBL_CHECK_EQ(p.heap.foreign, 0);
-    // DestructStates leaves dangling heads: clear them so the fixture's own Destroy has nothing left to free.
+    // ReleaseProgramStates leaves dangling heads: clear them so the fixture's own Destroy has nothing left to free.
     p.script->m_NumStates = 0;
     for (auto& state : p.script->m_states) {
         state.m_onEntry = state.m_onExit = state.m_onUpdate = nullptr;

@@ -347,14 +347,14 @@ Furniture::Furniture(const char* name) : Prop(name)
 {
     ui::g_constructCounter.Count();
     ui::GameEnv env;
-    table::Construct(*this, name, env);
+    table::Initialize(*this, name, env);
 }
 
 Furniture::~Furniture()
 {
     ui::g_destroyCounter.Count();
     ui::GameEnv env;
-    table::Destruct(*this, env);
+    table::Release(*this, env);
 }
 bool Furniture::OnEnterState(uint32_t state)
 {

@@ -515,7 +515,7 @@ ui::GuiImageList* GuiImageListConstruct(ui::GuiImageList* list, int32_t x0, int3
 namespace listbox {
 
 // Lifecycle and the row API (Construct, ClearRows, ClearSelection, NextSelectedRow, AddImage, AddText, AddTextA,
-// SetRowButton, PollRowButton). The destructor has no facade: only the virtual DeletingDestruct reaches it.
+// SetRowButton, PollRowButton). The widget is torn down through its virtual destructor.
 ui::GuiListBox* Construct(ui::GuiListBox* list, int32_t x0, int32_t y0, int32_t x1, int32_t y1, int32_t barX0, int32_t barY0, int32_t barX1,
         int32_t barY1, const char* name, int32_t rowHeight, int32_t visibleRows);
 void ClearRows(ui::GuiListBoxData* list);

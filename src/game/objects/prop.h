@@ -8,7 +8,7 @@
 #include <cstdint>
 
 // Prop (docs/architecture/objects.md): the base of Scenery and Building.
-// Construct (the constructor's own fields)
+// Initialize (the constructor's own fields)
 // Update (no arguments, answers true) ReceiveMessage (the message)
 // SetGridWidth / SetGridHeight / SetCleanerClaimed / SetMechanicClaimed / SetCalledRepairing /
 // SetUrgentCleaningCalled / SetUrgentRepairCalled (all one byte: only the low byte of the argument is stored)
@@ -27,7 +27,7 @@ inline constexpr int kDroppedMessageType = 0x6c;
 inline constexpr int kAlwaysClaimedState = 4;
 
 // Prop's constructor runs it after the base object's.
-inline void Construct(Prop& s)
+inline void Initialize(Prop& s)
 {
     s.m_gridW = 0;
     s.m_gridH = 0;

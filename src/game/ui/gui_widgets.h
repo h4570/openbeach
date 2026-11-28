@@ -114,7 +114,7 @@ template<class Container, class Env> void ContainerDrawOverlay(Container& contai
 
 template<class Env> void DestroyWidget(ui::GuiWidgetListNode& node, Env& env)
 {
-    if (node.m_widget && static_cast<uint32_t>(node.m_widget->m_type) <= 0x16) env.DeletingDestruct(*node.m_widget, 1);
+    if (node.m_widget && static_cast<uint32_t>(node.m_widget->m_type) <= 0x16) env.DeleteWidget(*node.m_widget, 1);
 }
 
 template<class Env> void SetVisibleInvalidate(ui::GuiWidget& w, uint32_t visible, Env& env)

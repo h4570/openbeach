@@ -103,7 +103,7 @@ struct FakeEnv {
 void Build(Vehicle& object, const char* name, FakeEnv& env)
 {
     env.BaseConstruct(object, name);
-    life::Construct(object, name, env);
+    life::Initialize(object, name, env);
 }
 
 void Made(Vehicle& object, FakeEnv& env, const char* name, uint8_t fill = 0xa5)
@@ -260,7 +260,7 @@ OBL_TEST_CASE("Vehicle destruct of a plain vehicle releases only its sprites")
     Vehicle object;
     Made(object, env, "PEDALOE");
     env.calls.clear();
-    life::Destruct(object, env);
+    life::Release(object, env);
     OBL_CHECK(env.calls.empty());
 }
 
@@ -273,7 +273,7 @@ OBL_TEST_CASE("Vehicle destruct of a fishing boat frees the eight cells around i
     object.m_CurrGridXY[1] = 4;
     for (GridCell& cell : env.around) cell.m_flags = 0xffffffffu;
     env.own.m_flags = 0xffffffffu;
-    life::Destruct(object, env);
+    life::Release(object, env);
     OBL_CHECK(env.neighbourAsked == (std::vector<uint32_t>{3, 4}));
     for (const GridCell& cell : env.around) OBL_CHECK(cell.m_flags == 0xffffffefu);
     OBL_CHECK(env.own.m_flags == 0xffffffffu);
@@ -291,7 +291,7 @@ OBL_TEST_CASE("Vehicle destruct of a jetski or speed boat frees its tile and the
             object.m_unloadDir = direction;
             for (GridCell& cell : env.around) cell.m_flags = 0x1f;
             env.own.m_flags = 0x1f;
-            life::Destruct(object, env);
+            life::Release(object, env);
             OBL_CHECK(env.neighbourAsked == (std::vector<uint32_t>{7, 9}));
             OBL_CHECK(env.own.m_flags == 0xf);
             for (int i = 0; i < 8; ++i) {
@@ -311,7 +311,7 @@ OBL_TEST_CASE("Vehicle destruct stops the loop sound of types 0, 1 and 5 only")
         FakeEnv env;
         Vehicle object;
         Made(object, env, key);
-        life::Destruct(object, env);
+        life::Release(object, env);
         const bool loops = std::strcmp(key, "JETSKIVEHICLE") == 0 || std::strcmp(key, "SPDBOAT") == 0 || std::strcmp(key, "BUS") == 0;
         OBL_CHECK(env.loops.size() == (loops ? 1u : 0u));
     }
@@ -332,12 +332,12 @@ OBL_TEST_CASE("Vehicle destruct releases the sprites in the fixed order")
     object.m_auxSprite1 = c;
     object.m_auxSprite2 = d;
     object.m_auxSprite3 = e;
-    life::Destruct(object, env);
+    life::Release(object, env);
     OBL_CHECK(env.released == (std::vector<void*>{a, b, c, d, e}));
     // An empty slot is skipped.
     FakeEnv none;
     object.m_vehicleSprite = nullptr;
     object.m_auxSprite2 = nullptr;
-    life::Destruct(object, none);
+    life::Release(object, none);
     OBL_CHECK(none.released.size() == 3);
 }

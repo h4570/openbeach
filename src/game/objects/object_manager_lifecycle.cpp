@@ -89,7 +89,7 @@ void DestroyObject(object::Base* object)
 
 // The default path: the real allocation, constructors and destructors.
 struct GameEnv {
-    object::Base* Construct(uint8_t type, const char* name) { return kClasses[type - 1](name); }
+    object::Base* CreateObject(uint8_t type, const char* name) { return kClasses[type - 1](name); }
     void SetId(object::Base* object, uint32_t id) { object->SetId(id); }
     object::DestroyFunc Destroyer() { return &DestroyObject; }
     void Fatal(const char* message) { GameFatal(message); }
@@ -132,7 +132,7 @@ Manager* CreateManager()
 void DestroyManager(Manager* manager)
 {
     g_destruct.Count();
-    om::Destruct(*manager);
+    om::ReleaseObjects(*manager);
     game::SetObjectManager(nullptr);
     delete manager;
 }

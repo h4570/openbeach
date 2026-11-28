@@ -10,13 +10,13 @@
 #include <cstring>
 
 // The life cycle, the script variables and the save format of the class every object derives from (docs/architecture/objects.md):
-// Construct initializes the named base object (Base's constructor runs it); Destruct releases its resources (Base's destructor).
+// Initialize initializes the named base object (Base's constructor runs it); Release releases its resources (Base's destructor).
 // GetValue and SetValue expose the shared script fields.
 // Pure logic: whatever leaves the object goes through an `Env` that the game side maps onto the game's services
 // (src/game/objects/entity_lifecycle.cpp) and the unit test onto a fake.
 //
 // Env:
-//   Construct / Destruct:
+//   Initialize / Release:
 //     void NameTooLong(const char* name)                              FatalError with the "name exceeds" text (does not return)
 //     void ReleaseSprite(void* sprite)                                releasing the sprite through its bank
 //     void* CellAt(const uint32_t xyz[3])                             the grid cell containing the position, preserving its raw float bits
@@ -45,12 +45,12 @@ inline float FromBits(uint32_t bits)
     return value;
 }
 
-// ---- Construct / Destruct --------------------------------------------------------------------------------------------------------------
+// ---- Initialize / Release --------------------------------------------------------------------------------------------------------------
 
 // The name is copied with its
 // terminator into the zeroed name field; a name of 32 characters or more is a FatalError (the copy is also clamped, so a
 // handler that returned could never write past the field).
-template<class Env> object::Base* Construct(object::Base& base, const char* name, Env& env)
+template<class Env> object::Base* Initialize(object::Base& base, const char* name, Env& env)
 {
     std::memset(base.m_Name, 0, sizeof(base.m_Name));
     base.m_id = 0xffffffffu;
@@ -74,7 +74,7 @@ template<class Env> object::Base* Construct(object::Base& base, const char* name
 
 // The sprite instance is given back (the field keeps the dead pointer), and the object leaves the object
 // list of the grid cell its position lies in. The position goes through as the raw bits of the three floats.
-template<class Env> void Destruct(object::Base& base, Env& env)
+template<class Env> void Release(object::Base& base, Env& env)
 {
     if (base.m_sprite) env.ReleaseSprite(base.m_sprite);
     const uint32_t xyz[3] = {Bits(base.m_WorldXYZ[0]), Bits(base.m_WorldXYZ[1]), Bits(base.m_WorldXYZ[2])};

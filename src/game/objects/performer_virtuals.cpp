@@ -145,13 +145,13 @@ template<class T> void RunConstruct(T* performer)
 {
     Traits<T>::construct.Count();
     GameEnv env;
-    performer::Construct(*performer, env);
+    performer::Initialize(*performer, env);
 }
 template<class T> void RunDestroy(T* performer)
 {
     Traits<T>::destroy.Count();
     GameEnv env;
-    performer::Destruct(*performer, env);
+    performer::Release(*performer, env);
 }
 template<class T> uint8_t RunUpdate(T* performer)
 {

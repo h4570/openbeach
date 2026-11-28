@@ -56,7 +56,7 @@ Building::Building(const char* key) : Prop(key)
 {
     g_counter.Count();
     GameEnv env;
-    cons::Construct(*this, key, env);
+    cons::Initialize(*this, key, env);
     if (m_definition && !m_definition->m_Traits.objectScript.empty()) {
         if (auto* host = game::GetWorldScriptHost())
             m_script = static_cast<script::ScriptProgram*>(host->FindOrLoad(m_definition->m_Traits.objectScript.c_str()));

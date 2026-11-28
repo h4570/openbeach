@@ -16,9 +16,9 @@ namespace obl::object {
 // script is parsed from the pack by the parser of script_program.h.
 bool LoadScriptProgramVocabulary(const Text16& gameDirectory, std::vector<std::string>* errors = nullptr);
 
-// Construct, DestructStates and Load of one script; each counts its `objects.script-<name>` counter.
-script::ScriptProgram* ScriptProgramConstruct(script::ScriptProgram& script);
-void ScriptProgramDestructStates(script::ScriptProgram& script);
+// Reset, state release and load each count their `objects.script-<name>` counter.
+script::ScriptProgram* ResetScriptProgram(script::ScriptProgram& script);
+void ReleaseScriptProgramStates(script::ScriptProgram& script);
 void ScriptProgramLoad(script::ScriptProgram& script, const char* path);
 
 } // namespace obl::object

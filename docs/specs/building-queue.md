@@ -9,8 +9,8 @@ Short queues (limits 1 through 10) have precomputed standing points; other limit
 
 ## Rules
 1. Construction starts with no guests or commodities. A limit of 4 builds standing points; limits 0, 11 and 40 do not
-   and start the tail at the serve point (`building_queue_lifecycle.construct_with_points_table`,
-   `building_queue_lifecycle.construct_limits_without_table`).
+   and start the tail at the serve point (`building_queue_lifecycle.initialize_with_points_table`,
+   `building_queue_lifecycle.initialize_limits_without_table`).
 2. Enqueue refuses a full guest or commodity list with a queue-full notification. A zero queue limit instead reports
    building-full (`building_queue_ops.enqueue_refuses_a_full_queue_with_queue_full`,
    `building_queue_ops.enqueue_refuses_when_only_the_commodity_deque_is_full`,
@@ -66,7 +66,7 @@ Short queues (limits 1 through 10) have precomputed standing points; other limit
     (`building_queue_clear.board_serves_the_guest_then_tells_every_queued_guest_half_a_second_apart`,
     `building_queue_clear.board_empties_both_queues`, `building_queue_clear.board_with_an_empty_queue_only_serves`).
 14. Destruction clears both lists. Loading replaces guest and commodity lists independently, leaving the existing tail
-    and standing points alone (`building_queue_lifecycle.destruct_clears_and_frees_the_table`,
+    and standing points alone (`building_queue_lifecycle.release_clears_and_frees_the_table`,
     `building_queue_lifecycle.load_replaces_deques`).
 
 ## Edge cases

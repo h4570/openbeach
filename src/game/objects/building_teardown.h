@@ -6,7 +6,7 @@
 
 #include <cstdint>
 
-// Destruct releases building resources (Building's destructor runs it, before Prop's and the base object's).
+// Release releases building resources (Building's destructor runs it, before Prop's and the base object's).
 // docs/architecture/objects.md. Pure logic: whatever leaves the object goes through an `Env` that the game side maps onto the game's functions
 // (src/game/objects/building_destruct.cpp) and the unit test onto a recorder.
 //
@@ -23,7 +23,7 @@ using object::Building;
 // the ball sprite when `m_hasBall`; the thought list; the shortage and spanner icons (always); the building sound (and the flag cleared); the
 // m_constructionSprite sprite when there is one (the pointer is cleared). The thought entries are deleted; the emptied deque goes with
 // the building's members.
-template<class Env> void Destruct(Building& building, Env& env)
+template<class Env> void Release(Building& building, Env& env)
 {
     for (uint32_t i = 0; i < static_cast<uint32_t>(building.m_definition->m_NumAnimSprites); ++i)
         env.ReleaseSprite(building.m_animSprites[i]);

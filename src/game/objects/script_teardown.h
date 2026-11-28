@@ -32,17 +32,17 @@ template<class Env> void DestroyList(script::ScriptCommand* head, Env& env)
         env.Delete(head);
     }
 }
-template<class Env> void Destruct(script::ScriptHandler& handler, Env& env)
+template<class Env> void ReleaseCommands(script::ScriptHandler& handler, Env& env)
 {
     DestroyList(handler.m_onReceipt, env);
     DestroyList(handler.m_onSend, env);
 }
-template<class Env> void Destruct(script::ProgramState& state, Env& env)
+template<class Env> void ReleaseCommands(script::ProgramState& state, Env& env)
 {
     DestroyList(state.m_onEntry, env);
     DestroyList(state.m_onExit, env);
     DestroyList(state.m_onUpdate, env);
     // The vector destructor visits all thirty handlers in reverse order, independent of the used count.
-    for (int i = 29; i >= 0; --i) Destruct(state.m_handlers[i], env);
+    for (int i = 29; i >= 0; --i) ReleaseCommands(state.m_handlers[i], env);
 }
 } // namespace obl::script_teardown

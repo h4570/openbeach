@@ -97,13 +97,13 @@ Vehicle::Vehicle(const char* name) : Mover(name)
 {
     g_construct.Count();
     LifeEnv env;
-    vehicle::lifecycle::Construct(*this, name, env);
+    vehicle::lifecycle::Initialize(*this, name, env);
 }
 
 Vehicle::~Vehicle()
 {
     g_destroy.Count();
     LifeEnv env;
-    vehicle::lifecycle::Destruct(*this, env);
+    vehicle::lifecycle::Release(*this, env);
 }
 } // namespace obl::object

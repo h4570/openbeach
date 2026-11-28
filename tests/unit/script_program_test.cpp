@@ -36,13 +36,13 @@ void RecordRelease(void* p)
 const Memory kLifecycleMemory{nullptr, &RecordRelease};
 } // namespace
 
-OBL_TEST_CASE("script_program.lifecycle_construct_preserves_text")
+OBL_TEST_CASE("script_program.lifecycle_reset_preserves_text")
 {
     auto script = std::make_unique<ScriptProgram>();
     std::memset(script.get(), 0xa5, sizeof(*script));
     const char text[] = "existing cursor";
     script->m_text = text;
-    Construct(*script);
+    ResetProgram(*script);
     OBL_CHECK(script->m_text == text);
     OBL_CHECK(script->m_NumStates == 0 && !script->m_openCommand && !script->m_openSwitch);
     for (const auto& state : script->m_states) {
@@ -88,7 +88,7 @@ OBL_TEST_CASE("script_program.lifecycle_owned_operand_kinds_and_null_delete")
 OBL_TEST_CASE("script_program.lifecycle_all_states_handlers_reverse_no_clear")
 {
     auto script = std::make_unique<ScriptProgram>();
-    Construct(*script);
+    ResetProgram(*script);
     obl::script_program::FunctionCommand a{1}, b{2}, c{3}, d{4};
     ScriptCommand entry{nullptr, obl::script_program::OpFunction, &a}, update{nullptr, obl::script_program::OpFunction, &b};
     ScriptCommand receipt{nullptr, obl::script_program::OpFunction, &c}, send{nullptr, obl::script_program::OpFunction, &d};
@@ -98,7 +98,7 @@ OBL_TEST_CASE("script_program.lifecycle_all_states_handlers_reverse_no_clear")
     script->m_states[0].m_onUpdate = &update;
     script->m_NumStates = 0; // destruction ignores both counts
     g_lifecycleReleased.clear();
-    DestructStates(*script, kLifecycleMemory);
+    ReleaseProgramStates(*script, kLifecycleMemory);
     OBL_CHECK(g_lifecycleReleased == std::vector<void*>({&a, &entry, &c, &receipt, &d, &send, &b, &update}));
     OBL_CHECK(script->m_states[59].m_onEntry == &entry && script->m_states[0].m_onUpdate == &update);
 }
@@ -608,7 +608,7 @@ OBL_TEST_CASE("data.script_program_guest_shape")
     OBL_CHECK_EQ(stats.opcodes[obl::script_program::OpMultiply], 0);
 }
 
-OBL_TEST_CASE("script_program.lifecycle_destruct_preserves_fields_and_frees_handlers_backwards")
+OBL_TEST_CASE("script_program.lifecycle_release_preserves_fields_and_frees_handlers_backwards")
 {
     struct Env {
         std::vector<void*> trace;
@@ -625,7 +625,7 @@ OBL_TEST_CASE("script_program.lifecycle_destruct_preserves_fields_and_frees_hand
         state.m_handlers[i].m_onSend = &commands[4 + 2 * i];
     }
     const auto before = state;
-    obl::script_teardown::Destruct(state, env);
+    obl::script_teardown::ReleaseCommands(state, env);
     OBL_CHECK_EQ(env.trace.size(), 126u);
     OBL_CHECK(std::memcmp(&before, &state, sizeof(state)) == 0);
     for (int i = 0; i < 3; ++i) {

@@ -155,7 +155,7 @@ OBL_TEST_CASE("staff_construct.base_copies_the_definition")
     env.definition.m_scale = 2.0f;
     auto staff = std::make_unique<object::Staff>();
     staff->m_HiredOn = 99;
-    cons::Construct(*staff, "CLEANER", env);
+    cons::Initialize(*staff, "CLEANER", env);
     OBL_CHECK_EQ(env.log, std::string("Definition Recalculate"));
     OBL_CHECK_EQ(staff->m_Wage, 45);
     OBL_CHECK_EQ(staff->m_SalaryExpectation, 2147483648.0f); // read unsigned
@@ -173,7 +173,7 @@ OBL_TEST_CASE("staff_construct.waiter_has_no_definition")
     FakeEnv env;
     auto staff = std::make_unique<object::Staff>();
     obl::unit::FillObject<object::Staff>(*staff, 0xa5);
-    cons::Construct(*staff, "wAiTeR", env);
+    cons::Initialize(*staff, "wAiTeR", env);
     OBL_CHECK_EQ(env.log, std::string("Recalculate"));
     OBL_CHECK_EQ(staff->m_Wage, 0);
     OBL_CHECK_EQ(staff->m_SalaryExpectation, 0.0f);
@@ -191,8 +191,8 @@ OBL_TEST_CASE("staff_construct.cleaner_follows_the_fixed_order")
     env.definition.m_female = 1;
     env.definition.m_Sprite = "cleaner_spr";
     auto cleaner = std::make_unique<Cleaner>();
-    cons::Construct(*cleaner, "CLEANER", env);
-    cons::ConstructCleaner(*cleaner, "CLEANER", env);
+    cons::Initialize(*cleaner, "CLEANER", env);
+    cons::InitializeCleaner(*cleaner, "CLEANER", env);
     OBL_CHECK(env.log.find("Script(CleanerLogic) Buttons(11,on) Complaint(FEEDBACK_NO_CLEANERS) Sprite(cleaner_spr) Keyline Rand Key(F1) "
                            "New(6) Rand Lookup Lookup Delete New(") != std::string::npos);
     OBL_CHECK_EQ(env.counters[static_cast<int>(Kind::Cleaner)], 1);
@@ -213,8 +213,8 @@ OBL_TEST_CASE("staff_construct.second_cleaner_does_not_touch_the_button")
     FakeEnv env;
     env.counters[static_cast<int>(Kind::Cleaner)] = 2;
     auto cleaner = std::make_unique<Cleaner>();
-    cons::Construct(*cleaner, "CLEANER", env);
-    cons::ConstructCleaner(*cleaner, "CLEANER", env);
+    cons::Initialize(*cleaner, "CLEANER", env);
+    cons::InitializeCleaner(*cleaner, "CLEANER", env);
     OBL_CHECK(env.log.find("Buttons") == std::string::npos);
     OBL_CHECK_EQ(env.counters[static_cast<int>(Kind::Cleaner)], 3);
     Free(*cleaner);
@@ -225,8 +225,8 @@ OBL_TEST_CASE("staff_construct.custom_object_script_overrides_default_logic")
     FakeEnv env;
     env.definition.m_ObjectScript = "custom_cleaner";
     auto cleaner = std::make_unique<Cleaner>();
-    cons::Construct(*cleaner, "CLEANER", env);
-    cons::ConstructCleaner(*cleaner, "CLEANER", env);
+    cons::Initialize(*cleaner, "CLEANER", env);
+    cons::InitializeCleaner(*cleaner, "CLEANER", env);
     OBL_CHECK(env.log.find("Script(custom_cleaner)") != std::string::npos);
     Free(*cleaner);
 }
@@ -237,8 +237,8 @@ OBL_TEST_CASE("staff_construct.names_come_from_the_list_of_the_gender")
     env.draws = {1, 0};
     auto mechanic = std::make_unique<Mechanic>();
     mechanic->m_JobMask = 0xf0;
-    cons::Construct(*mechanic, "MECHANIC", env);
-    cons::ConstructMechanic(*mechanic, "MECHANIC", env);
+    cons::Initialize(*mechanic, "MECHANIC", env);
+    cons::InitializeMechanic(*mechanic, "MECHANIC", env);
     OBL_CHECK(env.log.find("Key(M1)") != std::string::npos);
     OBL_CHECK_EQ(mechanic->m_JobMask, 7u);
     OBL_CHECK(NameOf(*mechanic) == u"[M1] [ID_MECHANIC_1]");
@@ -247,8 +247,8 @@ OBL_TEST_CASE("staff_construct.names_come_from_the_list_of_the_gender")
     FakeEnv lifeguard;
     lifeguard.definition.m_female = 1;
     auto guard = std::make_unique<Lifeguard>();
-    cons::Construct(*guard, "LIFEG_F", lifeguard);
-    cons::ConstructLifeguard(*guard, "LIFEG_F", lifeguard);
+    cons::Initialize(*guard, "LIFEG_F", lifeguard);
+    cons::InitializeLifeguard(*guard, "LIFEG_F", lifeguard);
     OBL_CHECK(lifeguard.log.find("Key(F") != std::string::npos);
     OBL_CHECK(lifeguard.log.find("Definition Recalculate Script(LifeGuardLogic)") != std::string::npos);
     Free(*guard);
@@ -258,8 +258,8 @@ OBL_TEST_CASE("staff_construct.rep_sprite_has_no_keyline_and_security_reads_the_
 {
     FakeEnv rep;
     auto representative = std::make_unique<Rep>();
-    cons::Construct(*representative, "REP_M", rep);
-    cons::ConstructRep(*representative, "REP_M", rep);
+    cons::Initialize(*representative, "REP_M", rep);
+    cons::InitializeRep(*representative, "REP_M", rep);
     OBL_CHECK(rep.log.find("Keyline") == std::string::npos);
     OBL_CHECK_EQ(representative->m_MaxTalkTime, 10);
     OBL_CHECK_EQ(representative->m_MinTalkTime, 3);
@@ -268,8 +268,8 @@ OBL_TEST_CASE("staff_construct.rep_sprite_has_no_keyline_and_security_reads_the_
 
     FakeEnv env;
     auto guard = std::make_unique<SecurityGuard>();
-    cons::Construct(*guard, "SECURITYGUARD", env);
-    cons::ConstructSecurity(*guard, "SECURITYGUARD", env);
+    cons::Initialize(*guard, "SECURITYGUARD", env);
+    cons::InitializeSecurity(*guard, "SECURITYGUARD", env);
     OBL_CHECK_EQ(guard->m_minorFineAmount, 10.0f); // key "MINOR": 'I' second letter
     OBL_CHECK_EQ(guard->m_seriousFineAmount, 100.0f);
     OBL_CHECK_EQ(guard->m_offenderId, -1);
@@ -286,12 +286,12 @@ OBL_TEST_CASE("staff_construct.last_one_out_turns_the_button_off")
     auto mechanic = Destructible<Mechanic>(new Mechanic());
     mechanic->m_id = 17;
     cons::SetNameBuffer(*mechanic, static_cast<Char16*>(::operator new(8)));
-    cons::DestructMechanic(*mechanic, env);
+    cons::ReleaseMechanic(*mechanic, env);
     OBL_CHECK_EQ(env.log, std::string("RemoveByObject(17) Delete"));
     OBL_CHECK_EQ(env.counters[static_cast<int>(Kind::Mechanic)], 1);
     env.log.clear();
     cons::SetNameBuffer(*mechanic, static_cast<Char16*>(::operator new(8)));
-    cons::DestructMechanic(*mechanic, env);
+    cons::ReleaseMechanic(*mechanic, env);
     OBL_CHECK_EQ(env.log, std::string("Buttons(8,off) RemoveByObject(17) Delete"));
 }
 
@@ -302,14 +302,14 @@ OBL_TEST_CASE("staff_construct.lifeguard_gives_back_its_attached_sprite")
     auto guard = Destructible<Lifeguard>(new Lifeguard());
     guard->m_attachedSprite = reinterpret_cast<void*>(0x77);
     cons::SetNameBuffer(*guard, static_cast<Char16*>(::operator new(8)));
-    cons::DestructLifeguard(*guard, env);
+    cons::ReleaseLifeguard(*guard, env);
     OBL_CHECK_EQ(env.log, std::string("Buttons(7,off) ReleaseSprite Delete"));
     // A destructed object is not read again: the second case gets a fresh one.
     auto second = Destructible<Lifeguard>(new Lifeguard());
     env.counters[static_cast<int>(Kind::Lifeguard)] = 3;
     env.log.clear();
     cons::SetNameBuffer(*second, static_cast<Char16*>(::operator new(8)));
-    cons::DestructLifeguard(*second, env);
+    cons::ReleaseLifeguard(*second, env);
     OBL_CHECK_EQ(env.log, std::string("Delete"));
 }
 
@@ -321,8 +321,8 @@ OBL_TEST_CASE("staff_construct.builder_follows_the_fixed_order")
     env.definition.m_Sprite = "builder_spr";
     auto builder = std::make_unique<Builder>();
     obl::unit::FillObject<Builder>(*builder, 0xa5);
-    cons::Construct(*builder, "BUILDER", env);
-    cons::ConstructBuilder(*builder, "BUILDER", env);
+    cons::Initialize(*builder, "BUILDER", env);
+    cons::InitializeBuilder(*builder, "BUILDER", env);
     OBL_CHECK(env.log.find("Recalculate Script(BuilderLogic) Sprite(builder_spr) Keyline Buttons(10,on) Rand Key(M2) New(6) Rand "
                            "Lookup Lookup Delete New(") != std::string::npos);
     OBL_CHECK(env.log.find("Complaint") == std::string::npos);
@@ -349,12 +349,12 @@ OBL_TEST_CASE("staff_construct.builder_unregisters_before_the_count_goes_down")
     auto builder = Destructible<Builder>(new Builder());
     builder->m_id = 33;
     cons::SetNameBuffer(*builder, static_cast<Char16*>(::operator new(8)));
-    cons::DestructBuilder(*builder, env);
+    cons::ReleaseBuilder(*builder, env);
     OBL_CHECK_EQ(env.log, std::string("RemoveBuilder(33) Delete"));
     OBL_CHECK_EQ(env.counters[static_cast<int>(Kind::Builder)], 1);
     env.log.clear();
     cons::SetNameBuffer(*builder, static_cast<Char16*>(::operator new(8)));
-    cons::DestructBuilder(*builder, env);
+    cons::ReleaseBuilder(*builder, env);
     OBL_CHECK_EQ(env.log, std::string("RemoveBuilder(33) Buttons(10,off) Delete"));
 }
 
@@ -365,8 +365,8 @@ OBL_TEST_CASE("staff_construct.service_staff_stands_only_when_its_sprite_asks")
         env.definition.m_Sprite = sprite;
         auto service = std::make_unique<obl::object::ServiceStaff>();
         obl::unit::FillObject<obl::object::ServiceStaff>(*service, 0xa5);
-        cons::Construct(*service, "BAR_M", env);
-        cons::ConstructService(*service, "BAR_M", env);
+        cons::Initialize(*service, "BAR_M", env);
+        cons::InitializeService(*service, "BAR_M", env);
         const bool stands = std::strcmp(sprite, "WAITER") != 0;
         // The script is looked up before the sprite exists; no counter, no button, no name buffer, no further draw.
         OBL_CHECK_EQ(env.log, std::string("Definition Recalculate Script(GuestLogic) Sprite(") + sprite + (stands ? ") Stand" : ")"));

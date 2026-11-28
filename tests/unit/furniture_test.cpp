@@ -319,7 +319,7 @@ struct Made {
     {
         obl::unit::FillObject(object, fill);
         env.BaseConstruct(object, "TABLE");
-        table::Construct(object, "TABLE", env);
+        table::Initialize(object, "TABLE", env);
     }
 };
 
@@ -459,7 +459,7 @@ OBL_TEST_CASE("Table destruct releases chairs, plates and the waiter in the fixe
     void* chairArray = t.m_chairSprites;
     void* plateArray = t.m_plateSprites;
     void* chairs = t.m_chairs;
-    table::Destruct(t, env);
+    table::Release(t, env);
     std::vector<void*> expectedReleased = chairSprites;
     expectedReleased.insert(expectedReleased.end(), plateSprites.begin(), plateSprites.end());
     OBL_CHECK(env.released == expectedReleased);
@@ -476,7 +476,7 @@ OBL_TEST_CASE("Table destruct without plates leaves the waiter alone")
     Made made(env);
     Furniture& t = made.object;
     env.calls.clear();
-    table::Destruct(t, env);
+    table::Release(t, env);
     OBL_CHECK(env.askedObject == 0);
     OBL_CHECK(env.waiter.m_visible == 1 && env.waiter.m_waitingForDeath == 0);
     OBL_CHECK(env.released.size() == 4);
@@ -486,7 +486,7 @@ OBL_TEST_CASE("Table destruct without plates leaves the waiter alone")
     plates.definition.m_hasPlates = 1;
     plates.hasWaiter = false;
     Made other(plates);
-    table::Destruct(other.object, plates); // a waiter that no longer exists is skipped
+    table::Release(other.object, plates); // a waiter that no longer exists is skipped
     OBL_CHECK(plates.waiter.m_visible == 1);
 }
 

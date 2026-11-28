@@ -84,7 +84,7 @@ bool ValidateModObjectScripts(const std::filesystem::path& packDirectory, std::s
             }
             text.push_back(static_cast<char>(file_io::kTerminator));
             auto program = std::make_unique<script::ScriptProgram>();
-            script_program::Construct(*program);
+            script_program::ResetProgram(*program);
             try {
                 script_program::Parse(*program, text.data(), text.size() - 1, vocabulary, kValidationMemory, {true, 2});
             } catch (const script_program::ParseError& failure) {

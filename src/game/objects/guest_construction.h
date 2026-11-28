@@ -10,7 +10,7 @@
 #include <cstdint>
 #include <cstring>
 
-// Construct (GuestCreateParams*, returns this), guest constructor, docs/architecture/objects.md. Pure logic: whatever leaves
+// Initialize (GuestCreateParams*, returns this), guest constructor, docs/architecture/objects.md. Pure logic: whatever leaves
 // the object goes through an `Env` that the game side maps onto the game's services (src/game/objects/guest_lifecycle_driver.cpp) and the unit test
 // onto a fake. The order of the draws and of the effects is fixed, so the RNG tape and the heap always see the same sequence.
 //
@@ -63,7 +63,7 @@ inline float DrawHour(float first, float second, int32_t draw, bool fold)
     return static_cast<float>(value);
 }
 
-// The display name: "<first> <family>" in a buffer that Destruct gives back. Both keys are drawn first (unsigned remainder of the list size), each
+// The display name: "<first> <family>" in a buffer that Release gives back. Both keys are drawn first (unsigned remainder of the list size), each
 // widened into its own temporary block of the game heap; both texts are looked up, the temporaries freed in a fixed order, and the name
 // block holds (first + family + 2) characters.
 template<class Env> Char16* BuildName(const GuestDef& def, Env& env)
@@ -95,7 +95,7 @@ template<class Env> Char16* BuildName(const GuestDef& def, Env& env)
 }
 
 // Guest's constructor runs it after Person's (whose Mover part draws once).
-template<class Env> Guest* Construct(Guest& guest, const void* params, Env& env)
+template<class Env> Guest* Initialize(Guest& guest, const void* params, Env& env)
 {
     const GuestDef* def = env.Definition(params);
     guest.m_definition = def;
@@ -133,7 +133,7 @@ template<class Env> Guest* Construct(Guest& guest, const void* params, Env& env)
     if (wakeWraps && !guest_lifecycle::Below(guest.m_BedTime, 24.0))
         guest.m_BedTime = static_cast<float>(static_cast<double>(guest.m_BedTime) - 24.0);
 
-    // Population statistics (Destruct undoes them with other limits, see ConstructionSlot).
+    // Population statistics (Release undoes them with other limits, see ConstructionSlot).
     ++env.Population();
     ++env.Counts()[ConstructionSlot(def->m_Attractive, def->m_Gender)];
     const char* scriptName = def->m_Script.empty() ? "GuestLogic" : def->m_Script.c_str();

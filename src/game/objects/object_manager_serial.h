@@ -9,7 +9,7 @@ namespace obl::object_manager {
 
 // Destroys every object, front to back, each still in its list (a destructor may query the manager; the entries already destroyed read as
 // null), then empties the lists.
-inline void Destruct(object::Manager& m)
+inline void ReleaseObjects(object::Manager& m)
 {
     auto destroy = [&](std::vector<object::Base*>& objects) {
         for (uint32_t i = 0; i < objects.size(); ++i) {
@@ -71,7 +71,7 @@ template<class Env> void LoadObjects(object::Manager& m, Env& env)
             // The others switch has no cases for building/guest and no default:
             // an unsupported type leaves the existing slot.
             if (fixedType || (constructorType >= 1 && constructorType <= kLastObjectType && constructorType != 2 && constructorType != 3)) {
-                objects[i] = env.Construct(constructorType, name);
+                objects[i] = env.CreateObject(constructorType, name);
                 m.Adopt(objects[i], env.Destroyer());
             }
             // Indexed before its Load: a scenery object enters its grid cells by id while it loads.

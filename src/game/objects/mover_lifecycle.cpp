@@ -56,14 +56,14 @@ Mover::Mover(const char* name) : Base(name)
 {
     g_construct.Count();
     LifeEnv env;
-    life::Construct(*this, env);
+    life::Initialize(*this, env);
 }
 
 Mover::~Mover()
 {
     g_destruct.Count();
     LifeEnv env;
-    life::Destruct(*this, env);
+    life::Release(*this, env);
 }
 
 ScriptValue* Mover::GetValue(ScriptValue* out, int key, intptr_t data)

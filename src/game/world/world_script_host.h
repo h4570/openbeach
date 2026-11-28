@@ -15,7 +15,7 @@
 // scripts' contents (their command lists on the game heap) are built and freed by the parsers behind an `Env`, so the order of the
 // calls stays unit-tested without the game (tests/unit/world_script_host_test.cpp):
 //   void SetHost(WorldScriptHost*)                       game::Context::worldScriptHost
-//   void ConstructObject(ScriptProgram&) / LoadObject(ScriptProgram&, path) / DestroyObject(ScriptProgram&)
+//   void ResetObjectScript(ScriptProgram&) / LoadObject(ScriptProgram&, path) / ReleaseObjectScript(ScriptProgram&)
 //   void ConstructWorld(WorldScript&) / uint32_t LoadWorld(WorldScript&, path, logicalPath) / DestroyWorld(WorldScript&)
 // The former ten fixed slots were not bounds-checked; the vector has no limit.
 namespace obl::world_script_host {
@@ -30,7 +30,7 @@ public:
     // Destroys the object logics in load order, then the scenario script and mod world scripts, then the global.
     template<class Env> void Destroy(Env& env)
     {
-        for (Entry& entry : m_objectScripts) env.DestroyObject(*entry.script);
+        for (Entry& entry : m_objectScripts) env.ReleaseObjectScript(*entry.script);
         m_objectScripts.clear();
         DropWorldScript(env);
         DropModWorldScripts(env);
@@ -50,7 +50,7 @@ public:
     template<class Env> void AddScriptProgram(const char* name, const char* path, Env& env)
     {
         Entry& entry = m_objectScripts.emplace_back(Entry{name, std::make_unique<script::ScriptProgram>()});
-        env.ConstructObject(*entry.script);
+        env.ResetObjectScript(*entry.script);
         env.LoadObject(*entry.script, path);
     }
 

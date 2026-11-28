@@ -59,7 +59,7 @@ void ReleaseGuestParts(Guest& guest)
     --GuestPopulation();
 }
 
-// ---- Construct -------------------------------------------------------------------------------------------------------------------------
+// ---- Initialize -------------------------------------------------------------------------------------------------------------------------
 
 class ConstructEnv {
 public:
@@ -128,7 +128,7 @@ Guest::Guest(const char* params) : Person(params)
 {
     object::g_constructCalls.Count();
     object::ConstructEnv env;
-    guest::construct::Construct(*this, params, env);
+    guest::construct::Initialize(*this, params, env);
     m_CurID = -1;
 }
 
