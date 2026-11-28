@@ -75,12 +75,12 @@ uint32_t Bits(float value)
 
 } // namespace
 
-OBL_TEST_CASE("building_queue_lifecycle.construct_with_points_table")
+OBL_TEST_CASE("building_queue_lifecycle.initialize_with_points_table")
 {
     Env env;
     BuildingQueue queue;
     std::memset(&queue.m_tail, 0xcd, sizeof(queue.m_tail)); // what the allocation held
-    BuildingQueue* result = ConstructBuildingQueue(env, queue, 4, 100.0f, 200.0f, 16.0f, -16.0f, 33);
+    BuildingQueue* result = InitializeBuildingQueue(env, queue, 4, 100.0f, 200.0f, 16.0f, -16.0f, 33);
     OBL_CHECK(result == &queue);
     OBL_CHECK_EQ(queue.m_ownerId, 33u);
     OBL_CHECK_EQ(queue.m_maxLength, 4u);
@@ -98,13 +98,13 @@ OBL_TEST_CASE("building_queue_lifecycle.construct_with_points_table")
     OBL_CHECK(queue.m_qlCommmod.empty());
 }
 
-OBL_TEST_CASE("building_queue_lifecycle.construct_limits_without_table")
+OBL_TEST_CASE("building_queue_lifecycle.initialize_limits_without_table")
 {
     for (uint32_t limit : {0u, 11u, 40u, 0xffffffffu}) {
         Env env;
         BuildingQueue queue;
         std::memset(&queue.m_tail, 0xcd, sizeof(queue.m_tail));
-        ConstructBuildingQueue(env, queue, limit, 7.5f, -3.0f, -16.0f, 16.0f, 2);
+        InitializeBuildingQueue(env, queue, limit, 7.5f, -3.0f, -16.0f, 16.0f, 2);
         OBL_CHECK(queue.m_points == nullptr);
         OBL_CHECK_EQ(queue.m_tail[0], 7.5f);
         OBL_CHECK_EQ(queue.m_tail[1], -3.0f);
@@ -112,7 +112,7 @@ OBL_TEST_CASE("building_queue_lifecycle.construct_limits_without_table")
     }
     Env ten;
     BuildingQueue queue{};
-    ConstructBuildingQueue(ten, queue, 10, 0.0f, 0.0f, 0.0f, 0.0f, 0);
+    InitializeBuildingQueue(ten, queue, 10, 0.0f, 0.0f, 0.0f, 0.0f, 0);
     OBL_CHECK_EQ(ten.calls[1], std::string("new 88"));
 }
 
@@ -120,7 +120,7 @@ OBL_TEST_CASE("building_queue_lifecycle.step_directions")
 {
     Env env;
     BuildingQueue queue{};
-    ConstructBuildingQueue(env, queue, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0);
+    InitializeBuildingQueue(env, queue, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0);
     // The point helpers read W, E, A, B (the ones the point helpers read).
     auto at = [&](int k, float x, float y) {
         OBL_CHECK_EQ(env.directions[k], x);
@@ -137,7 +137,7 @@ OBL_TEST_CASE("building_queue_lifecycle.step_directions")
     OBL_CHECK(queue_points::kW.x == env.directions[0] && queue_points::kW.y == env.directions[1]);
 }
 
-OBL_TEST_CASE("building_queue_lifecycle.destruct_clears_and_frees_the_table")
+OBL_TEST_CASE("building_queue_lifecycle.release_clears_and_frees_the_table")
 {
     BuildingQueue queue{};
     queue.m_qlQueue.assign(40, 1);
@@ -145,14 +145,14 @@ OBL_TEST_CASE("building_queue_lifecycle.destruct_clears_and_frees_the_table")
     float table[6] = {};
     queue.m_points = table;
     Env env;
-    DestructBuildingQueue(env, queue);
+    ReleaseBuildingQueue(env, queue);
     OBL_CHECK(env.calls == std::vector<std::string>({"delete points"}));
     OBL_CHECK(queue.m_qlQueue.empty());
     OBL_CHECK(queue.m_qlCommmod.empty());
 
     BuildingQueue empty{};
     Env none;
-    DestructBuildingQueue(none, empty);
+    ReleaseBuildingQueue(none, empty);
     OBL_CHECK(none.calls.empty()); // no table
 }
 

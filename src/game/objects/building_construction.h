@@ -9,7 +9,7 @@
 #include <cstdint>
 #include <cstring>
 
-// Construct (the building key): docs/architecture/objects.md. Pure logic: whatever leaves the object (the base
+// Initialize (the building key): docs/architecture/objects.md. Pure logic: whatever leaves the object (the base
 // constructor, the definition tables, the sprite bank, the RNG) goes through an `Env` that the game side maps onto the
 // game's services (src/game/objects/building_construct.cpp) and the unit test onto a recorder.
 //
@@ -75,7 +75,7 @@ template<class Env> void ChooseBeer(Building& building, const BuildingDef& def, 
 
 // RNG draws, in order: the repair interval (1..8), then the lights-on and lights-off hours.
 // Building's constructor runs it after Prop's.
-template<class Env> void Construct(Building& building, const char* key, Env& env)
+template<class Env> void Initialize(Building& building, const char* key, Env& env)
 {
     const BuildingDef& def = *env.Definition(key);
     building.m_definition = &def;

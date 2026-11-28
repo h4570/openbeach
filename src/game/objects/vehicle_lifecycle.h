@@ -12,19 +12,19 @@
 #include <cstdint>
 #include <cstring>
 
-// The life cycle of Vehicle. Construct (the vehicle key, returns this; Vehicle's constructor) and Destruct
+// The life cycle of Vehicle. Initialize (the vehicle key, returns this; Vehicle's constructor) and Release
 // (Vehicle's destructor). Pure logic: whatever touches the game goes through an `Env` that the game side maps onto the game's services
 // (vehicle_lifecycle.cpp) and the unit test onto a fake.
 //
 // Env:
-//   Construct:  const tables::VehicleDef* Definition(const char* key)    the vehicle definition selected by key
+//   Initialize:  const tables::VehicleDef* Definition(const char* key)    the vehicle definition selected by key
 //               void PlaceTowed(int32_t owner, const char* key)          place command: message {owner, -2, 0, 0, 4}, VehicleCreateParams
 //                                                                        {key, 0, 0, 0, owner}; the rest of both records is zero
 //               void* CreateSprite(const char* name)                     creates the named sprite instance from the global bank
 //               void StartAnim(void* sprite, const char* anim, float startTime, const float* world)   starting the named sprite animation
 //               float WorldTime                                        the world game time, the start time of the coach doors
 //               int32_t PaletteCount(void* sprite) / void SetPaletteIndex(void* sprite, int32_t)   SpriteInstance -> Sprite::m_paletteCount / m_paletteIndex
-//   Destruct:   void NeighbourCells(uint32_t x, uint32_t y, map::GridCell* out[8])   the eight neighbouring cells
+//   Release:   void NeighbourCells(uint32_t x, uint32_t y, map::GridCell* out[8])   the eight neighbouring cells
 //               map::GridCell* CellAt(uint32_t x, uint32_t y)         the wrapped tile index into the cell array
 //               void ObjectTile(const Vehicle&, uint32_t out[2])   the tile under the vehicle's position
 //               void StopLoop(int32_t objectId)                          stops sound loops owned by the object id
@@ -58,7 +58,7 @@ inline bool HasTowed(const tables::VehicleDef& definition)
 // fields a type sets), route counters, the towed vehicle, the physics from the definition, the sprites, then the zeroed state. Not written
 // (they keep the zero of their member initializers):
 // m_rideTime, m_ownerId, m_Guests, m_UnloadPoint, the turn area, the fishing point, the ferry fields and m_playingDoorAnim.
-template<class Env> Vehicle* Construct(Vehicle& vehicle, const char* name, Env& env)
+template<class Env> Vehicle* Initialize(Vehicle& vehicle, const char* name, Env& env)
 {
     const tables::VehicleDef* definition = env.Definition(name);
     vehicle.m_definition = definition;
@@ -156,7 +156,7 @@ inline void ClearBlocked(map::GridCell* cell)
 // one under its position, not its waypoint) and, by the unload direction, the two neighbours that
 // the route kept blocked: directions 1 and 5 the neighbours 0 and 4, 3 and 7 the neighbours 2 and 6, the other directions none. The loop
 // sound of the types 0, 1 and 5 stops and the sprites go back in their creation order; Mover's destructor follows.
-template<class Env> void Destruct(Vehicle& vehicle, Env& env)
+template<class Env> void Release(Vehicle& vehicle, Env& env)
 {
     map::GridCell* around[8];
     if (vehicle.m_vehicleType == FishBoat) {

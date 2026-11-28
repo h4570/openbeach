@@ -71,10 +71,10 @@ contraction (`-ffp-contract=off`) and handles the 4-byte `wchar_t` (text in game
 Sanitizer triage: a bug in a test is fixed in `tests/unit/`; a bug in game logic becomes an issue; a documented
 quirk is pinned by the test on values without UB, not silenced.
 
-Game objects in fixtures: a game object's constructor and destructor run the `Construct`/`Destruct` template of its logic
+Game objects in fixtures: a game object's constructor and destructor run the `Initialize`/`Release` template of its logic
 header with the game's Env; a unit test calls the template with a fake Env. The seams (`tests/unit/*_virtuals_seam.cpp`) give
 every object an empty destructor, so a fixture can go out of scope without game services.
-A fixture that fills an object's bytes to see what `Construct` writes still needs a real vtable,
+A fixture that fills an object's bytes to see what `Initialize` writes still needs a real vtable,
 because UBSan's `vptr` check reads it before any member access. Build fixture objects with
 `obl::unit::FillObject` / `StampVtable` (`tests/unit/object_storage.h`) instead of a bare `memset` or a byte buffer
 (a fake vptr made the check SEGV in `__dynamic_cast`). `unit_sanitize.sh` limits ASan's quarantine to 64 MB, which keeps a whole run small.

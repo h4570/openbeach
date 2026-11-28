@@ -15,9 +15,9 @@
 // Performer construction, teardown, updates and state transitions use an injected environment.
 // Singer and WeightLifter also draw attached stage sprites. src/game/objects/performer_virtuals.cpp supplies game services;
 // unit tests use a fake environment to check the order of calls.
-//   Construct:   SpriteInstance* CreateSprite(const char* name)               sprite creation from the bank
+//   Initialize:   SpriteInstance* CreateSprite(const char* name)               sprite creation from the bank
 //                float SetAnim(SpriteInstance*, const char* name, float* position)   starting the named sprite animation at the world's game time; the length in seconds
-//   Destruct:    void ReleaseSprite(SpriteInstance*)                          returning the sprite to its bank (a null sprite is allowed)
+//   Release:    void ReleaseSprite(SpriteInstance*)                          returning the sprite to its bank (a null sprite is allowed)
 //   Update:      bool HumanUpdate(Mover&)                              the human base update
 //                void Fatal(const char* format, const char* name)             FatalError
 //   EnterState:  SetAnim, CreateSprite and
@@ -84,24 +84,24 @@ inline messages::Message NextState(const object::Base& performer, uint32_t type)
 }
 } // namespace detail
 
-// ---- Construct / Destruct (the performer's constructor after Mover's, its destructor before Mover's) ----------------------------------------------------------------------------------------------------------------
+// ---- Initialize / Release (the performer's constructor after Mover's, its destructor before Mover's) ----------------------------------------------------------------------------------------------------------------
 
-template<class Env> void Construct(object::Aerobic& performer, Env& env)
+template<class Env> void Initialize(object::Aerobic& performer, Env& env)
 {
     performer.m_finish = 0;
 }
-template<class Env> void Construct(object::Cabaret& performer, Env& env)
+template<class Env> void Initialize(object::Cabaret& performer, Env& env)
 {
     performer.m_finish = 0;
     performer.m_maxVel = 60.0f;
     performer.m_maxForce = 20.0f;
 }
-template<class Env> void Construct(object::Catwalk& performer, Env& env)
+template<class Env> void Initialize(object::Catwalk& performer, Env& env)
 {
     performer.m_sprite = env.CreateSprite("Gail");
     performer.m_finished = 0;
 }
-template<class Env> void Construct(object::Singer& performer, Env& env)
+template<class Env> void Initialize(object::Singer& performer, Env& env)
 {
     performer.m_sprite = env.CreateSprite("Stage_Events");
     ui::SpriteInstance* mic = env.CreateSprite("Stage_Mic");
@@ -109,13 +109,13 @@ template<class Env> void Construct(object::Singer& performer, Env& env)
     env.SetAnim(mic, "SINGMIC_STILL", performer.m_WorldXYZ);
     performer.m_finish = 0;
 }
-template<class Env> void Construct(object::WeightLifter& performer, Env& env)
+template<class Env> void Initialize(object::WeightLifter& performer, Env& env)
 {
     performer.m_sprite = env.CreateSprite("Stage_Events");
     performer.m_attachedSprite = nullptr;
     performer.m_finished = 0;
 }
-template<class Env> void Construct(object::WetTShirt& performer, Env& env)
+template<class Env> void Initialize(object::WetTShirt& performer, Env& env)
 {
     performer.m_finished = 0;
 }
@@ -128,26 +128,26 @@ template<class Env> void ReleaseOwn(object::Mover& performer, Kind kind, Env& en
 }
 } // namespace detail
 
-template<class Env> void Destruct(object::Aerobic& performer, Env& env)
+template<class Env> void Release(object::Aerobic& performer, Env& env)
 {
     detail::ReleaseOwn(performer, Kind::Aerobic, env);
 }
-template<class Env> void Destruct(object::Cabaret& performer, Env& env)
+template<class Env> void Release(object::Cabaret& performer, Env& env)
 {
     detail::ReleaseOwn(performer, Kind::Cabaret, env);
 }
-template<class Env> void Destruct(object::Catwalk& performer, Env& env)
+template<class Env> void Release(object::Catwalk& performer, Env& env)
 {
     detail::ReleaseOwn(performer, Kind::Catwalk, env);
 }
 // The microphone is released without a null check, the weights only when there are any.
-template<class Env> void Destruct(object::Singer& performer, Env& env)
+template<class Env> void Release(object::Singer& performer, Env& env)
 {
     detail::ReleaseOwn(performer, Kind::Singer, env);
     env.ReleaseSprite(static_cast<ui::SpriteInstance*>(performer.m_attachedSprite));
     performer.m_attachedSprite = nullptr;
 }
-template<class Env> void Destruct(object::WeightLifter& performer, Env& env)
+template<class Env> void Release(object::WeightLifter& performer, Env& env)
 {
     detail::ReleaseOwn(performer, Kind::WeightLifter, env);
     if (performer.m_attachedSprite) {
@@ -155,7 +155,7 @@ template<class Env> void Destruct(object::WeightLifter& performer, Env& env)
         performer.m_attachedSprite = nullptr;
     }
 }
-template<class Env> void Destruct(object::WetTShirt& performer, Env& env)
+template<class Env> void Release(object::WetTShirt& performer, Env& env)
 {
     detail::ReleaseOwn(performer, Kind::WetTShirt, env);
 }

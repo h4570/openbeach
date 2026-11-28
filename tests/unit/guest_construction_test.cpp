@@ -127,7 +127,7 @@ Guest* Build(const GuestDef& def, FakeEnv& env)
     obl::unit::FillObject(guest, 0xcd);
     env.def = &def;
     env.HumanBase();
-    return Construct(guest, nullptr, env);
+    return Initialize(guest, nullptr, env);
 }
 
 } // namespace

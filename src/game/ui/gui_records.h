@@ -113,7 +113,7 @@ template<class Env> ui::GuiTooltip* ConstructTooltip(Env& env, ui::GuiTooltip* t
     tooltip->m_backing = static_cast<ui::GuiWidget*>(env.NewBacking());
     return tooltip;
 }
-// The backing is destroyed through its virtual DeletingDestruct with flag 1.
+// The widget owner deletes the backing through its virtual destructor.
 template<class Env> void DestructTooltip(Env& env, ui::GuiTooltip& tooltip)
 {
     if (tooltip.m_backing) env.DeleteBacking(tooltip.m_backing);

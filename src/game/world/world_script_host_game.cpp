@@ -18,8 +18,8 @@ test::CallCounter g_constructCalls("world-script-host.construct"), g_destructCal
 // The scripts' contents go through the parsers' entry points (they count their calls).
 struct GameEnv {
     void SetHost(WorldScriptHost* p) { game::SetWorldScriptHost(p); }
-    void DestroyObject(ScriptProgram& p) { object::ScriptProgramDestructStates(p); }
-    void ConstructObject(ScriptProgram& p) { object::ScriptProgramConstruct(p); }
+    void ReleaseObjectScript(ScriptProgram& p) { object::ReleaseScriptProgramStates(p); }
+    void ResetObjectScript(ScriptProgram& p) { object::ResetScriptProgram(p); }
     void LoadObject(ScriptProgram& p, const char* path) { object::ScriptProgramLoad(p, path); }
     void DestroyWorld(WorldScript& p) { WorldScriptDestruct(p); }
     void ConstructWorld(WorldScript& p) { WorldScriptConstruct(p); }

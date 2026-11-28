@@ -227,7 +227,7 @@ void AddBuilder(Manager* manager, int builderId)
     construction::AddBuilder(*manager, builderId, env);
 }
 
-// construction::RemoveBuilder: DestructBuilder unregisters the builder.
+// construction::RemoveBuilder: ReleaseBuilder unregisters the builder.
 void RemoveBuilder(Manager* manager, int builderId)
 {
     g_callsRemoveBuilder.Count();

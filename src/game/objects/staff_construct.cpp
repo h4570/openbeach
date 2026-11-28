@@ -121,33 +121,36 @@ public:
 // The constructor and destructor body of one class: Staff's takes the name, a profession's builds on Staff's.
 template<class T> struct Traits;
 template<> struct Traits<object::Staff> {
-    template<class Env> static void Construct(object::Staff& employee, const char* name, Env& env) { cons::Construct(employee, name, env); }
+    template<class Env> static void Initialize(object::Staff& employee, const char* name, Env& env)
+    {
+        cons::Initialize(employee, name, env);
+    }
 };
-#define OBL_STAFF_TRAITS(T, CONSTRUCT, DESTRUCT)                                                                                           \
+#define OBL_STAFF_TRAITS(T, INITIALIZE, RELEASE)                                                                                           \
     template<> struct Traits<T> {                                                                                                          \
-        template<class Env> static void Construct(T& employee, const char* name, Env& env) { CONSTRUCT(employee, name, env); }             \
-        template<class Env> static void Destruct(T& employee, Env& env) { DESTRUCT(employee, env); }                                       \
+        template<class Env> static void Initialize(T& employee, const char* name, Env& env) { INITIALIZE(employee, name, env); }           \
+        template<class Env> static void Release(T& employee, Env& env) { RELEASE(employee, env); }                                         \
     };
-OBL_STAFF_TRAITS(Cleaner, cons::ConstructCleaner, cons::DestructCleaner)
-OBL_STAFF_TRAITS(Mechanic, cons::ConstructMechanic, cons::DestructMechanic)
-OBL_STAFF_TRAITS(Lifeguard, cons::ConstructLifeguard, cons::DestructLifeguard)
-OBL_STAFF_TRAITS(Rep, cons::ConstructRep, cons::DestructRep)
-OBL_STAFF_TRAITS(SecurityGuard, cons::ConstructSecurity, cons::DestructSecurity)
-OBL_STAFF_TRAITS(Builder, cons::ConstructBuilder, cons::DestructBuilder)
+OBL_STAFF_TRAITS(Cleaner, cons::InitializeCleaner, cons::ReleaseCleaner)
+OBL_STAFF_TRAITS(Mechanic, cons::InitializeMechanic, cons::ReleaseMechanic)
+OBL_STAFF_TRAITS(Lifeguard, cons::InitializeLifeguard, cons::ReleaseLifeguard)
+OBL_STAFF_TRAITS(Rep, cons::InitializeRep, cons::ReleaseRep)
+OBL_STAFF_TRAITS(SecurityGuard, cons::InitializeSecurity, cons::ReleaseSecurity)
+OBL_STAFF_TRAITS(Builder, cons::InitializeBuilder, cons::ReleaseBuilder)
 #undef OBL_STAFF_TRAITS
 template<> struct Traits<ServiceStaff> {
-    template<class Env> static void Construct(ServiceStaff& employee, const char* name, Env& env)
+    template<class Env> static void Initialize(ServiceStaff& employee, const char* name, Env& env)
     {
-        cons::ConstructService(employee, name, env);
+        cons::InitializeService(employee, name, env);
     }
 };
 
 // Counters of one class: the calls of its constructor and destructor.
 template<class T> struct Counters;
 #define OBL_STAFF_COUNTERS(T, Subject)                                                                                                     \
-    test::CallCounter g_##T##Construct("objects." Subject "-construct"), g_##T##Destroy("objects." Subject "-destroy");                    \
+    test::CallCounter g_##T##Initialize("objects." Subject "-construct"), g_##T##Destroy("objects." Subject "-destroy");                   \
     template<> struct Counters<T> {                                                                                                        \
-        static test::CallCounter& Construct() { return g_##T##Construct; }                                                                 \
+        static test::CallCounter& Initialization() { return g_##T##Initialize; }                                                           \
         static test::CallCounter& Destroy() { return g_##T##Destroy; }                                                                     \
     };
 OBL_STAFF_COUNTERS(Staff, "staff")
@@ -162,16 +165,16 @@ OBL_STAFF_COUNTERS(ServiceStaff, "service-staff")
 
 template<class T> void RunConstruct(T& employee, const char* name)
 {
-    Counters<T>::Construct().Count();
+    Counters<T>::Initialization().Count();
     GameEnv env;
-    Traits<T>::Construct(employee, name, env);
+    Traits<T>::Initialize(employee, name, env);
 }
 
 template<class T> void RunDestroy(T& employee)
 {
     Counters<T>::Destroy().Count();
     GameEnv env;
-    Traits<T>::Destruct(employee, env);
+    Traits<T>::Release(employee, env);
 }
 
 } // namespace

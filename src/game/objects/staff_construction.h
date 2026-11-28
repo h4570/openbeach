@@ -18,7 +18,7 @@
 //
 // Env:
 // Staff's part runs in Staff's constructor (after Person's), a profession's in its own, after Staff's; teardown runs the other way.
-//   Construct:  void RecalculateHappiness(Staff&)                     recalculates the staff happiness target
+//   Initialize:  void RecalculateHappiness(Staff&)                     recalculates the staff happiness target
 //               const StaffDef* StaffDefinition(const char* name)           staff key lookup + staff definition lookup
 //               uint32_t GameDay()  uint32_t DayTimeBits()                  zero-based day and bit representation of the fractional hour
 //               int Rand()   void* ScriptLookup(const char* name)           the game RNG; the object script of that name
@@ -28,7 +28,7 @@
 //               uint32_t NameCount(bool female)  const char* NameKey(bool female, uint32_t index)   WorldParams::m_nameCounts / m_names
 //               void* New(size_t)  void Delete(void*)  void Widen(const char*, Char16*, size_t)  const Char16* Lookup(const Char16* key)
 //                                                                           the game heap, MultiByteToWideChar(CP_ACP), wide text lookup on g_TextTable
-//   Destruct:   void RemoveFeedbackByObject(uint32_t id)  void ReleaseSprite(void*)   feedback::Feedback::RemoveByObject, returning the sprite to its bank
+//   Release:   void RemoveFeedbackByObject(uint32_t id)  void ReleaseSprite(void*)   feedback::Feedback::RemoveByObject, returning the sprite to its bank
 // The order of the draws and of the effects is fixed: the RNG tape and the GUI depend on the sequence, and tests pin it.
 namespace obl::staff::construct {
 
@@ -108,10 +108,10 @@ template<class Env> void BuildName(Staff& employee, bool female, const char* pre
     std::memcpy(name + firstLength + 1, second, (secondLength + 1) * sizeof(Char16));
 }
 
-// Construct (with the object name). The waiter has no definition: its wage and expectations are zero, and the
+// Initialize (with the object name). The waiter has no definition: its wage and expectations are zero, and the
 // fields only a definition fills (`m_staffDefinition`, the hours counters, `m_happinessChanging`) keep the zero of their member
 // initializers.
-template<class Env> Staff* Construct(Staff& employee, const char* name, Env& env)
+template<class Env> Staff* Initialize(Staff& employee, const char* name, Env& env)
 {
     employee.m_currentMessage = nullptr;
     if (ascii::EqualsNoCase(name, "Waiter")) {
@@ -185,7 +185,7 @@ template<class Env> void CountOut(Kind kind, uint8_t button, Env& env)
 
 // ---- Cleaner ( /, CleanerLogic, female names) ---------------------------------------------------------------------------
 
-template<class Env> object::Cleaner* ConstructCleaner(object::Cleaner& employee, const char* name, Env& env)
+template<class Env> object::Cleaner* InitializeCleaner(object::Cleaner& employee, const char* name, Env& env)
 {
     employee.m_litterFound = 0;
     employee.m_toiletFound = 0;
@@ -215,7 +215,7 @@ template<class Env> object::Cleaner* ConstructCleaner(object::Cleaner& employee,
 }
 
 // The count goes down before the "last one gone" button update; the name buffer is the one the constructor allocated.
-template<class Env> void DestructCleaner(object::Cleaner& employee, Env& env)
+template<class Env> void ReleaseCleaner(object::Cleaner& employee, Env& env)
 {
     CountOut(Kind::Cleaner, kButtonCleaner, env);
     env.Delete(NameBuffer(employee));
@@ -223,7 +223,7 @@ template<class Env> void DestructCleaner(object::Cleaner& employee, Env& env)
 
 // ---- Mechanic ( /, MechanicLogic, male names) -----------------------------------------------------------------------------
 
-template<class Env> object::Mechanic* ConstructMechanic(object::Mechanic& employee, const char* name, Env& env)
+template<class Env> object::Mechanic* InitializeMechanic(object::Mechanic& employee, const char* name, Env& env)
 {
     employee.m_FeedbackStatus = 0x3e;
     employee.m_RequiredFeedback = 1;
@@ -245,7 +245,7 @@ template<class Env> object::Mechanic* ConstructMechanic(object::Mechanic& employ
     return &employee;
 }
 
-template<class Env> void DestructMechanic(object::Mechanic& employee, Env& env)
+template<class Env> void ReleaseMechanic(object::Mechanic& employee, Env& env)
 {
     CountOut(Kind::Mechanic, kButtonMechanic, env);
     env.RemoveFeedbackByObject(employee.m_id);
@@ -254,7 +254,7 @@ template<class Env> void DestructMechanic(object::Mechanic& employee, Env& env)
 
 // ---- Lifeguard ( /, LifeGuardLogic, names by the definition's gender) -----------------------------------------------------
 
-template<class Env> object::Lifeguard* ConstructLifeguard(object::Lifeguard& employee, const char* name, Env& env)
+template<class Env> object::Lifeguard* InitializeLifeguard(object::Lifeguard& employee, const char* name, Env& env)
 {
     employee.m_saving = 0;
     employee.m_RescueThenDeath = 0;
@@ -290,7 +290,7 @@ template<class Env> object::Lifeguard* ConstructLifeguard(object::Lifeguard& emp
     return &employee;
 }
 
-template<class Env> void DestructLifeguard(object::Lifeguard& employee, Env& env)
+template<class Env> void ReleaseLifeguard(object::Lifeguard& employee, Env& env)
 {
     CountOut(Kind::Lifeguard, kButtonLifeguard, env);
     if (employee.m_attachedSprite) env.ReleaseSprite(employee.m_attachedSprite);
@@ -299,7 +299,7 @@ template<class Env> void DestructLifeguard(object::Lifeguard& employee, Env& env
 
 // ---- Rep ( /, RepresentiveLogic, names by gender; its sprite gets no keyline flag) ------------------------------------------
 
-template<class Env> object::Rep* ConstructRep(object::Rep& employee, const char* name, Env& env)
+template<class Env> object::Rep* InitializeRep(object::Rep& employee, const char* name, Env& env)
 {
     employee.m_talking_id = 0;
     employee.m_LeaveState = 0;
@@ -335,7 +335,7 @@ template<class Env> object::Rep* ConstructRep(object::Rep& employee, const char*
     return &employee;
 }
 
-template<class Env> void DestructRep(object::Rep& employee, Env& env)
+template<class Env> void ReleaseRep(object::Rep& employee, Env& env)
 {
     CountOut(Kind::Rep, kButtonRep, env);
     env.Delete(NameBuffer(employee));
@@ -343,7 +343,7 @@ template<class Env> void DestructRep(object::Rep& employee, Env& env)
 
 // ---- SecurityGuard ( /, SecurityLogic, male names) ------------------------------------------------------------------------
 
-template<class Env> object::SecurityGuard* ConstructSecurity(object::SecurityGuard& employee, const char* name, Env& env)
+template<class Env> object::SecurityGuard* InitializeSecurity(object::SecurityGuard& employee, const char* name, Env& env)
 {
     employee.m_misdemeanourFound = 0;
     employee.m_shouldReprimand = 0;
@@ -375,7 +375,7 @@ template<class Env> object::SecurityGuard* ConstructSecurity(object::SecurityGua
     return &employee;
 }
 
-template<class Env> void DestructSecurity(object::SecurityGuard& employee, Env& env)
+template<class Env> void ReleaseSecurity(object::SecurityGuard& employee, Env& env)
 {
     CountOut(Kind::Security, kButtonSecurity, env);
     env.Delete(NameBuffer(employee));
@@ -386,7 +386,7 @@ template<class Env> void DestructSecurity(object::SecurityGuard& employee, Env& 
 //   void RemoveBuilder(int32_t id)                removes the builder from World::m_constructionManager
 
 // Unlike the other professions there is no "no builders" complaint to clear, and the work-day fields are set.
-template<class Env> object::Builder* ConstructBuilder(object::Builder& employee, const char* name, Env& env)
+template<class Env> object::Builder* InitializeBuilder(object::Builder& employee, const char* name, Env& env)
 {
     SetScript(employee, env.ScriptLookup(StaffScriptName(employee, "BuilderLogic")));
     employee.m_maxForce = 65.0f;
@@ -413,7 +413,7 @@ template<class Env> object::Builder* ConstructBuilder(object::Builder& employee,
 }
 
 // The builder leaves the construction manager's table first (the table may send messages and give its job back), then the count goes down.
-template<class Env> void DestructBuilder(object::Builder& employee, Env& env)
+template<class Env> void ReleaseBuilder(object::Builder& employee, Env& env)
 {
     env.RemoveBuilder(static_cast<int32_t>(employee.m_id));
     CountOut(Kind::Builder, kButtonBuilder, env);
@@ -429,7 +429,7 @@ inline bool StandsStill(const char* sprite)
             ascii::EqualsNoCase(sprite, "CHEFFETTE");
 }
 
-template<class Env> object::ServiceStaff* ConstructService(object::ServiceStaff& employee, const char* name, Env& env)
+template<class Env> object::ServiceStaff* InitializeService(object::ServiceStaff& employee, const char* name, Env& env)
 {
     employee.m_logic = env.ScriptLookup(StaffScriptName(employee, "GuestLogic"));
     AttachSprite(employee, env, false);

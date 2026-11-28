@@ -8,7 +8,7 @@
 #include <cstdint>
 
 // SnootyStaff uses the d_stand_snooty animation. Only
-// the world's CreateObjectFromMessage builds one and no script of the shipped game asks for it. Its own methods: Construct (its constructor's part,
+// the world's CreateObjectFromMessage builds one and no script of the shipped game asks for it. Its own methods: Initialize (its constructor's part,
 // after Staff's), ReceiveMessage, OnEnterState and SetHome; Update, Save and Load are the
 // service staff's. Unlike the service staff it posts through MessageHandler directly, not through its Send and SendDelayed.
 //
@@ -23,7 +23,7 @@ namespace obl::staff::snooty {
 constexpr float kMaxForce = 20.0f, kMaxVel = 60.0f;
 constexpr int32_t kPlayOnce = 2; // SpriteInstance::m_animType
 
-template<class Env> void Construct(object::SnootyStaff& employee, const char* name, Env& env)
+template<class Env> void Initialize(object::SnootyStaff& employee, const char* name, Env& env)
 {
     employee.m_sprite = env.CreateSprite(name);
     env.Stand(employee.m_sprite);

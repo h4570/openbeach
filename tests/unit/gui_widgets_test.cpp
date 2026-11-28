@@ -414,7 +414,7 @@ struct TreeEnv {
         calls += std::to_string(w.m_id);
         if (container) container->m_children = container->m_children->m_next->m_next;
     }
-    void DeletingDestruct(Widget&, uint32_t flags)
+    void DeleteWidget(Widget&, uint32_t flags)
     {
         OBL_CHECK_EQ(flags, 1u);
         calls += "delete";

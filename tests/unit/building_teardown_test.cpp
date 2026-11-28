@@ -68,7 +68,7 @@ OBL_TEST_CASE("building_teardown.bare_building")
     f.object.m_shortageSprite = reinterpret_cast<ui::SpriteInstance*>(0x400);
     f.object.m_spannerSprite = reinterpret_cast<ui::SpriteInstance*>(0x500);
     Env env;
-    building_teardown::Destruct(f.object, env);
+    building_teardown::Release(f.object, env);
     const std::vector<std::string> expected = {"sprite " + P(reinterpret_cast<void*>(0x100)), "sprite " + P(reinterpret_cast<void*>(0x200)),
             "sprite " + P(reinterpret_cast<void*>(0x400)), "sprite " + P(reinterpret_cast<void*>(0x500)), "sound 77"};
     OBL_CHECK_EQ(env.calls.size(), expected.size());
@@ -87,7 +87,7 @@ OBL_TEST_CASE("building_teardown.members_in_order")
     f.object.m_spannerSprite = reinterpret_cast<ui::SpriteInstance*>(0x5550);
     f.object.m_constructionSprite = reinterpret_cast<void*>(0x6660);
     Env env;
-    building_teardown::Destruct(f.object, env);
+    building_teardown::Release(f.object, env);
     const std::vector<std::string> expected = {"queue " + P(reinterpret_cast<void*>(0x1110)),
             "events " + P(reinterpret_cast<void*>(0x2220)), "sprite " + P(reinterpret_cast<void*>(0x3330)),
             "sprite " + P(reinterpret_cast<void*>(0x4440)), "sprite " + P(reinterpret_cast<void*>(0x5550)), "sound 0",
@@ -105,6 +105,6 @@ OBL_TEST_CASE("building_teardown.thoughts_are_deleted")
     // Seventy entries span several deque blocks; all of them (and their texts) go back to the heap and the list is empty.
     Fixture f(70);
     Env env;
-    building_teardown::Destruct(f.object, env);
+    building_teardown::Release(f.object, env);
     OBL_CHECK(f.object.m_ThoughtList.empty());
 }

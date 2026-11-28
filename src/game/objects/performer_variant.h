@@ -71,7 +71,7 @@ template<class Env> void SetVariant(object::Catwalk& performer, int variant, Env
     detail::GirlPalette(detail::Own(performer), 4, env);
 }
 
-// Use the stage event sprite created by Construct.
+// Use the stage event sprite created by Initialize.
 template<class Env> void SetVariant(object::Singer& performer, int variant, Env& env)
 {
     performer.m_variant = static_cast<uint32_t>(variant);

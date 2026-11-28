@@ -577,7 +577,7 @@ OBL_TEST_CASE("Performer constructors, destructors, Update and Draw")
     Singer singer{};
     singer.m_finish = 9;
     StateEnv env(0);
-    perf::Construct(singer, env);
+    perf::Initialize(singer, env);
     OBL_CHECK((env.log == Log{"create Stage_Events", "create Stage_Mic", "anim made1 SINGMIC_STILL"}));
     OBL_CHECK(singer.m_sprite == &env.made[0]);
     OBL_CHECK(singer.m_attachedSprite == &env.made[1]);
@@ -588,7 +588,7 @@ OBL_TEST_CASE("Performer constructors, destructors, Update and Draw")
     perf::Draw(singer, env);
     OBL_CHECK((env.log == Log{"draw made1 8", "draw made0 3"}));
     env.log.clear();
-    perf::Destruct(singer, env);
+    perf::Release(singer, env);
     OBL_CHECK((env.log == Log{"release made0", "release made1"}));
     OBL_CHECK(singer.m_sprite == nullptr);
     OBL_CHECK(singer.m_attachedSprite == nullptr);
@@ -596,25 +596,25 @@ OBL_TEST_CASE("Performer constructors, destructors, Update and Draw")
     Cabaret cabaret{};
     cabaret.m_finish = 9;
     StateEnv plain(0);
-    perf::Construct(cabaret, plain);
+    perf::Initialize(cabaret, plain);
     OBL_CHECK((plain.log == Log{}));
     OBL_CHECK(cabaret.m_maxVel == 60.0f);
     OBL_CHECK(cabaret.m_maxForce == 20.0f);
     OBL_CHECK(cabaret.m_finish == 0);
     plain.log.clear();
-    perf::Destruct(cabaret, plain);
+    perf::Release(cabaret, plain);
     OBL_CHECK((plain.log == Log{"release null"}));
 
     Catwalk catwalk{};
     StateEnv gail(0);
-    perf::Construct(catwalk, gail);
+    perf::Initialize(catwalk, gail);
     OBL_CHECK((gail.log == Log{"create Gail"}));
 
     WeightLifter lifter{};
     lifter.m_attachedSprite = &lifter;
     lifter.m_finished = 9;
     StateEnv gym(0);
-    perf::Construct(lifter, gym);
+    perf::Initialize(lifter, gym);
     OBL_CHECK((gym.log == Log{"create Stage_Events"}));
     OBL_CHECK(lifter.m_attachedSprite == nullptr);
     OBL_CHECK(lifter.m_finished == 0);
@@ -623,7 +623,7 @@ OBL_TEST_CASE("Performer constructors, destructors, Update and Draw")
     perf::Draw(lifter, gym);
     OBL_CHECK((gym.log == Log{"draw made0 4"}));
     gym.log.clear();
-    perf::Destruct(lifter, gym); // no weights: one release
+    perf::Release(lifter, gym); // no weights: one release
     OBL_CHECK((gym.log == Log{"release made0"}));
     lifter.m_attachedSprite = &gym.made[1];
     lifter.m_ActionPoint[0] = 6.0f;
@@ -632,7 +632,7 @@ OBL_TEST_CASE("Performer constructors, destructors, Update and Draw")
     perf::Draw(lifter, gym);
     OBL_CHECK((gym.log == Log{"draw made1 6", "draw made0 4"}));
     gym.log.clear();
-    perf::Destruct(lifter, gym);
+    perf::Release(lifter, gym);
     OBL_CHECK((gym.log == Log{"release made0", "release made1"}));
 
     Aerobic aerobic{};

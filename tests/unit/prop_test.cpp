@@ -112,7 +112,7 @@ OBL_TEST_CASE("prop.receive_drops_one_type_and_forwards_the_rest")
 OBL_TEST_CASE("prop.construct_clears_the_eight_bytes")
 {
     Holder<Prop> h;
-    so::Construct(h.Object());
+    so::Initialize(h.Object());
     const auto* bytes = h.bytes;
     for (size_t i = offsetof(Prop, m_gridW); i <= offsetof(Prop, m_urgentRepairCalled); ++i) OBL_CHECK_EQ(int(bytes[i]), 0);
 }

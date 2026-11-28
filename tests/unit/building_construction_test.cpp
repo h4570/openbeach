@@ -93,7 +93,7 @@ struct Fixture {
     void Run(const char* key = "BAR")
     {
         env.ConstructBase(object, key);
-        cons::Construct(object, key, env);
+        cons::Initialize(object, key, env);
     }
 };
 

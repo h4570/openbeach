@@ -75,7 +75,7 @@ OBL_TEST_CASE("staff_snooty.construct_builds_the_staff_member_and_stands_the_spr
     FakeEnv env;
     Member member(env);
     member.object.m_sprite = nullptr;
-    snooty::Construct(member.object, "SNOB", env);
+    snooty::Initialize(member.object, "SNOB", env);
     OBL_CHECK_EQ(env.log, std::string("sprite(SNOB) stand "));
     OBL_CHECK(member.object.m_sprite == &env.sprite);
     OBL_CHECK_EQ(member.object.m_maxForce, 20.0f);

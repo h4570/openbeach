@@ -69,10 +69,10 @@ void Parse(script::ScriptProgram& script, const char* text, size_t size, const V
 // format built, and the layout Parse builds is the one every destructor of the format accepts.
 void Destroy(script::ScriptProgram& script, const Memory& memory);
 
-// Exact lifecycle contracts the tests pin. Construct leaves m_text untouched; DestructStates leaves
+// ResetProgram initializes fresh or released states and leaves m_text untouched. ReleaseProgramStates leaves
 // state heads/counts dangling. FreeCommand destroys successors and payload, but never the head itself.
-void Construct(script::ScriptProgram& script);
-void DestructStates(script::ScriptProgram& script, const Memory& memory);
+void ResetProgram(script::ScriptProgram& script);
+void ReleaseProgramStates(script::ScriptProgram& script, const Memory& memory);
 void FreeCommand(script::ScriptCommand& head, const Memory& memory);
 
 // First difference between two parsed scripts ("" when equal): state count, ids, message handlers, and every command list

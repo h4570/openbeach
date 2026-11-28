@@ -51,7 +51,7 @@ OBL_TEST_CASE("object_manager.destruct_deletes_the_owned_objects_in_order_then_e
     m->m_globalKeyline = 1;
     g_destructManager = m.get();
     g_deleted.clear();
-    om::Destruct(*m);
+    om::ReleaseObjects(*m);
     OBL_CHECK((g_deleted == std::vector<object::Base*>{&objects[0], &objects[1], &objects[2]}));
     OBL_CHECK(m->m_owned.empty() && m->m_byId.empty());
     OBL_CHECK_EQ(m->ActiveCount(), 0u);
@@ -82,7 +82,7 @@ OBL_TEST_CASE("object_manager.load_routes_all_types_and_publishes_before_the_obj
             std::strcpy(name, "fixture");
             ++headers;
         }
-        object::Base* Construct(uint8_t type, const char* name)
+        object::Base* CreateObject(uint8_t type, const char* name)
         {
             OBL_CHECK_EQ(m.ActiveCount(), 20u);
             OBL_CHECK_EQ(m.m_nextFreeObjectId, 777u);

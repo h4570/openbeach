@@ -73,7 +73,7 @@ void RunSetVisible(Base* widget, uint8_t visible)
 struct WidgetTreeEnv {
     bool OnMouseLeft(Base& w, int x, int y, int state) { return w.MouseLeft(x, y, state) != 0; }
     void DrawOverlay(Base& w) { w.DrawOverlay(); }
-    void DeletingDestruct(Base& w, uint32_t flags) { gui::DestroyWidget(w, flags); }
+    void DeleteWidget(Base& w, uint32_t flags) { gui::DestroyWidget(w, flags); }
     void SetVisible(Base& w, uint8_t visible) { RunSetVisible(&w, visible); }
     void Invalidate(Base& w) { w.Invalidate(); }
 };

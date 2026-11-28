@@ -54,9 +54,9 @@ uint8_t& ParserDepth()
     return GetContext().objectScriptIfDepth;
 }
 
-ScriptProgram* Construct(ScriptProgram* objectScript)
+ScriptProgram* ResetProgramAndParser(ScriptProgram* objectScript)
 {
-    os::Construct(*objectScript);
+    os::ResetProgram(*objectScript);
     ParserStack().fill(nullptr);
     ParserDepth() = 0;
     return objectScript;
@@ -102,16 +102,16 @@ bool TryParse(ScriptProgram& script, const char* path, const os::Memory& memory,
 
 } // namespace
 
-ScriptProgram* ScriptProgramConstruct(ScriptProgram& script)
+ScriptProgram* ResetScriptProgram(ScriptProgram& script)
 {
     g_construct.Count();
-    return Construct(&script);
+    return ResetProgramAndParser(&script);
 }
 
-void ScriptProgramDestructStates(ScriptProgram& script)
+void ReleaseScriptProgramStates(ScriptProgram& script)
 {
     g_destruct.Count();
-    os::DestructStates(script, kGameMemory);
+    os::ReleaseProgramStates(script, kGameMemory);
 }
 
 void ScriptProgramLoad(ScriptProgram& script, const char* path)

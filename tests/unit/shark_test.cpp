@@ -192,7 +192,7 @@ OBL_TEST_CASE("shark.construct_sets_ranges_script_and_speed_and_leaves_the_rest"
     obl::unit::FillObject<Shark>(*s, 0xa5);
     SharkEnv env;
     env.BaseConstruct(*s, "SHARK");
-    OBL_CHECK(shark::Construct(*s, env) == s.get());
+    OBL_CHECK(shark::Initialize(*s, env) == s.get());
     OBL_CHECK_EQ(env.log, std::string("Base(SHARK) Lookup(SharkLogic)"));
     OBL_CHECK_EQ(s->m_myVictim, -1);
     OBL_CHECK_EQ(s->m_alertRange, 5);

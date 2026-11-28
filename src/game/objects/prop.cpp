@@ -70,7 +70,7 @@ struct HitEnv {
 Prop::Prop(const char* name) : Base(name)
 {
     g_calls.Count();
-    so::Construct(*this);
+    so::Initialize(*this);
 }
 
 bool Prop::Update()

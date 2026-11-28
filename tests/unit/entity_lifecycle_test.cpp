@@ -148,7 +148,7 @@ OBL_TEST_CASE("base_lifecycle.construct_sets_the_defaults_and_leaves_the_pads")
 {
     Holder h;
     FakeEnv env;
-    object::Base* result = life::Construct(h.Object(), "guest", env);
+    object::Base* result = life::Initialize(h.Object(), "guest", env);
     OBL_CHECK(result == &h.Object());
     const object::Base& o = h.Object();
     OBL_CHECK_EQ(std::string(o.m_Name), std::string("guest"));
@@ -171,7 +171,7 @@ OBL_TEST_CASE("base_lifecycle.construct_names_of_every_length")
         Holder h;
         FakeEnv env;
         const std::string name(length, 'q');
-        life::Construct(h.Object(), name.c_str(), env);
+        life::Initialize(h.Object(), name.c_str(), env);
         OBL_CHECK_EQ(std::string(h.Object().m_Name), name);
         OBL_CHECK(env.calls.empty());
         // The terminator is part of the copy, so nothing of the filler is left behind it.
@@ -184,13 +184,13 @@ OBL_TEST_CASE("base_lifecycle.construct_a_name_of_32_characters_is_fatal_and_cla
     Holder h;
     FakeEnv env;
     const std::string name(40, 'z');
-    life::Construct(h.Object(), name.c_str(), env);
+    life::Initialize(h.Object(), name.c_str(), env);
     OBL_CHECK_EQ(Joined(env.calls), std::string("fatal"));
     OBL_CHECK_EQ(env.fatalName, name);
     OBL_CHECK_EQ(int(h.Object().m_Name[31]), 'z');
     Holder ok;
     FakeEnv quiet;
-    life::Construct(ok.Object(), std::string(31, 'y').c_str(), quiet);
+    life::Initialize(ok.Object(), std::string(31, 'y').c_str(), quiet);
     OBL_CHECK(quiet.calls.empty());
 }
 
@@ -200,7 +200,7 @@ OBL_TEST_CASE("base_lifecycle.destruct_releases_the_sprite_then_leaves_the_cell"
     SpriteFixture sprite;
     FakeEnv env;
     Fill(h.Object(), &sprite.instance);
-    life::Destruct(h.Object(), env);
+    life::Release(h.Object(), env);
     OBL_CHECK_EQ(Joined(env.calls), std::string("release, cell, remove"));
     OBL_CHECK(env.released == &sprite.instance);
     OBL_CHECK(h.Object().m_sprite == &sprite.instance); // the field keeps the dead pointer
@@ -217,7 +217,7 @@ OBL_TEST_CASE("base_lifecycle.destruct_without_a_sprite_skips_the_release_and_ke
     FakeEnv env;
     Fill(h.Object(), nullptr);
     std::memcpy(&h.Object().m_WorldXYZ[0], "\x01\x00\xa0\x7f", 4); // a signalling-looking NaN pattern
-    life::Destruct(h.Object(), env);
+    life::Release(h.Object(), env);
     OBL_CHECK_EQ(Joined(env.calls), std::string("cell, remove"));
     OBL_CHECK_EQ(env.cellArgs[0], 0x7fa00001u);
 }

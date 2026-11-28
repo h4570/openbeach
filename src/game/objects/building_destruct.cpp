@@ -37,6 +37,6 @@ Building::~Building()
 {
     g_destroy.Count();
     GameEnv env;
-    building_teardown::Destruct(*this, env);
+    building_teardown::Release(*this, env);
 }
 } // namespace obl::object

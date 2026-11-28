@@ -113,7 +113,7 @@ OBL_TEST_CASE("moving_lifecycle.construct_sets_the_defaults_and_leaves_the_rest"
     Holder h;
     FakeEnv env;
     env.rand = 12345; // 12345 % 40 = 25, -20 = 5, +35 = 40
-    life::Construct(h.Object(), env);
+    life::Initialize(h.Object(), env);
     OBL_CHECK_EQ(Joined(env.calls), std::string("rand"));
     const Mover& o = h.Object();
     OBL_CHECK_EQ(o.m_mass, 5.0f);
@@ -140,7 +140,7 @@ OBL_TEST_CASE("moving_lifecycle.construct_top_speed_spans_15_to_54")
         Holder h;
         FakeEnv env;
         env.rand = draw;
-        life::Construct(h.Object(), env);
+        life::Initialize(h.Object(), env);
         OBL_CHECK_EQ(h.Object().m_maxVel, expected);
     }
 }
@@ -150,13 +150,13 @@ OBL_TEST_CASE("moving_lifecycle.destruct_gives_back_the_route")
     Holder h;
     FakeEnv env;
     h.Object().m_pathCursor = nullptr;
-    life::Destruct(h.Object(), env);
+    life::Release(h.Object(), env);
     OBL_CHECK_EQ(Joined(env.calls), std::string("")); // no route: nothing to give back
 
     FakeEnv withRoute;
     RouteCursor cursor{};
     h.Object().m_pathCursor = &cursor;
-    life::Destruct(h.Object(), withRoute);
+    life::Release(h.Object(), withRoute);
     OBL_CHECK_EQ(Joined(withRoute.calls), std::string("release"));
     OBL_CHECK(withRoute.released == &cursor);
     OBL_CHECK(h.Object().m_pathCursor == &cursor); // the field is not cleared

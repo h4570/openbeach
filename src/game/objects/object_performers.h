@@ -82,7 +82,7 @@ struct Catwalk : object::Mover {
     float m_ActionPoint[3] = {};
 };
 
-// Construct creates the stage microphone sprite with SINGMIC_STILL; AttachToBuilding turns it towards the audience.
+// Initialize creates the stage microphone sprite with SINGMIC_STILL; AttachToBuilding turns it towards the audience.
 struct Singer : object::Mover {
     Singer() = default;
     // Builds the performer of the given kind (performer_virtuals.cpp).

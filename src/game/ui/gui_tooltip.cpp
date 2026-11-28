@@ -73,7 +73,7 @@ struct GameEnv {
     void Free(void* block) { ::operator delete(block); }
     void DrawLoadingBar(float progress) { obl::ui::renderer::DrawLoadingBar(game::GetRenderer(), progress); }
     void* NewBacking() { return container::ConstructMainItem(NewGuiRecord<ui::GuiMainItem>(), 0, 0, 0, 0, kTooltipBackingVariant); }
-    // The backing is a GuiMainItem; the tooltip calls its DeletingDestruct, Draw and Invalidate.
+    // The backing is a GuiMainItem that the tooltip owns and draws.
     static ui::GuiWidget& Backing(void* backing) { return *static_cast<ui::GuiWidget*>(backing); }
     void DeleteBacking(void* backing) { gui::DestroyWidget(Backing(backing)); }
     void InvalidateBacking(void* backing) { Backing(backing).Invalidate(); }

@@ -9,7 +9,7 @@
 #include <cstdint>
 #include <cstring>
 
-// Construct (Scenery's constructor, after Prop's, which copied the key into the name) and Destruct (Scenery's destructor):
+// Initialize (Scenery's constructor, after Prop's, which copied the key into the name) and Release (Scenery's destructor):
 // docs/architecture/objects.md. Pure logic; the game side (src/game/objects/scenery_lifecycle.cpp) supplies the Env.
 //
 // Env:
@@ -98,7 +98,7 @@ template<class Env> void SetupLight(Scenery& s, Env& env)
     s.m_lightsOff = LightsOffHour(env.Rand());
 }
 
-template<class Env> Scenery* Construct(Scenery& s, const char* key, Env& env)
+template<class Env> Scenery* Initialize(Scenery& s, const char* key, Env& env)
 {
     const tables::SceneryDef* def = env.Definition(key);
     s.m_definition = def;
@@ -132,7 +132,7 @@ template<class Env> Scenery* Construct(Scenery& s, const char* key, Env& env)
 }
 
 // The light sprite goes back to the bank; the rest is the base's.
-template<class Env> void Destruct(Scenery& s, Env& env)
+template<class Env> void Release(Scenery& s, Env& env)
 {
     if (s.m_lightSprite) env.ReleaseSprite(s.m_lightSprite);
 }

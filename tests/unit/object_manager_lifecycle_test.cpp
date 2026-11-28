@@ -30,7 +30,7 @@ struct FakeEnv {
     std::vector<uint8_t> constructed;
     bool failAllocation = false;
 
-    object::Base* Construct(uint8_t type, const char*)
+    object::Base* CreateObject(uint8_t type, const char*)
     {
         constructed.push_back(type);
         if (failAllocation) return nullptr;

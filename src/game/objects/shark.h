@@ -19,7 +19,7 @@
 // functions (CallFunction 4 and 0xb3) and the save fields.
 //
 // Pure logic over an environment, so it runs on the game and in the unit tests. Env (everything outside the shark):
-//   Construct:      script::ScriptProgram* ScriptLookup(const char*)  the world's "SharkLogic" script
+//   Initialize:      script::ScriptProgram* ScriptLookup(const char*)  the world's "SharkLogic" script
 //   Script:         void RunOnEntry(int32_t state) / RunOnExit(int32_t state) / RunOnUpdate(int32_t state)   the shark script's handlers
 //                   bool RunOnReceipt(const messages::Message&)        the script's receipt handler, the message by value
 //                   void SendThroughScript(const Message&)           the script's SendMessage (the caller checks for a script)
@@ -149,9 +149,9 @@ inline void SetInitParam(object::Shark& shark, int32_t value)
     shark.m_ownerId = value;
 }
 
-// Construct (Shark's constructor, after Mover's). Not written (they keep the zero of their member initializers): m_curMessage, the swim rectangle, m_actionState and
+// Initialize (Shark's constructor, after Mover's). Not written (they keep the zero of their member initializers): m_curMessage, the swim rectangle, m_actionState and
 // m_ownerId. The speed limits are the base class's own fields (m_maxForce, m_maxVel).
-template<class Env> object::Shark* Construct(object::Shark& shark, Env& env)
+template<class Env> object::Shark* Initialize(object::Shark& shark, Env& env)
 {
     shark.m_myVictim = -1;
     shark.m_alertRange = 5;

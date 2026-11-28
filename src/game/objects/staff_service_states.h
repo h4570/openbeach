@@ -9,7 +9,7 @@
 #include <cstring>
 
 // ServiceStaff (bartenders and cooks) implements `HasState`,
-// `OnEnterState` (OnEnterState, answer true) and `Update` (Update, no arguments, answer true). Construct/Destruct are in staff_construction.h.
+// `OnEnterState` (OnEnterState, answer true) and `Update` (Update, no arguments, answer true). Initialize/Release are in staff_construction.h.
 // Env of OnEnterState:
 //   env.Post(message)                   post a message (Send; the words after data are
 //                                       zero)
