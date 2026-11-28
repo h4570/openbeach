@@ -484,7 +484,7 @@ void Compose(Mode* mode, int photo)
     const int height = renderer->m_height;
     const int width = gui_modes_tools::AlbumSurfaceWidth(screenWidth);
     const int page = CreateSurface(renderer, width, height);
-    obl::ui::renderer::SetSurfaceOrigin(renderer, page, 0, 0);
+    obl::ui::renderer::SetSurfaceScreenOrigin(renderer, page, 0, 0);
     ClearSurface(renderer, page);
     const screen::Rect area{0, 0, width, height};
     SetActiveSurface(renderer, page);

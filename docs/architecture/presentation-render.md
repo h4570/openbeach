@@ -26,8 +26,9 @@ light masks, weather, water animation, renderer image drawing, guest and staff m
 directly. The synthetic blit drivers also call this API. `RleCopy32` takes a screen rectangle by value. `DrawLine` accepts
 the opaque renderer handle. Both blit consumers use the `ui::RendererSurface` record in `game/ui/renderer_types.h`.
 
-Sprite instance draws use UI, type, depth and shadow selectors, previews use `ActorSelect` and the four `DepthRamp*`
-functions, and bakers read `GetMaskHalf`/`GetMaskQuarter`. `RegisterBlitDrivers` only registers the synthetic drivers.
+Sprite instances use dedicated UI, depth and shadow draw functions. Previews draw actor sprites and depth
+ramps, and bakers read the RGB blend masks. The draw names use RGB16 for RGB555 or RGB565 color and
+RGB16Depth16 for a packed word with color in the low 16 bits and depth in the high 16 bits. `RegisterBlitDrivers` only registers the synthetic drivers.
 
 `SpriteInstanceDraw` in `sprite_instance_render.h` calls `NotifySpriteDraw` before counting and drawing.
 `SpriteAnimConstruct/Destruct/Unload/LoadAll/LoadDirection/GetFrame` in `sprite_anim.h` handle animations with lazy frame

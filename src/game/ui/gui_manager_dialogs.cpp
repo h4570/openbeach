@@ -59,9 +59,9 @@ struct GameEnv {
     {
         return obl::ui::renderer::CreateSurface(View(manager).m_renderer, width, height, 0);
     }
-    void SetSurfaceOrigin(Manager* manager, int surface, int x, int y)
+    void SetSurfaceScreenOrigin(Manager* manager, int surface, int x, int y)
     {
-        obl::ui::renderer::SetSurfaceOrigin(View(manager).m_renderer, surface, x, y);
+        obl::ui::renderer::SetSurfaceScreenOrigin(View(manager).m_renderer, surface, x, y);
     }
     // The node is an operator new block: UpdateDialogs frees it with operator delete.
     void PrependNode(Manager* manager, ui::GuiManagerDialogEntry* entry)

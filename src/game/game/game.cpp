@@ -680,7 +680,7 @@ void Render(Game* game)
         PresentDayNight(renderer);
     else
         ui::renderer::PresentWorld(renderer);
-    ui::renderer::RestoreLostSurfaces(renderer);
+    ui::renderer::RecoverUnavailableSurfaces(renderer);
     game->m_currentState->PostRender();
     if (!g_staleGameplayGui) DrawOverlay(game->m_guiManager.get());
     // The mods' overlay over everything the game drew; nothing in the game reads it back.

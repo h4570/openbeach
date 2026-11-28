@@ -110,7 +110,7 @@ void CreateRadar(Manager* gui, int x, int y, const char* image)
 
     gui->m_radarWidget = static_cast<ui::GuiWidget*>(
             ImageConstruct(new ui::GuiImage(), x + 5, y + 0x13, gui->m_panelX1 + 5, gui->m_panelY1 + 0x13, image));
-    obl::ui::renderer::SetSurfaceOrigin(gui->m_renderer, gui->m_radarSurface, x, y);
+    obl::ui::renderer::SetSurfaceScreenOrigin(gui->m_renderer, gui->m_radarSurface, x, y);
     WriteViewRect(gui);
     gui->m_colorViewRect = Pack(0, 0xfa, 0);
     gui->m_colorMarkerBlack = Pack(0, 0, 0);
@@ -170,9 +170,9 @@ void FillRect(Manager* gui, const Rect& rect, uint32_t color)
     obl::ui::renderer::FillRect(gui->m_renderer, packed, color);
 }
 
-void PutPixel(Manager* gui, Point at, uint32_t color)
+void DrawPixelRgb16(Manager* gui, Point at, uint32_t color)
 {
-    obl::ui::renderer::PutPixel(gui->m_renderer, at.x, at.y, color);
+    obl::ui::renderer::DrawPixelRgb16(gui->m_renderer, at.x, at.y, color);
 }
 
 void DrawMarkers(Manager* gui)
@@ -200,11 +200,11 @@ void DrawMarkers(Manager* gui)
         if (type <= 0xc)
             FillRect(gui, MarkerSquare(frame, object->m_WorldXYZ[0], object->m_WorldXYZ[1]), gui->m_colorMarkerRed);
         else if (type == 0xd)
-            PutPixel(gui, MarkerPixel(frame, object->m_WorldXYZ[0], object->m_WorldXYZ[1]), gui->m_colorMarkerGrey);
+            DrawPixelRgb16(gui, MarkerPixel(frame, object->m_WorldXYZ[0], object->m_WorldXYZ[1]), gui->m_colorMarkerGrey);
     }
     for (uint32_t i = 0; i < objects->m_guests.size(); ++i) {
         const object::Base* guest = objects->m_guests[i];
-        PutPixel(gui, MarkerPixel(frame, guest->m_WorldXYZ[0], guest->m_WorldXYZ[1]), gui->m_colorMarkerBlack);
+        DrawPixelRgb16(gui, MarkerPixel(frame, guest->m_WorldXYZ[0], guest->m_WorldXYZ[1]), gui->m_colorMarkerBlack);
     }
 }
 
@@ -227,7 +227,7 @@ Progress* ProgressGui()
 
 void SetProgressOrigin(Progress* gui, int y)
 {
-    obl::ui::renderer::SetSurfaceOrigin(gui->m_renderer, gui->m_progressSurface, 9, y);
+    obl::ui::renderer::SetSurfaceScreenOrigin(gui->m_renderer, gui->m_progressSurface, 9, y);
 }
 
 int ProgressY(const Progress* gui)

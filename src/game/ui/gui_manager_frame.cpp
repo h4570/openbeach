@@ -146,17 +146,17 @@ void ClearSurface(void* renderer, int surface)
 {
     obl::ui::renderer::ClearSurface(renderer, surface);
 }
-void RecreateSurface(void* renderer, int surface)
+void EnsureSurfaceAllocated(void* renderer, int surface)
 {
-    obl::ui::renderer::RecreateSurface(renderer, surface);
+    obl::ui::renderer::EnsureSurfaceAllocated(renderer, surface);
 }
 void SetActiveSurface(void* renderer, int surface)
 {
     obl::ui::renderer::SetActiveSurface(renderer, surface);
 }
-void SetSurfaceOrigin(void* renderer, int surface, int x, int y)
+void SetSurfaceScreenOrigin(void* renderer, int surface, int x, int y)
 {
-    obl::ui::renderer::SetSurfaceOrigin(renderer, surface, x, y);
+    obl::ui::renderer::SetSurfaceScreenOrigin(renderer, surface, x, y);
 }
 bool ResizeSurface(void* renderer, int surface, int width, int height)
 {
@@ -452,9 +452,9 @@ struct GameEnv {
     bool IsSurfaceLost(void* renderer, int surface) { return gui::IsSurfaceLost(renderer, surface); }
     void RestoreSurface(void* renderer, int surface) { gui::RestoreSurface(renderer, surface); }
     void ClearSurface(void* renderer, int surface) { gui::ClearSurface(renderer, surface); }
-    void RecreateSurface(void* renderer, int surface) { gui::RecreateSurface(renderer, surface); }
+    void EnsureSurfaceAllocated(void* renderer, int surface) { gui::EnsureSurfaceAllocated(renderer, surface); }
     void SetActiveSurface(void* renderer, int surface) { gui::SetActiveSurface(renderer, surface); }
-    void SetSurfaceOrigin(void* renderer, int surface, int x, int y) { gui::SetSurfaceOrigin(renderer, surface, x, y); }
+    void SetSurfaceScreenOrigin(void* renderer, int surface, int x, int y) { gui::SetSurfaceScreenOrigin(renderer, surface, x, y); }
     bool ResizeSurface(void* renderer, int surface, int width, int height) { return gui::ResizeSurface(renderer, surface, width, height); }
     void DrawSprite(void* sprite, int x, int y, uint32_t depth, float time)
     {

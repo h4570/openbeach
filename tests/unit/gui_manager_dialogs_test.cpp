@@ -120,7 +120,7 @@ struct OpenEnv {
         return 5;
     }
     void ClearSurface(Manager*, int) { events.push_back("clear"); }
-    void SetSurfaceOrigin(Manager*, int, int x, int y) { events.push_back("O" + std::to_string(x) + "," + std::to_string(y)); }
+    void SetSurfaceScreenOrigin(Manager*, int, int x, int y) { events.push_back("O" + std::to_string(x) + "," + std::to_string(y)); }
     void PrependNode(Manager* m, GuiManagerDialogEntry* entry)
     {
         Node* node = new Node{};

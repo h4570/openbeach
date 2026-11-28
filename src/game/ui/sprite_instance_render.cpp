@@ -69,20 +69,22 @@ void Draw(Instance* instance, int x, int y, int left, int top, int right, int bo
         ui::pixel_primitives::Type2(dst, f.rle, f.palette, pitch, x, y, f.width, f.height, left, top, right, bottom);
         break;
     case Blitter::Actor:
-        ui::pixel_primitives::ActorSelect(dst, f.rle, f.palette, pitch, x, y, f.width, f.height, left, top, right, bottom, depth,
-                f.anim->m_hotspotY, instance->m_lit, instance->m_actorRenderOption, instance->m_keyline);
+        ui::pixel_primitives::DrawActorSpriteRgb16Depth16(dst, f.rle, f.palette, pitch, x, y, f.width, f.height, left, top, right, bottom,
+                depth, f.anim->m_hotspotY, instance->m_lit, instance->m_actorRenderOption, instance->m_keyline);
         break;
     case Blitter::Shadow:
     case Blitter::ShadowZoomOut:
-        (blitter == Blitter::Shadow ? ui::pixel_primitives::Shadow32 : ui::pixel_primitives::ShadowZoomOut32)(
+        (blitter == Blitter::Shadow ? ui::pixel_primitives::DrawShadowRgb16Depth16 : ui::pixel_primitives::DrawShadowZoomOutRgb16Depth16)(
                 dst, f.rle, f.palette, pitch, x, y, f.width, f.height, left, top, right, bottom, depth);
         break;
     case Blitter::Translucent:
-        ui::pixel_primitives::TranslucentSelect(dst, f.rle, f.palette, pitch, x, y, f.width, f.height, left, top, right, bottom);
+        ui::pixel_primitives::DrawTranslucentSpriteRgb16Depth16(
+                dst, f.rle, f.palette, pitch, x, y, f.width, f.height, left, top, right, bottom);
         break;
     case Blitter::Type12:
     case Blitter::Type12ZoomOut:
-        (blitter == Blitter::Type12 ? ui::pixel_primitives::DepthType12Unscaled32 : ui::pixel_primitives::DepthType12ZoomOut32)(
+        (blitter == Blitter::Type12 ? ui::pixel_primitives::DrawDepthTestedFixedSlopeRgb16Depth16
+                                    : ui::pixel_primitives::DrawDepthTestedFixedSlopeZoomOutRgb16Depth16)(
                 dst, f.rle, f.palette, pitch, x, y, f.width, f.height, left, top, right, bottom, depth + sprite_draw::kType12DepthBias);
         break;
     case Blitter::None: break;

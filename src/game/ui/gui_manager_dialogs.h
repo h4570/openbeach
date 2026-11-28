@@ -271,7 +271,7 @@ template<class Env> bool ShowDialog(Env& env, Manager* manager, const char* name
     int surface = env.CreateSurface(manager, width, height);
     env.ClearSurface(manager, surface);
     entry->m_surface = surface;
-    env.SetSurfaceOrigin(manager, surface, dialog->m_x0, dialog->m_y0);
+    env.SetSurfaceScreenOrigin(manager, surface, dialog->m_x0, dialog->m_y0);
     env.PrependNode(manager, entry); // newest first: Escape (CloseFirstDialog) closes the latest window
     entry->m_provider = provider;
     env.Invalidate(dialog);
