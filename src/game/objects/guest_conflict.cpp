@@ -171,9 +171,9 @@ void RunSendOutToplessMessages(Guest& guest)
     }
 }
 
-// ---- LookForVandalItem -------------------------------------------------------------------------------------------------
+// ---- FindVandalismTarget -------------------------------------------------------------------------------------------------
 
-void RunLookForVandalItem(Guest& guest)
+void FindVandalismTargetForGuest(Guest& guest)
 {
     int mine[2] = {};
     ui::MapView::WorldToTile(mine, guest.m_WorldXYZ);
@@ -297,10 +297,10 @@ void Guest::TellNearbyOfTopless()
     RunSendOutToplessMessages(*this);
 }
 
-void Guest::LookForVandalItem()
+void Guest::FindVandalismTarget()
 {
     g_lookForVandal.Count();
-    RunLookForVandalItem(*this);
+    FindVandalismTargetForGuest(*this);
 }
 
 void Guest::VandaliseBin()

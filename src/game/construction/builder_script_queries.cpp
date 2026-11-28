@@ -61,7 +61,7 @@ private:
 void CheckFemaleGuests(Builder* builder)
 {
     GameEnv env;
-    construction::CheckForFemaleGuests(static_cast<const void*>(builder), static_cast<int>(builder->m_id), env);
+    construction::WhistleAtNearbyFemaleGuests(static_cast<const void*>(builder), static_cast<int>(builder->m_id), env);
 }
 
 void FindWorkTile(Builder* builder)
@@ -75,7 +75,7 @@ void FindWorkTile(Builder* builder)
 
 } // namespace
 
-void CheckForFemaleGuests(Builder* builder)
+void WhistleAtNearbyFemaleGuests(Builder* builder)
 {
     CheckFemaleGuests(builder);
 }

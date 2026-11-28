@@ -165,11 +165,11 @@ int FindJob(RepairManager* manager, const float* point, int kind, uint32_t* type
     return repair::FindJob(*manager, env, point, kind, typeOut);
 }
 
-int LookForBetterJob(RepairManager* manager, const float* point, int currentId, uint32_t* typeOut)
+int FindBetterJob(RepairManager* manager, const float* point, int currentId, uint32_t* typeOut)
 {
     g_calls[MethodLookForBetterJob].Count();
     GameEnv env;
-    return repair::LookForBetterJob(*manager, env, point, currentId, typeOut);
+    return repair::FindBetterJob(*manager, env, point, currentId, typeOut);
 }
 
 int FindWateringJob(RepairManager* manager, const float* point)
@@ -193,11 +193,11 @@ void ReleaseJob(RepairManager* manager, int id)
     repair::ReleaseJob(*manager, env, id);
 }
 
-void StartedJob(RepairManager* manager, int id)
+void OnRepairStarted(RepairManager* manager, int id)
 {
     g_calls[MethodStartedJob].Count();
     GameEnv env;
-    repair::StartedJob(*manager, env, id);
+    repair::OnRepairStarted(*manager, env, id);
 }
 
 void ReturnJob(RepairManager* manager, int id, uint32_t type)
@@ -348,14 +348,14 @@ void DriveFuzz(int count)
         case 2: repair_facade::FindJob(manager, point, static_cast<int>(random.Next() % 4), &type); break;
         case 3: {
             int held = activeId();
-            if (held >= 0) repair_facade::LookForBetterJob(manager, point, held, &type);
+            if (held >= 0) repair_facade::FindBetterJob(manager, point, held, &type);
             break;
         }
         case 4: repair_facade::FindWateringJob(manager, point); break;
         case 5: repair_facade::ClaimObject(manager, id, &type); break;
         case 6: {
             int held = activeId();
-            if (held >= 0) repair_facade::StartedJob(manager, held);
+            if (held >= 0) repair_facade::OnRepairStarted(manager, held);
             break;
         }
         case 7: {

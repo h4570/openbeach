@@ -12,7 +12,7 @@
 #include <cstring>
 #include <vector>
 
-// The seven LifeguardFn_* helpers (src/common/lifeguard_fns.h) on a small staggered grid of 64-unit tiles.
+// Lifeguard behavior on a small staggered grid of 64-unit tiles.
 
 using namespace obl;
 using namespace obl::staff::lifeguard;
@@ -176,14 +176,14 @@ OBL_TEST_CASE("lifeguard.find_beach_point_message_depends_on_the_blocked_path_co
     OBL_CHECK(env.sent.empty());
 }
 
-OBL_TEST_CASE("lifeguard.move2tower_sends_by_the_direction_of_the_home_sprite")
+OBL_TEST_CASE("lifeguard.walk_to_tower_sends_by_the_direction_of_the_home_sprite")
 {
     for (int32_t direction = -1; direction <= 5; ++direction) {
         Env env;
         env.homeSprite.m_direction = direction;
         object::Lifeguard lifeguard{};
         MakeLifeguard(lifeguard);
-        OBL_CHECK(MoveToTower(lifeguard, env));
+        OBL_CHECK(WalkToTower(lifeguard, env));
         if (direction == 0 || direction == 1) {
             OBL_REQUIRE(env.sent.size() == 1);
             OBL_CHECK_EQ(env.sent[0].type, kMsgPavement2Object);
@@ -202,7 +202,7 @@ OBL_TEST_CASE("lifeguard.move2tower_sends_by_the_direction_of_the_home_sprite")
     object::Lifeguard lost{};
     MakeLifeguard(lost);
     lost.m_HomeID = 1;
-    OBL_CHECK(!MoveToTower(lost, env));
+    OBL_CHECK(!WalkToTower(lost, env));
 }
 
 OBL_TEST_CASE("lifeguard.set_draw_pos_moves_the_depth_of_the_serve_tile_and_teleports")
@@ -262,7 +262,7 @@ OBL_TEST_CASE("lifeguard.shore_vertex_is_the_nearest_free_one_with_the_first_fre
     OBL_CHECK(!NearestFreeShoreVertex(g.grid, from, v));
 }
 
-OBL_TEST_CASE("lifeguard.go_to_shore_sends_the_two_messages_and_move2sea_entry_also_marks_the_guest_and_the_exit")
+OBL_TEST_CASE("lifeguard.go_to_shore_sends_the_two_messages_and_the_walk_to_sea_entry_also_marks_the_guest_and_the_exit")
 {
     TestGrid g(16, 4);
     std::vector<uint32_t> a{5, 5};

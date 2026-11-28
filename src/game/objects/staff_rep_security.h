@@ -10,8 +10,8 @@
 #include <cstring>
 
 // The three helpers of the representative script and the two helpers of the security guard script (docs/architecture/objects.md).
-// LookForGuests, ArrivedAtGuest, MoveToNextBuilding, LookForOffender and
-// ChooseAction are all member functions; LookForOffender takes one argument (a point it never reads) and answers a bool,
+// FindGuests, ArrivedAtGuest, WalkToNextBuilding, FindOffender and
+// ChooseAction are all member functions; FindOffender takes one argument (a point it never reads) and answers a bool,
 // the others take nothing and answer nothing.
 //
 // Every function answers `false` where the input is not valid or the work would never end (no building to walk to: a division by zero or an
@@ -109,10 +109,10 @@ template<class Member, class Env> const object::Base* DrawBuilding(const Member&
 
 } // namespace detail
 
-// ---- MoveToNextBuilding () -----------------------------------------------------------------------------------------------------
+// ---- WalkToNextBuilding () -----------------------------------------------------------------------------------------------------
 // Draws a building other than the one the representative is heading for and no JETTY, starts the walk animation and sends itself MT_PAVEMENT2OBJECT
 // to the building.
-template<class Env> bool MoveToNextBuilding(object::Rep& employee, Env& env)
+template<class Env> bool WalkToNextBuilding(object::Rep& employee, Env& env)
 {
     const object::Base* building = detail::DrawBuilding(employee, env);
     if (!building) return false;
@@ -121,12 +121,12 @@ template<class Env> bool MoveToNextBuilding(object::Rep& employee, Env& env)
     return true;
 }
 
-// ---- LookForGuests () ----------------------------------------------------------------------------------------------------------
+// ---- FindGuests () ----------------------------------------------------------------------------------------------------------
 // Takes a random object within two tiles (`rand % count`, no draw when there is none). The representative looks again in two seconds when the
 // object is the guest it talked to last (`m_talking_id`), is not approachable, or no walkable point (+-20, +-10 around it) exists. Otherwise it
 // remembers the guest, sends it MT_STATECHANGE 0x1a, starts the walk animation, sets `m_sentToGuest` with the point it found
 // (`m_GuestOffSetPosX/Y/Z`) and walks to it (MT_MOVE2POINT, truncated x and y).
-template<class Env> bool LookForGuests(object::Rep& employee, Env& env)
+template<class Env> bool FindGuests(object::Rep& employee, Env& env)
 {
     object::Base* const* list = nullptr;
     const uint32_t count = env.ObjectsNear(2, list);
@@ -184,14 +184,14 @@ template<class Env> bool ArrivedAtGuest(object::Rep& employee, Env& env)
     return true;
 }
 
-// ---- LookForOffender () ---------------------------------------------------------------------------------------------------
+// ---- FindOffender () ---------------------------------------------------------------------------------------------------
 // `m_doubleFine` is cleared. A guard that stands still (`m_moving` clear) first walks to a random building other than its destination and no JETTY
-// (as MoveToNextBuilding, MT_PAVEMENT2OBJECT). Then the objects within six tiles are inspected in list order, each one resetting
+// (as WalkToNextBuilding, MT_PAVEMENT2OBJECT). Then the objects within six tiles are inspected in list order, each one resetting
 // `m_severity` to 0: a guest that is approachable and whose offence state is 1 (severity 1; not the last offender) or 2 (severity 2; neither the
 // last offender nor the fight partner `m_fightWithId`) or 3 (severity 2; not the last offender) becomes the offender: its id goes to `m_offenderId`,
 // its position to `m_MisdemeanourPos` (x with a NaN quieted, y and z raw) and the answer is 1. No such guest: 0 (and the severity untouched when the
 // list is empty).
-template<class Env> bool LookForOffender(object::SecurityGuard& employee, Env& env, uint8_t& found)
+template<class Env> bool FindOffender(object::SecurityGuard& employee, Env& env, uint8_t& found)
 {
     const object::Base* building = nullptr;
     if (!employee.m_moving) {

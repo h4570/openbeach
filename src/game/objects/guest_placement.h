@@ -7,14 +7,14 @@
 
 #include <cstdint>
 
-// The pure rules of the small guest functions that put a guest somewhere (guest placement, docs/architecture/objects.md): SetupSnogOffset,
+// The pure rules of the small guest functions that put a guest somewhere (guest placement, docs/architecture/objects.md): PositionPartnerForKiss,
 // SetSurfacePoint, IsEntryPointClear and the hotel choice of FindLodging. The game side
 // (object lists, grid lookups, virtual calls) is in src/game/objects/guest_placement.cpp.
 //
 // 53-bit precision: every operation is one double rounding, every float store one float rounding.
 namespace obl::guest_placement {
 
-// ---- SetupSnogOffset ----------------------------------------------------------------------------------------------------------------
+// ---- PositionPartnerForKiss ----------------------------------------------------------------------------------------------------------------
 
 // Where the snog partner is put relative to the guest, by the guest's sprite direction (0..7): a fixed step in world units. A direction past 7
 // has no step, so the caller handles that case itself.

@@ -183,7 +183,7 @@ OBL_TEST_CASE("cleaning.remove_job_and_status")
     OBL_CHECK_EQ(GetJobStatus(f.manager, f.env, 3), 2); // not queued
     OBL_CHECK_EQ(GetJobStatus(f.manager, f.env, 1), 3); // queued
     OBL_CHECK_EQ(GetJobStatus(f.manager, f.env, 2), 4); // claimed
-    StartedCleaning(f.manager, f.env, 2);
+    OnCleaningStarted(f.manager, f.env, 2);
     OBL_CHECK_EQ(GetJobStatus(f.manager, f.env, 2), 5); // being cleaned
     f.env.cleaners = 0;
     OBL_CHECK_EQ(GetJobStatus(f.manager, f.env, 2), 1); // nobody employed
@@ -200,11 +200,11 @@ OBL_TEST_CASE("cleaning.started_cleaning_needs_the_object_and_an_active_job")
     Fixture f;
     f.Add(1, "Bin");
     ClaimJob(f.manager, 1, 0);
-    StartedCleaning(f.manager, f.env, 9); // no such object
+    OnCleaningStarted(f.manager, f.env, 9); // no such object
     OBL_CHECK_EQ(f.manager.activeJobs.front().cleaning, 0);
     f.Add(2, "Bin");
-    StartedCleaning(f.manager, f.env, 2);
-    StartedCleaning(f.manager, f.env, 1);
+    OnCleaningStarted(f.manager, f.env, 2);
+    OnCleaningStarted(f.manager, f.env, 1);
     OBL_CHECK_EQ(f.manager.activeJobs.front().cleaning, 1);
 }
 
@@ -215,8 +215,8 @@ OBL_TEST_CASE("cleaning.did_not_clean_requeues_with_the_same_urgency")
     f.Add(2, "Bin").cleanerClaimed = true;
     ClaimJob(f.manager, 1, 0);
     ClaimJob(f.manager, 2, 1);
-    DidNotClean(f.manager, f.env, 1);
-    DidNotClean(f.manager, f.env, 2);
+    OnCleaningAbandoned(f.manager, f.env, 1);
+    OnCleaningAbandoned(f.manager, f.env, 2);
     OBL_CHECK_EQ(f.Active(), 0u);
     OBL_CHECK_EQ(f.manager.activeCount, 0);
     OBL_CHECK_EQ(f.Pending(), 2u);
@@ -226,7 +226,7 @@ OBL_TEST_CASE("cleaning.did_not_clean_requeues_with_the_same_urgency")
     OBL_CHECK_EQ(f.JobAt(1).urgent, 1);
     OBL_CHECK(!f.env.objects[1].cleanerClaimed);
     OBL_CHECK(!f.env.objects[2].cleanerClaimed);
-    DidNotClean(f.manager, f.env, 1); // without an active record: just a repeated request
+    OnCleaningAbandoned(f.manager, f.env, 1); // without an active record: just a repeated request
     OBL_CHECK_EQ(f.JobAt(0).calls, 1u);
 }
 

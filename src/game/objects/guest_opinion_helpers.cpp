@@ -142,7 +142,7 @@ void AlterQueue(Guest& guest)
         BuildingThought(guest, building, thought);
         guest_visit::QueuePenalty(guest, *guest.m_definition);
         guest.m_ActionState = 0;
-        guest.MissedDesire();
+        guest.OnUnmetDesire();
         StateChange(guest, 0xc);
     } else {
         guest.m_ActionState = 1;
@@ -165,7 +165,7 @@ void AlterSafety(Guest& guest)
         guest.m_missedPurchase = 1;
         guest.m_ActionState = 0;
         Subtract(guest.m_opinion[Safety], guest.m_definition->m_OpinionEffect[Safety][1]);
-        guest.MissedDesire();
+        guest.OnUnmetDesire();
         if (guest.m_StayingAt == guest.m_DestObjectID) {
             guest.m_leavingEarly = 1;
             Thought(guest, "GUEST_THOUGHT_THIS_IS_CRAP");

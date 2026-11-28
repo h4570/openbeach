@@ -12,7 +12,7 @@
 // The small duties of staff: the shift of a member, the builder's number, a sprite's direction clamp and the cleaner's walk to a
 // bin.
 //   IsOnShift: env.DayTime() (the world's time of day).
-//   MoveToBin: env.Object(id) (the object manager's lookup), env.Post(message) (the message handler).
+//   WalkToBin: env.Object(id) (the object manager's lookup), env.Post(message) (the message handler).
 namespace obl::staff_duties {
 
 using object::Staff;
@@ -48,7 +48,7 @@ inline void SetDirection(ui::SpriteInstance& sprite, int32_t direction)
 // The bin's world position moved to the spot of the cleaner's side of it, by the bin's direction (0..7; anything else leaves it): the point is written
 // (y, x) - the two stay swapped, the bins rely on it - and a message of type 8 from the cleaner to itself carries the truncated point. The second coordinate stays
 // a double until it is truncated.
-template<class Env> void MoveToBin(int32_t objectId, const object::Base& cleaner, float* point, Env& env)
+template<class Env> void WalkToBin(int32_t objectId, const object::Base& cleaner, float* point, Env& env)
 {
     const object::Base* bin = env.Object(objectId);
     if (!bin) return;

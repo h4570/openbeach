@@ -45,8 +45,8 @@ using game::FatalError;
 using game::GetGuiManager;
 using game::GetObjectManager;
 using game::GetWorld;
-using ui::RepMoveToNextBuilding;
-using ui::SecurityLookForOffender;
+using ui::FindOffenderForGuard;
+using ui::SendRepToNextBuilding;
 
 namespace {
 
@@ -221,7 +221,7 @@ char RunStaffReceive(Staff* employee, const messages::Message* message)
 // Short runs of calls into the game (src/game/objects/staff_profession_receive.h, staff_state.h); they always end in the staff ReceiveMessage or the
 // base class' sack.
 
-const auto kDidNotClean = &cleaning::cleaning_facade::DidNotClean;
+const auto kOnCleaningAbandoned = &cleaning::cleaning_facade::OnCleaningAbandoned;
 const auto kCancelCleaning = &cleaning::cleaning_facade::CancelJob;
 const auto kRepairType = &repair::repair_facade::GetJobType;
 const auto kReleaseRepair = &repair::repair_facade::ReleaseJob;
@@ -253,18 +253,18 @@ template<class T> struct ProfessionEnv {
         if constexpr (std::is_same_v<T, object::Rep>)
             RepReleaseGuestAndLeave(object, reinterpret_cast<uint32_t*>(&object.m_talking_id), sentToGuest != 0);
     }
-    void MoveToNextBuilding()
+    void WalkToNextBuilding()
     {
-        if constexpr (std::is_same_v<T, object::Rep>) RepMoveToNextBuilding(object);
+        if constexpr (std::is_same_v<T, object::Rep>) SendRepToNextBuilding(object);
     }
     void FreeBuilder(int32_t builderId) { construction::runtime::FreeBuilderOfJob(GetWorld()->m_constructionManager, builderId); }
     void SetState(int32_t state) { entity::accessors::SetState(object, static_cast<uint32_t>(state)); }
     void EnterState(int32_t state) { object.OnEnterState(static_cast<uint32_t>(state)); }
-    void LookForOffender()
+    void FindOffender()
     {
-        if constexpr (std::is_same_v<T, object::SecurityGuard>) SecurityLookForOffender(object);
+        if constexpr (std::is_same_v<T, object::SecurityGuard>) FindOffenderForGuard(object);
     }
-    void DidNotClean(int32_t id) { kDidNotClean(GetWorld()->m_cleaningManager, id); }
+    void OnCleaningAbandoned(int32_t id) { kOnCleaningAbandoned(GetWorld()->m_cleaningManager, id); }
     void CancelCleaning(int32_t id) { kCancelCleaning(GetWorld()->m_cleaningManager, id); }
     int32_t RepairType(int32_t id) { return kRepairType(GetWorld()->m_repairManager, id); }
     void ReleaseRepair(int32_t id) { kReleaseRepair(GetWorld()->m_repairManager, id); }

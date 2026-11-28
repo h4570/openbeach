@@ -105,8 +105,8 @@ template<class Env> void ReleaseJob(Manager& manager, Env&, int id)
     if (auto active = Find(manager.activeJobs, id); active != manager.activeJobs.end()) manager.activeJobs.erase(active);
 }
 
-// StartedJob: the mechanic has begun (repairing = 1).
-template<class Env> void StartedJob(Manager& manager, Env&, int id)
+// OnRepairStarted: the mechanic has begun (repairing = 1).
+template<class Env> void OnRepairStarted(Manager& manager, Env&, int id)
 {
     if (auto active = Find(manager.activeJobs, id); active != manager.activeJobs.end()) active->repairing = 1;
 }
@@ -295,7 +295,7 @@ template<class Env> int FindJob(Manager& manager, Env& env, const float* point, 
     return -1;
 }
 
-template<class Env> int LookForBetterJob(Manager& manager, Env& env, const float* point, int currentId, uint32_t* typeOut)
+template<class Env> int FindBetterJob(Manager& manager, Env& env, const float* point, int currentId, uint32_t* typeOut)
 {
     auto current = Find(manager.activeJobs, currentId);
     if (current == manager.activeJobs.end()) return -1;

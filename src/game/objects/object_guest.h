@@ -57,19 +57,19 @@ struct Guest : Person {
     void FindFightPerson();
     void TellNearbyOfFight();
     void TellNearbyOfTopless();
-    void LookForVandalItem();
+    void FindVandalismTarget();
     void VandaliseBin();
     void AlterDesires();
     void SetupStartValues();
-    void MissedDesire();
-    void LookForIllPoint();
-    void LookForBench();
+    void OnUnmetDesire();
+    void FindSicknessSpot();
+    void FindBench();
     void QueueAtComplaints();
     void QueueAtWharf();
     void CreateLitter();
     void GetConsumePoint();
     void FindFlirtTarget();
-    void MoveActionPerson();
+    void PositionHandHoldingPartner();
     void AlterQueueOpinion();
     void AlterSafetyOpinion();
     void UpdatePriceScore();
@@ -78,33 +78,33 @@ struct Guest : Person {
     void ReactToSpottedEvent();
     bool CheckBedTime();
     bool CheckLeaveResort();
-    void SetupSnogOffset();
-    void FaceEachOther();
+    void PositionPartnerForKiss();
+    void TurnToFaceEachOther();
     void FindLodging();
     void SetSurfacePoint();
     void GetNextPoolPoint();
     void ChooseFunSlideAction();
-    void SetupFunPoolSwim();
+    void StartSwimmingAfterSlide();
     void SearchDesire();
     void AddIllPurchaseThought();
     void AddCommodBeachClosed();
-    void AddThoughtIDidnt();
-    void AddThoughtIDidIt();
+    void ThinkAboutUnfairDetention();
+    void ThinkAboutBeingDetained();
     void NoRouteToLodging();
     void AddBuildingFullThought();
     void AddDrowningThought();
-    void DemolishedAsleep();
+    void OnLodgingDemolishedDuringSleep();
     void GenerateBlockedMessage();
     void StartPathWalk();
     void SurfToShore();
     void WindSurfStraight();
-    void GotoDancePoint();
+    void WalkToDancePoint();
     void WalkAlongPath();
-    void HeadForEntryPoint();
+    void WalkToEntryPoint();
     void GetSeaEntry();
-    void GotoWorldUnloadPoint();
+    void WalkToWorldUnloadPoint();
     void WalkToWindsurf();
-    void HeadForBin();
+    void WalkToBin();
     void WanderBeach();
 
     float m_Tolerance[14] = {}; // seven (min, max) pairs: beauty, crowding, totty, price, variety, cleanliness, safety
@@ -183,7 +183,7 @@ struct Guest : Person {
     uint8_t m_topless = 0; // script variable Topless (guest GetValue/SetValue 0x5c); not saved
     uint8_t m_souvenirsDecided = 0; // CheckLeaveResort: souvenirs requested; not saved
     uint8_t m_missedDesireLast = 0; // copy of m_missedDesire taken at the start of SearchDesire; not saved
-    uint8_t m_missedDesire = 0; // MissedDesire: the chosen desire failed once; SearchDesire clears it when it picks a new one; not saved
+    uint8_t m_missedDesire = 0; // OnUnmetDesire: the chosen desire failed once; SearchDesire clears it when it picks a new one; not saved
     int32_t m_NumTimesBlocked = 0;
     uint32_t m_OffenceState = 0;
     float m_timeOfOffence = 0;

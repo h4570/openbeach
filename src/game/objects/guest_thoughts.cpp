@@ -26,8 +26,8 @@
 #include <vector>
 
 // The seven thought functions of a guest (src/game/objects/guest_thoughts.h, guest thoughts, docs/architecture/objects.md): AddIllPurchaseThought,
-// AddCommodBeachClosed, AddThoughtIDidnt, AddThoughtIDidIt, NoRouteToLodging, AddBuildingFullThought and
-// AddDrowningThought, and the two that ask the same of other objects: DemolishedAsleep (thought, opinion sound) and GenerateBlockedMessage
+// AddCommodBeachClosed, ThinkAboutUnfairDetention, ThinkAboutBeingDetained, NoRouteToLodging, AddBuildingFullThought and
+// AddDrowningThought, and the two that ask the same of other objects: OnLodgingDemolishedDuringSleep (thought, opinion sound) and GenerateBlockedMessage
 // (ticker line). The script calls them through the guest's CallFunction. An input a function cannot handle stops the game with
 // fatal::UnhandledInput. The driver of the random sound PlayRandomSound checks the LoopSounds calls it makes.
 namespace obl::object {
@@ -236,18 +236,18 @@ bool BuildingFull(Guest& guest)
     GuestBuildingThought(guest, building, text);
     guest_visit::QueuePenalty(guest, *guest.m_definition);
     guest.m_ActionState = 0;
-    guest.MissedDesire();
+    guest.OnUnmetDesire();
     GuestStateChange(guest, 0xc);
     return true;
 }
 
-bool RunDemolishedAsleep(Guest& guest)
+bool ReactToLodgingDemolition(Guest& guest)
 {
     PenaliseDemolishedScore(guest);
     GuestBadVisitMood(guest);
     GuestBadVisitSound(guest);
     Env env;
-    ThinkOf(guest, kDemolishedAsleep, env);
+    ThinkOf(guest, kLodgingDemolishedDuringSleep, env);
     PenaliseDemolishedOpinions(guest);
     return true;
 }
@@ -286,12 +286,12 @@ void Guest::AddCommodBeachClosed()
     Dispatch<BeachClosed>(this, g_beachClosed, "objects.guest-add-commod-beach-closed");
 }
 
-void Guest::AddThoughtIDidnt()
+void Guest::ThinkAboutUnfairDetention()
 {
     Dispatch<Didnt>(this, g_didnt, "objects.guest-add-thought-i-didnt");
 }
 
-void Guest::AddThoughtIDidIt()
+void Guest::ThinkAboutBeingDetained()
 {
     Dispatch<DidIt>(this, g_didIt, "objects.guest-add-thought-i-did-it");
 }
@@ -311,9 +311,9 @@ void Guest::AddDrowningThought()
     Dispatch<Drowning>(this, g_drowning, "objects.guest-add-drowning-thought");
 }
 
-void Guest::DemolishedAsleep()
+void Guest::OnLodgingDemolishedDuringSleep()
 {
-    Dispatch<RunDemolishedAsleep>(this, g_demolished, "objects.guest-demolished-asleep");
+    Dispatch<ReactToLodgingDemolition>(this, g_demolished, "objects.guest-demolished-asleep");
 }
 
 void Guest::GenerateBlockedMessage()

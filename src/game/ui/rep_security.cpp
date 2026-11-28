@@ -37,7 +37,7 @@ using object::SecurityGuard;
 using ui::SpriteInstance;
 namespace fns = staff::repsec;
 
-enum Which { LookForGuests, ArrivedAtGuest, MoveToNextBuilding, LookForOffender, ChooseAction, Count };
+enum Which { FindGuests, ArrivedAtGuest, WalkToNextBuilding, FindOffender, ChooseAction, Count };
 const char* const kNames[Count] = {
         "ui.rep-look-for-guests",
         "ui.rep-arrived-at-guest",
@@ -102,29 +102,29 @@ template<class Member> struct GameEnv {
 };
 
 // false = the input cannot be handled and nothing was drawn, written or sent; Run then ends the game with fatal::UnhandledInput. `answer` is the
-// byte result of LookForOffender.
+// byte result of FindOffender.
 bool TryAnswer(Which which, object::Base& member, uint8_t& answer)
 {
     switch (which) {
-    case LookForGuests: {
+    case FindGuests: {
         auto& rep = static_cast<Rep&>(member);
         GameEnv<Rep> env{rep};
-        return fns::LookForGuests(rep, env);
+        return fns::FindGuests(rep, env);
     }
     case ArrivedAtGuest: {
         auto& rep = static_cast<Rep&>(member);
         GameEnv<Rep> env{rep};
         return fns::ArrivedAtGuest(rep, env);
     }
-    case MoveToNextBuilding: {
+    case WalkToNextBuilding: {
         auto& rep = static_cast<Rep&>(member);
         GameEnv<Rep> env{rep};
-        return fns::MoveToNextBuilding(rep, env);
+        return fns::WalkToNextBuilding(rep, env);
     }
-    case LookForOffender: {
+    case FindOffender: {
         auto& guard = static_cast<SecurityGuard&>(member);
         GameEnv<SecurityGuard> env{guard};
-        return fns::LookForOffender(guard, env, answer);
+        return fns::FindOffender(guard, env, answer);
     }
     case ChooseAction: {
         auto& guard = static_cast<SecurityGuard&>(member);
@@ -149,21 +149,21 @@ uint8_t Run(Which which, object::Base& member)
 
 } // namespace
 
-void RepLookForGuests(object::Rep& rep)
+void FindGuestsForRep(object::Rep& rep)
 {
-    Run(LookForGuests, rep);
+    Run(FindGuests, rep);
 }
 void RepArrivedAtGuest(object::Rep& rep)
 {
     Run(ArrivedAtGuest, rep);
 }
-void RepMoveToNextBuilding(object::Rep& rep)
+void SendRepToNextBuilding(object::Rep& rep)
 {
-    Run(MoveToNextBuilding, rep);
+    Run(WalkToNextBuilding, rep);
 }
-uint8_t SecurityLookForOffender(object::SecurityGuard& guard)
+uint8_t FindOffenderForGuard(object::SecurityGuard& guard)
 {
-    return Run(LookForOffender, guard);
+    return Run(FindOffender, guard);
 }
 void SecurityChooseAction(object::SecurityGuard& guard)
 {

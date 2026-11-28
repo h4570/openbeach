@@ -143,7 +143,7 @@ inline int32_t SlidePalette(int32_t previous, int32_t paletteCount)
     return previous >= paletteCount ? paletteCount - 1 : previous;
 }
 
-// ---- SetupFunPoolSwim -------------------------------------------------------------------------------------------------
+// ---- StartSwimmingAfterSlide -------------------------------------------------------------------------------------------------
 // The guest's m_ActionState says what to set up: 1..4 swap the funpool sprite for a swimming one, put the guest at the foot of the slide (spot by state and
 // building direction) and send it swimming to the landing spot; 5 only turns and puts it on the landing spot; 6 puts it on another spot and sends it to a
 // footprint point of the building; any other state does nothing (state 0 is read as if it were one of 1..4 but with offsets the code never set, so it is

@@ -128,11 +128,11 @@ struct FakeEnv {
     int32_t Rand() { return rand; }
 
     // Lifeguard.
-    void HeadForShore() { Add("shore"); }
+    void SwimToShore() { Add("shore"); }
     const object::Base* Hotel() { return hotel; }
-    void MoveToTower() { Add("tower"); }
+    void WalkToTower() { Add("tower"); }
     void FindBeachPoint() { Add("beachpoint"); }
-    void Move2SeaEntry() { Add("seaentry"); }
+    void WalkToSeaEntry() { Add("seaentry"); }
     void SetDrawPosBuild() { Add("drawbuild"); }
     void SetDrawPosServe() { Add("drawserve"); }
     void FindBeach() { Add("beach"); }
@@ -162,7 +162,7 @@ struct FakeEnv {
     int32_t WateringJob() { return wateringJob; }
     void ReturnJob(int32_t id, int32_t kind) { Add("return(" + std::to_string(id) + "," + std::to_string(kind) + ")"); }
     void ReleaseJob(int32_t id) { Add("release(" + std::to_string(id) + ")"); }
-    void StartedJob(int32_t id) { Add("started(" + std::to_string(id) + ")"); }
+    void OnRepairStarted(int32_t id) { Add("started(" + std::to_string(id) + ")"); }
 
     // Cleaner.
     int32_t FindJob(bool urgent, int32_t& type)
@@ -176,20 +176,20 @@ struct FakeEnv {
     void SetCalledCleaning(object::Base*, bool on) { Add(on ? "called(1)" : "called(0)"); }
     void SetCleanerClaimed(object::Base*, bool on) { Add(on ? "claimed(1)" : "claimed(0)"); }
     void SetBinFill(object::Base*, int32_t value) { Add("binfill(" + std::to_string(value) + ")"); }
-    void MoveToBin(int32_t id, const float* pos) { Add("tobin(" + std::to_string(id) + "," + Fmt("%g,%g)", pos[0], pos[1])); }
+    void WalkToBin(int32_t id, const float* pos) { Add("tobin(" + std::to_string(id) + "," + Fmt("%g,%g)", pos[0], pos[1])); }
     void FaceSameDirection(int32_t id) { Add("same(" + std::to_string(id) + ")"); }
     void FaceObjectIfPresent(int32_t id) { Add("ifpresent(" + std::to_string(id) + ")"); }
-    void DidNotClean(int32_t id) { Add("didnot(" + std::to_string(id) + ")"); }
-    void StartedCleaning(int32_t id) { Add("startedclean(" + std::to_string(id) + ")"); }
+    void OnCleaningAbandoned(int32_t id) { Add("didnot(" + std::to_string(id) + ")"); }
+    void OnCleaningStarted(int32_t id) { Add("startedclean(" + std::to_string(id) + ")"); }
 
     // Rep.
-    void MoveToNextBuilding() { Add("nextbuilding"); }
-    void LookForGuests() { Add("lookguests"); }
+    void WalkToNextBuilding() { Add("nextbuilding"); }
+    void FindGuests() { Add("lookguests"); }
     void ArrivedAtGuest() { Add("arrived"); }
     void UpdateFeedback() { Add("updatefeedback"); }
 
     // Security guard.
-    bool LookForOffender(float*) { return offender; }
+    bool FindOffender(float*) { return offender; }
     void CollectFine(const char* kind) { Add(std::string("fine(") + kind + ")"); }
     const float* ServePosition(int32_t home, float* out)
     {
@@ -202,7 +202,7 @@ struct FakeEnv {
 
     // Builder.
     void FindNearestValidTile() { Add("tile"); }
-    void CheckForFemaleGuests() { Add("females"); }
+    void WhistleAtNearbyFemaleGuests() { Add("females"); }
     int32_t& Whistling() { return whistling; }
     void RemoveCostPoint(int32_t id) { Add("costpoint(" + std::to_string(id) + ")"); }
     void FreeJob(uint32_t id) { Add("free(" + std::to_string(id) + ")"); }

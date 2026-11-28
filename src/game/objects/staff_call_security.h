@@ -10,7 +10,7 @@ template<class Env> void SecurityCallFunction(object::SecurityGuard& employee, i
     case 0xb: employee.m_visible = 0; return;
     case 0xc: employee.m_visible = 1; return;
     case 0x7b: env.PushThought(0x20000000); return;
-    case 0x7e: employee.m_misdemeanourFound = env.LookForOffender(employee.m_MisdemeanourPos); return;
+    case 0x7e: employee.m_misdemeanourFound = env.FindOffender(employee.m_MisdemeanourPos); return;
     case 0x7f:
         ++employee.m_numSeriousFinesToday;
         employee.m_fineTotalToday += employee.m_seriousFineAmount;

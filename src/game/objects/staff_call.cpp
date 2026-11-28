@@ -60,11 +60,11 @@ using game::GetWorld;
 using game::GetWorldParams;
 using game::NumBuildersWhistling;
 using game::Rand;
+using ui::FindGuestsForRep;
+using ui::FindOffenderForGuard;
 using ui::RepArrivedAtGuest;
-using ui::RepLookForGuests;
-using ui::RepMoveToNextBuilding;
 using ui::SecurityChooseAction;
-using ui::SecurityLookForOffender;
+using ui::SendRepToNextBuilding;
 
 namespace {
 using namespace world_data;
@@ -97,8 +97,8 @@ void RunCall(object::Staff* employee, int32_t id)
 }
 
 struct RepEnv : GameEnv {
-    void MoveToNextBuilding() { RepMoveToNextBuilding(static_cast<Rep&>(employee)); }
-    void LookForGuests() { RepLookForGuests(static_cast<Rep&>(employee)); }
+    void WalkToNextBuilding() { SendRepToNextBuilding(static_cast<Rep&>(employee)); }
+    void FindGuests() { FindGuestsForRep(static_cast<Rep&>(employee)); }
     void ArrivedAtGuest() { RepArrivedAtGuest(static_cast<Rep&>(employee)); }
     void UpdateFeedback() { RepUpdateFeedback(static_cast<Rep&>(employee)); }
     void Blink(const char* icon, bool blink) { reinterpret_cast<ui::GuiManager*>(GetGuiManager())->BlinkActionButtons(icon, blink); }
@@ -110,7 +110,7 @@ struct RepEnv : GameEnv {
 };
 
 struct SecurityEnv : RepEnv {
-    uint8_t LookForOffender(float*) { return SecurityLookForOffender(static_cast<SecurityGuard&>(employee)); }
+    uint8_t FindOffender(float*) { return FindOffenderForGuard(static_cast<SecurityGuard&>(employee)); }
     void ChooseAction() { SecurityChooseAction(static_cast<SecurityGuard&>(employee)); }
     const float* ServePosition(int32_t id, float* out)
     {
@@ -148,7 +148,7 @@ void RunSecurityCall(object::Staff* employee, int32_t id)
 struct BuilderEnv : RepEnv {
     float DayTime() { return GetWorld()->m_gameDayTime; }
     void FindNearestValidTile() { construction::FindNearestValidTile(static_cast<object::Builder*>(&employee)); }
-    void CheckForFemaleGuests() { construction::CheckForFemaleGuests(static_cast<object::Builder*>(&employee)); }
+    void WhistleAtNearbyFemaleGuests() { construction::WhistleAtNearbyFemaleGuests(static_cast<object::Builder*>(&employee)); }
     int32_t& Whistling() { return NumBuildersWhistling(); }
     void RemoveCostPoint(int32_t id) { construction::runtime::RemoveCostPoint(GetWorld()->m_constructionManager, id); }
     void FreeJob(int32_t id) { construction::runtime::FreeBuilderOfJob(GetWorld()->m_constructionManager, id); }
@@ -191,8 +191,8 @@ struct CleanerEnv : BuilderEnv {
         return cleaning::cleaning_facade::FindBestScoredJob(manager, point, &type, bins, litter, toilets);
     }
     void CancelJob(int32_t id) { cleaning::cleaning_facade::CancelJob(GetWorld()->m_cleaningManager, id); }
-    void DidNotClean(int32_t id) { cleaning::cleaning_facade::DidNotClean(GetWorld()->m_cleaningManager, id); }
-    void StartedCleaning(int32_t id) { cleaning::cleaning_facade::StartedCleaning(GetWorld()->m_cleaningManager, id); }
+    void OnCleaningAbandoned(int32_t id) { cleaning::cleaning_facade::OnCleaningAbandoned(GetWorld()->m_cleaningManager, id); }
+    void OnCleaningStarted(int32_t id) { cleaning::cleaning_facade::OnCleaningStarted(GetWorld()->m_cleaningManager, id); }
     void SetMoving(object::Base* object, bool moving) { object::SetMovingFlag(*object, moving); }
     void SetCalledCleaning(object::Base* object, bool called)
     {
@@ -200,7 +200,7 @@ struct CleanerEnv : BuilderEnv {
     }
     void SetCleanerClaimed(object::Base* object, bool claimed) { static_cast<object::Prop*>(object)->SetCleanerClaimed(claimed ? 1 : 0); }
     void SetBinFill(object::Base* object, uint32_t fill) { static_cast<object::Scenery*>(object)->SetBinFill(fill); }
-    void MoveToBin(int32_t id, float* point) { object::SendCleanerToBin(id, employee, point); }
+    void WalkToBin(int32_t id, float* point) { object::SendCleanerToBin(id, employee, point); }
     void FaceSameDirection(int32_t id)
     {
         const int32_t direction = static_cast<const SpriteInstance*>(Object(id)->m_sprite)->m_direction;
@@ -241,7 +241,7 @@ struct MechanicEnv : BuilderEnv {
     {
         float point[3];
         std::memcpy(point, employee.m_WorldXYZ, sizeof(point));
-        return repair::repair_facade::LookForBetterJob(GetWorld()->m_repairManager, point, current, reinterpret_cast<uint32_t*>(&type));
+        return repair::repair_facade::FindBetterJob(GetWorld()->m_repairManager, point, current, reinterpret_cast<uint32_t*>(&type));
     }
     int32_t WateringJob()
     {
@@ -251,7 +251,7 @@ struct MechanicEnv : BuilderEnv {
     }
     void ReturnJob(int32_t id, uint32_t type) { repair::repair_facade::ReturnJob(GetWorld()->m_repairManager, id, type); }
     void ReleaseJob(int32_t id) { repair::repair_facade::ReleaseJob(GetWorld()->m_repairManager, id); }
-    void StartedJob(int32_t id) { repair::repair_facade::StartedJob(GetWorld()->m_repairManager, id); }
+    void OnRepairStarted(int32_t id) { repair::repair_facade::OnRepairStarted(GetWorld()->m_repairManager, id); }
 };
 test::CallCounter g_mechanic("objects.mechanic-call-function");
 void RunMechanicCall(object::Staff* employee, int32_t id)
@@ -263,10 +263,10 @@ void RunMechanicCall(object::Staff* employee, int32_t id)
 
 struct LifeguardEnv : CleanerEnv {
     object::Lifeguard& Lifeguard() { return static_cast<object::Lifeguard&>(employee); }
-    void HeadForShore() { LifeguardHeadForShore(Lifeguard()); }
-    void MoveToTower() { LifeguardMove2Tower(Lifeguard()); }
+    void SwimToShore() { SendLifeguardSwimmingToShore(Lifeguard()); }
+    void WalkToTower() { SendLifeguardToTower(Lifeguard()); }
     void FindBeachPoint() { LifeguardFindBeachPoint(Lifeguard()); }
-    void Move2SeaEntry() { LifeguardMove2SeaEntry(Lifeguard()); }
+    void WalkToSeaEntry() { SendLifeguardToSeaEntry(Lifeguard()); }
     void SetDrawPosBuild() { LifeguardSetDrawPosBuild(Lifeguard()); }
     void SetDrawPosServe() { LifeguardSetDrawPosServe(Lifeguard()); }
     void FindBeach() { LifeguardFindBeach(Lifeguard()); }

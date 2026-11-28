@@ -104,7 +104,7 @@ OBL_TEST_CASE("staff_duties.bin_walk_moves_the_point_by_the_bins_direction_and_p
         BinEnv env;
         env.bin = bin;
         float point[2] = {0, 0};
-        MoveToBin(5, *cleaner, point, env);
+        WalkToBin(5, *cleaner, point, env);
         OBL_CHECK_EQ(point[0], c.first);
         OBL_CHECK_EQ(point[1], c.second);
         OBL_CHECK_EQ(env.posted.size(), size_t(1));
@@ -117,7 +117,7 @@ OBL_TEST_CASE("staff_duties.bin_walk_moves_the_point_by_the_bins_direction_and_p
     }
     BinEnv missing;
     float point[2] = {1, 2};
-    MoveToBin(5, *cleaner, point, missing);
+    WalkToBin(5, *cleaner, point, missing);
     OBL_CHECK_EQ(point[0], 1.0f);
     OBL_CHECK(missing.posted.empty());
 }

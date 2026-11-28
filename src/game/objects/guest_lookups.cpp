@@ -33,8 +33,8 @@
 #include "game/ui/map_view_math.h"
 #include "game/objects/object_scenery.h"
 
-// The guest functions that look for a place and post a few messages (src/game/objects/guest_lookups.h, docs/architecture/objects.md, place lookups; GetConsumePoint, FindFlirtTarget and MoveActionPerson):
-// LookForIllPoint (the first-aid building when it is open, else the hotel, else home), LookForBench (the nearest bench within
+// The guest functions that look for a place and post a few messages (src/game/objects/guest_lookups.h, docs/architecture/objects.md, place lookups; GetConsumePoint, FindFlirtTarget and PositionHandHoldingPartner):
+// FindSicknessSpot (the first-aid building when it is open, else the hotel, else home), FindBench (the nearest bench within
 // five tiles with a free seat), QueueAtComplaints and QueueAtWharf (a walkable point around the serve position of
 // the complaints hut / wharf) and CreateLitter (a litter scenery under the guest, through the world's place command). The script reaches them
 // through the guest's CallFunction. An input these functions cannot take stops the game with a fatal error.
@@ -90,7 +90,7 @@ object::Base* FirstBuilding(BuildingBehavior behavior)
     return list.empty() ? nullptr : list.front();
 }
 
-// ---- LookForIllPoint ---------------------------------------------------------------------------------------------------------------------
+// ---- FindSicknessSpot ---------------------------------------------------------------------------------------------------------------------
 
 // A random FIRSTAID building (one draw, none when there is no such building) that is open gets the guest (MT_PAVEMENT2OBJECT, flags 1). Otherwise the hotel the
 // guest stays in does; with none the guest is leaving early and goes home (MT_STATECHANGE to STATE_GUEST_LEAVING_WORLD).
@@ -113,7 +113,7 @@ void IllPoint(Guest& guest)
     PostToSelf(guest, messages::MT_STATECHANGE, 0, guest_lookup::kStateLeavingWorld);
 }
 
-// ---- LookForBench ------------------------------------------------------------------------------------------------------------------------
+// ---- FindBench ------------------------------------------------------------------------------------------------------------------------
 
 // Nothing while the guest sits (m_HasSatDown). Every bench that is not claimed by a vandal and has a free seat is measured in tiles; asking for the seats
 // writes the bench's m_FreeSeat (finding a free scenery seat), so every bench that gets that far has it written, taken or not. The nearest wins (a tie goes to the later one)
@@ -336,7 +336,7 @@ void Totty(Guest& guest)
     PostToSelf(guest, messages::MT_PAVEMENT2POINT, FloatToIntWrap(world.x), FloatToIntWrap(world.y));
 }
 
-// ---- MoveActionPerson --------------------------------------------------------------------------------------------------------------------
+// ---- PositionHandHoldingPartner --------------------------------------------------------------------------------------------------------------------
 
 void PlayHoldHands(object::Base& object, const char* name)
 {
@@ -374,13 +374,13 @@ void MoveAction(Guest& guest)
 
 } // namespace
 
-void Guest::LookForIllPoint()
+void Guest::FindSicknessSpot()
 {
     g_illPoint.Count();
     IllPoint(*this);
 }
 
-void Guest::LookForBench()
+void Guest::FindBench()
 {
     g_bench.Count();
     Bench(*this);
@@ -422,7 +422,7 @@ void Guest::FindFlirtTarget()
     Totty(*this);
 }
 
-void Guest::MoveActionPerson()
+void Guest::PositionHandHoldingPartner()
 {
     g_moveAction.Count();
     MoveAction(*this);

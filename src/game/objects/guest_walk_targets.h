@@ -7,8 +7,8 @@
 #include <cmath>
 #include <cstdint>
 
-// The pure rules of the guest functions that pick a walking goal and post it (guest walking goals, docs/architecture/objects.md): HeadForEntryPoint,
-// GetSeaEntry, GotoWorldUnloadPoint, WalkToWindsurf and HeadForBin. The game
+// The pure rules of the guest functions that pick a walking goal and post it (guest walking goals, docs/architecture/objects.md): WalkToEntryPoint,
+// GetSeaEntry, WalkToWorldUnloadPoint, WalkToWindsurf and WalkToBin. The game
 // side (objects, grid, the message post) is in src/game/objects/guest_walk_targets.cpp.
 //
 // 53-bit precision: a float added to a float constant is one double operation, a float store one float rounding, and
@@ -44,7 +44,7 @@ inline Goal UnloadGoal(float x, float y, int32_t rotation)
     return TruncatedGoal(x, y);
 }
 
-// ---- HeadForBin --------------------------------------------------------------------------------------------------------
+// ---- WalkToBin --------------------------------------------------------------------------------------------------------
 
 constexpr float kBinSearchRange = 160.0f; // bins farther than this are not looked at (the start of the best distance)
 constexpr int32_t kActionStateNoBin = 1; // Guest::m_ActionState when no bin is chosen

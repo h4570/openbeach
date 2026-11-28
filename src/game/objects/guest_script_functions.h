@@ -303,7 +303,7 @@ template<class Env> uint32_t CallFunction(Guest& g, uint32_t id, Env& env)
         return 0;
     }
     case 0x2d: env.Post(Init5(guestId, g.m_ActivityPerson, messages::MT_STATECHANGE, 0, 0)); return 0; // ReleaseBin
-    case 0x2f: { // HeadForShore: the first point of the sea record this time
+    case 0x2f: { // SwimToShore: the first point of the sea record this time
         float position[3] = {g.m_WorldXYZ[0], g.m_WorldXYZ[1], g.m_WorldXYZ[2]};
         const float* point = env.FindSeaPoint(g, position);
         const float x = point[0], y = point[1];

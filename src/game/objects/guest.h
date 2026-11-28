@@ -30,12 +30,12 @@ namespace obl::object {
 // Guest / guest function of the guest simulation (docs/architecture/objects.md).
 //
 // UpdateDesires, ApplyWeatherModifiers, UpdateOpinions, the six visit/spot opinion helpers, CheckBedTime, CheckLeaveResort, the beach helpers SetRepeatAction,
-// FindSunbathePoint, FindSwimPoint and DecideSwimAction, UpdateDrowning, StartStomachIllness, FindFightPoint, FindFightPerson, TellNearbyOfFight, LookForVandalItem, VandaliseBin, the seven
-// thought functions AddIllPurchaseThought, AddCommodBeachClosed, AddThoughtIDidnt, AddThoughtIDidIt, AddDrowningThought, NoRouteToLodging, AddBuildingFullThought, DemolishedAsleep,
-// GenerateBlockedMessage, MissedDesire, AlterDesires, SetupStartValues, the palettes RandomizePalette and RandomizeAttachedPalette, the getters GetPaletteTone,
-// GetFoodIllness, GetSunburnSeverity, IsApproachable and HasState, SetupSnogOffset, FaceEachOther, FindLodging, SetSurfacePoint and IsEntryPointClear, and the walking
-// goals HeadForEntryPoint, GetSeaEntry, GotoWorldUnloadPoint, WalkToWindsurf, StartPathWalk, SurfToShore, WindSurfStraight, GotoDancePoint and HeadForBin, TellNearbyOfTopless and
-// SendOutDeathMessage, and the lookups LookForIllPoint, LookForBench, QueueAtComplaints, QueueAtWharf, CreateLitter, GetConsumePoint, FindFlirtTarget and MoveActionPerson, and the grid and pool movers FindNearestSeaPoint, WanderBeach, GetNextPoolPoint, ChooseFunSlideAction, SetupFunPoolSwim and WalkAlongPath, the animation call PlayAnimation and the desire search SearchDesire (docs/architecture/objects.md).
+// FindSunbathePoint, FindSwimPoint and DecideSwimAction, UpdateDrowning, StartStomachIllness, FindFightPoint, FindFightPerson, TellNearbyOfFight, FindVandalismTarget, VandaliseBin, the seven
+// thought functions AddIllPurchaseThought, AddCommodBeachClosed, ThinkAboutUnfairDetention, ThinkAboutBeingDetained, AddDrowningThought, NoRouteToLodging, AddBuildingFullThought, OnLodgingDemolishedDuringSleep,
+// GenerateBlockedMessage, OnUnmetDesire, AlterDesires, SetupStartValues, the palettes RandomizePalette and RandomizeAttachedPalette, the getters GetPaletteTone,
+// GetFoodIllness, GetSunburnSeverity, IsApproachable and HasState, PositionPartnerForKiss, TurnToFaceEachOther, FindLodging, SetSurfacePoint and IsEntryPointClear, and the walking
+// goals WalkToEntryPoint, GetSeaEntry, WalkToWorldUnloadPoint, WalkToWindsurf, StartPathWalk, SurfToShore, WindSurfStraight, WalkToDancePoint and WalkToBin, TellNearbyOfTopless and
+// SendOutDeathMessage, and the lookups FindSicknessSpot, FindBench, QueueAtComplaints, QueueAtWharf, CreateLitter, GetConsumePoint, FindFlirtTarget and PositionHandHoldingPartner, and the grid and pool movers FindNearestSeaPoint, WanderBeach, GetNextPoolPoint, ChooseFunSlideAction, StartSwimmingAfterSlide and WalkAlongPath, the animation call PlayAnimation and the desire search SearchDesire (docs/architecture/objects.md).
 bool RegisterGuestTestDrivers();
 void RegisterGuestLifecycleDriver();
 void SetGuestClearSelectionProbe();

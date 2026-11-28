@@ -22,8 +22,8 @@
 #include <cstdint>
 
 // The four guest functions that pick a walking goal and post it to the guest itself (src/game/objects/guest_walk_targets.h, guest walking goals, docs/architecture/objects.md):
-// HeadForEntryPoint (swim to walkpoint 0), GetSeaEntry (fills walkpoints 0 and 1 from the nearest sea point, then walks
-// to walkpoint 0), GotoWorldUnloadPoint (the unload point of the vehicle in m_ActivityPerson) and WalkToWindsurf (the
+// WalkToEntryPoint (swim to walkpoint 0), GetSeaEntry (fills walkpoints 0 and 1 from the nearest sea point, then walks
+// to walkpoint 0), WalkToWorldUnloadPoint (the unload point of the vehicle in m_ActivityPerson) and WalkToWindsurf (the
 // footprint spot of the rental building in m_ActivityPerson). The script reaches them through the guest's CallFunction. Every one ends in a Post that
 // the message handler delivers at once (the guest's own script).
 namespace obl::object {
@@ -63,9 +63,9 @@ SpriteInstance* SpriteOf(object::Base& object)
     return static_cast<SpriteInstance*>(object.m_sprite);
 }
 
-// ---- HeadForEntryPoint -----------------------------------------------------------------------------------------------------
+// ---- WalkToEntryPoint -----------------------------------------------------------------------------------------------------
 
-void HeadForEntry(Guest& guest)
+void StartWalkToEntry(Guest& guest)
 {
     PostToSelf(guest, messages::MT_SWIM2SEAPOINT, guest_walk::TruncatedGoal(guest.m_walkpoints[0][0], guest.m_walkpoints[0][1]));
 }
@@ -87,7 +87,7 @@ void SeaEntry(Guest& guest)
     PostToSelf(guest, messages::MT_PAVEMENT2POINT, guest_walk::TruncatedGoal(guest.m_walkpoints[0][0], guest.m_walkpoints[0][1]));
 }
 
-// ---- GotoWorldUnloadPoint --------------------------------------------------------------------------------------------------
+// ---- WalkToWorldUnloadPoint --------------------------------------------------------------------------------------------------
 
 // A vehicle of the unload kind sends the guest walking to its (moved) unload point; any other object, whatever it is, gets an MT_MOVEIMHERE with state
 // 0x29 in extra. A missing vehicle sprite or object ends in UnhandledInput.
@@ -134,13 +134,13 @@ void WindSurf(Guest& guest)
     PostToSelf(guest, messages::MT_PAVEMENT2POINT, guest_walk::TruncatedGoal(spot.x, spot.y));
 }
 
-// ---- HeadForBin ------------------------------------------------------------------------------------------------------------
+// ---- WalkToBin ------------------------------------------------------------------------------------------------------------
 
 constexpr const char* kBinName = "Bin";
 
 // The nearest bin within 160 units that is neither claimed by a vandal nor full; with one, a draw against GuestDef::m_Litter decides whether the guest
 // walks to it (the bin becomes m_ActivityPerson before the message, the action state is set after it, so a delivered message cannot undo it).
-void RunHeadForBin(Guest& guest)
+void StartWalkToBin(Guest& guest)
 {
     const auto list = object_manager::FindObjectsByName(GetObjectManager(), kBinName);
     const auto count = static_cast<uint32_t>(list.size());
@@ -189,10 +189,10 @@ void Wander(Guest& guest)
 
 } // namespace
 
-void Guest::HeadForEntryPoint()
+void Guest::WalkToEntryPoint()
 {
     g_headForEntry.Count();
-    HeadForEntry(*this);
+    StartWalkToEntry(*this);
 }
 
 void Guest::GetSeaEntry()
@@ -201,7 +201,7 @@ void Guest::GetSeaEntry()
     SeaEntry(*this);
 }
 
-void Guest::GotoWorldUnloadPoint()
+void Guest::WalkToWorldUnloadPoint()
 {
     if (UnloadDeclined(*this)) fatal::UnhandledInput("objects.guest-goto-world-unload-point", "no vehicle object or sprite");
     g_unload.Count();
@@ -215,10 +215,10 @@ void Guest::WalkToWindsurf()
     WindSurf(*this);
 }
 
-void Guest::HeadForBin()
+void Guest::WalkToBin()
 {
     g_headForBin.Count();
-    RunHeadForBin(*this);
+    StartWalkToBin(*this);
 }
 
 void Guest::WanderBeach()

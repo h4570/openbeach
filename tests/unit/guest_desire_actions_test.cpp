@@ -67,7 +67,7 @@ OBL_TEST_CASE("guest_desire_actions.the_first_miss_of_a_round_only_sets_the_flag
 {
     Fixture f;
     f.guest->m_missedDesireLast = 0;
-    MissedDesire(*f.guest, *f.def, "MEALS", kNames);
+    OnUnmetDesire(*f.guest, *f.def, "MEALS", kNames);
     OBL_CHECK_EQ(f.guest->m_missedDesire, 1);
     OBL_CHECK_EQ(f.guest->m_desires[kMeals], 0.5f);
     OBL_CHECK_EQ(f.guest->m_opinion[Variety], 0.7f);
@@ -78,7 +78,7 @@ OBL_TEST_CASE("guest_desire_actions.a_repeated_miss_clears_the_desire_and_costs_
 {
     Fixture f;
     f.guest->m_missedDesireLast = 1;
-    MissedDesire(*f.guest, *f.def, "MEALS", kNames);
+    OnUnmetDesire(*f.guest, *f.def, "MEALS", kNames);
     OBL_CHECK_EQ(f.guest->m_missedDesire, 0); // the flag itself is left to SearchDesire
     OBL_CHECK_EQ(f.guest->m_desires[kMeals], 0.0f);
     OBL_CHECK_EQ(f.guest->m_opinion[Variety], 0.45f);
@@ -91,7 +91,7 @@ OBL_TEST_CASE("guest_desire_actions.a_miss_of_an_outdoor_desire_resets_the_activ
     for (int desire : {kSunbathing, kSwimming, kStroll}) {
         Fixture f;
         f.guest->m_missedDesireLast = 1;
-        MissedDesire(*f.guest, *f.def, kNames[desire], kNames);
+        OnUnmetDesire(*f.guest, *f.def, kNames[desire], kNames);
         OBL_CHECK_EQ(f.guest->m_desires[desire], 0.0f);
         OBL_CHECK_EQ(f.guest->m_activity, 0);
         OBL_CHECK_EQ(f.guest->m_opinion[Variety], 0.7f);
@@ -102,7 +102,7 @@ OBL_TEST_CASE("guest_desire_actions.a_miss_of_the_toilet_spares_variety_and_the_
 {
     Fixture f;
     f.guest->m_missedDesireLast = 1;
-    MissedDesire(*f.guest, *f.def, "RELIEF", kNames);
+    OnUnmetDesire(*f.guest, *f.def, "RELIEF", kNames);
     OBL_CHECK_EQ(f.guest->m_desires[kToilet], 0.0f);
     OBL_CHECK_EQ(f.guest->m_activity, 3);
     OBL_CHECK_EQ(f.guest->m_opinion[Variety], 0.7f);
@@ -113,12 +113,12 @@ OBL_TEST_CASE("guest_desire_actions.variety_is_held_at_zero_by_the_unrounded_dif
     Fixture f;
     f.guest->m_missedDesireLast = 1;
     f.def->m_OpinionEffect[Variety][1] = 0.9f;
-    MissedDesire(*f.guest, *f.def, "ALCOHOL", kNames);
+    OnUnmetDesire(*f.guest, *f.def, "ALCOHOL", kNames);
     OBL_CHECK_EQ(f.guest->m_opinion[Variety], 0.0f);
     Fixture g;
     g.guest->m_missedDesireLast = 1;
     g.guest->m_opinion[Variety] = std::numeric_limits<float>::quiet_NaN();
-    MissedDesire(*g.guest, *g.def, "ALCOHOL", kNames);
+    OnUnmetDesire(*g.guest, *g.def, "ALCOHOL", kNames);
     OBL_CHECK_EQ(g.guest->m_opinion[Variety], 0.0f); // unordered counts as below
 }
 
@@ -126,7 +126,7 @@ OBL_TEST_CASE("guest_desire_actions.an_unrecognized_family_changes_nothing")
 {
     Fixture f;
     f.guest->m_missedDesireLast = 1;
-    MissedDesire(*f.guest, *f.def, "NONE", kNames);
+    OnUnmetDesire(*f.guest, *f.def, "NONE", kNames);
     AlterDesires(*f.guest, "NONE", kNames);
     for (float desire : f.guest->m_desires) OBL_CHECK_EQ(desire, 0.5f);
     OBL_CHECK_EQ(f.guest->m_missedDesire, 0);
@@ -226,7 +226,7 @@ OBL_TEST_CASE("guest_thoughts.demolished_asleep_spoils_the_visit_and_lowers_the_
     OBL_CHECK_EQ(f.guest->m_opinion[4], 0.0f);
     OBL_CHECK_EQ(f.guest->m_opinion[5], 0.0f);
     OBL_CHECK_EQ(f.guest->m_opinion[6], static_cast<float>(0.5 - static_cast<double>(0.2f)));
-    OBL_CHECK_EQ(std::string(guest_thoughts::kDemolishedAsleep), std::string("GUEST_THOUGHT_DEMOLISHED_ASLEEP"));
+    OBL_CHECK_EQ(std::string(guest_thoughts::kLodgingDemolishedDuringSleep), std::string("GUEST_THOUGHT_DEMOLISHED_ASLEEP"));
 }
 
 OBL_TEST_CASE("guest_thoughts.blocked_message_key_follows_the_activity")
@@ -258,7 +258,7 @@ OBL_TEST_CASE("guest_desire_actions.mod_need_alter_and_missed")
     f.guest->m_needs[0] = 0.8f;
     f.guest->m_missedDesireLast = 0;
     f.guest->m_missedDesire = 0;
-    MissedDesire(*f.guest, *f.def, "yoga", kNames);
+    OnUnmetDesire(*f.guest, *f.def, "yoga", kNames);
     OBL_CHECK_EQ(f.guest->m_missedDesire, 1);
     OBL_CHECK_EQ(f.guest->m_needs[0], 0.8f);
     OBL_CHECK_EQ(f.guest->m_opinion[Variety], 0.7f);
@@ -266,7 +266,7 @@ OBL_TEST_CASE("guest_desire_actions.mod_need_alter_and_missed")
     // Repeated miss clears the need and lowers variety.
     f.guest->m_missedDesireLast = 1;
     f.guest->m_missedDesire = 0;
-    MissedDesire(*f.guest, *f.def, "yoga", kNames);
+    OnUnmetDesire(*f.guest, *f.def, "yoga", kNames);
     OBL_CHECK_EQ(f.guest->m_needs[0], 0.0f);
     OBL_CHECK_EQ(f.guest->m_opinion[Variety], 0.45f);
     OBL_CHECK_EQ(f.guest->m_activity, 3);

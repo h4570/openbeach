@@ -40,7 +40,7 @@ template<class Env> void CleanerCallFunction(object::Cleaner& employee, int32_t 
         env.PushThought(0x40);
         return;
     }
-    case 0x70: env.MoveToBin(employee.m_DestObjectID, employee.m_BinPos); return;
+    case 0x70: env.WalkToBin(employee.m_DestObjectID, employee.m_BinPos); return;
     case 0x71: env.FaceSameDirection(employee.m_DestObjectID); return;
     case 0x72: {
         auto* object = env.Object(employee.m_DestObjectID);
@@ -74,8 +74,8 @@ template<class Env> void CleanerCallFunction(object::Cleaner& employee, int32_t 
     }
     case 0x74: employee.m_lastTaskTime = env.DayTime(); return;
     case 0x75: env.FaceObjectIfPresent(employee.m_DestObjectID); return;
-    case 0x77: env.DidNotClean(employee.m_DestObjectID); return;
-    case 0x78: env.StartedCleaning(employee.m_DestObjectID); return;
+    case 0x77: env.OnCleaningAbandoned(employee.m_DestObjectID); return;
+    case 0x78: env.OnCleaningStarted(employee.m_DestObjectID); return;
     case 0x7b: env.PushThought(0x20000000); return;
     case 0x7c: {
         const auto* building = static_cast<object::Building*>(env.Object(employee.m_DestObjectID));

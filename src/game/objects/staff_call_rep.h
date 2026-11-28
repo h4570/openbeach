@@ -15,8 +15,8 @@ template<class Env> void RepCallFunction(object::Rep& employee, int32_t id, Env&
     case 0xb: employee.m_visible = 0; return;
     case 0xc: employee.m_visible = 1; return;
     case 0x7b: env.PushThought(0x20000000); return;
-    case 0xa2: env.MoveToNextBuilding(); return;
-    case 0xa3: env.LookForGuests(); return;
+    case 0xa2: env.WalkToNextBuilding(); return;
+    case 0xa3: env.FindGuests(); return;
     case 0xa4: env.ArrivedAtGuest(); return;
     case 0xa5: {
         // No float store between the two multiplies; m_happinessBoostToday is a float accumulator despite its integer Save label.

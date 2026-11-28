@@ -13,8 +13,8 @@ void LifeguardFindBeach(object::Lifeguard& lifeguard);
 void LifeguardSetDrawPosBuild(object::Lifeguard& lifeguard);
 void LifeguardSetDrawPosServe(object::Lifeguard& lifeguard);
 void LifeguardFindBeachPoint(object::Lifeguard& lifeguard);
-void LifeguardMove2Tower(object::Lifeguard& lifeguard);
-void LifeguardMove2SeaEntry(object::Lifeguard& lifeguard);
-void LifeguardHeadForShore(object::Lifeguard& lifeguard);
+void SendLifeguardToTower(object::Lifeguard& lifeguard);
+void SendLifeguardToSeaEntry(object::Lifeguard& lifeguard);
+void SendLifeguardSwimmingToShore(object::Lifeguard& lifeguard);
 
 } // namespace obl::object

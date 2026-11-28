@@ -8,7 +8,7 @@
 #include <cstdint>
 #include <cstring>
 
-// MissedDesire, AlterDesires, SetupStartValues (guest desires: satisfaction and misses, docs/architecture/objects.md).
+// OnUnmetDesire, AlterDesires, SetupStartValues (guest desires: satisfaction and misses, docs/architecture/objects.md).
 // The first two find the desire the guest's current building served: the family key of the commodity the guest chose (m_DestObjectID's building,
 // m_desired_commod) is compared with the 26 desire names (guest_search::kDesireNames, same order as m_desires) without regard to case. They run from the
 // script (guest CallFunction ids 5 and 0x1f) and from the visit helpers; none of the three draws or sends anything.
@@ -49,10 +49,10 @@ inline bool IsOutdoor(int desire)
     return desire == kSunbathing || desire == kSwimming || desire == kStroll;
 }
 
-// MissedDesire after the building and its commodity were resolved: only the first desire of that name counts (the loop ends there). The first miss
+// OnUnmetDesire after the building and its commodity were resolved: only the first desire of that name counts (the loop ends there). The first miss
 // of a search round just sets the flag (m_missedDesireLast is the previous round's flag); a repeated miss clears the desire, the activity of an outdoor
 // one, and costs the guest the variety opinion unless the desire is outdoor or Toilet (held at zero by the unrounded value).
-inline void MissedDesire(Guest& g, const GuestDef& def, const char* family, const char* const* names)
+inline void OnUnmetDesire(Guest& g, const GuestDef& def, const char* family, const char* const* names)
 {
     const int desire = FindDesire(family, names);
     if (desire == kDesireCount) {

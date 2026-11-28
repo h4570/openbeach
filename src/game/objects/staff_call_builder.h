@@ -17,7 +17,7 @@ template<class Env> void BuilderCallFunction(object::Builder& employee, int32_t 
     case 0x5d: env.FindNearestValidTile(); return;
     case 0x5e:
     case 0x5f: return;
-    case 0x60: env.CheckForFemaleGuests(); return;
+    case 0x60: env.WhistleAtNearbyFemaleGuests(); return;
     case 0x61: env.Whistling() = 0; return;
     case 0x62: env.PushThought(0x20); return;
     case 0x64: env.RemoveCostPoint(employee.m_DestObjectID); return;

@@ -1165,9 +1165,9 @@ bool StartStomachIllness(object::Guest* guest)
 // building and each is called directly. It runs inside the real game with its effects (the building's thought, the ticker line, the sound).
 void ForceThoughts(object::Guest* guest, Building* building)
 {
-    void (Guest::* const kFunctions[])() = {&Guest::AddIllPurchaseThought, &Guest::AddCommodBeachClosed, &Guest::AddThoughtIDidnt,
-            &Guest::AddThoughtIDidIt, &Guest::AddDrowningThought, &Guest::NoRouteToLodging, &Guest::AddBuildingFullThought,
-            &Guest::DemolishedAsleep, &Guest::GenerateBlockedMessage,
+    void (Guest::* const kFunctions[])() = {&Guest::AddIllPurchaseThought, &Guest::AddCommodBeachClosed, &Guest::ThinkAboutUnfairDetention,
+            &Guest::ThinkAboutBeingDetained, &Guest::AddDrowningThought, &Guest::NoRouteToLodging, &Guest::AddBuildingFullThought,
+            &Guest::OnLodgingDemolishedDuringSleep, &Guest::GenerateBlockedMessage,
             &Guest::AlterDesires}; // scenario 1 never calls the last one from the script
     float& tickerTime = game::LastNoPathTickerTime();
     const float savedTickerTime = tickerTime;
@@ -1192,7 +1192,7 @@ void ForceThoughts(object::Guest* guest, Building* building)
 
 // The walking goals of src/game/objects/guest_walk_targets.h: natural play heads for no entry point and windsurfs and unloads nowhere, and each call ends in a Post
 // that would run the scratch guest's script, so the messages are swallowed like the helpers'. A building stands in for the vehicle (its matching field is not
-// the unload kind, so GotoWorldUnloadPoint takes the MT_MOVEIMHERE branch).
+// the unload kind, so WalkToWorldUnloadPoint takes the MT_MOVEIMHERE branch).
 void ForceWalkTargets(object::Guest* guest, Building* building)
 {
     float x = 0, y = 0;
@@ -1201,7 +1201,7 @@ void ForceWalkTargets(object::Guest* guest, Building* building)
         return;
     }
     void (Guest::* const kFunctions[])() = {
-            &Guest::HeadForEntryPoint, &Guest::GetSeaEntry, &Guest::GotoWorldUnloadPoint, &Guest::WalkToWindsurf, &Guest::WanderBeach};
+            &Guest::WalkToEntryPoint, &Guest::GetSeaEntry, &Guest::WalkToWorldUnloadPoint, &Guest::WalkToWindsurf, &Guest::WanderBeach};
     for (auto function : kFunctions)
         for (int i = 0; i < 3; ++i)
             Forced(guest, [&] {
@@ -1232,7 +1232,7 @@ void ForcePool(object::Guest* guest, Building* building)
             guest->m_DestObjectID = static_cast<int32_t>(building->m_id);
             guest->m_ActionState = state;
             g_post.guest = guest;
-            guest->SetupFunPoolSwim();
+            guest->StartSwimmingAfterSlide();
             g_post.guest = nullptr;
         });
     auto* sprite = static_cast<ui::SpriteInstance*>(guest->m_sprite);
@@ -1246,8 +1246,8 @@ void ForcePool(object::Guest* guest, Building* building)
     g_post.guest = guest;
     g_post.swallow = true;
     guest->ChooseFunSlideAction();
-    // The way back from the slide: the action state the slide left (1..4) makes SetupFunPoolSwim swap the funpool sprite for the swimming one.
-    guest->SetupFunPoolSwim();
+    // The way back from the slide: the action state the slide left (1..4) makes StartSwimmingAfterSlide swap the funpool sprite for the swimming one.
+    guest->StartSwimmingAfterSlide();
     g_post.swallow = false;
     g_post.guest = nullptr;
     guest->Teleport(home[0], home[1], home[2]);
@@ -1285,7 +1285,7 @@ void ForceWalkRoutes(object::Guest* guest, Building* building)
         (guest->*function)();
         g_post.guest = nullptr;
     };
-    for (int i = 0; i < 3; ++i) Forced(guest, [&] { call(&Guest::HeadForBin); });
+    for (int i = 0; i < 3; ++i) Forced(guest, [&] { call(&Guest::WalkToBin); });
     // WalkAlongPath from where the scratch guest stands: a plain walk, then the desperate one that thinks about the building and about the sea.
     const auto walk = [&] {
         g_post.guest = guest;
@@ -1358,7 +1358,7 @@ void ForceWalkRoutes(object::Guest* guest, Building* building)
             for (int i = 0; i < 3; ++i)
                 Forced(guest, [&] {
                     guest->m_DestObjectID = static_cast<int32_t>(building->m_id);
-                    call(&Guest::GotoDancePoint);
+                    call(&Guest::WalkToDancePoint);
                 });
             danced = true;
         }
@@ -1388,7 +1388,7 @@ void ForceLookups(object::Guest* guest)
     for (int i = 0; i < 3; ++i)
         Forced(guest, [&] {
             guest->m_StayingAt = i == 0 ? -1 : static_cast<int32_t>(guest->m_id);
-            call(&Guest::LookForIllPoint);
+            call(&Guest::FindSicknessSpot);
         });
     if (object::Base* bench = first("BENCH"))
         for (int i = 0; i < 3; ++i)
@@ -1396,7 +1396,7 @@ void ForceLookups(object::Guest* guest)
                 guest->m_HasSatDown = 0;
                 guest->m_WorldXYZ[0] = bench->m_WorldXYZ[0];
                 guest->m_WorldXYZ[1] = bench->m_WorldXYZ[1];
-                call(&Guest::LookForBench);
+                call(&Guest::FindBench);
             });
     // GetConsumePoint (natural play reaches it rarely) on the bench's tile, so that the random search has beach around it: once in the consume state (nobody
     // waits next to the scratch guest, or a guest of the crowd does), and in another state for the bench search and the point.
@@ -1408,7 +1408,7 @@ void ForceLookups(object::Guest* guest)
                 guest->m_WorldXYZ[1] = bench->m_WorldXYZ[1];
                 call(&Guest::GetConsumePoint);
             });
-    // FindFlirtTarget: with and without the desire to flirt (a bar walk or the way back to the desires) next to whoever is around the scratch guest. MoveActionPerson
+    // FindFlirtTarget: with and without the desire to flirt (a bar walk or the way back to the desires) next to whoever is around the scratch guest. PositionHandHoldingPartner
     // on another guest of the crowd, in state 0x27 and not (the person's sprite, position and animation are put back).
     for (float desire : {0.0f, 0.5f, 0.5f})
         Forced(guest, [&] {
@@ -1426,7 +1426,7 @@ void ForceLookups(object::Guest* guest)
             Forced(guest, [&] {
                 guest->m_state = state;
                 guest->m_ActivityPerson = static_cast<int32_t>(partner->m_id);
-                call(&Guest::MoveActionPerson);
+                call(&Guest::PositionHandHoldingPartner);
             });
         *sprite = savedSprite;
         partner->SetPosition(savedPosition);
@@ -1736,9 +1736,9 @@ void ForceFight(object::Guest* guest)
     for (auto [other, state] : saved) other->m_state = state;
 }
 
-// Vandalism (STATE_GUEST_VANDALISING in guest.ble): LookForVandalItem on entry, VandaliseBin when the guest arrives (MT_MOVEIMHERE).
+// Vandalism (STATE_GUEST_VANDALISING in guest.ble): FindVandalismTarget on entry, VandaliseBin when the guest arrives (MT_MOVEIMHERE).
 // Message ids: 3 = MT_STATECHANGE, 5 = MT_MOVE2POINT, 0x3c = MT_PLAYANIMATION, 0x54 = MT_LOOK_AROUND.
-//   LookForVandalItem: looks at the static objects named "Bin", then "Bench", then "STREET_LAMP" (object list order) and
+//   FindVandalismTarget: looks at the static objects named "Bin", then "Bench", then "STREET_LAMP" (object list order) and
 //   keeps the last one whose metric |dx| + dy^2 (tile offsets; the intent is a distance but only sqrt(dx * dx) is taken) is <= the best so far (start 10, so later kinds win ties) that is not in state 4
 //   and not claimed (by a vandal, a cleaner or a mechanic). Found: the object gets MT_STATECHANGE(4) from the guest,
 //   the guest gets MT_MOVE2POINT to (trunc(x + A[dir]), trunc(y + B[dir])) with dir = the object sprite's direction (A: bin 0,-15,-30,-15,0,15,
@@ -1766,7 +1766,7 @@ bool VandalClaimed(const Scenery* object)
     return object->m_state == 4 || object->m_vandalised || object->m_cleaning || object->m_repairing;
 }
 
-void LookForVandalItem(object::Guest* guest)
+void FindVandalismTarget(object::Guest* guest)
 {
     if (!g_helperChecks) return g_lookForVandal(guest);
     int id = guest->m_id;
@@ -1890,7 +1890,7 @@ void ForceVandal(object::Guest* guest)
                         guest->m_WorldXYZ[0] = object->m_WorldXYZ[0];
                         guest->m_WorldXYZ[1] = object->m_WorldXYZ[1];
                         guest->m_WorldXYZ[2] = object->m_WorldXYZ[2];
-                        LookForVandalItem(guest);
+                        FindVandalismTarget(guest);
                     });
                 }
         sprite->m_direction = savedDirection;
@@ -1912,12 +1912,12 @@ void ForceVandal(object::Guest* guest)
             [&] { // far from everything, sum above the cap
                 guest->m_WorldXYZ[0] = 1.0f;
                 guest->m_WorldXYZ[1] = 1.0f;
-                LookForVandalItem(guest);
+                FindVandalismTarget(guest);
             });
     Forced(guest, {{{&guest->m_desires[kDesireVandalise], 0.2f}, {&guest->m_desires[kDesireFight], 0.1f}}}, [&] {
         guest->m_WorldXYZ[0] = 1.0f;
         guest->m_WorldXYZ[1] = 1.0f;
-        LookForVandalItem(guest);
+        FindVandalismTarget(guest);
     });
     Forced(guest, [&] { // no such object
         guest->m_ActivityPerson = -1;
@@ -2267,7 +2267,7 @@ bool RegisterGuestDesireTrace()
     g_updateDrowning = std::exchange(object::g_guestSeams.updateDrowning, &UpdateDrowning);
     g_decideSwim = std::exchange(object::g_guestSeams.decideSwimAction, &DecideSwimAction);
     g_startBadGuts = std::exchange(object::g_guestSeams.startBadGuts, &StartStomachIllness);
-    g_lookForVandal = std::exchange(object::g_guestSeams.lookForVandalItem, &LookForVandalItem);
+    g_lookForVandal = std::exchange(object::g_guestSeams.lookForVandalItem, &FindVandalismTarget);
     g_vandaliseBin = std::exchange(object::g_guestSeams.vandaliseBin, &VandaliseBin);
     g_findFightPoint = std::exchange(object::g_guestSeams.findFightPoint, &FindFightPoint);
     g_findFightPerson = std::exchange(object::g_guestSeams.findFightPerson, &FindFightPerson);

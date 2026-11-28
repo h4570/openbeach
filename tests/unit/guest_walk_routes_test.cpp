@@ -252,7 +252,7 @@ OBL_TEST_CASE("guest_walk_routes.tile_ahead_walks_the_direction")
     }
 }
 
-// ---- GotoDancePoint -----------------------------------------------------------------------------------------------------------------------
+// ---- WalkToDancePoint -----------------------------------------------------------------------------------------------------------------------
 
 OBL_TEST_CASE("guest_walk_routes.dance_offset_runs_from_minus_eight_to_seven")
 {

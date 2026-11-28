@@ -68,7 +68,7 @@ constexpr uint32_t kGround = 0x80000000u;
 OBL_TEST_CASE("builder_script.female_guests_without_guests_posts_the_no_guest_message")
 {
     Fixture f;
-    CheckForFemaleGuests(f.builder, 77, f);
+    WhistleAtNearbyFemaleGuests(f.builder, 77, f);
     OBL_REQUIRE(f.sent.size() == 1u);
     OBL_CHECK_EQ(f.sent[0].sender, 77);
     OBL_CHECK_EQ(f.sent[0].receiver, 77);
@@ -80,7 +80,7 @@ OBL_TEST_CASE("builder_script.female_guests_whistles_at_close_women_up_to_the_co
 {
     Fixture f;
     f.guests = {{{12, 8}, true}, {{8, 12}, true}, {{10, 10}, true}, {{12, 12}, false}};
-    CheckForFemaleGuests(f.builder, 5, f);
+    WhistleAtNearbyFemaleGuests(f.builder, 5, f);
     OBL_REQUIRE(f.sent.size() == 2u); // two places only; the man and the third woman add nothing
     OBL_CHECK_EQ(f.sent[0].type, kMsgBuilderWhistle);
     OBL_CHECK_EQ(f.sent[1].type, kMsgBuilderWhistle);
@@ -92,7 +92,7 @@ OBL_TEST_CASE("builder_script.female_guests_distance_is_two_tiles_per_axis")
     Fixture f;
     f.guests = {{{13, 10}, true}, {{10, 7}, true}, {{12, 12}, true}};
     f.whistling = 1;
-    CheckForFemaleGuests(f.builder, 1, f);
+    WhistleAtNearbyFemaleGuests(f.builder, 1, f);
     OBL_REQUIRE(f.sent.size() == 1u); // 3 tiles away misses in either axis; the third guest takes the last place
     OBL_CHECK_EQ(f.sent[0].type, kMsgBuilderWhistle);
     OBL_CHECK_EQ(f.whistling, 2);
@@ -103,7 +103,7 @@ OBL_TEST_CASE("builder_script.female_guests_full_counter_means_no_whistle_and_th
     Fixture f;
     f.guests = {{{10, 10}, true}};
     f.whistling = 2;
-    CheckForFemaleGuests(f.builder, 1, f);
+    WhistleAtNearbyFemaleGuests(f.builder, 1, f);
     OBL_REQUIRE(f.sent.size() == 1u);
     OBL_CHECK_EQ(f.sent[0].type, kMsgBuilderNoGuests);
     OBL_CHECK_EQ(f.whistling, 2);
@@ -115,7 +115,7 @@ OBL_TEST_CASE("builder_script.female_guests_wrapped_difference_is_absolute")
     f.builderTile[0] =
             INT32_MIN; // the difference to the guest overflows into the negative range: abs(INT_MIN) stays INT_MIN, which is <= 2.0
     f.guests = {{{0, 10}, true}};
-    CheckForFemaleGuests(f.builder, 1, f);
+    WhistleAtNearbyFemaleGuests(f.builder, 1, f);
     OBL_REQUIRE(f.sent.size() == 1u);
     OBL_CHECK_EQ(f.sent[0].type, kMsgBuilderWhistle);
 }
