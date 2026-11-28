@@ -41,7 +41,8 @@ game::Game* Create(void* instance, void* window);
 // Create in two halves around the intro movie, for a host whose main loop runs the movie frames (IntroMovieFrame,
 // game_host.h) between them; Create runs the movie to its end itself.
 void BeginCreate(void* instance, void* window);
-game::Game* FinishCreate();
+// A host may poll events during loading. False from keepLoading cancels construction and leaves Destroy to release the partial game.
+game::Game* FinishCreate(bool (*keepLoading)() = nullptr);
 void Destroy();
 // One frame step; an outer wrapper registered through WrapGameUpdate/WrapGameRender runs first.
 void Update(game::Game* game);

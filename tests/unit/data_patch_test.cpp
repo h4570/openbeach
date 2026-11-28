@@ -86,6 +86,22 @@ OBL_TEST_CASE("data_patch.without_patches_reads_the_file_bytes")
     OBL_CHECK(!missing);
 }
 
+OBL_TEST_CASE("data_patch.reads_binary_bytes_with_patches_active")
+{
+    PatchGame game;
+    game.Patch("early", {Op("set", "/types[key=visitor]/money", "value", 250)});
+    OBL_REQUIRE(game.Prepare());
+    OBL_REQUIRE(game.Read()["types"][0]["money"] == 250);
+
+    const auto file = game.pack / "guests/island.png";
+    const std::string bytes("\x89PNG\r\n\0", 7);
+    std::ofstream(file, std::ios::binary).write(bytes.data(), bytes.size());
+    obl::data_patch::Input in(file);
+    OBL_REQUIRE(in);
+    const std::string read{std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>()};
+    OBL_CHECK(read == bytes);
+}
+
 OBL_TEST_CASE("data_patch.set_changes_and_adds_members")
 {
     PatchGame game;

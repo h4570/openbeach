@@ -22,6 +22,7 @@
 #include "game/game/game_parameters.h"
 #include "game/ui/renderer_types.h"
 #include "core/log.h"
+#include "core/os.h"
 #include "core/platform_main.h"
 #include "core/call_counter.h"
 
@@ -147,12 +148,25 @@ bool RunFrame()
     return true;
 }
 
+#ifndef __EMSCRIPTEN__
+bool PumpStartupEvents()
+{
+    const SdlPumpResult pump = PumpSdlEvents();
+    game::GetContext().appActive = pump.active;
+    return pump.pumped && !pump.quit;
+}
+#endif
+
 // The intro movie before the game's first frame (game_host.h): true while it plays; its last pass builds the rest of the
 // Game, so native and browser hosts share the same startup state.
 bool RunStartupFrame()
 {
     if (platform::IntroMovieFrame()) return true;
+#ifdef __EMSCRIPTEN__
     g_windowed.game = game::game_api::FinishCreate();
+#else
+    g_windowed.game = game::game_api::FinishCreate(os::HasEnv("OBL_SCRIPT") ? nullptr : &PumpStartupEvents);
+#endif
     return false;
 }
 
@@ -229,7 +243,8 @@ int RunWinMain(void* instance, int show)
     emscripten_set_main_loop(RunBrowserFrame, 0, true);
 #else
     while (RunStartupFrame()) {}
-    while (RunFrame()) {}
+    if (g_windowed.game)
+        while (RunFrame()) {}
     FinishWindowedGame();
 #endif
     return 0;

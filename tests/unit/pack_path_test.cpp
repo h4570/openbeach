@@ -7,6 +7,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <utility>
 
 using namespace obl;
 
@@ -53,6 +54,42 @@ OBL_TEST_CASE("pack_path.mod_layer_shadows_the_converted_pack")
     // A directory in the mod layer does not shadow a file.
     std::filesystem::create_directories(game.path / "mod" / "gui" / "a.json");
     OBL_CHECK(pack_path::Resolve(pack, "gui/a.json") == pack / "gui" / "a.json");
+}
+
+OBL_TEST_CASE("pack_path.directory_resolver_filters_layers_and_keeps_precedence")
+{
+    test::TempPath game("pack-path-sprite-layers");
+    const auto sprites = game.path / "packs" / "base" / "sprites";
+    const auto user = game.path / "mod" / "sprites";
+    const auto early = game.path / "mods" / "early" / "sprites";
+    const auto late = game.path / "mods" / "late" / "sprites";
+    const auto cache = game.path / "mod-cache" / "late" / "sprites";
+    const auto rulesOnly = game.path / "mods" / "rules-only";
+    Touch(rulesOnly / "rules" / "parameters.json");
+    for (const auto& layer : {sprites, user, early, cache, late}) Touch(layer / "hut.json");
+    for (const auto& layer : {sprites, user, early, cache}) Touch(layer / "hut.png");
+    for (const auto& layer : {sprites, user, early}) Touch(layer / "stand.json");
+    for (const auto& layer : {sprites, user}) Touch(layer / "user.json");
+    Touch(sprites / "base.json");
+    std::filesystem::create_directories(late / "base.json");
+
+    struct RestoreMods {
+        std::vector<std::string> m_ids = pack_path::ActiveMods();
+        ~RestoreMods() { pack_path::SetActiveMods(std::move(m_ids)); }
+    } restoreMods;
+    pack_path::SetActiveMods({"early", "late", "rules-only"});
+    const pack_path::DirectoryResolver directory(sprites.string() + "/");
+    OBL_CHECK(directory.Resolve("hut.json") == late / "hut.json");
+    OBL_CHECK(directory.Resolve("hut.png") == cache / "hut.png");
+    OBL_CHECK(directory.Resolve("stand.json") == early / "stand.json");
+    OBL_CHECK(directory.Resolve("user.json") == user / "user.json");
+    OBL_CHECK(directory.Resolve("base.json") == sprites / "base.json");
+    OBL_CHECK(directory.Resolve("missing.json") == sprites / "missing.json");
+
+    // A layer without a sprite directory is skipped for this batch.
+    Touch(rulesOnly / "sprites" / "hut.json");
+    OBL_CHECK(directory.Resolve("hut.json") == late / "hut.json");
+    OBL_CHECK(pack_path::DirectoryResolver(sprites).Resolve("hut.json") == rulesOnly / "sprites" / "hut.json");
 }
 
 OBL_TEST_CASE("pack_path.list_stems_union_both_layers_once_and_sorted")

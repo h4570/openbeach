@@ -9,6 +9,7 @@
 #include <map>
 #include <optional>
 #include <set>
+#include <utility>
 
 namespace obl::pack_path {
 
@@ -204,6 +205,31 @@ std::filesystem::path ResolveIn(const std::filesystem::path& directory, const st
     std::filesystem::path dir = directory;
     if (!dir.has_filename()) dir = dir.parent_path();
     return Resolve(dir.parent_path(), dir.filename() / file);
+}
+
+DirectoryResolver::DirectoryResolver(std::filesystem::path directory)
+    : m_directory(directory.has_filename() ? std::move(directory) : directory.parent_path())
+{
+    const auto pack = m_directory.parent_path();
+    auto layers = Layers(pack);
+    layers.pop_back(); // The pack path can be returned directly when no override supplies the file.
+    for (const auto& layer : layers) {
+        auto candidate = layer / m_directory.filename();
+        std::error_code ec;
+        if (std::filesystem::is_directory(candidate, ec)) m_overrides.push_back(std::move(candidate));
+    }
+}
+
+std::filesystem::path DirectoryResolver::Resolve(const std::filesystem::path& file) const
+{
+    // Paths that can leave the directory need the full resolver's path handling.
+    if (file.has_root_path() || std::find(file.begin(), file.end(), "..") != file.end()) return ResolveIn(m_directory, file);
+    std::error_code ec;
+    for (const auto& directory : m_overrides) {
+        auto candidate = directory / file;
+        if (std::filesystem::is_regular_file(candidate, ec)) return candidate;
+    }
+    return m_directory / file;
 }
 
 std::vector<std::string> ListStems(const std::filesystem::path& pack, const std::filesystem::path& directory, std::string_view extension)

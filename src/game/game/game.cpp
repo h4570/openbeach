@@ -278,25 +278,6 @@ void FatalErrorWith(const char* format, const char* argument)
     FatalError(format, argument);
 }
 
-// The bank object's constructor on its fresh block. The loader reads the converted sprites (SpriteBank::Load, sprite_bank.cpp) and fails
-// only with a message box.
-SpriteBank* LoadBank(SpriteBank* bank)
-{
-    ui::SetSpriteBank(bank);
-    // Every name starts empty.
-    for (auto& buffer : bank->m_names) buffer[0] = 0;
-    bank->m_spriteCount = 0;
-    bank->m_headerFile = nullptr;
-    bank->m_datFile = -1;
-    if ((static_cast<ui::SpriteBank*>(bank))->Load() != 0) {
-        ShowNotice(nullptr, "Unable to start the sprite renderer.", "OpenBeach", false);
-    }
-    void* modifiers = ::operator new(0x680);
-    if (modifiers) modifiers = ui::ConstructPaletteModifiers(modifiers);
-    bank->m_paletteModifiers = modifiers;
-    return bank;
-}
-
 void UnloadBank(SpriteBank* bank)
 {
     // Converted sprite banks keep no header stream or descriptor open.
@@ -357,9 +338,11 @@ template<class T> void End(game::Member<T>& member)
 void Destruct(Game* game)
 {
     mods::StopPresentationScripts();
-    Save(game);
-    // The final save, then the settings object.
-    settings_store::Save(*game->m_settings);
+    // A quit during startup can leave a partial game with no progress loaded.
+    if (GetContext().gameConstructed) {
+        Save(game);
+        settings_store::Save(*game->m_settings);
+    }
     End(game->m_settings);
     End(game->m_textTable);
     for (auto& state : game->m_states) state.reset();
@@ -495,12 +478,13 @@ bool ConstructUntilMovie(Game* game, void* window)
     return playMovie != 0;
 }
 
-Game* ConstructAfterMovie(Game* game, HINSTANCE__* instance, void* window, bool movie)
+Game* ConstructAfterMovie(Game* game, HINSTANCE__* instance, void* window, bool movie, bool (*keepLoading)())
 {
     if (movie) {
         platform::IntroMovieFinish();
         ui::InputShowSystemCursor();
     }
+    if (keepLoading && !keepLoading()) return nullptr;
     const auto* parameters = game_parameters::Current();
     game->m_renderer = game::Member<ui::Renderer>(
             ui::ConstructRenderer(new ui::Renderer{}, window, 800, 600, false), {&DestroyNew<ui::Renderer, &ui::DestructRenderer>});
@@ -527,8 +511,11 @@ Game* ConstructAfterMovie(Game* game, HINSTANCE__* instance, void* window, bool 
     }));
     ClockConstruct(&game->m_clock, os::TickMs());
     TimerConstruct(&game->m_profileTimer);
-    game->m_spriteBank = Owned<SpriteBank, &UnloadBank>(
-            Create(sizeof(SpriteBank), [](void* block) { return static_cast<void*>(LoadBank(static_cast<SpriteBank*>(block))); }));
+    auto* bank = new SpriteBank{};
+    game->m_spriteBank = game::Member<SpriteBank>(bank, {&DestroyNew<SpriteBank, &UnloadBank>});
+    ui::SetSpriteBank(bank);
+    if (!bank->Load(keepLoading) || (keepLoading && !keepLoading())) return nullptr;
+    bank->m_paletteModifiers = ui::ConstructPaletteModifiers(::operator new(0x680));
 
     uint8_t soundEnabled = 0; // stays off when the key is missing
     game_parameters::GetBool(parameters, &soundEnabled, "bSOUND_ENABLED");
@@ -943,12 +930,12 @@ struct PendingConstruction {
 };
 PendingConstruction g_pending;
 
-Game* FinishChecked(Game* game)
+Game* FinishChecked(Game* game, bool (*keepLoading)())
 {
     const PendingConstruction pending = g_pending;
     g_pending = {};
-    Game* result = ConstructAfterMovie(game, pending.instance, pending.window, pending.movie);
-    CheckConstructed(*game, result, pending.instance, pending.window);
+    Game* result = ConstructAfterMovie(game, pending.instance, pending.window, pending.movie, keepLoading);
+    if (result) CheckConstructed(*game, result, pending.instance, pending.window);
     return result;
 }
 
@@ -1063,9 +1050,9 @@ void BeginCreate(void* instance, void* window)
     g_pending = {static_cast<HINSTANCE__*>(instance), window, false};
     g_pending.movie = ConstructUntilMovie(context.game.get(), window);
 }
-Game* FinishCreate()
+Game* FinishCreate(bool (*keepLoading)())
 {
-    return FinishChecked(GetContext().game.get());
+    return FinishChecked(GetContext().game.get(), keepLoading);
 }
 Game* Create(void* instance, void* window)
 {

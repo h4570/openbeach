@@ -14,6 +14,10 @@
 #include <string_view>
 #include <vector>
 
+namespace obl::pack_path {
+class DirectoryResolver;
+}
+
 namespace obl::sprite_pack {
 
 // Palette width for an engine sprite type and RGB conversion for the renderer.
@@ -67,6 +71,10 @@ bool ListSprites(const std::filesystem::path& spritesDir, std::vector<std::strin
 enum class ReadMode { Metadata, Palettes };
 // Metadata reads the L1 JSON only and leaves palettes empty; palette and sheet PNGs may be absent.
 bool ReadSprite(const std::filesystem::path& spritesDir, std::string_view key, bool is555, Sprite& sprite, std::string& error,
+        ReadMode mode = ReadMode::Palettes);
+
+// Reuse the filtered layer list when reading a whole bank.
+bool ReadSprite(const pack_path::DirectoryResolver& directory, std::string_view key, bool is555, Sprite& sprite, std::string& error,
         ReadMode mode = ReadMode::Palettes);
 
 // Encodes the unique frames [first, end) of `anim` from its sheets: appends them to `data` and stores the offset of frame u
