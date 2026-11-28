@@ -72,6 +72,17 @@ std::filesystem::path Resolve(const std::filesystem::path& pack, const std::file
 // Resolve for a loader that is handed one pack subdirectory (`<pack>/sprites`) instead of the pack: `file` is relative to it.
 std::filesystem::path ResolveIn(const std::filesystem::path& directory, const std::filesystem::path& file);
 
+// For a batch of reads under one pack subdirectory. Snapshot the override directories once for the batch.
+class DirectoryResolver {
+public:
+    explicit DirectoryResolver(std::filesystem::path directory);
+    std::filesystem::path Resolve(const std::filesystem::path& file) const;
+
+private:
+    std::filesystem::path m_directory;
+    std::vector<std::filesystem::path> m_overrides;
+};
+
 // The stems of the `extension` files (".json") in the logical directory `directory` (`fonts`) of all layers: each name once, sorted.
 // A missing directory contributes nothing. Used by drivers that enumerate what the loaders would read.
 std::vector<std::string> ListStems(const std::filesystem::path& pack, const std::filesystem::path& directory, std::string_view extension);

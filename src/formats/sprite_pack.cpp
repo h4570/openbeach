@@ -133,10 +133,12 @@ bool ListSprites(const std::filesystem::path& spritesDir, std::vector<std::strin
     return true;
 }
 
-bool ReadSprite(
-        const std::filesystem::path& spritesDir, std::string_view key, bool is555, Sprite& sprite, std::string& error, ReadMode mode)
+namespace {
+
+template<class Resolve>
+bool ReadSpriteWith(Resolve resolve, std::string_view key, bool is555, Sprite& sprite, std::string& error, ReadMode mode)
 {
-    const std::filesystem::path file = pack_path::ResolveIn(spritesDir, std::string(key) + ".json");
+    const std::filesystem::path file = resolve(std::string(key) + ".json");
     std::vector<uint8_t> bytes;
     if (!ReadFile(file, bytes, error)) return false;
     try {
@@ -167,7 +169,7 @@ bool ReadSprite(
         if (sprite.paletteCount < 0 || (mode == ReadMode::Metadata && sprite.paletteCount == 0))
             throw std::runtime_error("metadata requires a positive palette_count (Import the game data again)");
         if (mode == ReadMode::Palettes) {
-            const std::filesystem::path paletteFile = pack_path::ResolveIn(spritesDir, doc.at("palettes").get<std::string>());
+            const std::filesystem::path paletteFile = resolve(doc.at("palettes").get<std::string>());
             std::vector<uint8_t> png;
             png_read::Image image;
             if (!ReadFile(paletteFile, png, error)) return false;
@@ -192,6 +194,21 @@ bool ReadSprite(
         return false;
     }
     return true;
+}
+
+} // namespace
+
+bool ReadSprite(
+        const std::filesystem::path& spritesDir, std::string_view key, bool is555, Sprite& sprite, std::string& error, ReadMode mode)
+{
+    return ReadSpriteWith(
+            [&](const std::filesystem::path& file) { return pack_path::ResolveIn(spritesDir, file); }, key, is555, sprite, error, mode);
+}
+
+bool ReadSprite(
+        const pack_path::DirectoryResolver& directory, std::string_view key, bool is555, Sprite& sprite, std::string& error, ReadMode mode)
+{
+    return ReadSpriteWith([&](const std::filesystem::path& file) { return directory.Resolve(file); }, key, is555, sprite, error, mode);
 }
 
 bool EncodeFrames(const std::filesystem::path& spritesDir, const Anim& anim, int first, int end, uint32_t base, std::vector<uint8_t>& data,

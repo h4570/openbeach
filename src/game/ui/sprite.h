@@ -49,7 +49,7 @@ struct Sprite {
 struct SpriteInstance;
 
 struct SpriteBank {
-    int Load();
+    bool Load(bool (*keepLoading)());
     SpriteInstance* CreateInstance(const char* name);
     SpriteInstance* CreateObservedInstance(const char* name);
     void ReleaseInstance(void* instance);

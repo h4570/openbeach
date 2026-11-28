@@ -195,7 +195,8 @@ bool IsSimulationDataPath(const fs::path& logical)
 
 Input::Input(const fs::path& file) : std::istream(nullptr)
 {
-    if (!g_files.empty()) {
+    // All patch targets end in .json. Opening a binary asset needs only its file stream.
+    if (!g_files.empty() && (file.extension() == ".json" || file.filename() == ".json")) {
         auto found = g_files.find(fs::absolute(file).lexically_normal());
         if (found != g_files.end()) {
             m_text.str(found->second);

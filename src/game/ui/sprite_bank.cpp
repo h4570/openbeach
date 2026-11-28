@@ -16,6 +16,7 @@
 #include <cstdlib>
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -81,8 +82,8 @@ void Apply(Sprite* instance, sprite_pack::Sprite& h, bool metadataOnly)
     }
 }
 
-// The bank from the converted sprites, in key order (lookups match names regardless of case and keys are unique, so the
-int Load(Bank* b, sprite_pack::ReadMode mode)
+// Load in key order so the bank's enumeration stays stable across layers.
+bool Load(Bank* b, sprite_pack::ReadMode mode, bool (*keepLoading)() = nullptr)
 {
     std::vector<std::string> keys;
     std::string error;
@@ -90,17 +91,26 @@ int Load(Bank* b, sprite_pack::ReadMode mode)
     const bool is555 = game::GetRenderer()->m_rgb555 != 0;
     b->m_headerFile = nullptr;
     b->m_datFile = -1;
-    b->m_spriteCount = static_cast<int32_t>(keys.size());
+    b->m_spriteCount = 0;
     b->m_sprites = new Sprite*[keys.size()];
-    for (size_t i = 0; i < keys.size(); ++i) {
+    const pack_path::DirectoryResolver directory(g_spritesDirectory);
+    using Clock = std::chrono::steady_clock;
+    constexpr std::chrono::milliseconds kPollInterval{32};
+    auto nextPoll = Clock::time_point::min();
+    for (const auto& key : keys) {
+        if (keepLoading && Clock::now() >= nextPoll) {
+            if (!keepLoading()) return false;
+            nextPoll = Clock::now() + kPollInterval;
+        }
         sprite_pack::Sprite converted;
-        if (!sprite_pack::ReadSprite(g_spritesDirectory, keys[i], is555, converted, error, mode)) Failure(error.c_str());
+        if (!sprite_pack::ReadSprite(directory, key, is555, converted, error, mode)) Failure(error.c_str());
         auto* s = new Sprite;
         ConstructSprite(s);
         Apply(s, converted, mode == sprite_pack::ReadMode::Metadata);
-        b->m_sprites[i] = s;
+        // Teardown owns the completed prefix if the next event pump cancels the load.
+        b->m_sprites[b->m_spriteCount++] = s;
     }
-    return 0;
+    return true;
 }
 
 void ConstructInstance(Instance* i)
@@ -277,7 +287,7 @@ void Drive(int)
     for (int is555 = 0; is555 < 2; ++is555) {
         game::GetRenderer()->m_rgb555 = is555;
         Bank b{};
-        check(Load(&b, sprite_pack::ReadMode::Palettes) == 0);
+        check(Load(&b, sprite_pack::ReadMode::Palettes));
         check(b.m_spriteCount > 0 && !b.m_headerFile && b.m_datFile == -1);
         hashes[is555] = BankHash(b);
         sprites += b.m_spriteCount;
@@ -333,7 +343,7 @@ void Drive(int)
         }
         // A second bank reads the same pack into the same state, apart from the registry index of each animation.
         Bank second{};
-        check(Load(&second, sprite_pack::ReadMode::Palettes) == 0 && second.m_spriteCount == b.m_spriteCount);
+        check(Load(&second, sprite_pack::ReadMode::Palettes) && second.m_spriteCount == b.m_spriteCount);
         FreeBank(second);
         FreeBank(b);
     }
@@ -354,10 +364,10 @@ void SetSpriteBank(ui::SpriteBank* bank)
     game::GetContext().spriteBank = bank;
 }
 
-int SpriteBank::Load()
+bool SpriteBank::Load(bool (*keepLoading)())
 {
     g_calls.Count();
-    return ::obl::ui::Load(this, config::Get().headless ? sprite_pack::ReadMode::Metadata : sprite_pack::ReadMode::Palettes);
+    return ::obl::ui::Load(this, config::Get().headless ? sprite_pack::ReadMode::Metadata : sprite_pack::ReadMode::Palettes, keepLoading);
 }
 
 ui::SpriteInstance* SpriteBank::CreateInstance(const char* name)
