@@ -125,8 +125,9 @@ void BlitRamp(Instance* instance, const Target& t, uint32_t depth, float step, R
     const uint16_t* palette = sprite->m_palettes[0];
     const uint8_t* depthFrame = FrameOf(instance, sprite->m_anims[1]);
     const uint8_t* colorFrame = FrameOf(instance, sprite->m_anims[0]);
-    static const PixelBlitter blitters[4] = {ui::pixel_primitives::DepthRamp32, ui::pixel_primitives::DepthRampGhost32,
-            ui::pixel_primitives::DepthRampZoomOut32, ui::pixel_primitives::DepthRampGhostZoomOut32};
+    static const PixelBlitter blitters[4] = {ui::pixel_primitives::DrawDepthRampRgb16Depth16,
+            ui::pixel_primitives::DrawGhostDepthRampRgb16Depth16, ui::pixel_primitives::DrawDepthRampZoomOutRgb16Depth16,
+            ui::pixel_primitives::DrawGhostDepthRampZoomOutRgb16Depth16};
     blitters[ramp.index()](renderer->m_workBuffer, colorFrame, depthFrame, palette, renderer->m_width, t.x, t.y, t.width, t.height, t.left,
             t.top, t.right, t.bottom, depth, step);
 }
@@ -206,7 +207,7 @@ void AltImpl(Instance* instance, const float* world, int tilesDir6, int tilesDir
         return;
     }
 
-    // Any other sprite type: one ActorSelect draw at zoom 1, bottom-clipped by (progress - 1) * height.
+    // Any other sprite type: one DrawActorSpriteRgb16Depth16 draw at zoom 1, bottom-clipped by (progress - 1) * height.
     ResetAnimation(instance);
     out->flat = true;
     int screen[2];
@@ -229,8 +230,8 @@ void AltImpl(Instance* instance, const float* world, int tilesDir6, int tilesDir
     out->drew = renderer->m_zoomLevel == 1;
     out->target = t;
     if (run.draw && out->drew)
-        ui::pixel_primitives::ActorSelect(renderer->m_workBuffer, frame, palette, renderer->m_width, t.x, t.y, t.width, t.height, t.left,
-                t.top, t.right, t.bottom, depth + 0x10, anim->m_hotspotY, 0, 0, 0);
+        ui::pixel_primitives::DrawActorSpriteRgb16Depth16(renderer->m_workBuffer, frame, palette, renderer->m_width, t.x, t.y, t.width,
+                t.height, t.left, t.top, t.right, t.bottom, depth + 0x10, anim->m_hotspotY, 0, 0, 0);
 }
 
 } // namespace

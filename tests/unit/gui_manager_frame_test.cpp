@@ -309,9 +309,9 @@ struct FrameEnv : Env {
     }
     void RestoreSurface(void*, int s) { log.push_back("restore" + S(s)); }
     void ClearSurface(void*, int s) { log.push_back("clear" + S(s)); }
-    void RecreateSurface(void*, int s) { log.push_back("recreate" + S(s)); }
+    void EnsureSurfaceAllocated(void*, int s) { log.push_back("recreate" + S(s)); }
     void SetActiveSurface(void*, int s) { log.push_back("active" + S(s)); }
-    void SetSurfaceOrigin(void*, int s, int ox, int oy) { log.push_back("origin" + S(s) + ":" + S(ox) + "," + S(oy)); }
+    void SetSurfaceScreenOrigin(void*, int s, int ox, int oy) { log.push_back("origin" + S(s) + ":" + S(ox) + "," + S(oy)); }
     bool ResizeSurface(void*, int s, int w, int h)
     {
         log.push_back("resize" + S(s) + ":" + S(w) + "x" + S(h));

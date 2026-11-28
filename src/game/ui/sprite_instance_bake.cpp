@@ -86,8 +86,8 @@ sprite_bake::ColourFrame ColourFrameOf(const Instance* instance)
 {
     Anim* anim = CurrentAnim(instance);
     sprite_bake::ColourFrame frame{FrameOf(instance, anim), instance->m_sprite->m_palettes[0], anim->m_width, anim->m_hotspotY, 0, 0};
-    frame.halfMask = ui::pixel_primitives::GetMaskHalf();
-    frame.quarterMask = ui::pixel_primitives::GetMaskQuarter();
+    frame.halfMask = ui::pixel_primitives::GetRgb16HalfBlendMask();
+    frame.quarterMask = ui::pixel_primitives::GetRgb16QuarterBlendMask();
     return frame;
 }
 
@@ -218,8 +218,8 @@ template<class Env> void RunGroundBlock(Env& env, Instance* instance, int bx, in
     const Sprite* sprite = instance->m_sprite;
     const uint8_t* colour = FrameOf(instance, sprite->m_anims[0]);
     sprite_bake::GroundFrame frame{colour, sprite->m_palettes[0], CurrentAnim(instance)->m_width, CurrentAnim(instance)->m_height, 0, 0};
-    frame.halfMask = ui::pixel_primitives::GetMaskHalf();
-    frame.quarterMask = ui::pixel_primitives::GetMaskQuarter();
+    frame.halfMask = ui::pixel_primitives::GetRgb16HalfBlendMask();
+    frame.quarterMask = ui::pixel_primitives::GetRgb16QuarterBlendMask();
     sprite_bake::BakeGroundTile(env, bx, by, ox, oy, depth, frame);
 }
 

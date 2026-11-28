@@ -1,5 +1,5 @@
 // The small Renderer operations (docs/architecture/presentation-render.md): SetViewport, SetGuiBarHeight,
-// SetZoomLevel, GetZoomLevel, ClearLightBuffer, PackColor, PutPixel, FillRect / FillRectBySize (with the fill observer,
+// SetZoomLevel, GetZoomLevel, ClearLightBuffer, PackColor, DrawPixelRgb16, FillRect / FillRectBySize (with the fill observer,
 // fill_observer.h), ClipRect, AddDirtyRect / PopDirtyRect and ApplyFade over renderer_ops and renderer_dirty.
 #include "game/ui/renderer_api.h"
 
@@ -66,7 +66,7 @@ void ClearLightBuffer(Renderer& r)
     std::memset(r.m_lightBuffer, 0, static_cast<size_t>(static_cast<uint32_t>(r.m_height) * static_cast<uint32_t>(r.m_width)));
 }
 
-void PutPixel(Renderer& r, int x, int y, uint16_t color)
+void DrawPixelRgb16(Renderer& r, int x, int y, uint16_t color)
 {
     if (!r.m_directMode) {
         uint32_t& word = r.m_workBuffer[r.m_width * y + x];
@@ -169,9 +169,9 @@ uint16_t PackColorImpl(Renderer* r, uint32_t red, uint32_t green, uint32_t blue)
     return renderer_ops::PackColor(r->m_rgb555 != 0, red, green, blue);
 }
 
-void PutPixelImpl(Renderer* r, int x, int y, uint32_t color)
+void DrawPixelRgb16Impl(Renderer* r, int x, int y, uint32_t color)
 {
-    PutPixel(*r, x, y, static_cast<uint16_t>(color));
+    DrawPixelRgb16(*r, x, y, static_cast<uint16_t>(color));
 }
 
 void FillRectImpl(Renderer* r, const int* rect, uint32_t color)
@@ -244,9 +244,9 @@ uint16_t ui::renderer::PackColor(void* r, uint32_t red, uint32_t green, uint32_t
     return PackColorImpl(static_cast<Renderer*>(r), red, green, blue);
 }
 
-void ui::renderer::PutPixel(void* r, int x, int y, uint32_t color)
+void ui::renderer::DrawPixelRgb16(void* r, int x, int y, uint32_t color)
 {
-    return PutPixelImpl(static_cast<Renderer*>(r), x, y, color);
+    return DrawPixelRgb16Impl(static_cast<Renderer*>(r), x, y, color);
 }
 
 void ui::renderer::FillRect(void* r, const int* rect, uint32_t color)

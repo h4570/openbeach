@@ -92,24 +92,24 @@ void Image(Renderer* r, const int* position, const int* rect, const RendererImag
 
     if (mode == 0) {
         if (!(flags & 1)) {
-            ui::pixel_primitives::Bitmap8Opaque32(
+            ui::pixel_primitives::DrawOpaqueBitmapRgb16Depth16(
                     image->m_pixels, image->m_width, r->m_workBuffer, r->m_width, l, t, x, y, width, height, image->m_palette16);
             g_opaque.Count();
         } else if (static_cast<uint32_t>(y + height) < static_cast<uint32_t>(r->m_height)) {
-            ui::pixel_primitives::Bitmap8Keyed32(
+            ui::pixel_primitives::DrawKeyedBitmapRgb16Depth16(
                     image->m_pixels, image->m_width, r->m_workBuffer, r->m_width, l, t, x, y, width, height, image->m_palette16);
             g_keyed.Count();
         }
     } else if (mode == 10) {
-        ui::pixel_primitives::Bitmap8KeyedMasked32(image->m_pixels, image->m_width, r->m_workBuffer, r->m_width, l, t, x, y, width, height,
-                image->m_palette16, static_cast<uint16_t>(mask));
+        ui::pixel_primitives::DrawMaskedKeyedBitmapRgb16Depth16(image->m_pixels, image->m_width, r->m_workBuffer, r->m_width, l, t, x, y,
+                width, height, image->m_palette16, static_cast<uint16_t>(mask));
         g_masked.Count();
     } else if (mode == 11) {
         auto* bits = obl::ui::renderer::GetBackBufferBits(r);
         if (bits) {
             // This mode deliberately draws at surface (0,0), regardless of the clipped screen position.
-            ui::pixel_primitives::Bitmap8Keyed16(image->m_pixels, image->m_width, bits, SurfaceAt(*r, r->m_activeSurface)->m_pitch, l, t, 0,
-                    0, width, height, image->m_palette16);
+            ui::pixel_primitives::DrawKeyedBitmapRgb16(image->m_pixels, image->m_width, bits, SurfaceAt(*r, r->m_activeSurface)->m_pitch, l,
+                    t, 0, 0, width, height, image->m_palette16);
             obl::ui::renderer::UnlockSurface(r);
             g_surface.Count();
         }

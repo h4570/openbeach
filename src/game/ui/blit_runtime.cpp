@@ -200,7 +200,8 @@ void DriveDepthCases(int count, bool lit)
         };
         if (lit) {
             for (int variant = 0; variant < 2; ++variant) {
-                const std::array entries{pixel_primitives::DepthLit32, pixel_primitives::DepthLitZoomOut32};
+                const std::array entries{
+                        pixel_primitives::DrawDepthTestedLitRgb16Depth16, pixel_primitives::DrawDepthTestedLitZoomOutRgb16Depth16};
                 fill();
                 for (auto& v : light) v = static_cast<uint8_t>(next());
                 renderer->m_lightBuffer = light.data();
@@ -209,13 +210,15 @@ void DriveDepthCases(int count, bool lit)
             }
         } else {
             for (int variant = 0; variant < 3; ++variant) {
-                const std::array entries{pixel_primitives::Depth32, pixel_primitives::DepthKeyline32, pixel_primitives::DepthZoomOut32};
+                const std::array entries{pixel_primitives::DrawDepthTestedActorRgb16Depth16,
+                        pixel_primitives::DrawDepthTestedKeylineRgb16Depth16, pixel_primitives::DrawDepthTestedActorZoomOutRgb16Depth16};
                 fill();
                 entries[variant](dst.data(), rle.data(), palette, kColorPitch, dx, dy, w, h, left, top, right, bottom, depth, slant);
                 digest.Count(g_depthVerified, "whole color/depth allocation differs", dst);
             }
             for (int variant = 0; variant < 2; ++variant) {
-                const std::array entries{pixel_primitives::DepthType12Unscaled32, pixel_primitives::DepthType12ZoomOut32};
+                const std::array entries{pixel_primitives::DrawDepthTestedFixedSlopeRgb16Depth16,
+                        pixel_primitives::DrawDepthTestedFixedSlopeZoomOutRgb16Depth16};
                 fill();
                 entries[variant](dst.data(), rle.data(), palette, kColorPitch, dx, dy, w, h, left, top, right, bottom, depth);
                 digest.Count(g_depthVerified, "whole Type12 color/depth allocation differs", dst);
@@ -343,14 +346,14 @@ void DriveEffects(int count, bool ramp)
             const bool zoom = ramp ? variant >= 2 : variant == 1;
             blit::RleRect rect{kPitch, 4 + (i & 1), 4 + ((i >> 1) & 1), w, h, left, top, right, bottom};
             if (ramp) {
-                const std::array entries{pixel_primitives::DepthRamp32, pixel_primitives::DepthRampGhost32,
-                        pixel_primitives::DepthRampZoomOut32, pixel_primitives::DepthRampGhostZoomOut32};
+                const std::array entries{pixel_primitives::DrawDepthRampRgb16Depth16, pixel_primitives::DrawGhostDepthRampRgb16Depth16,
+                        pixel_primitives::DrawDepthRampZoomOutRgb16Depth16, pixel_primitives::DrawGhostDepthRampZoomOutRgb16Depth16};
                 auto raw = rect;
                 entries[variant](dst.data(), rle.data(), frame.data(), palette, raw.pitch, raw.x, raw.y, w, h, left, top, right, bottom,
                         depth, slope);
                 digest.Count(g_rampVerified, "whole Ramp/Ghost color/depth allocation differs", dst);
             } else {
-                const auto entry = zoom ? pixel_primitives::ShadowZoomOut32 : pixel_primitives::Shadow32;
+                const auto entry = zoom ? pixel_primitives::DrawShadowZoomOutRgb16Depth16 : pixel_primitives::DrawShadowRgb16Depth16;
                 entry(dst.data(), rle.data(), nullptr, rect.pitch, rect.x, rect.y, w, h, left, top, right, bottom, depth);
                 digest.Count(g_shadowVerified, "whole Shadow color/depth allocation differs", dst);
             }
@@ -493,21 +496,21 @@ void Drive(int count)
         const int right = i % 5 == 0 ? w : left + 1 + static_cast<int>(next() % (w - left));
         const int bottom = i % 6 == 0 ? h : top + 1 + static_cast<int>(next() % (h - top));
         // Exercise the native facade with the same case order and allocation digests.
-        for (auto address : {pixel_primitives::Ui16, pixel_primitives::Translucent16}) {
+        for (auto address : {pixel_primitives::Ui16, pixel_primitives::DrawTranslucentRleRgb16}) {
             address(dst16.data(), rle.data(), palette, 80, 3, 2, w, h, left, top, right, bottom);
             hashBuffer(dst16);
         }
-        for (auto address : {pixel_primitives::Ui32, pixel_primitives::Translucent32}) {
+        for (auto address : {pixel_primitives::Ui32, pixel_primitives::DrawTranslucentRleRgb16Depth16}) {
             address(dst32.data(), rle.data(), palette, 80, 3, 2, w, h, left, top, right, bottom);
             hashBuffer(dst32);
         }
-        pixel_primitives::Bitmap8Keyed16(bitmap.data(), 80, dst16.data(), 160, 4, 3, 5, 7, w, h, palette);
+        pixel_primitives::DrawKeyedBitmapRgb16(bitmap.data(), 80, dst16.data(), 160, 4, 3, 5, 7, w, h, palette);
         hashBuffer(dst16);
-        for (auto address : {pixel_primitives::Bitmap8Opaque32, pixel_primitives::Bitmap8Keyed32}) {
+        for (auto address : {pixel_primitives::DrawOpaqueBitmapRgb16Depth16, pixel_primitives::DrawKeyedBitmapRgb16Depth16}) {
             address(bitmap.data(), 80, dst32.data(), 80, 4, 3, 5, 7, w, h, palette);
             hashBuffer(dst32);
         }
-        pixel_primitives::Bitmap8KeyedMasked32(
+        pixel_primitives::DrawMaskedKeyedBitmapRgb16Depth16(
                 bitmap.data(), 80, dst32.data(), 80, 4, 3, 5, 7, w, h, palette, static_cast<uint16_t>(next()));
         hashBuffer(dst32);
     }
@@ -674,12 +677,12 @@ void DriveExtraBlit(int count)
                 renderer->m_rgb555 = rgb;
                 for (int flags = 0; flags < 8; ++flags) {
                     renderer->m_lightBuffer = light.data();
-                    pixel_primitives::ActorSelect(dst.data(), rle.data(), palette, pitch, dx, dy, w, h, l, t, r, b, z, slant,
-                            flags & 1 ? static_cast<char>(0x80) : 0, flags & 2 ? 1 : 0, flags & 4 ? 2 : 0);
+                    pixel_primitives::DrawActorSpriteRgb16Depth16(dst.data(), rle.data(), palette, pitch, dx, dy, w, h, l, t, r, b, z,
+                            slant, flags & 1 ? static_cast<char>(0x80) : 0, flags & 2 ? 1 : 0, flags & 4 ? 2 : 0);
                     digest.Count(g_extraVerified, detail, dst, surface, light, bytes);
                 }
                 renderer->m_lightBuffer = light.data();
-                pixel_primitives::DepthLitSelect(dst.data(), rle.data(), palette, pitch, dx, dy, w, h, l, t, r, b, z, slant);
+                pixel_primitives::DrawLitSpriteRgb16Depth16(dst.data(), rle.data(), palette, pitch, dx, dy, w, h, l, t, r, b, z, slant);
                 digest.Count(g_extraVerified, detail, dst, surface, light, bytes);
             }
         for (int direct = 0; direct < 3; ++direct) {
@@ -687,7 +690,7 @@ void DriveExtraBlit(int count)
             renderer->m_surfaceLocked = 0;
             fake.m_cleared = 7;
             fake.m_bits = direct == 2 ? nullptr : surface.data();
-            pixel_primitives::TranslucentSelect(dst.data(), rle.data(), palette, pitch, dx, dy, w, h, l, t, r, b);
+            pixel_primitives::DrawTranslucentSpriteRgb16Depth16(dst.data(), rle.data(), palette, pitch, dx, dy, w, h, l, t, r, b);
             if (renderer->m_surfaceLocked != (direct == 2 ? 1 : 0) || fake.m_cleared != (direct == 0 ? 7 : 0))
                 g_driverGolden.Record(false, "translucent selector lock/handed-out contract");
             digest.Count(g_extraVerified, detail, dst, surface, light, bytes);
@@ -708,8 +711,8 @@ void DriveExtraBlit(int count)
         const screen::Rect clip{l, t, r, b};
         pixel_primitives::RleCopy32(bytes.data(), runs.data(), pitch, dx, dy, w, h, clip);
         digest.Count(g_extraVerified, detail, dst, surface, light, bytes);
-        const bool halfMatches = pixel_primitives::GetMaskHalf() == half;
-        const bool quarterMatches = pixel_primitives::GetMaskQuarter() == quarter;
+        const bool halfMatches = pixel_primitives::GetRgb16HalfBlendMask() == half;
+        const bool quarterMatches = pixel_primitives::GetRgb16QuarterBlendMask() == quarter;
         digest.Count(g_extraVerified, detail, dst, surface, light, bytes);
         digest.Count(g_extraVerified, detail, dst, surface, light, bytes);
         if (!halfMatches || !quarterMatches) g_driverGolden.Record(false, "mask getter differs from the global");
@@ -741,8 +744,8 @@ void DriveSelector(int count)
                     std::fill(dst.begin(), dst.end(), 0x10012345u);
                     std::fill(light.begin(), light.end(), uint8_t{77});
                     renderer->m_lightBuffer = light.data();
-                    pixel_primitives::ActorSelect(dst.data(), rle, palette, pitch, 4 + (i & 1), 4, 5, 4, 0, 0, 5, 4, 0x1000, -2,
-                            flags & 1 ? 1 : 0, flags & 2 ? 1 : 0, flags & 4 ? 1 : 0);
+                    pixel_primitives::DrawActorSpriteRgb16Depth16(dst.data(), rle, palette, pitch, 4 + (i & 1), 4, 5, 4, 0, 0, 5, 4, 0x1000,
+                            -2, flags & 1 ? 1 : 0, flags & 2 ? 1 : 0, flags & 4 ? 1 : 0);
                     digest.Count(g_selectorVerified, "actor selection/unused lit dispatcher", dst, light);
                 }
             }
@@ -760,17 +763,17 @@ bool RegisterSelectorDrivers()
 } // namespace
 
 namespace pixel_primitives {
-void ActorSelect(uint32_t* dst, const uint8_t* rle, const uint16_t* palette, int pitch, int x, int y, int w, int h, int l, int t, int r,
-        int b, uint32_t z, int slant, char lit, char unused, char keyline)
+void DrawActorSpriteRgb16Depth16(uint32_t* dst, const uint8_t* rle, const uint16_t* palette, int pitch, int x, int y, int w, int h, int l,
+        int t, int r, int b, uint32_t z, int slant, char lit, char unused, char keyline)
 {
     WriteActorSelect(dst, rle, palette, pitch, x, y, w, h, l, t, r, b, z, slant, lit, unused, keyline);
 }
-void DepthLitSelect(uint32_t* dst, const uint8_t* rle, const uint16_t* palette, int pitch, int x, int y, int w, int h, int l, int t, int r,
-        int b, uint32_t z, int slant)
+void DrawLitSpriteRgb16Depth16(uint32_t* dst, const uint8_t* rle, const uint16_t* palette, int pitch, int x, int y, int w, int h, int l,
+        int t, int r, int b, uint32_t z, int slant)
 {
     WriteLitSelect(dst, rle, palette, pitch, x, y, w, h, l, t, r, b, z, slant);
 }
-void TranslucentSelect(
+void DrawTranslucentSpriteRgb16Depth16(
         uint32_t* dst, const uint8_t* rle, const uint16_t* palette, int pitch, int x, int y, int w, int h, int l, int t, int r, int b)
 {
     WriteTransSelect(dst, rle, palette, pitch, x, y, w, h, l, t, r, b);
@@ -798,11 +801,11 @@ void RleCopy32(uint8_t* dst, const uint8_t* src, int pitch, int x, int y, int w,
     const int bounds[]{clip.left, clip.top, clip.right, clip.bottom};
     WriteClear(dst, src, pitch, x, y, w, h, bounds);
 }
-uint16_t GetMaskHalf()
+uint16_t GetRgb16HalfBlendMask()
 {
     return WriteHalfMask();
 }
-uint16_t GetMaskQuarter()
+uint16_t GetRgb16QuarterBlendMask()
 {
     return WriteQuarterMask();
 }
@@ -816,98 +819,98 @@ void Ui32(uint32_t* dst, const uint8_t* rle, const uint16_t* palette, int pitch,
 {
     WriteUi32(dst, rle, palette, pitch, x, y, width, height, left, top, right, bottom);
 }
-void Translucent16(uint16_t* dst, const uint8_t* rle, const uint16_t* palette, int pitch, int x, int y, int width, int height, int left,
-        int top, int right, int bottom)
+void DrawTranslucentRleRgb16(uint16_t* dst, const uint8_t* rle, const uint16_t* palette, int pitch, int x, int y, int width, int height,
+        int left, int top, int right, int bottom)
 {
     WriteTranslucent16(dst, rle, palette, pitch, x, y, width, height, left, top, right, bottom);
 }
-void Translucent32(uint32_t* dst, const uint8_t* rle, const uint16_t* palette, int pitch, int x, int y, int width, int height, int left,
-        int top, int right, int bottom)
+void DrawTranslucentRleRgb16Depth16(uint32_t* dst, const uint8_t* rle, const uint16_t* palette, int pitch, int x, int y, int width,
+        int height, int left, int top, int right, int bottom)
 {
     WriteTranslucent32(dst, rle, palette, pitch, x, y, width, height, left, top, right, bottom);
 }
-void Bitmap8Keyed16(
+void DrawKeyedBitmapRgb16(
         const uint8_t* src, int sp, uint16_t* dst, int dp, int sx, int sy, int dx, int dy, int width, int height, const uint16_t* palette)
 {
     WriteBitmap16(src, sp, dst, dp, sx, sy, dx, dy, width, height, palette);
 }
-void Bitmap8Opaque32(
+void DrawOpaqueBitmapRgb16Depth16(
         const uint8_t* src, int sp, uint32_t* dst, int dp, int sx, int sy, int dx, int dy, int width, int height, const uint16_t* palette)
 {
     WriteOpaque32(src, sp, dst, dp, sx, sy, dx, dy, width, height, palette);
 }
-void Bitmap8Keyed32(
+void DrawKeyedBitmapRgb16Depth16(
         const uint8_t* src, int sp, uint32_t* dst, int dp, int sx, int sy, int dx, int dy, int width, int height, const uint16_t* palette)
 {
     WriteKeyed32(src, sp, dst, dp, sx, sy, dx, dy, width, height, palette);
 }
-void Bitmap8KeyedMasked32(const uint8_t* src, int sp, uint32_t* dst, int dp, int sx, int sy, int dx, int dy, int width, int height,
-        const uint16_t* palette, uint16_t mask)
+void DrawMaskedKeyedBitmapRgb16Depth16(const uint8_t* src, int sp, uint32_t* dst, int dp, int sx, int sy, int dx, int dy, int width,
+        int height, const uint16_t* palette, uint16_t mask)
 {
     WriteMasked32(src, sp, dst, dp, sx, sy, dx, dy, width, height, palette, mask);
 }
-void Depth32(uint32_t* dst, const uint8_t* rle, const uint16_t* palette, int pitch, int x, int y, int width, int height, int left, int top,
-        int right, int bottom, uint32_t depth, int slant)
+void DrawDepthTestedActorRgb16Depth16(uint32_t* dst, const uint8_t* rle, const uint16_t* palette, int pitch, int x, int y, int width,
+        int height, int left, int top, int right, int bottom, uint32_t depth, int slant)
 {
     WriteDepth32(dst, rle, palette, pitch, x, y, width, height, left, top, right, bottom, depth, slant);
 }
-void DepthKeyline32(uint32_t* dst, const uint8_t* rle, const uint16_t* palette, int pitch, int x, int y, int width, int height, int left,
-        int top, int right, int bottom, uint32_t depth, int slant)
+void DrawDepthTestedKeylineRgb16Depth16(uint32_t* dst, const uint8_t* rle, const uint16_t* palette, int pitch, int x, int y, int width,
+        int height, int left, int top, int right, int bottom, uint32_t depth, int slant)
 {
     WriteKeyline32(dst, rle, palette, pitch, x, y, width, height, left, top, right, bottom, depth, slant);
 }
-void DepthZoomOut32(uint32_t* dst, const uint8_t* rle, const uint16_t* palette, int pitch, int x, int y, int width, int height, int left,
-        int top, int right, int bottom, uint32_t depth, int slant)
+void DrawDepthTestedActorZoomOutRgb16Depth16(uint32_t* dst, const uint8_t* rle, const uint16_t* palette, int pitch, int x, int y, int width,
+        int height, int left, int top, int right, int bottom, uint32_t depth, int slant)
 {
     WriteDepthZoom32(dst, rle, palette, pitch, x, y, width, height, left, top, right, bottom, depth, slant);
 }
-void DepthType12Unscaled32(uint32_t* dst, const uint8_t* rle, const uint16_t* palette, int pitch, int x, int y, int width, int height,
-        int left, int top, int right, int bottom, uint32_t depth)
+void DrawDepthTestedFixedSlopeRgb16Depth16(uint32_t* dst, const uint8_t* rle, const uint16_t* palette, int pitch, int x, int y, int width,
+        int height, int left, int top, int right, int bottom, uint32_t depth)
 {
     WriteType12(dst, rle, palette, pitch, x, y, width, height, left, top, right, bottom, depth);
 }
-void DepthType12ZoomOut32(uint32_t* dst, const uint8_t* rle, const uint16_t* palette, int pitch, int x, int y, int width, int height,
-        int left, int top, int right, int bottom, uint32_t depth)
+void DrawDepthTestedFixedSlopeZoomOutRgb16Depth16(uint32_t* dst, const uint8_t* rle, const uint16_t* palette, int pitch, int x, int y,
+        int width, int height, int left, int top, int right, int bottom, uint32_t depth)
 {
     WriteType12Zoom(dst, rle, palette, pitch, x, y, width, height, left, top, right, bottom, depth);
 }
-void DepthLit32(uint32_t* dst, const uint8_t* rle, const uint16_t* palette, int pitch, int x, int y, int width, int height, int left,
-        int top, int right, int bottom, uint32_t depth, int slant)
+void DrawDepthTestedLitRgb16Depth16(uint32_t* dst, const uint8_t* rle, const uint16_t* palette, int pitch, int x, int y, int width,
+        int height, int left, int top, int right, int bottom, uint32_t depth, int slant)
 {
     WriteLit32(dst, rle, palette, pitch, x, y, width, height, left, top, right, bottom, depth, slant);
 }
-void DepthLitZoomOut32(uint32_t* dst, const uint8_t* rle, const uint16_t* palette, int pitch, int x, int y, int width, int height, int left,
-        int top, int right, int bottom, uint32_t depth, int slant)
+void DrawDepthTestedLitZoomOutRgb16Depth16(uint32_t* dst, const uint8_t* rle, const uint16_t* palette, int pitch, int x, int y, int width,
+        int height, int left, int top, int right, int bottom, uint32_t depth, int slant)
 {
     WriteLitZoom32(dst, rle, palette, pitch, x, y, width, height, left, top, right, bottom, depth, slant);
 }
-void DepthRamp32(uint32_t* dst, const uint8_t* rle, const uint8_t* frame, const uint16_t* palette, int pitch, int x, int y, int w, int h,
-        int l, int t, int r, int b, uint32_t z, float slope)
+void DrawDepthRampRgb16Depth16(uint32_t* dst, const uint8_t* rle, const uint8_t* frame, const uint16_t* palette, int pitch, int x, int y,
+        int w, int h, int l, int t, int r, int b, uint32_t z, float slope)
 {
     WriteRamp(dst, rle, frame, palette, pitch, x, y, w, h, l, t, r, b, z, slope);
 }
-void DepthRampGhost32(uint32_t* dst, const uint8_t* rle, const uint8_t* frame, const uint16_t* palette, int pitch, int x, int y, int w,
-        int h, int l, int t, int r, int b, uint32_t z, float slope)
+void DrawGhostDepthRampRgb16Depth16(uint32_t* dst, const uint8_t* rle, const uint8_t* frame, const uint16_t* palette, int pitch, int x,
+        int y, int w, int h, int l, int t, int r, int b, uint32_t z, float slope)
 {
     WriteGhost(dst, rle, frame, palette, pitch, x, y, w, h, l, t, r, b, z, slope);
 }
-void DepthRampZoomOut32(uint32_t* dst, const uint8_t* rle, const uint8_t* frame, const uint16_t* palette, int pitch, int x, int y, int w,
-        int h, int l, int t, int r, int b, uint32_t z, float slope)
+void DrawDepthRampZoomOutRgb16Depth16(uint32_t* dst, const uint8_t* rle, const uint8_t* frame, const uint16_t* palette, int pitch, int x,
+        int y, int w, int h, int l, int t, int r, int b, uint32_t z, float slope)
 {
     WriteRampZoom(dst, rle, frame, palette, pitch, x, y, w, h, l, t, r, b, z, slope);
 }
-void DepthRampGhostZoomOut32(uint32_t* dst, const uint8_t* rle, const uint8_t* frame, const uint16_t* palette, int pitch, int x, int y,
-        int w, int h, int l, int t, int r, int b, uint32_t z, float slope)
+void DrawGhostDepthRampZoomOutRgb16Depth16(uint32_t* dst, const uint8_t* rle, const uint8_t* frame, const uint16_t* palette, int pitch,
+        int x, int y, int w, int h, int l, int t, int r, int b, uint32_t z, float slope)
 {
     WriteGhostZoom(dst, rle, frame, palette, pitch, x, y, w, h, l, t, r, b, z, slope);
 }
-void Shadow32(uint32_t* dst, const uint8_t* rle, const uint16_t* palette, int pitch, int x, int y, int w, int h, int l, int t, int r, int b,
-        uint32_t z)
+void DrawShadowRgb16Depth16(uint32_t* dst, const uint8_t* rle, const uint16_t* palette, int pitch, int x, int y, int w, int h, int l, int t,
+        int r, int b, uint32_t z)
 {
     WriteShadow(dst, rle, palette, pitch, x, y, w, h, l, t, r, b, z);
 }
-void ShadowZoomOut32(uint32_t* dst, const uint8_t* rle, const uint16_t* palette, int pitch, int x, int y, int w, int h, int l, int t, int r,
-        int b, uint32_t z)
+void DrawShadowZoomOutRgb16Depth16(uint32_t* dst, const uint8_t* rle, const uint16_t* palette, int pitch, int x, int y, int w, int h, int l,
+        int t, int r, int b, uint32_t z)
 {
     WriteShadowZoom(dst, rle, palette, pitch, x, y, w, h, l, t, r, b, z);
 }

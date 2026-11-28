@@ -40,7 +40,7 @@ bool IsLightmapName(const char* name);
 Blitter Choose(const Inputs& in);
 
 // True when the chosen blitter works at half resolution (destination coordinates are halved) for `zoomLevel`:
-// ShadowZoomOut/Type12ZoomOut, and Actor sprites, whose ActorSelect picks a ZoomOut variant at zoom level 2.
+// ShadowZoomOut/Type12ZoomOut, and Actor sprites, whose DrawActorSpriteRgb16Depth16 picks a ZoomOut variant at zoom level 2.
 bool HalvesDestination(Blitter blitter, int zoomLevel);
 
 } // namespace obl::sprite_draw

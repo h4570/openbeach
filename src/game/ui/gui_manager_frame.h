@@ -426,13 +426,13 @@ template<class Env> void SyncBarSurfaces(Env& env, View* manager)
     SizeBar(env, manager, renderer);
     if (!env.ResizeSurface(renderer, manager->m_barSurface, renderer->m_width, manager->m_barHeight)) return;
     env.ClearSurface(renderer, manager->m_barSurface);
-    env.SetSurfaceOrigin(renderer, manager->m_barSurface, 0, renderer->m_height - manager->m_barHeight);
+    env.SetSurfaceScreenOrigin(renderer, manager->m_barSurface, 0, renderer->m_height - manager->m_barHeight);
     for (int surface : {manager->m_cursorSurface, manager->m_radarSurface, manager->m_progressSurface}) {
-        env.RecreateSurface(renderer, surface);
+        env.EnsureSurfaceAllocated(renderer, surface);
         env.ClearSurface(renderer, surface);
     }
     for (Node* node = manager->m_dialogs->m_next; node != manager->m_dialogs; node = node->m_next) {
-        env.RecreateSurface(renderer, node->m_entry->m_surface);
+        env.EnsureSurfaceAllocated(renderer, node->m_entry->m_surface);
         env.ClearSurface(renderer, node->m_entry->m_surface);
     }
     if (manager->m_radarWidget) {
@@ -503,7 +503,7 @@ template<class Env> void DrawSurfaces(Env& env, View* manager)
         env.SetActiveSurface(renderer, entry->m_surface);
         int x, y;
         env.DialogOrigin(entry->m_dialog, &x, &y);
-        env.SetSurfaceOrigin(renderer, entry->m_surface, x, y);
+        env.SetSurfaceScreenOrigin(renderer, entry->m_surface, x, y);
         env.WidgetDraw(entry->m_dialog);
         if (!env.HasWorld()) {
             // Outside gameplay (the main menu) nothing else ticks the dialog, so it also gets its two refresh slots here.
@@ -717,7 +717,7 @@ template<class Env> bool CreateBarSurfaces(Env& env, View* manager)
     auto* renderer = static_cast<ui::Renderer*>(manager->m_renderer);
     SizeBar(env, manager, renderer);
     manager->m_barSurface = NewClearedSurface(env, renderer, renderer->m_width, manager->m_barHeight);
-    env.SetSurfaceOrigin(renderer, manager->m_barSurface, 0, renderer->m_height - manager->m_barHeight);
+    env.SetSurfaceScreenOrigin(renderer, manager->m_barSurface, 0, renderer->m_height - manager->m_barHeight);
     manager->m_cursorSurface = NewClearedSurface(env, renderer, kCursorSurfaceSize, kCursorSurfaceSize);
     int width, height;
     ui::SpriteInstance* sprite = env.CreateSprite(env.RadarPanelSpriteName());

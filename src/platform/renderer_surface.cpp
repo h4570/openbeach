@@ -191,7 +191,7 @@ void GetSurfaceOriginImpl(Renderer* r, int* origin)
     GetOrigin(*r, origin);
 }
 
-void SetSurfaceOriginImpl(Renderer* r, int index, int x, int y)
+void SetSurfaceScreenOriginImpl(Renderer* r, int index, int x, int y)
 {
     SetOrigin(*r, index, x, y);
 }
@@ -251,9 +251,9 @@ bool ResizeSurfaceImpl(Renderer* r, int index, int width, int height)
 }
 
 // Plain heap surfaces are never lost.
-void RecreateSurfaceImpl(Renderer* r, int index) {}
+void EnsureSurfaceAllocatedImpl(Renderer* r, int index) {}
 
-void RestoreLostSurfacesImpl(Renderer* r) {}
+void RecoverUnavailableSurfacesImpl(Renderer* r) {}
 
 } // namespace
 
@@ -282,14 +282,14 @@ bool ui::renderer::ResizeSurface(void* r, int index, int width, int height)
     return ResizeSurfaceImpl(static_cast<Renderer*>(r), index, width, height);
 }
 
-void ui::renderer::RecreateSurface(void* r, int index)
+void ui::renderer::EnsureSurfaceAllocated(void* r, int index)
 {
-    return RecreateSurfaceImpl(static_cast<Renderer*>(r), index);
+    return EnsureSurfaceAllocatedImpl(static_cast<Renderer*>(r), index);
 }
 
-void ui::renderer::RestoreLostSurfaces(void* r)
+void ui::renderer::RecoverUnavailableSurfaces(void* r)
 {
-    return RestoreLostSurfacesImpl(static_cast<Renderer*>(r));
+    return RecoverUnavailableSurfacesImpl(static_cast<Renderer*>(r));
 }
 
 void ui::renderer::SetActiveSurface(void* r, int index)
@@ -312,9 +312,9 @@ void ui::renderer::GetSurfaceOrigin(void* r, int* origin)
     return GetSurfaceOriginImpl(static_cast<Renderer*>(r), origin);
 }
 
-void ui::renderer::SetSurfaceOrigin(void* r, int index, int x, int y)
+void ui::renderer::SetSurfaceScreenOrigin(void* r, int index, int x, int y)
 {
-    return SetSurfaceOriginImpl(static_cast<Renderer*>(r), index, x, y);
+    return SetSurfaceScreenOriginImpl(static_cast<Renderer*>(r), index, x, y);
 }
 
 bool ui::renderer::IsSurfaceLost(void* r, int index)
