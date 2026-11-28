@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.16.0](https://github.com/h4570/openbeach/compare/v1.15.0...v1.16.0) (2026-11-28)
+
+
+### Features
+
+* **game:** let mods add scenario sets beside the campaign ([#199](https://github.com/h4570/openbeach/issues/199)) ([765acd9](https://github.com/h4570/openbeach/commit/765acd98d758d1f954cfba88e8d09e03225e89c8)), closes [#196](https://github.com/h4570/openbeach/issues/196)
+* **game:** list mod scenarios in the scenario menu ([#201](https://github.com/h4570/openbeach/issues/201)) ([56b8273](https://github.com/h4570/openbeach/commit/56b8273ca6896729275c0dbf206e4872ea315d04)), closes [#197](https://github.com/h4570/openbeach/issues/197)
+
+
+### Performance Improvements
+
+* **game:** avoid post-intro freeze and redundant mod sprite probes ([#204](https://github.com/h4570/openbeach/issues/204)) ([1d778d5](https://github.com/h4570/openbeach/commit/1d778d51ec690ffcc7c02b7b20ca50ec8ae67465)), closes [#202](https://github.com/h4570/openbeach/issues/202)
+
 ## [1.15.0](https://github.com/h4570/openbeach/compare/v1.14.0...v1.15.0) (2026-11-27)
 
 
