@@ -147,7 +147,7 @@ template<class Env> bool FindBeachPoint(const map::Grid& grid, object::Lifeguard
 // Sends the lifeguard to its tower (the home building, `m_HomeID`) according to the building's sprite direction: 0 and 1 walk the pavement to the
 // building (MT_PAVEMENT2OBJECT, flags 0, data = the building); 2 and 3 walk to the serve point shifted by -29 / +29 in x and +30 in y
 // (MT_MOVE2POINT, x kept at 53 bits and truncated, y stored as float first); any other direction sends nothing.
-template<class Env> bool MoveToTower(object::Lifeguard& employee, Env& env)
+template<class Env> bool WalkToTower(object::Lifeguard& employee, Env& env)
 {
     const object::Base* home = env.Object(employee.m_HomeID);
     if (!home) return false;
@@ -193,8 +193,8 @@ template<class Env> bool SetDrawPos(const map::Grid& grid, object::Lifeguard& em
 // no building (flag 0x10): the first free vertex of the chain, improved by every strictly nearer free vertex of the rest of its node and of the later
 // nodes (the same search as FindNearestSeaPoint, but measured from the lifeguard in 3-D). A node that runs out hands over to the next one;
 // reaching the end of the chain answers false, as does a missing chain or a node without points.
-// The vertex's point (tile-to-world conversion kind 4) is the goal: MT_MOVE2POINT (Move2SeaEntry) or MT_SWIM2SEAPOINT (HeadForShore) to itself with the
-// truncated x and y. Move2SeaEntry also stores the point in `m_ExitPoint` and marks the rescued guest (`m_saving_id`) with action state 1
+// The vertex's point (tile-to-world conversion kind 4) is the goal: MT_MOVE2POINT (WalkToSeaEntry) or MT_SWIM2SEAPOINT (SwimToShore) to itself with the
+// truncated x and y. WalkToSeaEntry also stores the point in `m_ExitPoint` and marks the rescued guest (`m_saving_id`) with action state 1
 // (a field of that object).
 struct ShoreVertex {
     uint32_t x, y;

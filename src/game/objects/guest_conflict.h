@@ -7,7 +7,7 @@
 #include <cstdint>
 
 // The pure rules of the guest fights (FindFightPoint, FindFightPerson, TellNearbyOfFight)
-// and of the vandalism (LookForVandalItem, VandaliseBin), guest fights and vandalism, docs/architecture/objects.md.
+// and of the vandalism (FindVandalismTarget, VandaliseBin), guest fights and vandalism, docs/architecture/objects.md.
 // The game side (object lists, grid lookups, messages) is in src/game/objects/guest_conflict.cpp.
 //
 // 53-bit precision: every operation is one double rounding, every float store one float rounding. "Below" means below or unordered
@@ -123,7 +123,7 @@ inline int32_t Abs32(int32_t value)
     return static_cast<int32_t>((static_cast<uint32_t>(value) ^ sign) - sign);
 }
 
-// The search metric of LookForVandalItem. It is not a true distance but |dx| + dy^2: sqrt(dx * dx) through a 64-bit integer conversion, a square root and a truncation
+// The search metric of FindVandalismTarget. It is not a true distance but |dx| + dy^2: sqrt(dx * dx) through a 64-bit integer conversion, a square root and a truncation
 // (the 32-bit product may wrap, a negative square gives NaN and its truncation 0) plus dy * dy. All int32 arithmetic wraps.
 inline int32_t VandalMetric(int32_t dx, int32_t dy)
 {

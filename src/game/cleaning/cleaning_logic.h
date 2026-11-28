@@ -106,13 +106,13 @@ inline void RemoveJob(Manager& manager, int id)
     if (auto pending = FindById(manager.jobs, id); pending != manager.jobs.end()) manager.jobs.erase(pending);
 }
 
-template<class Env> void StartedCleaning(Manager& manager, Env& env, int id)
+template<class Env> void OnCleaningStarted(Manager& manager, Env& env, int id)
 {
     if (!env.ObjectExists(id)) return;
     if (auto active = FindById(manager.activeJobs, id); active != manager.activeJobs.end()) active->cleaning = 1;
 }
 
-template<class Env> void DidNotClean(Manager& manager, Env& env, int id)
+template<class Env> void OnCleaningAbandoned(Manager& manager, Env& env, int id)
 {
     auto active = FindById(manager.activeJobs, id);
     bool urgent = active != manager.activeJobs.end() && active->urgent != 0;

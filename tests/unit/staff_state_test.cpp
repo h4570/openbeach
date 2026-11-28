@@ -35,7 +35,7 @@ struct Env {
 
     void BaseSack() { add("Sack"); }
     void FreeBuilder(int32_t id) { add("Free(" + std::to_string(id) + ")"); }
-    void DidNotClean(int32_t id) { add("NotClean(" + std::to_string(id) + ")"); }
+    void OnCleaningAbandoned(int32_t id) { add("NotClean(" + std::to_string(id) + ")"); }
     void LeaveTower() { add("Leave"); }
     void ReturnJobAndLeave(bool found) { add(found ? "LeaveRepair(1)" : "LeaveRepair(0)"); }
     void ReleaseGuest(uint8_t sent) { add("Release(" + std::to_string(sent) + ")"); }

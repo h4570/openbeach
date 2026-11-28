@@ -72,8 +72,8 @@ enum Method {
     MethodReleaseJob,
     MethodRemoveJob,
     MethodGetJobStatus,
-    MethodStartedCleaning,
-    MethodDidNotClean,
+    MethodCleaningStarted,
+    MethodCleaningAbandoned,
     MethodFindUrgentJob,
     MethodFindBestScoredJob,
     MethodClaimObject,
@@ -136,14 +136,14 @@ void RemoveJob(cleaning::Manager* manager, int id)
     cleaning::RemoveJob(*manager, id);
 }
 
-void StartedCleaning(cleaning::Manager* manager, int id)
+void OnCleaningStarted(cleaning::Manager* manager, int id)
 {
-    IdMethod(MethodStartedCleaning, manager, [&](cleaning::Manager& m, auto& env) { cleaning::StartedCleaning(m, env, id); });
+    IdMethod(MethodCleaningStarted, manager, [&](cleaning::Manager& m, auto& env) { cleaning::OnCleaningStarted(m, env, id); });
 }
 
-void DidNotClean(cleaning::Manager* manager, int id)
+void OnCleaningAbandoned(cleaning::Manager* manager, int id)
 {
-    IdMethod(MethodDidNotClean, manager, [&](cleaning::Manager& m, auto& env) { cleaning::DidNotClean(m, env, id); });
+    IdMethod(MethodCleaningAbandoned, manager, [&](cleaning::Manager& m, auto& env) { cleaning::OnCleaningAbandoned(m, env, id); });
 }
 
 void ClaimJob(cleaning::Manager* manager, int id, uint32_t urgent)
@@ -245,12 +245,12 @@ void DriveFuzz(int count)
         case 5: cleaning_facade::GetJobStatus(manager, pickAny()); break;
         case 6: {
             int held = activeId();
-            if (held >= 0) cleaning_facade::StartedCleaning(manager, held);
+            if (held >= 0) cleaning_facade::OnCleaningStarted(manager, held);
             break;
         }
         case 7: {
             int held = activeId();
-            if (held >= 0) cleaning_facade::DidNotClean(manager, held);
+            if (held >= 0) cleaning_facade::OnCleaningAbandoned(manager, held);
             break;
         }
         case 8: cleaning_facade::FindUrgentJob(manager, &type, flags(), flags(), flags()); break;

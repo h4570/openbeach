@@ -11,7 +11,7 @@
 #include <optional>
 
 // The pure rules of the four guest functions that pick a walking goal by looking along the tile grid (guest walking, docs/architecture/objects.md):
-// StartPathWalk, SurfToShore, WindSurfStraight and GotoDancePoint. The game
+// StartPathWalk, SurfToShore, WindSurfStraight and WalkToDancePoint. The game
 // side (the guest, the messages, the sprite) is in src/game/objects/guest_walk_routes.cpp. Tiles are read from the game's own grid (map::Grid) and stepped with
 // grid_math::Neighbour, like src/game/objects/guest_beach_points.h; the draws come from a callable that is the game's rand().
 //
@@ -133,7 +133,7 @@ inline int WindSurfSteps(int32_t draw, int freeTiles)
     return draw % freeTiles + 1;
 }
 
-// ---- GotoDancePoint --------------------------------------------------------------------------------------------------------------
+// ---- WalkToDancePoint --------------------------------------------------------------------------------------------------------------
 
 constexpr uint32_t kDanceFloorFlag = 0x800; // the cell flag the building's footprint carries ("built", set by FinishBuild)
 constexpr int32_t kDanceSpread = 8; // a candidate lies at most 8 tiles from the guest on either axis

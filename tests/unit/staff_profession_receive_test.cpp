@@ -52,12 +52,12 @@ struct Env {
     }
     void LeaveTower() { add("Leave"); }
     void ReleaseGuest(uint8_t sentToGuest) { add("Release(" + std::to_string(sentToGuest) + ")"); }
-    void MoveToNextBuilding() { add("NextBuilding"); }
+    void WalkToNextBuilding() { add("NextBuilding"); }
     void FreeBuilder(int32_t id) { add("Free(" + std::to_string(id) + ")"); }
     void SetState(int32_t state) { add("SetState(" + std::to_string(state) + ")"); }
     void EnterState(int32_t state) { add("Enter(" + std::to_string(state) + ")"); }
-    void LookForOffender() { add("Offender"); }
-    void DidNotClean(int32_t id) { add("NotClean(" + std::to_string(id) + ")"); }
+    void FindOffender() { add("Offender"); }
+    void OnCleaningAbandoned(int32_t id) { add("NotClean(" + std::to_string(id) + ")"); }
     void CancelCleaning(int32_t id) { add("Cancel(" + std::to_string(id) + ")"); }
     int32_t RepairType(int32_t id)
     {

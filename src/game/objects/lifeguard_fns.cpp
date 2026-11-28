@@ -38,7 +38,7 @@ namespace {
 using object::Lifeguard;
 namespace fns = staff::lifeguard;
 
-enum Which { FindBeach, SetDrawPosBuild, SetDrawPosServe, FindBeachPoint, MoveToTower, Move2SeaEntry, HeadForShore, Count };
+enum Which { FindBeach, SetDrawPosBuild, SetDrawPosServe, FindBeachPoint, WalkToTower, WalkToSeaEntry, SwimToShore, Count };
 const char* const kNames[Count] = {
         "objects.lifeguard-find-beach",
         "objects.lifeguard-set-draw-pos-build",
@@ -78,9 +78,9 @@ bool Perform(Which which, Lifeguard& lifeguard)
     case SetDrawPosBuild: return fns::SetDrawPos(grid, lifeguard, env, true);
     case SetDrawPosServe: return fns::SetDrawPos(grid, lifeguard, env, false);
     case FindBeachPoint: return fns::FindBeachPoint(grid, lifeguard, env);
-    case MoveToTower: return fns::MoveToTower(lifeguard, env);
-    case Move2SeaEntry: return fns::GoToShore(grid, lifeguard, env, true);
-    case HeadForShore: return fns::GoToShore(grid, lifeguard, env, false);
+    case WalkToTower: return fns::WalkToTower(lifeguard, env);
+    case WalkToSeaEntry: return fns::GoToShore(grid, lifeguard, env, true);
+    case SwimToShore: return fns::GoToShore(grid, lifeguard, env, false);
     case Count: break;
     }
     return false;
@@ -113,17 +113,17 @@ void LifeguardFindBeachPoint(object::Lifeguard& lifeguard)
 {
     Run(FindBeachPoint, lifeguard);
 }
-void LifeguardMove2Tower(object::Lifeguard& lifeguard)
+void SendLifeguardToTower(object::Lifeguard& lifeguard)
 {
-    Run(MoveToTower, lifeguard);
+    Run(WalkToTower, lifeguard);
 }
-void LifeguardMove2SeaEntry(object::Lifeguard& lifeguard)
+void SendLifeguardToSeaEntry(object::Lifeguard& lifeguard)
 {
-    Run(Move2SeaEntry, lifeguard);
+    Run(WalkToSeaEntry, lifeguard);
 }
-void LifeguardHeadForShore(object::Lifeguard& lifeguard)
+void SendLifeguardSwimmingToShore(object::Lifeguard& lifeguard)
 {
-    Run(HeadForShore, lifeguard);
+    Run(SwimToShore, lifeguard);
 }
 
 } // namespace obl::object

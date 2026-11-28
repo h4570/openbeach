@@ -19,7 +19,7 @@ template<class Env> void LifeguardCallFunction(object::Lifeguard& employee, int3
     switch (id) {
     case 0xb: employee.m_visible = 0; return;
     case 0xc: employee.m_visible = 1; return;
-    case 0x2f: env.HeadForShore(); return;
+    case 0x2f: env.SwimToShore(); return;
     case 0x7b: env.PushThought(0x20000000); return;
     case 0x88: {
         const auto* hotel = env.Hotel();
@@ -31,9 +31,9 @@ template<class Env> void LifeguardCallFunction(object::Lifeguard& employee, int3
         env.Post(message);
         return;
     }
-    case 0x89: env.MoveToTower(); return;
+    case 0x89: env.WalkToTower(); return;
     case 0x8a: env.FindBeachPoint(); return;
-    case 0x8b: env.Move2SeaEntry(); return;
+    case 0x8b: env.WalkToSeaEntry(); return;
     case 0x8c: return;
     case 0x8d: {
         auto* guest = env.Object(employee.m_saving_id);

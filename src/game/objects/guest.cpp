@@ -91,7 +91,7 @@ GuestSeams g_guestSeams{
         [](Guest* guest) { guest->UpdateDrowning(); },
         [](Guest* guest) { guest->DecideSwimAction(); },
         [](Guest* guest) { return guest->StartStomachIllness(); },
-        [](Guest* guest) { guest->LookForVandalItem(); },
+        [](Guest* guest) { guest->FindVandalismTarget(); },
         [](Guest* guest) { guest->VandaliseBin(); },
         [](Guest* guest) { guest->FindFightPoint(); },
         [](Guest* guest) { guest->FindFightPerson(); },

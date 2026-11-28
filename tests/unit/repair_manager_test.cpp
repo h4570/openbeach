@@ -177,8 +177,8 @@ OBL_TEST_CASE("repair.claim_release_started")
     OBL_CHECK_EQ(job->repairing, 0);
     OBL_CHECK_EQ(job->urgent, 1);
     OBL_CHECK_EQ(job->type, 2);
-    StartedJob(f.manager, f.env, 4);
-    StartedJob(f.manager, f.env, 5); // unrecognized: nothing
+    OnRepairStarted(f.manager, f.env, 4);
+    OnRepairStarted(f.manager, f.env, 5); // unrecognized: nothing
     OBL_CHECK_EQ(job->repairing, 1);
     ReleaseJob(f.manager, f.env, 5);
     OBL_CHECK_EQ(f.Active(), 1u);
@@ -417,7 +417,7 @@ OBL_TEST_CASE("repair.look_for_better_job_urgent_replaces_normal")
     AddUrgentJob(f.manager, f.env, 2);
     f.manager.buildingJobs.front().timeCalled = 0.0f;
     type = 99;
-    OBL_CHECK_EQ(LookForBetterJob(f.manager, f.env, kOrigin, 1, &type), 2);
+    OBL_CHECK_EQ(FindBetterJob(f.manager, f.env, kOrigin, 1, &type), 2);
     OBL_CHECK_EQ(type, 2u);
     OBL_CHECK(!f.env.objects[1].mechanicClaimed); // returned to the queue
     OBL_CHECK(f.env.objects[2].mechanicClaimed);
@@ -436,15 +436,15 @@ OBL_TEST_CASE("repair.look_for_better_job_normal_needs_nearer_or_higher_type")
     OBL_CHECK_EQ(FindJob(f.manager, f.env, kOrigin, 2, &type), 1);
     f.Building(2, 20);
     type = 99;
-    OBL_CHECK_EQ(LookForBetterJob(f.manager, f.env, kOrigin, 1, &type), -1); // farther: stay
+    OBL_CHECK_EQ(FindBetterJob(f.manager, f.env, kOrigin, 1, &type), -1); // farther: stay
     OBL_CHECK_EQ(type, 99u);
     f.Building(3, 20); // equal-or-farther jobs keep losing
-    OBL_CHECK_EQ(LookForBetterJob(f.manager, f.env, kOrigin, 1, &type), -1);
+    OBL_CHECK_EQ(FindBetterJob(f.manager, f.env, kOrigin, 1, &type), -1);
     f.Building(4, 5);
-    OBL_CHECK_EQ(LookForBetterJob(f.manager, f.env, kOrigin, 1, &type), 4); // nearer: switch
+    OBL_CHECK_EQ(FindBetterJob(f.manager, f.env, kOrigin, 1, &type), 4); // nearer: switch
     OBL_CHECK_EQ(f.manager.activeJobs.front().id, 4);
     OBL_CHECK_EQ(f.manager.activeJobs.front().urgent, 0);
-    OBL_CHECK_EQ(LookForBetterJob(f.manager, f.env, kOrigin, 77, &type), -1); // not held
+    OBL_CHECK_EQ(FindBetterJob(f.manager, f.env, kOrigin, 77, &type), -1); // not held
 }
 
 OBL_TEST_CASE("repair.look_for_better_job_inspection_gives_way_to_breakdown_only_when_kinds_allow")
@@ -455,9 +455,9 @@ OBL_TEST_CASE("repair.look_for_better_job_inspection_gives_way_to_breakdown_only
     OBL_CHECK_EQ(FindJob(f.manager, f.env, kOrigin, 0, &type), 1);
     OBL_CHECK_EQ(type, 0u);
     f.Building(2, 500, 2); // a far breakdown: the scan asks for kind 0, so it is not even a candidate
-    OBL_CHECK_EQ(LookForBetterJob(f.manager, f.env, kOrigin, 1, &type), -1);
+    OBL_CHECK_EQ(FindBetterJob(f.manager, f.env, kOrigin, 1, &type), -1);
     f.Building(3, 5, 0); // a nearer inspection of the same type
-    OBL_CHECK_EQ(LookForBetterJob(f.manager, f.env, kOrigin, 1, &type), 3);
+    OBL_CHECK_EQ(FindBetterJob(f.manager, f.env, kOrigin, 1, &type), 3);
 }
 
 OBL_TEST_CASE("repair.look_for_better_job_urgent_holder_only_yields_to_nearer_urgent")
@@ -471,13 +471,13 @@ OBL_TEST_CASE("repair.look_for_better_job_urgent_holder_only_yields_to_nearer_ur
     f.Add(2, 30, 0, 0, 2);
     AddUrgentJob(f.manager, f.env, 2);
     f.manager.buildingJobs.front().timeCalled = 0.0f;
-    OBL_CHECK_EQ(LookForBetterJob(f.manager, f.env, kOrigin, 1, &type), -1); // farther urgent
+    OBL_CHECK_EQ(FindBetterJob(f.manager, f.env, kOrigin, 1, &type), -1); // farther urgent
     f.Add(3, 10, 0, 0, 2);
     AddUrgentJob(f.manager, f.env, 3);
     f.manager.buildingJobs.back().timeCalled = 0.0f;
-    OBL_CHECK_EQ(LookForBetterJob(f.manager, f.env, kOrigin, 1, &type), 3);
+    OBL_CHECK_EQ(FindBetterJob(f.manager, f.env, kOrigin, 1, &type), 3);
     f.Building(4, 1); // a normal job never replaces an urgent one
-    OBL_CHECK_EQ(LookForBetterJob(f.manager, f.env, kOrigin, 3, &type), -1);
+    OBL_CHECK_EQ(FindBetterJob(f.manager, f.env, kOrigin, 3, &type), -1);
 }
 
 OBL_TEST_CASE("repair.look_for_better_job_ignores_urgent_watering")
@@ -489,7 +489,7 @@ OBL_TEST_CASE("repair.look_for_better_job_ignores_urgent_watering")
     AddUrgentJob(f.manager, f.env, 6);
     f.manager.buildingJobs.front().timeCalled = 0.0f;
     uint32_t type = 0;
-    OBL_CHECK_EQ(LookForBetterJob(f.manager, f.env, kOrigin, 5, &type), -1);
+    OBL_CHECK_EQ(FindBetterJob(f.manager, f.env, kOrigin, 5, &type), -1);
 }
 
 OBL_TEST_CASE("repair.claim_object_building_takes_the_queued_request")
@@ -552,7 +552,7 @@ OBL_TEST_CASE("repair.get_job_status_and_type")
     ClaimJob(f.manager, f.env, 1, 0, 2);
     OBL_CHECK_EQ(GetJobStatus(f.manager, f.env, 1), 5);
     OBL_CHECK_EQ(GetJobType(f.manager, f.env, 1), 2);
-    StartedJob(f.manager, f.env, 1);
+    OnRepairStarted(f.manager, f.env, 1);
     OBL_CHECK_EQ(GetJobStatus(f.manager, f.env, 1), 6);
     // A scenery id is looked up in the scenery list only.
     f.Add(3, 3, 0, 0, 1);

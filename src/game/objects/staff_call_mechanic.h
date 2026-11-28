@@ -74,7 +74,7 @@ template<class Env> void MechanicCallFunction(object::Mechanic& employee, int32_
         employee.m_DestObjectID = -1;
         return;
     case 0x9f:
-        env.StartedJob(employee.m_DestObjectID);
+        env.OnRepairStarted(employee.m_DestObjectID);
         switch (employee.m_repairType) {
         case 0: ++employee.m_inspectionsToday; return;
         case 1: ++employee.m_vandalsToday; return;

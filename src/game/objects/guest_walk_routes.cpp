@@ -28,7 +28,7 @@
 
 // The five guest functions that look along the tile grid for a walking goal (src/game/objects/guest_walk_routes.h, guest walking, docs/architecture/objects.md):
 // StartPathWalk (from the beach to the nearest walkable tile), SurfToShore (from the sea to the beach edge),
-// WindSurfStraight (a few tiles ahead on the water, or turn round) and GotoDancePoint (a random tile of the dance floor)
+// WindSurfStraight (a few tiles ahead on the water, or turn round) and WalkToDancePoint (a random tile of the dance floor)
 // and WalkAlongPath (a random walkable neighbour and the row of such tiles behind it, src/game/objects/guest_walk_path.h, guest walk along the path).
 // The script reaches them through the guest's CallFunction. Every one ends in a Post that is delivered at once (the guest's own script).
 namespace obl::object {
@@ -145,11 +145,11 @@ bool RunWindSurfStraight(Guest& guest)
     return true;
 }
 
-// ---- GotoDancePoint ----------------------------------------------------------------------------------------------------------------------
+// ---- WalkToDancePoint ----------------------------------------------------------------------------------------------------------------------
 
 // The dance floor is the building the guest is heading for (m_DestObjectID), and a missing object, sprite or definition ends the game
 // with a fatal error, as does a floor no candidate can ever reach (instead of drawing forever).
-bool RunGotoDancePoint(Guest& guest)
+bool StartWalkToDancePoint(Guest& guest)
 {
     auto* floorBuilding = static_cast<Building*>(object_manager::ObjectById(GetObjectManager(), guest.m_DestObjectID));
     if (!floorBuilding || !floorBuilding->m_sprite || !floorBuilding->m_definition) return false;
@@ -237,9 +237,9 @@ void Guest::WindSurfStraight()
     g_windSurf.Count();
 }
 
-void Guest::GotoDancePoint()
+void Guest::WalkToDancePoint()
 {
-    if (!RunGotoDancePoint(*this)) fatal::UnhandledInput("objects.guest-goto-dance-point", "no dance floor or no reachable tile");
+    if (!StartWalkToDancePoint(*this)) fatal::UnhandledInput("objects.guest-goto-dance-point", "no dance floor or no reachable tile");
     g_dance.Count();
 }
 

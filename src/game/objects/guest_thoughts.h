@@ -6,9 +6,9 @@
 #include <cstdint>
 #include <string>
 
-// The thought functions of a guest that the script calls by number (AddIllPurchaseThought, AddCommodBeachClosed, AddThoughtIDidnt,
-// AddThoughtIDidIt, NoRouteToLodging, AddBuildingFullThought, AddDrowningThought; guest thoughts, docs/architecture/objects.md) and the two
-// like them: DemolishedAsleep (a thought, the bad-visit sound and penalties) and GenerateBlockedMessage (a ticker line, no thought).
+// The thought functions of a guest that the script calls by number (AddIllPurchaseThought, AddCommodBeachClosed, ThinkAboutUnfairDetention,
+// ThinkAboutBeingDetained, NoRouteToLodging, AddBuildingFullThought, AddDrowningThought; guest thoughts, docs/architecture/objects.md) and the two
+// like them: OnLodgingDemolishedDuringSleep (a thought, the bad-visit sound and penalties) and GenerateBlockedMessage (a ticker line, no thought).
 // Each looks up `<prefix><digit>` in the text table (digit = rand() % 3 + 1), pushes the id onto the guest's three thoughts and then applies a small
 // penalty; what they do to other objects (the building's thought list, the ticker, a sound) stays with the game side (src/game/objects/guest_thoughts.cpp).
 namespace obl::guest_thoughts {
@@ -27,7 +27,7 @@ inline constexpr const char* kFemaleDrowning = "GUEST_THOUGHT_FEMALE_DROWNING";
 inline constexpr const char* kNoPathToAccommodation = "GUEST_THOUGHT_NO_PATH_ACCOM";
 inline constexpr const char* kBuildingFull = "GUEST_THOUGHT_FULL_";
 inline constexpr const char* kNoPathTicker = "TICKER_MSG_GUEST_NO_PATH_TO_ACCOM"; // Text lookup key of the feedback line
-inline constexpr const char* kDemolishedAsleep = "GUEST_THOUGHT_DEMOLISHED_ASLEEP";
+inline constexpr const char* kLodgingDemolishedDuringSleep = "GUEST_THOUGHT_DEMOLISHED_ASLEEP";
 // GenerateBlockedMessage keys: the building's own key follows the first, the other two are complete.
 inline constexpr const char* kBlockedBuilding = "TICKER_MSG_NO_PATH_";
 inline constexpr const char* kBlockedSea = "TICKER_MSG_NO_PATH_SEA";
@@ -82,7 +82,7 @@ inline bool NoPathTickerDue(float now, float last)
     return static_cast<double>(now) - static_cast<double>(last) > kNoPathTickerGap;
 }
 
-// DemolishedAsleep: the visit is spoiled (score -= 1.4, missed purchase); the bad-visit mood and sound follow in the game, then the thought, then the opinions.
+// OnLodgingDemolishedDuringSleep: the visit is spoiled (score -= 1.4, missed purchase); the bad-visit mood and sound follow in the game, then the thought, then the opinions.
 inline void PenaliseDemolishedScore(Guest& g)
 {
     guest_visit::Subtract(g.m_curScore, static_cast<double>(kDemolishedScorePenalty));

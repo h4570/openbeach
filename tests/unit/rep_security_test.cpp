@@ -116,7 +116,7 @@ uint32_t Bits(const float& value)
 
 } // namespace
 
-OBL_TEST_CASE("rep_fns.move_to_next_building_redraws_the_destination_and_jetties")
+OBL_TEST_CASE("rep_behavior.walk_to_next_building_redraws_the_destination_and_jetties")
 {
     object::Base a{}, jetty{}, b{};
     Object(a, 10);
@@ -128,7 +128,7 @@ OBL_TEST_CASE("rep_fns.move_to_next_building_redraws_the_destination_and_jetties
     object::Rep rep{};
     MakeRep(rep);
     rep.m_DestObjectID = 10;
-    OBL_CHECK(MoveToNextBuilding(rep, env));
+    OBL_CHECK(WalkToNextBuilding(rep, env));
     OBL_CHECK_EQ(env.used, size_t{4});
     OBL_CHECK_EQ(env.walks, 1);
     OBL_REQUIRE(env.sent.size() == 1);
@@ -138,7 +138,7 @@ OBL_TEST_CASE("rep_fns.move_to_next_building_redraws_the_destination_and_jetties
     OBL_CHECK_EQ(env.sent[0].data, 12);
 }
 
-OBL_TEST_CASE("rep_fns.move_to_next_building_declines_when_nothing_is_eligible")
+OBL_TEST_CASE("rep_behavior.walk_to_next_building_declines_when_nothing_is_eligible")
 {
     object::Base a{}, jetty{};
     Object(a, 10);
@@ -148,14 +148,14 @@ OBL_TEST_CASE("rep_fns.move_to_next_building_declines_when_nothing_is_eligible")
     rep.m_DestObjectID = 10;
     Env env;
     env.buildings = {&a, &jetty};
-    OBL_CHECK(!MoveToNextBuilding(rep, env));
+    OBL_CHECK(!WalkToNextBuilding(rep, env));
     OBL_CHECK_EQ(env.used, size_t{0});
     OBL_CHECK(env.sent.empty());
     Env none;
-    OBL_CHECK(!MoveToNextBuilding(rep, none));
+    OBL_CHECK(!WalkToNextBuilding(rep, none));
 }
 
-OBL_TEST_CASE("rep_fns.look_for_guests_finds_a_guest_and_walks_to_the_point_next_to_it")
+OBL_TEST_CASE("rep_behavior.find_guests_finds_a_guest_and_walks_to_the_point_next_to_it")
 {
     object::Guest guest{};
     MakeGuest(guest, 40, 0);
@@ -165,7 +165,7 @@ OBL_TEST_CASE("rep_fns.look_for_guests_finds_a_guest_and_walks_to_the_point_next
     env.walkTo[1] = -3.5f;
     object::Rep rep{};
     MakeRep(rep);
-    OBL_CHECK(LookForGuests(rep, env));
+    OBL_CHECK(FindGuests(rep, env));
     OBL_CHECK_EQ(env.used, size_t{1});
     OBL_CHECK_EQ(rep.m_talking_id, 40);
     OBL_CHECK_EQ(rep.m_sentToGuest, 1);
@@ -188,7 +188,7 @@ OBL_TEST_CASE("rep_fns.look_for_guests_finds_a_guest_and_walks_to_the_point_next
     OBL_CHECK(env.delayed.empty());
 }
 
-OBL_TEST_CASE("rep_fns.look_for_guests_looks_again_in_two_seconds_when_nothing_suits")
+OBL_TEST_CASE("rep_behavior.find_guests_looks_again_in_two_seconds_when_nothing_suits")
 {
     object::Guest guest{};
     MakeGuest(guest, 40, 0);
@@ -205,7 +205,7 @@ OBL_TEST_CASE("rep_fns.look_for_guests_looks_again_in_two_seconds_when_nothing_s
         Env env; // nobody near: no draw
         object::Rep rep{};
         MakeRep(rep);
-        OBL_CHECK(LookForGuests(rep, env));
+        OBL_CHECK(FindGuests(rep, env));
         expectLookAgain(env, 0);
     }
     {
@@ -214,7 +214,7 @@ OBL_TEST_CASE("rep_fns.look_for_guests_looks_again_in_two_seconds_when_nothing_s
         object::Rep rep{};
         MakeRep(rep);
         rep.m_talking_id = 40;
-        OBL_CHECK(LookForGuests(rep, env));
+        OBL_CHECK(FindGuests(rep, env));
         expectLookAgain(env, 1);
         OBL_CHECK_EQ(rep.m_sentToGuest, 0);
     }
@@ -224,7 +224,7 @@ OBL_TEST_CASE("rep_fns.look_for_guests_looks_again_in_two_seconds_when_nothing_s
         env.approachable = false;
         object::Rep rep{};
         MakeRep(rep);
-        OBL_CHECK(LookForGuests(rep, env));
+        OBL_CHECK(FindGuests(rep, env));
         expectLookAgain(env, 1);
     }
     {
@@ -233,13 +233,13 @@ OBL_TEST_CASE("rep_fns.look_for_guests_looks_again_in_two_seconds_when_nothing_s
         env.walkable = false;
         object::Rep rep{};
         MakeRep(rep);
-        OBL_CHECK(LookForGuests(rep, env));
+        OBL_CHECK(FindGuests(rep, env));
         expectLookAgain(env, 1);
         OBL_CHECK_EQ(rep.m_talking_id, -1);
     }
 }
 
-OBL_TEST_CASE("rep_fns.look_for_guests_stores_the_height_bits_untouched")
+OBL_TEST_CASE("rep_behavior.find_guests_stores_the_height_bits_untouched")
 {
     object::Guest guest{};
     MakeGuest(guest, 40, 0);
@@ -249,11 +249,11 @@ OBL_TEST_CASE("rep_fns.look_for_guests_stores_the_height_bits_untouched")
     std::memcpy(&env.walkTo[2], &signalling, sizeof(signalling));
     object::Rep rep{};
     MakeRep(rep);
-    OBL_CHECK(LookForGuests(rep, env));
+    OBL_CHECK(FindGuests(rep, env));
     OBL_CHECK_EQ(Bits(rep.m_GuestOffSetPosZ), signalling);
 }
 
-OBL_TEST_CASE("rep_fns.arrived_at_guest_faces_the_guest_and_schedules_the_end_of_the_talk")
+OBL_TEST_CASE("rep_behavior.arrived_at_guest_faces_the_guest_and_schedules_the_end_of_the_talk")
 {
     object::Base guest{};
     Object(guest, 40);
@@ -288,7 +288,7 @@ OBL_TEST_CASE("rep_fns.arrived_at_guest_faces_the_guest_and_schedules_the_end_of
     OBL_CHECK_EQ(rep.m_sentToGuest, 0);
 }
 
-OBL_TEST_CASE("rep_fns.arrived_at_guest_reads_the_talk_times_as_unsigned_difference_and_signed_minimum")
+OBL_TEST_CASE("rep_behavior.arrived_at_guest_reads_the_talk_times_as_unsigned_difference_and_signed_minimum")
 {
     object::Base guest{};
     Object(guest, 40);
@@ -307,7 +307,7 @@ OBL_TEST_CASE("rep_fns.arrived_at_guest_reads_the_talk_times_as_unsigned_differe
     OBL_CHECK_EQ(env.delayed[0].second, static_cast<float>(4294967289.0 + 10.0));
 }
 
-OBL_TEST_CASE("rep_fns.arrived_at_guest_declines_a_missing_guest_or_sprite")
+OBL_TEST_CASE("rep_behavior.arrived_at_guest_declines_a_missing_guest_or_sprite")
 {
     object::Base guest{};
     Object(guest, 40);
@@ -324,7 +324,7 @@ OBL_TEST_CASE("rep_fns.arrived_at_guest_declines_a_missing_guest_or_sprite")
     OBL_CHECK(env.sent.empty());
 }
 
-OBL_TEST_CASE("security_fns.look_for_offender_picks_the_first_matching_guest_by_offence_state")
+OBL_TEST_CASE("security_behavior.find_offender_picks_the_first_matching_guest_by_offence_state")
 {
     object::Guest quiet{}, seriousButKnown{}, vandal{}, later{};
     MakeGuest(quiet, 30, 0);
@@ -341,7 +341,7 @@ OBL_TEST_CASE("security_fns.look_for_offender_picks_the_first_matching_guest_by_
     guard.m_fightWithId = 31; // the fight partner is skipped for state 2
     guard.m_doubleFine = 1;
     uint8_t found = 7;
-    OBL_CHECK(LookForOffender(guard, env, found));
+    OBL_CHECK(FindOffender(guard, env, found));
     OBL_CHECK_EQ(found, 1);
     OBL_CHECK_EQ(guard.m_doubleFine, 0);
     OBL_CHECK_EQ(guard.m_offenderId, 32);
@@ -352,7 +352,7 @@ OBL_TEST_CASE("security_fns.look_for_offender_picks_the_first_matching_guest_by_
     OBL_CHECK(env.sent.empty());
 }
 
-OBL_TEST_CASE("security_fns.look_for_offender_state_one_is_severity_one_and_the_last_offender_is_skipped")
+OBL_TEST_CASE("security_behavior.find_offender_state_one_is_severity_one_and_the_last_offender_is_skipped")
 {
     object::Guest known{}, fresh{};
     MakeGuest(known, 30, 1);
@@ -365,13 +365,13 @@ OBL_TEST_CASE("security_fns.look_for_offender_state_one_is_severity_one_and_the_
     guard.m_moving = 1;
     guard.m_offenderId = 30;
     uint8_t found = 0;
-    OBL_CHECK(LookForOffender(guard, env, found));
+    OBL_CHECK(FindOffender(guard, env, found));
     OBL_CHECK_EQ(found, 1);
     OBL_CHECK_EQ(guard.m_offenderId, 31);
     OBL_CHECK_EQ(guard.m_severity, 1);
 }
 
-OBL_TEST_CASE("security_fns.look_for_offender_without_a_match_resets_the_severity_per_object_and_answers_zero")
+OBL_TEST_CASE("security_behavior.find_offender_without_a_match_resets_the_severity_per_object_and_answers_zero")
 {
     object::Guest a{}, b{};
     MakeGuest(a, 30, 0);
@@ -386,17 +386,17 @@ OBL_TEST_CASE("security_fns.look_for_offender_without_a_match_resets_the_severit
     guard.m_moving = 1;
     guard.m_severity = 2;
     uint8_t found = 9;
-    OBL_CHECK(LookForOffender(guard, env, found));
+    OBL_CHECK(FindOffender(guard, env, found));
     OBL_CHECK_EQ(found, 0);
     OBL_CHECK_EQ(guard.m_severity, 0);
     Env empty; // nobody near: the severity is not touched
     guard.m_severity = 2;
-    OBL_CHECK(LookForOffender(guard, empty, found));
+    OBL_CHECK(FindOffender(guard, empty, found));
     OBL_CHECK_EQ(found, 0);
     OBL_CHECK_EQ(guard.m_severity, 2);
 }
 
-OBL_TEST_CASE("security_fns.look_for_offender_walks_to_a_random_building_when_standing_still")
+OBL_TEST_CASE("security_behavior.find_offender_walks_to_a_random_building_when_standing_still")
 {
     object::Base a{}, jetty{}, b{};
     Object(a, 10);
@@ -409,7 +409,7 @@ OBL_TEST_CASE("security_fns.look_for_offender_walks_to_a_random_building_when_st
     Guard(guard);
     guard.m_DestObjectID = 10;
     uint8_t found = 5;
-    OBL_CHECK(LookForOffender(guard, env, found));
+    OBL_CHECK(FindOffender(guard, env, found));
     OBL_CHECK_EQ(env.used, size_t{3});
     OBL_CHECK_EQ(env.walks, 1);
     OBL_REQUIRE(env.sent.size() == 1);
@@ -417,18 +417,18 @@ OBL_TEST_CASE("security_fns.look_for_offender_walks_to_a_random_building_when_st
     OBL_CHECK_EQ(env.sent[0].data, 12);
 }
 
-OBL_TEST_CASE("security_fns.look_for_offender_declines_with_no_building_to_walk_to")
+OBL_TEST_CASE("security_behavior.find_offender_declines_with_no_building_to_walk_to")
 {
     object::SecurityGuard guard{};
     Guard(guard);
     Env env;
     uint8_t found = 5;
-    OBL_CHECK(!LookForOffender(guard, env, found));
+    OBL_CHECK(!FindOffender(guard, env, found));
     OBL_CHECK_EQ(found, 5);
     OBL_CHECK(env.sent.empty());
 }
 
-OBL_TEST_CASE("security_fns.look_for_offender_keeps_a_signalling_nan_x_quiet_and_y_z_raw")
+OBL_TEST_CASE("security_behavior.find_offender_keeps_a_signalling_nan_x_quiet_and_y_z_raw")
 {
     object::Guest guest{};
     MakeGuest(guest, 30, 1);
@@ -442,12 +442,12 @@ OBL_TEST_CASE("security_fns.look_for_offender_keeps_a_signalling_nan_x_quiet_and
     Guard(guard);
     guard.m_moving = 1;
     uint8_t found = 0;
-    OBL_CHECK(LookForOffender(guard, env, found));
+    OBL_CHECK(FindOffender(guard, env, found));
     OBL_CHECK_EQ(Bits(guard.m_MisdemeanourPos[0]), signalling | 0x00400000u);
     OBL_CHECK_EQ(Bits(guard.m_MisdemeanourPos[1]), signalling);
 }
 
-OBL_TEST_CASE("security_fns.choose_action_by_tolerance_class_and_severity")
+OBL_TEST_CASE("security_behavior.choose_action_by_tolerance_class_and_severity")
 {
     struct Row {
         int32_t tolerance, severity, action, level;
@@ -477,7 +477,7 @@ OBL_TEST_CASE("security_fns.choose_action_by_tolerance_class_and_severity")
     }
 }
 
-OBL_TEST_CASE("security_fns.choose_action_tolerance_two_searches_again_with_a_smaller_reach_and_keeps_the_answer")
+OBL_TEST_CASE("security_behavior.choose_action_tolerance_two_searches_again_with_a_smaller_reach_and_keeps_the_answer")
 {
     object::Guest guest{};
     MakeGuest(guest, 30, 0);
@@ -512,7 +512,7 @@ OBL_TEST_CASE("security_fns.choose_action_tolerance_two_searches_again_with_a_sm
     OBL_CHECK_EQ(other.m_action, 2);
 }
 
-OBL_TEST_CASE("security_fns.choose_action_stops_early_for_an_unapproachable_or_unreachable_offender")
+OBL_TEST_CASE("security_behavior.choose_action_stops_early_for_an_unapproachable_or_unreachable_offender")
 {
     object::Guest guest{};
     MakeGuest(guest, 30, 2);
@@ -548,7 +548,7 @@ OBL_TEST_CASE("security_fns.choose_action_stops_early_for_an_unapproachable_or_u
     OBL_CHECK_EQ(guard.m_action, 0);
 }
 
-OBL_TEST_CASE("security_fns.choose_action_thoughts_and_counters_by_offence_state")
+OBL_TEST_CASE("security_behavior.choose_action_thoughts_and_counters_by_offence_state")
 {
     {
         object::Guest guest{}; // litter: guests against bins

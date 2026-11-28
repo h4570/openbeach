@@ -23,7 +23,7 @@
 // The pool and slide guest functions (src/game/objects/guest_pool.h, guest pool and slide walks, docs/architecture/objects.md): GetNextPoolPoint (by the guest's
 // m_ActionState: face the pool building, teleport next to it, post a walk to the entry/exit spot, or pick the next tile of the pool),
 // ChooseFunSlideAction (swap the guest's sprite for its funpool sprite, teleport it to the top of the slide, face the slide and send itself the
-// delayed 0x39 message) and SetupFunPoolSwim (the way back: swap to the swimming sprite, put the guest at the foot of the slide, send it to the
+// delayed 0x39 message) and StartSwimmingAfterSlide (the way back: swap to the swimming sprite, put the guest at the foot of the slide, send it to the
 // landing spot). The script reaches them through the guest's CallFunction. The building is m_DestObjectID.
 namespace obl::object {
 using game::GetGrid;
@@ -198,7 +198,7 @@ void Slide(Guest& guest)
     guest.m_ActionState = draw + 1;
 }
 
-// ---- SetupFunPoolSwim ------------------------------------------------------------------------------------------------------
+// ---- StartSwimmingAfterSlide ------------------------------------------------------------------------------------------------------
 
 // The building is read without a check, and so are its sprite, its definition (state 6), the guest's sprite name (states 1..4) and its animation chain
 // (state 5); a direction past 3 selects offsets the code never set, and so does state 0 (read as one of the swapping states). Such a call ends in
@@ -277,7 +277,7 @@ void Guest::ChooseFunSlideAction()
     Slide(*this);
 }
 
-void Guest::SetupFunPoolSwim()
+void Guest::StartSwimmingAfterSlide()
 {
     if (SwimDeclined(*this))
         fatal::UnhandledInput("objects.guest-setup-fun-pool-swim", "no building, sprite, direction or animation chain");

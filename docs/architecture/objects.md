@@ -21,7 +21,8 @@ include buildings, scenery and tables. Building state includes queues, events an
 ## Routes and shared records
 Routes store tile steps in a vector and are shared through `std::shared_ptr<const Route>`. A moving object's cursor
 tracks its position along the route. Object creation parameters, script values, command payloads and messages use
-named C++ records shared with their callers.
+named C++ records shared with their callers. Guest and staff behavior functions describe the action they take,
+such as `FindBench`, `WalkToDancePoint` and `OnCleaningStarted`.
 
 ## Persistence and verification
 Object serializers write named fields to `obl.save` and restore object references by id. See

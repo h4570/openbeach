@@ -21,10 +21,10 @@
 #include <cstdint>
 #include <vector>
 
-// The small guest functions that put a guest or its partner somewhere (src/game/objects/guest_placement.h, guest placement, docs/architecture/objects.md): SetupSnogOffset
-// and FaceEachOther (the kiss), FindLodging (the room), SetSurfacePoint (the sea tile a
+// The small guest functions that put a guest or its partner somewhere (src/game/objects/guest_placement.h, guest placement, docs/architecture/objects.md): PositionPartnerForKiss
+// and TurnToFaceEachOther (the kiss), FindLodging (the room), SetSurfacePoint (the sea tile a
 // windsurfer sets out for) and IsEntryPointClear (called by the guest's GetValue). The script reaches them through
-// the guest's CallFunction; none of them sends a message. SetupSnogOffset and SetSurfacePoint move an object through its virtual SetPosition/Teleport, which
+// the guest's CallFunction; none of them sends a message. PositionPartnerForKiss and SetSurfacePoint move an object through its virtual SetPosition/Teleport, which
 // also re-files it in the grid's cell lists.
 namespace obl::object {
 using game::GetGrid;
@@ -59,7 +59,7 @@ void SetPosition(object::Base& object, const float (&position)[3])
     object.SetPosition(position);
 }
 
-// ---- SetupSnogOffset -------------------------------------------------------------------------------------------------------
+// ---- PositionPartnerForKiss -------------------------------------------------------------------------------------------------------
 
 // The partner the guest kisses is moved a fixed step from the guest, by the direction of the guest's sprite. A missing sprite or partner, or a
 // direction outside the step table, ends in UnhandledInput.
@@ -86,7 +86,7 @@ bool Snog(Guest& guest)
     return true;
 }
 
-// ---- FaceEachOther ---------------------------------------------------------------------------------------------------------
+// ---- TurnToFaceEachOther ---------------------------------------------------------------------------------------------------------
 
 // The two sprites turn to each other, the partner's first (turning the sprite towards the target: target point, then the point the sprite stands at). The positions are
 // read before either turns.
@@ -192,13 +192,13 @@ std::vector<grid_math::WorldPoint> WaterCentres(int limit)
 
 } // namespace
 
-void Guest::SetupSnogOffset()
+void Guest::PositionPartnerForKiss()
 {
     if (!Snog(*this)) fatal::UnhandledInput("objects.guest-setup-snog-offset", "no sprite, step or partner");
     g_snog.Count();
 }
 
-void Guest::FaceEachOther()
+void Guest::TurnToFaceEachOther()
 {
     if (!Face(*this)) fatal::UnhandledInput("objects.guest-face-each-other", "no partner or sprite");
     g_face.Count();
@@ -233,9 +233,9 @@ void ForceGuestPlacement()
     guest->m_ActivityPerson = static_cast<int32_t>(other->m_id);
     for (int direction = 0; direction < 8; ++direction) {
         mine->m_direction = direction;
-        guest->SetupSnogOffset();
+        guest->PositionPartnerForKiss();
         SetPosition(*other, home);
-        guest->FaceEachOther();
+        guest->TurnToFaceEachOther();
     }
     *mine = savedMine;
     *theirs = savedTheirs;

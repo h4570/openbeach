@@ -9,7 +9,7 @@
 // Profession Sack methods release job-specific resources before the shared severance payment.
 // OnEnterState and OnExitState run the profession scripts and return true; Rep and Security share entry logic.
 // An injected environment supplies the ordered game calls, and tests record those calls:
-//   BaseSack pays severance; FreeBuilder releases a construction job; DidNotClean records unfinished cleaning.
+//   BaseSack pays severance; FreeBuilder releases a construction job; OnCleaningAbandoned records unfinished cleaning.
 //   LeaveTower, ReturnJobAndLeave and ReleaseGuest release profession-specific work.
 //   Post sends a message with zeroed trailing words; SetState and EnterState change the staff state.
 //   AddBuilder registers the builder; HomeInfluenceArea queries the tower's swimming area when its home exists.
@@ -58,7 +58,7 @@ template<class Env> void SackCleaner(object::Cleaner& member, Env& env)
     env.BaseSack();
     const uint32_t state = static_cast<uint32_t>(member.m_state);
     if (state >= kCleanerJobFirst && (state <= kCleanerJobLast || (state == kCleanerJobExtra && member.m_cantDoJob == 0)))
-        env.DidNotClean(member.m_DestObjectID);
+        env.OnCleaningAbandoned(member.m_DestObjectID);
     BecomeLeaving(env);
 }
 

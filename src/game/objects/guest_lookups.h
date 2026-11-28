@@ -11,18 +11,18 @@
 #include <cstdint>
 #include <cstring>
 
-// The pure rules of the guest functions that look for a place and post a few messages (guest place lookups, docs/architecture/objects.md): LookForIllPoint,
-// LookForBench, QueueAtComplaints, QueueAtWharf and CreateLitter. The game side
+// The pure rules of the guest functions that look for a place and post a few messages (guest place lookups, docs/architecture/objects.md): FindSicknessSpot,
+// FindBench, QueueAtComplaints, QueueAtWharf and CreateLitter. The game side
 // (objects, grid, the message post, the world's place command) is in src/game/objects/guest_lookups.cpp.
 //
 // 53-bit precision: a float added to a float constant is one double operation, a float store one float rounding.
 namespace obl::guest_lookup {
 
-// ---- LookForIllPoint -----------------------------------------------------------------------------------------------------------------------
+// ---- FindSicknessSpot -----------------------------------------------------------------------------------------------------------------------
 
 constexpr int32_t kStateLeavingWorld = 0x29; // STATE_GUEST_LEAVING_WORLD, the guest without a hotel goes home
 
-// ---- LookForBench --------------------------------------------------------------------------------------------------------------------------
+// ---- FindBench --------------------------------------------------------------------------------------------------------------------------
 
 constexpr int32_t kBenchTaken =
         4; // Entity::m_state of a bench that is taken, also the state the chosen bench is told (its free seats are asked once more)
@@ -209,8 +209,8 @@ inline bool IsTottyPartner(const TottySeeker& me, const TottyPartner& other)
             TottyTasteMatches(other.attractive, me.preference);
 }
 
-// ---- MoveActionPerson --------------------------------------------------------------------------------------------------------------------------
-// MoveActionPerson: the guest's action person (m_ActivityPerson) is turned the way the guest looks and put beside it, hand in hand.
+// ---- PositionHandHoldingPartner --------------------------------------------------------------------------------------------------------------------------
+// PositionHandHoldingPartner: the guest's action person (m_ActivityPerson) is turned the way the guest looks and put beside it, hand in hand.
 
 constexpr int32_t kStateHoldHands =
         0x27; // the state in which the partner is not moved aside (offset 0, no hand swap); the name is not mapped

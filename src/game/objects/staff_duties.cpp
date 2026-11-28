@@ -51,6 +51,6 @@ void FaceDirection(ui::SpriteInstance& sprite, int32_t direction)
 void SendCleanerToBin(int32_t binId, Base& cleaner, float* point)
 {
     BinEnv env;
-    staff_duties::MoveToBin(binId, cleaner, point, env);
+    staff_duties::WalkToBin(binId, cleaner, point, env);
 }
 } // namespace obl::object

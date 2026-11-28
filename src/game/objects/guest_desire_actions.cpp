@@ -14,8 +14,8 @@
 
 #include <cstdint>
 
-// MissedDesire, AlterDesires and SetupStartValues (src/game/objects/guest_desire_actions.h, docs/architecture/objects.md,
-// guest desires: satisfaction and misses). The script calls the first two through the guest's CallFunction (ids 0x1f and 5), the visit helpers call MissedDesire
+// OnUnmetDesire, AlterDesires and SetupStartValues (src/game/objects/guest_desire_actions.h, docs/architecture/objects.md,
+// guest desires: satisfaction and misses). The script calls the first two through the guest's CallFunction (ids 0x1f and 5), the visit helpers call OnUnmetDesire
 // directly.
 namespace obl::object {
 using game::GetWorldParams;
@@ -69,7 +69,7 @@ bool Missed(Guest& guest)
     case Resolved::Nothing: return true;
     case Resolved::Family: break;
     }
-    guest_desire_actions::MissedDesire(guest, *guest.m_definition, family, DesireNames());
+    guest_desire_actions::OnUnmetDesire(guest, *guest.m_definition, family, DesireNames());
     return true;
 }
 
@@ -111,7 +111,7 @@ void Guest::SetupStartValues()
     Dispatch<Setup>(this, "objects.guest-setup-start-values", g_setup);
 }
 
-void Guest::MissedDesire()
+void Guest::OnUnmetDesire()
 {
     Dispatch<Missed>(this, "objects.guest-missed-desire", g_missed);
 }

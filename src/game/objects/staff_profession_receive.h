@@ -23,11 +23,11 @@
 //   env.Base(message)              the staff ReceiveMessage, the answer of the function
 //   env.LeaveTower()               the lifeguard leaves its tower
 //   env.ReleaseGuest(sentToGuest)  the rep releases its guest and leaves (m_talking_id, m_sentToGuest)
-//   env.MoveToNextBuilding()       MoveToNextBuilding
+//   env.WalkToNextBuilding()       WalkToNextBuilding
 //   env.FreeBuilder(id)            releases the builder's construction job
 //   env.SetState(state)            the object's SetState
 //   env.EnterState(state)          the member's own OnEnterState
-//   env.LookForOffender()          LookForOffender(member, &m_MisdemeanourPos)
+//   env.FindOffender()          FindOffender(member, &m_MisdemeanourPos)
 namespace obl::staff {
 
 namespace profession_receive {
@@ -127,7 +127,8 @@ template<class Env> bool ReceiveCleaner(object::Cleaner& member, const messages:
     case messages::MT_BUILDING_BEING_REMOVED:
         if (message.sender == member.m_HomeID) {
             const uint32_t state = static_cast<uint32_t>(member.m_state);
-            if (state > 0x6c && (state < 0x74 || (state == 0x83 && member.m_cantDoJob == 0))) env.DidNotClean(member.m_DestObjectID);
+            if (state > 0x6c && (state < 0x74 || (state == 0x83 && member.m_cantDoJob == 0)))
+                env.OnCleaningAbandoned(member.m_DestObjectID);
             BecomeLeaving(env);
         } else if (message.sender == member.m_DestObjectID) {
             switch (member.m_state) {
@@ -158,7 +159,7 @@ template<class Env> bool ReceiveCleaner(object::Cleaner& member, const messages:
         break;
     case messages::MT_DIRECT_TO_POINT:
         if (member.m_state == 0x6d || member.m_state == 0x6f || member.m_state == 0x70) {
-            env.DidNotClean(member.m_DestObjectID);
+            env.OnCleaningAbandoned(member.m_DestObjectID);
             StopAndChangeState(member, 0x68, env);
         }
         break;
@@ -254,7 +255,7 @@ template<class Env> bool ReceiveRep(object::Rep& member, const messages::Message
             env.ReleaseGuest(member.m_sentToGuest);
         } else if (member.m_state == kRepStateWithGuest && message.sender == member.m_DestObjectID) {
             env.Post(OwnMessage(member, messages::MT_MOVESTOP));
-            env.MoveToNextBuilding();
+            env.WalkToNextBuilding();
         }
         break;
     case messages::MT_NEW_HOUR:
@@ -299,7 +300,7 @@ template<class Env> bool ReceiveSecurity(object::SecurityGuard& member, const me
             BecomeLeaving(env);
         } else if (member.m_state == kSecurityPatrolState && message.sender == member.m_DestObjectID) {
             env.Post(OwnMessage(member, messages::MT_MOVESTOP));
-            env.LookForOffender();
+            env.FindOffender();
         }
         break;
     case messages::MT_NEW_HOUR:

@@ -12,7 +12,7 @@ constexpr int kMsgBuilderNoGuests = 0x3c; // nobody to whistle at
 constexpr int kMsgBuilderSource = 0x67; // `extra` of both messages (the sender kind the script tests)
 constexpr int kMaxWhistlers = 2; // g_NumBuildersWhistling stops counting here
 
-// construction::CheckForFemaleGuests. Walks the guests (object class 3) in list order; the list pointer and length are read once and every
+// construction::WhistleAtNearbyFemaleGuests. Walks the guests (object class 3) in list order; the list pointer and length are read once and every
 // entry is read when its turn comes, because the Post of an earlier guest delivers the builder's script at once, which may ask for another class
 // and rewrite the list's buffer. A guest counts when its tile is within two tiles of the builder's in both axes (the integer distances are made
 // absolute with the `(x ^ s) - s` idiom and compared as floats), its definition's gender is 1 and fewer than two builders are whistling already.
@@ -23,7 +23,7 @@ constexpr int kMaxWhistlers = 2; // g_NumBuildersWhistling stops counting here
 //   bool IsFemale(Object guest)                          guest->m_definition->m_Gender == 1
 //   int32_t& Whistling()                                 g_NumBuildersWhistling
 //   void Post(int sender, int receiver, int type)        messages::Post with flags 0, data 0, extra 0x67, floatData 0
-template<class Env> void CheckForFemaleGuests(typename Env::Object builder, int builderId, Env& env)
+template<class Env> void WhistleAtNearbyFemaleGuests(typename Env::Object builder, int builderId, Env& env)
 {
     uint32_t count = 0;
     const typename Env::Object* guests = env.GuestList(count);
